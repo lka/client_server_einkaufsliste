@@ -1,0 +1,43 @@
+/* Mobile-first responsive styles */
+:root{
+  --bg:#f7f7f8;
+  --card:#ffffff;
+  --accent:#0078d4;
+  --muted:#666;
+}
+*{box-sizing:border-box}
+body{
+  font-family:Segoe UI, Roboto, Arial, sans-serif;
+  margin:0;
+  background:var(--bg);
+  color:#111;
+}
+header{
+  background:linear-gradient(90deg,var(--accent),#005a9e);
+  color:white;
+  padding:1rem;
+  text-align:center;
+}
+main{
+  padding:1rem;
+  max-width:900px;
+  margin:1rem auto;
+}
+.add{
+  display:flex;
+  gap:.5rem;
+  margin-bottom:1rem;
+}
+.add input{flex:1;padding:.6rem;border:1px solid #ddd;border-radius:6px}
+.add button{padding:.6rem 1rem;background:var(--accent);color:white;border:none;border-radius:6px}
+.list ul{list-style:none;padding:0;margin:0}
+.list li{background:var(--card);padding:.8rem;margin-bottom:.5rem;border-radius:8px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.list .muted{color:var(--muted);font-size:.9rem}
+.removeBtn{background:transparent;border:none;color:#c33;font-weight:600}
+
+/* Wider screens layout */
+@media (min-width:700px){
+  main{display:grid;grid-template-columns:1fr 360px;gap:1rem;align-items:start}
+  .add{grid-column:1 / -1}
+  .list{overflow:auto}
+}
