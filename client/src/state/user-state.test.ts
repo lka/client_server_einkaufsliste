@@ -40,7 +40,7 @@ describe('User State', () => {
         email: 'test@example.com',
         is_active: true,
       };
-      (auth.getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (auth.getCurrentUser as jest.MockedFunction<typeof auth.getCurrentUser>).mockResolvedValue(mockUser);
 
       await userState.loadCurrentUser();
       const user1 = userState.getCurrentUser();
@@ -66,7 +66,7 @@ describe('User State', () => {
         email: 'test@example.com',
         is_active: true,
       };
-      (auth.getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (auth.getCurrentUser as jest.MockedFunction<typeof auth.getCurrentUser>).mockResolvedValue(mockUser);
 
       await userState.loadCurrentUser();
 
@@ -84,7 +84,7 @@ describe('User State', () => {
         email: 'test@example.com',
         is_active: true,
       };
-      (auth.getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (auth.getCurrentUser as jest.MockedFunction<typeof auth.getCurrentUser>).mockResolvedValue(mockUser);
 
       await userState.loadCurrentUser();
       expect(listener).toHaveBeenCalledTimes(1);
@@ -107,7 +107,7 @@ describe('User State', () => {
         email: 'test@example.com',
         is_active: true,
       };
-      (auth.getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (auth.getCurrentUser as jest.MockedFunction<typeof auth.getCurrentUser>).mockResolvedValue(mockUser);
 
       await userState.loadCurrentUser();
 
@@ -124,7 +124,7 @@ describe('User State', () => {
         email: 'test@example.com',
         is_active: true,
       };
-      (auth.getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (auth.getCurrentUser as jest.MockedFunction<typeof auth.getCurrentUser>).mockResolvedValue(mockUser);
 
       const result = await userState.loadCurrentUser();
 
@@ -147,7 +147,7 @@ describe('User State', () => {
     });
 
     it('should handle API errors gracefully', async () => {
-      (auth.getCurrentUser as jest.Mock).mockRejectedValue(new Error('Network error'));
+      (auth.getCurrentUser as jest.MockedFunction<typeof auth.getCurrentUser>).mockRejectedValue(new Error('Network error'));
 
       const result = await userState.loadCurrentUser();
 
@@ -160,7 +160,7 @@ describe('User State', () => {
     });
 
     it('should reset loading state after error', async () => {
-      (auth.getCurrentUser as jest.Mock).mockRejectedValue(new Error('Network error'));
+      (auth.getCurrentUser as jest.MockedFunction<typeof auth.getCurrentUser>).mockRejectedValue(new Error('Network error'));
 
       await userState.loadCurrentUser();
 
@@ -168,7 +168,7 @@ describe('User State', () => {
     });
 
     it('should handle null user response', async () => {
-      (auth.getCurrentUser as jest.Mock).mockResolvedValue(null);
+      (auth.getCurrentUser as jest.MockedFunction<typeof auth.getCurrentUser>).mockResolvedValue(null);
 
       const result = await userState.loadCurrentUser();
 
@@ -185,12 +185,12 @@ describe('User State', () => {
         email: 'test@example.com',
         is_active: true,
       };
-      (auth.getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (auth.getCurrentUser as jest.MockedFunction<typeof auth.getCurrentUser>).mockResolvedValue(mockUser);
       await userState.loadCurrentUser();
     });
 
     it('should delete user via API and clear state', async () => {
-      (auth.deleteUser as jest.Mock).mockResolvedValue(true);
+      (auth.deleteUser as jest.MockedFunction<typeof auth.deleteUser>).mockResolvedValue(true);
 
       const listener = jest.fn();
       userState.subscribe(listener);
@@ -203,7 +203,7 @@ describe('User State', () => {
     });
 
     it('should handle API failure', async () => {
-      (auth.deleteUser as jest.Mock).mockResolvedValue(false);
+      (auth.deleteUser as jest.MockedFunction<typeof auth.deleteUser>).mockResolvedValue(false);
 
       const result = await userState.deleteCurrentUser();
 
@@ -213,7 +213,7 @@ describe('User State', () => {
     });
 
     it('should handle API errors', async () => {
-      (auth.deleteUser as jest.Mock).mockRejectedValue(new Error('Network error'));
+      (auth.deleteUser as jest.MockedFunction<typeof auth.deleteUser>).mockRejectedValue(new Error('Network error'));
 
       const result = await userState.deleteCurrentUser();
 
@@ -233,7 +233,7 @@ describe('User State', () => {
         email: 'test@example.com',
         is_active: true,
       };
-      (auth.getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+      (auth.getCurrentUser as jest.MockedFunction<typeof auth.getCurrentUser>).mockResolvedValue(mockUser);
       await userState.loadCurrentUser();
 
       const listener = jest.fn();

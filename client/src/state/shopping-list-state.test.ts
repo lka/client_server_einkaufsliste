@@ -36,7 +36,7 @@ describe('Shopping List State', () => {
   describe('getItems', () => {
     it('should return a copy of items (not reference)', async () => {
       const mockItems: Item[] = [{ id: '1', name: 'Milk' }];
-      (api.fetchItems as jest.Mock).mockResolvedValue(mockItems);
+      (api.fetchItems as jest.MockedFunction<typeof api.fetchItems>).mockResolvedValue(mockItems);
 
       await shoppingListState.loadItems();
       const items1 = shoppingListState.getItems();
@@ -53,7 +53,7 @@ describe('Shopping List State', () => {
       shoppingListState.subscribe(listener);
 
       const mockItems: Item[] = [{ id: '1', name: 'Milk' }];
-      (api.fetchItems as jest.Mock).mockResolvedValue(mockItems);
+      (api.fetchItems as jest.MockedFunction<typeof api.fetchItems>).mockResolvedValue(mockItems);
 
       await shoppingListState.loadItems();
 
@@ -66,7 +66,7 @@ describe('Shopping List State', () => {
       const unsubscribe = shoppingListState.subscribe(listener);
 
       const mockItems: Item[] = [{ id: '1', name: 'Milk' }];
-      (api.fetchItems as jest.Mock).mockResolvedValue(mockItems);
+      (api.fetchItems as jest.MockedFunction<typeof api.fetchItems>).mockResolvedValue(mockItems);
 
       await shoppingListState.loadItems();
       expect(listener).toHaveBeenCalledTimes(1);
@@ -84,7 +84,7 @@ describe('Shopping List State', () => {
       shoppingListState.subscribe(listener2);
 
       const mockItems: Item[] = [{ id: '1', name: 'Milk' }];
-      (api.fetchItems as jest.Mock).mockResolvedValue(mockItems);
+      (api.fetchItems as jest.MockedFunction<typeof api.fetchItems>).mockResolvedValue(mockItems);
 
       await shoppingListState.loadItems();
 
@@ -99,7 +99,7 @@ describe('Shopping List State', () => {
         { id: '1', name: 'Milk' },
         { id: '2', name: 'Bread' },
       ];
-      (api.fetchItems as jest.Mock).mockResolvedValue(mockItems);
+      (api.fetchItems as jest.MockedFunction<typeof api.fetchItems>).mockResolvedValue(mockItems);
 
       const result = await shoppingListState.loadItems();
 
@@ -122,7 +122,7 @@ describe('Shopping List State', () => {
     });
 
     it('should handle API errors gracefully', async () => {
-      (api.fetchItems as jest.Mock).mockRejectedValue(new Error('Network error'));
+      (api.fetchItems as jest.MockedFunction<typeof api.fetchItems>).mockRejectedValue(new Error('Network error'));
 
       const result = await shoppingListState.loadItems();
 
@@ -134,7 +134,7 @@ describe('Shopping List State', () => {
     });
 
     it('should reset loading state after error', async () => {
-      (api.fetchItems as jest.Mock).mockRejectedValue(new Error('Network error'));
+      (api.fetchItems as jest.MockedFunction<typeof api.fetchItems>).mockRejectedValue(new Error('Network error'));
 
       await shoppingListState.loadItems();
 
@@ -145,7 +145,7 @@ describe('Shopping List State', () => {
   describe('addItem', () => {
     it('should add item via API and update state', async () => {
       const newItem: Item = { id: '1', name: 'Milk' };
-      (api.addItem as jest.Mock).mockResolvedValue(newItem);
+      (api.addItem as jest.MockedFunction<typeof api.addItem>).mockResolvedValue(newItem);
 
       const listener = jest.fn();
       shoppingListState.subscribe(listener);
@@ -166,7 +166,7 @@ describe('Shopping List State', () => {
     });
 
     it('should handle API failure', async () => {
-      (api.addItem as jest.Mock).mockResolvedValue(null);
+      (api.addItem as jest.MockedFunction<typeof api.addItem>).mockResolvedValue(null);
 
       const result = await shoppingListState.addItem('Milk');
 
@@ -175,7 +175,7 @@ describe('Shopping List State', () => {
     });
 
     it('should handle API errors', async () => {
-      (api.addItem as jest.Mock).mockRejectedValue(new Error('Network error'));
+      (api.addItem as jest.MockedFunction<typeof api.addItem>).mockRejectedValue(new Error('Network error'));
 
       const result = await shoppingListState.addItem('Milk');
 
@@ -193,12 +193,12 @@ describe('Shopping List State', () => {
         { id: '1', name: 'Milk' },
         { id: '2', name: 'Bread' },
       ];
-      (api.fetchItems as jest.Mock).mockResolvedValue(mockItems);
+      (api.fetchItems as jest.MockedFunction<typeof api.fetchItems>).mockResolvedValue(mockItems);
       await shoppingListState.loadItems();
     });
 
     it('should delete item via API and update state', async () => {
-      (api.deleteItem as jest.Mock).mockResolvedValue(true);
+      (api.deleteItem as jest.MockedFunction<typeof api.deleteItem>).mockResolvedValue(true);
 
       const listener = jest.fn();
       shoppingListState.subscribe(listener);
@@ -211,7 +211,7 @@ describe('Shopping List State', () => {
     });
 
     it('should handle API failure', async () => {
-      (api.deleteItem as jest.Mock).mockResolvedValue(false);
+      (api.deleteItem as jest.MockedFunction<typeof api.deleteItem>).mockResolvedValue(false);
 
       const result = await shoppingListState.deleteItem('1');
 
@@ -221,7 +221,7 @@ describe('Shopping List State', () => {
     });
 
     it('should handle API errors', async () => {
-      (api.deleteItem as jest.Mock).mockRejectedValue(new Error('Network error'));
+      (api.deleteItem as jest.MockedFunction<typeof api.deleteItem>).mockRejectedValue(new Error('Network error'));
 
       const result = await shoppingListState.deleteItem('1');
 
@@ -236,7 +236,7 @@ describe('Shopping List State', () => {
   describe('clear', () => {
     it('should clear all items and notify listeners', async () => {
       const mockItems: Item[] = [{ id: '1', name: 'Milk' }];
-      (api.fetchItems as jest.Mock).mockResolvedValue(mockItems);
+      (api.fetchItems as jest.MockedFunction<typeof api.fetchItems>).mockResolvedValue(mockItems);
       await shoppingListState.loadItems();
 
       const listener = jest.fn();

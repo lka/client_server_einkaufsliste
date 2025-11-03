@@ -37,7 +37,7 @@ describe('Shopping List UI', () => {
 
   describe('loadItems', () => {
     it('should load items via state', async () => {
-      (shoppingListState.loadItems as jest.Mock).mockResolvedValue(true);
+      (shoppingListState.loadItems as jest.MockedFunction<typeof shoppingListState.loadItems>).mockResolvedValue(true);
 
       await loadItems();
 
@@ -48,7 +48,7 @@ describe('Shopping List UI', () => {
   describe('initShoppingListUI', () => {
     it('should initialize event handlers and subscribe to state', () => {
       (shoppingListState.subscribe as jest.Mock).mockReturnValue(() => {});
-      (shoppingListState.loadItems as jest.Mock).mockResolvedValue(true);
+      (shoppingListState.loadItems as jest.MockedFunction<typeof shoppingListState.loadItems>).mockResolvedValue(true);
 
       initShoppingListUI();
 
@@ -61,8 +61,8 @@ describe('Shopping List UI', () => {
     it('should handle add button click with valid input', async () => {
       const mockItem = { id: '123', name: 'New Item' };
       (shoppingListState.subscribe as jest.Mock).mockReturnValue(() => {});
-      (shoppingListState.addItem as jest.Mock).mockResolvedValue(mockItem);
-      (shoppingListState.loadItems as jest.Mock).mockResolvedValue(true);
+      (shoppingListState.addItem as jest.MockedFunction<typeof shoppingListState.addItem>).mockResolvedValue(mockItem);
+      (shoppingListState.loadItems as jest.MockedFunction<typeof shoppingListState.loadItems>).mockResolvedValue(true);
 
       initShoppingListUI();
 
@@ -77,7 +77,7 @@ describe('Shopping List UI', () => {
 
     it('should ignore add button click with empty input', async () => {
       (shoppingListState.subscribe as jest.Mock).mockReturnValue(() => {});
-      (shoppingListState.loadItems as jest.Mock).mockResolvedValue(true);
+      (shoppingListState.loadItems as jest.MockedFunction<typeof shoppingListState.loadItems>).mockResolvedValue(true);
 
       initShoppingListUI();
 
@@ -91,8 +91,8 @@ describe('Shopping List UI', () => {
 
     it('should handle add button click when addItem returns null', async () => {
       (shoppingListState.subscribe as jest.Mock).mockReturnValue(() => {});
-      (shoppingListState.addItem as jest.Mock).mockResolvedValue(null);
-      (shoppingListState.loadItems as jest.Mock).mockResolvedValue(true);
+      (shoppingListState.addItem as jest.MockedFunction<typeof shoppingListState.addItem>).mockResolvedValue(null);
+      (shoppingListState.loadItems as jest.MockedFunction<typeof shoppingListState.loadItems>).mockResolvedValue(true);
 
       initShoppingListUI();
 
@@ -108,8 +108,8 @@ describe('Shopping List UI', () => {
     it('should handle Enter key press', async () => {
       const mockItem = { id: '123', name: 'New Item' };
       (shoppingListState.subscribe as jest.Mock).mockReturnValue(() => {});
-      (shoppingListState.addItem as jest.Mock).mockResolvedValue(mockItem);
-      (shoppingListState.loadItems as jest.Mock).mockResolvedValue(true);
+      (shoppingListState.addItem as jest.MockedFunction<typeof shoppingListState.addItem>).mockResolvedValue(mockItem);
+      (shoppingListState.loadItems as jest.MockedFunction<typeof shoppingListState.loadItems>).mockResolvedValue(true);
 
       initShoppingListUI();
 
@@ -124,8 +124,8 @@ describe('Shopping List UI', () => {
 
     it('should handle delete button click via event delegation', async () => {
       (shoppingListState.subscribe as jest.Mock).mockReturnValue(() => {});
-      (shoppingListState.deleteItem as jest.Mock).mockResolvedValue(true);
-      (shoppingListState.loadItems as jest.Mock).mockResolvedValue(true);
+      (shoppingListState.deleteItem as jest.MockedFunction<typeof shoppingListState.deleteItem>).mockResolvedValue(true);
+      (shoppingListState.loadItems as jest.MockedFunction<typeof shoppingListState.loadItems>).mockResolvedValue(true);
 
       initShoppingListUI();
 
@@ -147,7 +147,7 @@ describe('Shopping List UI', () => {
       (shoppingListState.deleteItem as jest.Mock).mockImplementation(
         () => new Promise(resolve => setTimeout(() => resolve(true), 50))
       );
-      (shoppingListState.loadItems as jest.Mock).mockResolvedValue(true);
+      (shoppingListState.loadItems as jest.MockedFunction<typeof shoppingListState.loadItems>).mockResolvedValue(true);
 
       initShoppingListUI();
 
@@ -167,8 +167,8 @@ describe('Shopping List UI', () => {
 
     it('should re-enable button if deletion fails', async () => {
       (shoppingListState.subscribe as jest.Mock).mockReturnValue(() => {});
-      (shoppingListState.deleteItem as jest.Mock).mockResolvedValue(false);
-      (shoppingListState.loadItems as jest.Mock).mockResolvedValue(true);
+      (shoppingListState.deleteItem as jest.MockedFunction<typeof shoppingListState.deleteItem>).mockResolvedValue(false);
+      (shoppingListState.loadItems as jest.MockedFunction<typeof shoppingListState.loadItems>).mockResolvedValue(true);
 
       initShoppingListUI();
 
@@ -187,8 +187,8 @@ describe('Shopping List UI', () => {
 
     it('should prevent multiple rapid clicks on delete button', async () => {
       (shoppingListState.subscribe as jest.Mock).mockReturnValue(() => {});
-      (shoppingListState.deleteItem as jest.Mock).mockResolvedValue(true);
-      (shoppingListState.loadItems as jest.Mock).mockResolvedValue(true);
+      (shoppingListState.deleteItem as jest.MockedFunction<typeof shoppingListState.deleteItem>).mockResolvedValue(true);
+      (shoppingListState.loadItems as jest.MockedFunction<typeof shoppingListState.loadItems>).mockResolvedValue(true);
 
       initShoppingListUI();
 
