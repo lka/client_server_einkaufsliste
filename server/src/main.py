@@ -259,10 +259,11 @@ def parse_quantity(menge: str | None) -> tuple[float | None, str | None]:
         return None, None
 
     import re
+
     # Match number (int or float) followed by optional unit
-    match = re.match(r'^(\d+(?:[.,]\d+)?)\s*(.*)$', menge.strip())
+    match = re.match(r"^(\d+(?:[.,]\d+)?)\s*(.*)$", menge.strip())
     if match:
-        number_str = match.group(1).replace(',', '.')
+        number_str = match.group(1).replace(",", ".")
         unit = match.group(2).strip() if match.group(2) else None
         try:
             number = float(number_str)
@@ -301,8 +302,8 @@ def find_similar_item(session, item_name: str, threshold: float = 0.8) -> Item |
         """Normalize name for comparison by converting to lowercase and normalizing umlauts."""
         s = name.lower().strip()
         # Normalize German umlauts
-        s = s.replace('ä', 'ae').replace('ö', 'oe').replace('ü', 'ue')
-        s = s.replace('ß', 'ss')
+        s = s.replace("ä", "ae").replace("ö", "oe").replace("ü", "ue")
+        s = s.replace("ß", "ss")
         return s
 
     normalized_input = normalize(item_name)
@@ -345,7 +346,7 @@ def merge_quantities(existing_menge: str | None, new_menge: str | None) -> str |
         return existing_menge
 
     # Split new_menge by comma and process each part separately
-    new_parts = [part.strip() for part in new_menge.split(',')]
+    new_parts = [part.strip() for part in new_menge.split(",")]
 
     # Start with existing quantities
     result_menge = existing_menge
@@ -364,7 +365,7 @@ def merge_quantities(existing_menge: str | None, new_menge: str | None) -> str |
             continue
 
         # Split current result quantities by comma
-        existing_parts = [part.strip() for part in result_menge.split(',')]
+        existing_parts = [part.strip() for part in result_menge.split(",")]
 
         # Try to find matching unit in existing parts
         found_match = False
@@ -380,7 +381,7 @@ def merge_quantities(existing_menge: str | None, new_menge: str | None) -> str |
                 if total == int(total):
                     total_str = str(int(total))
                 else:
-                    total_str = str(total).replace('.', ',')
+                    total_str = str(total).replace(".", ",")
 
                 if part_unit:
                     merged_parts.append(f"{total_str} {part_unit}")
@@ -395,7 +396,7 @@ def merge_quantities(existing_menge: str | None, new_menge: str | None) -> str |
         if not found_match:
             merged_parts.append(new_part)
 
-        result_menge = ', '.join(merged_parts)
+        result_menge = ", ".join(merged_parts)
 
     return result_menge
 
@@ -429,9 +430,7 @@ def create_item(item: Item, current_user: str = Depends(get_current_user)):
 
     with get_session() as session:
         # First, check for exact match
-        existing_item = session.exec(
-            select(Item).where(Item.name == item.name)
-        ).first()
+        existing_item = session.exec(select(Item).where(Item.name == item.name)).first()
 
         # If no exact match, try fuzzy matching
         if not existing_item:

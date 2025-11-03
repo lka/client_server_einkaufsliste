@@ -91,8 +91,7 @@ def test_item_with_menge():
     assert r.status_code == 200
     items = r.json()
     assert any(
-        it["id"] == item_without_menge["id"] and it.get("menge") is None
-        for it in items
+        it["id"] == item_without_menge["id"] and it.get("menge") is None for it in items
     )
     assert any(
         it["id"] == item_with_menge["id"] and it["menge"] == "500 g" for it in items
@@ -174,17 +173,13 @@ def test_quantity_merging_no_unit():
     headers = {"Authorization": f"Bearer {token}"}
 
     # Create item with number only
-    r = client.post(
-        "/api/items", json={"name": "Eier", "menge": "6"}, headers=headers
-    )
+    r = client.post("/api/items", json={"name": "Eier", "menge": "6"}, headers=headers)
     assert r.status_code == 201
     first_item = r.json()
     first_id = first_item["id"]
 
     # Add same item with number only - should sum
-    r = client.post(
-        "/api/items", json={"name": "Eier", "menge": "12"}, headers=headers
-    )
+    r = client.post("/api/items", json={"name": "Eier", "menge": "12"}, headers=headers)
     assert r.status_code == 201
     merged_item = r.json()
     assert merged_item["name"] == "Eier"
