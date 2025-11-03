@@ -3,13 +3,15 @@
  * Handles user menu interactions (logout, account deletion).
  */
 
-import { logout, getCurrentUser, deleteUser } from '../data/auth.js';
+import { logout } from '../data/auth.js';
+import { userState } from '../state/user-state.js';
+import { shoppingListState } from '../state/shopping-list-state.js';
 
 /**
  * Update user display in header with current username.
  */
 export async function updateUserDisplay(): Promise<void> {
-  const user = await getCurrentUser();
+  const user = await userState.loadCurrentUser();
   if (user) {
     const header = document.querySelector('header h1');
     if (header) {
@@ -52,6 +54,8 @@ export function initUserMenu(): void {
   if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
       logout();
+      userState.clearUser();
+      shoppingListState.clear();
       window.location.href = '/';
     });
   }
@@ -63,8 +67,9 @@ export function initUserMenu(): void {
         'Möchten Sie Ihren Account wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.'
       );
       if (confirmed) {
-        const success = await deleteUser();
+        const success = await userState.deleteCurrentUser();
         if (success) {
+          shoppingListState.clear();
           alert('Ihr Account wurde erfolgreich gelöscht.');
           window.location.href = '/';
         } else {

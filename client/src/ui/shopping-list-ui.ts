@@ -3,15 +3,15 @@
  * Handles all UI interactions for the shopping list feature.
  */
 
-import { fetchItems, addItem, deleteItem } from '../data/api.js';
+import { shoppingListState } from '../state/shopping-list-state.js';
 import { renderItems } from '../data/dom.js';
 
 /**
- * Load and display all items from the API.
+ * Load and display all items from state.
  */
 export async function loadItems(): Promise<void> {
-  const list = await fetchItems();
-  renderItems(list);
+  await shoppingListState.loadItems();
+  // Rendering is handled by state subscription
 }
 
 /**
@@ -27,6 +27,11 @@ export function initShoppingListUI(): void {
     return;
   }
 
+  // Subscribe to state changes for automatic UI updates
+  shoppingListState.subscribe((items) => {
+    renderItems(items);
+  });
+
   // Add button handler
   addBtn.addEventListener('click', async () => {
     const val = input.value.trim();
@@ -34,10 +39,10 @@ export function initShoppingListUI(): void {
       return;
     }
 
-    const item = await addItem(val);
+    const item = await shoppingListState.addItem(val);
     if (item) {
       input.value = '';
-      await loadItems();
+      // UI updates automatically via state subscription
     }
   });
 
@@ -66,13 +71,12 @@ export function initShoppingListUI(): void {
           // Disable button during deletion
           target.setAttribute('disabled', 'true');
 
-          const success = await deleteItem(itemId);
-          if (success) {
-            await loadItems();
-          } else {
+          const success = await shoppingListState.deleteItem(itemId);
+          if (!success) {
             // Re-enable button if deletion failed
             target.removeAttribute('disabled');
           }
+          // UI updates automatically via state subscription on success
         }
       }
     });

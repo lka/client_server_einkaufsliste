@@ -2,7 +2,7 @@
 
 ## Overview
 
-The shopping list client is a TypeScript application built with a **three-layer architecture** that emphasizes separation of concerns, maintainability, and scalability. The architecture uses **physical folder separation** to make layer boundaries explicit and easy to navigate.
+The shopping list client is a TypeScript application built with a **four-layer architecture** that emphasizes separation of concerns, maintainability, and scalability. The architecture uses **physical folder separation** to make layer boundaries explicit and easy to navigate.
 
 ## Architecture Diagram
 
@@ -27,6 +27,21 @@ The shopping list client is a TypeScript application built with a **three-layer 
 │         - Page controllers                                   │
 │         - Feature-specific UI logic                          │
 │         - Event handlers                                     │
+│         - Subscribe to state changes                         │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      STATE LAYER (NEW)                       │
+│   ┌──────────────────────┬──────────────────────────┐       │
+│   │  shopping-list-state │  user-state              │       │
+│   │  - items: Item[]     │  - currentUser: User     │       │
+│   │  - listeners         │  - listeners             │       │
+│   │  - loading state     │  - loading state         │       │
+│   └──────────────────────┴──────────────────────────┘       │
+│         - Centralized state management                       │
+│         - Observer pattern for reactive updates              │
+│         - Single source of truth                             │
 └──────────────────────┬──────────────────────────────────────┘
                        │
                        ▼
@@ -122,7 +137,64 @@ The shopping list client is a TypeScript application built with a **three-layer 
 
 ---
 
-### 2. UI Layer (`src/ui/`)
+### 2. State Layer (`src/state/`)
+
+**Purpose**: Centralized state management with reactive updates.
+
+**Modules**:
+
+#### shopping-list-state.ts
+- **Responsibility**: Manage shopping list items state
+- **Functions**:
+  - `getItems()`: Get current items (read-only copy)
+  - `isLoading()`: Check if operation in progress
+  - `subscribe(listener)`: Subscribe to state changes (returns unsubscribe function)
+  - `loadItems()`: Load items from API and update state
+  - `addItem(name)`: Add item via API and update state
+  - `deleteItem(id)`: Delete item via API and update state
+  - `clear()`: Clear local state
+- **Pattern**: Observer pattern for reactive UI updates
+- **State**: Single source of truth for items
+- **Benefits**:
+  - Automatic UI updates via subscriptions
+  - No manual refresh calls needed
+  - Loading state tracking
+  - Immutable state (returns copies)
+
+#### user-state.ts
+- **Responsibility**: Manage current user state
+- **Functions**:
+  - `getCurrentUser()`: Get current user (read-only copy)
+  - `isLoading()`: Check if operation in progress
+  - `subscribe(listener)`: Subscribe to user changes (returns unsubscribe function)
+  - `loadCurrentUser()`: Load user from API and update state
+  - `deleteCurrentUser()`: Delete user via API and clear state
+  - `clearUser()`: Clear user state (e.g., on logout)
+  - `setUser(user)`: Set user directly (e.g., after login)
+- **Pattern**: Observer pattern for reactive UI updates
+- **State**: Single source of truth for current user
+- **Benefits**:
+  - Automatic UI updates on user changes
+  - Centralized user management
+  - Loading state tracking
+
+**Testing**:
+- `shopping-list-state.test.ts`: 35 tests covering state management, subscriptions, and API integration
+- `user-state.test.ts`: 24 tests covering user state, subscriptions, and error handling
+- **Total**: 59 tests for state layer
+
+**Principles**:
+- ✅ Single source of truth for application state
+- ✅ Observer pattern for reactive updates
+- ✅ Immutable state (returns copies, not references)
+- ✅ Loading state tracking for UX
+- ✅ No direct UI manipulation
+
+**See also**: [STATE_LAYER.md](STATE_LAYER.md) for detailed state layer documentation.
+
+---
+
+### 3. UI Layer (`src/ui/`)
 
 **Purpose**: Feature-specific UI logic and event handlers.
 
@@ -131,12 +203,16 @@ The shopping list client is a TypeScript application built with a **three-layer 
 #### shopping-list-ui.ts
 - **Responsibility**: Shopping list feature UI
 - **Functions**:
-  - `initShoppingListUI()`: Initialize event handlers
-  - `loadItems()`: Fetch and display items
+  - `initShoppingListUI()`: Initialize event handlers and state subscriptions
+  - `loadItems()`: Trigger state to load items
+- **State Integration**:
+  - Subscribes to `shoppingListState` for automatic UI updates
+  - UI re-renders automatically when state changes
+  - No manual refresh calls needed
 - **Event Handlers**:
-  - Add button click
+  - Add button click → `shoppingListState.addItem()`
   - Enter key for adding items
-  - Delete button click (event delegation on parent container)
+  - Delete button click (event delegation on parent container) → `shoppingListState.deleteItem()`
 - **Event Delegation Pattern**:
   - Single click listener attached to `<ul id="items">` parent
   - Checks `target.classList.contains('removeBtn')` to identify delete buttons
@@ -144,21 +220,26 @@ The shopping list client is a TypeScript application built with a **three-layer 
   - Disables button during deletion to prevent double-clicks
   - Re-enables button only if deletion fails
 - **Dependencies**:
-  - `../data/api.js`: fetchItems, addItem, deleteItem
-  - `../data/dom.js`: renderItems
+  - `../state/shopping-list-state.js`: State management
+  - `../data/dom.js`: renderItems (called by subscription)
 
 #### user-menu.ts
 - **Responsibility**: User menu feature UI
 - **Functions**:
   - `initUserMenu()`: Initialize menu event handlers
   - `updateUserDisplay()`: Show username in header
+- **State Integration**:
+  - Uses `userState` for user management
+  - Uses `shoppingListState.clear()` on logout/deletion
 - **Event Handlers**:
   - Menu toggle (open/close)
   - Click outside to close
-  - Logout button
-  - Delete account button (with confirmation)
+  - Logout button → `userState.clearUser()` + `shoppingListState.clear()`
+  - Delete account button (with confirmation) → `userState.deleteCurrentUser()`
 - **Dependencies**:
-  - `../data/auth.js`: logout, getCurrentUser, deleteUser
+  - `../state/user-state.js`: User state management
+  - `../state/shopping-list-state.js`: Clear items on logout
+  - `../data/auth.js`: logout (token management)
 
 **Testing**:
 - `shopping-list-ui.test.ts`: 14 tests covering all UI interactions (100% coverage)
@@ -565,7 +646,6 @@ src/pages/
 
 ### Architecture Evolution
 - Current: 3-layer architecture
-- Future: Could add a State Layer between UI and Data
 - Maintains separation of concerns principle
 
 ---

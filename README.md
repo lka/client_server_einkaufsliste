@@ -28,6 +28,11 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
 │   │   │   ├── auth.ts           # Authentication utilities
 │   │   │   ├── dom.ts            # DOM utilities
 │   │   │   └── dom.test.ts       # DOM tests
+│   │   ├── state/                # State layer (state management)
+│   │   │   ├── shopping-list-state.ts      # Shopping list state manager
+│   │   │   ├── shopping-list-state.test.ts # State tests
+│   │   │   ├── user-state.ts               # User state manager
+│   │   │   └── user-state.test.ts          # State tests
 │   │   ├── ui/                   # UI layer (feature-specific UI modules)
 │   │   │   ├── shopping-list-ui.ts   # Shopping list UI module
 │   │   │   └── user-menu.ts          # User menu module
@@ -40,6 +45,7 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
 │   ├── dist/                 # Compiled JavaScript
 │   ├── index.html            # Login page
 │   ├── index-app.html        # Main app page
+│   ├── favicon.svg           # Application icon
 │   ├── styles.css            # Styles
 │   ├── package.json          # Node dependencies
 │   ├── tsconfig.json         # TypeScript config
@@ -246,13 +252,17 @@ npm test -- --watch
 ```
 
 **Aktuelle Test-Abdeckung:**
-- ✅ 102 Tests insgesamt (6 Test-Suites)
+- ✅ 161 Tests insgesamt (8 Test-Suites)
 - ✅ 98.5%+ Code-Abdeckung
 - ✅ Data Layer: API Client (18), Authentication (36), DOM (14)
   - Inklusive 401 Handling & Token Refresh Failures
   - Inklusive Token-Refresh-Optimierung (Singleton, Cooldown, Concurrent Requests)
   - Inklusive Template-Caching (Memory Cache, Load Flag, Zero Network Cost)
   - Inklusive DOM-Batching (DocumentFragment, O(1) Reflows)
+- ✅ State Layer: Shopping List State (35), User State (24)
+  - Inklusive Observer Pattern, Subscriptions, Reactivity
+  - Inklusive Loading State Tracking
+  - Inklusive Immutability Tests
 - ✅ UI Layer: Shopping List UI (14), User Menu (16)
 - ✅ Pages Layer: Login Controller (20)
 - ✅ Error Handling, Edge Cases, User Interactions
@@ -268,7 +278,7 @@ Das Projekt nutzt GitHub Actions für automatisierte Tests bei jedem Push/Pull R
 
 **Client Tests (TypeScript):**
 - TypeScript Build
-- Jest Tests (102 Tests, 98.5%+ Coverage)
+- Jest Tests (161 Tests, 98.5%+ Coverage)
 
 Beide Jobs laufen parallel für maximale Geschwindigkeit. Die CI-Konfiguration befindet sich in `.github/workflows/ci.yml`.
 
@@ -298,19 +308,30 @@ Beide Jobs laufen parallel für maximale Geschwindigkeit. Die CI-Konfiguration b
 
 ### Client-Architektur
 
-Der Client ist in einer mehrschichtigen Architektur mit Ordnertrennung organisiert:
+Der Client ist in einer **vierschichtigen Architektur** mit Ordnertrennung organisiert:
 
 #### **Data Layer** (`src/data/`)
 Kernfunktionalität für Daten und Utilities:
 - **api.ts** - API-Client für Shopping-List-Operationen (fetchItems, addItem, deleteItem)
 - **auth.ts** - Authentifizierungs-Utilities (login, register, logout, token-management)
 - **dom.ts** - DOM-Manipulations-Utilities (renderItems, loadTemplate)
-- **Tests**: api.test.ts, dom.test.ts
+- **Tests**: api.test.ts (18), auth.test.ts (36), dom.test.ts (14)
+
+#### **State Layer** (`src/state/`)
+Zentralisiertes State-Management mit reaktiven Updates (Observer Pattern):
+- **shopping-list-state.ts** - Shopping-List State-Manager (Single Source of Truth)
+- **user-state.ts** - User State-Manager (Authentifizierungs-Status)
+- **Features**:
+  - Observer Pattern für reaktive UI-Updates
+  - Loading State Tracking
+  - Immutable State (gibt Kopien zurück)
+  - Subscription-basierte Benachrichtigungen
+- **Tests**: shopping-list-state.test.ts (35), user-state.test.ts (24)
 
 #### **UI Layer** (`src/ui/`)
-Feature-spezifische UI-Logik und Event-Handler:
-- **shopping-list-ui.ts** - Shopping-List UI-Logik (Add, Delete, Render)
-- **user-menu.ts** - Benutzermenü-Funktionalität (Logout, Account-Löschung, User-Display)
+Feature-spezifische UI-Logik und Event-Handler (abonniert State-Änderungen):
+- **shopping-list-ui.ts** - Shopping-List UI-Logik (abonniert State, triggert Updates)
+- **user-menu.ts** - Benutzermenü-Funktionalität (abonniert User-State)
 
 #### **Pages Layer** (`src/pages/`)
 Seiten-Controller und HTML-Templates:
@@ -319,27 +340,32 @@ Seiten-Controller und HTML-Templates:
 - **app.html** - Hauptanwendungs HTML-Template
 
 #### **Entry Points** (`src/`)
-- **script.ts** - Haupt-App Entry-Point (orchestriert alle Module)
+- **script.ts** - Haupt-App Entry-Point (initialisiert UI und State Layer)
 - **index-login.ts** - Login-Seite Entry-Point
 
 #### Architektur-Vorteile:
 
 **Klare Schichtentrennung:**
 - Data Layer kennt keine UI-Details
-- UI Layer nutzt Data Layer über klare Schnittstellen
+- State Layer verwaltet Application State (Single Source of Truth)
+- UI Layer abonniert State-Änderungen für automatische Updates
 - Pages Layer kombiniert UI-Module zu vollständigen Seiten
 
 **Dependency Flow:**
 ```
-Entry Points → Pages/UI Layer → Data Layer
+Entry Points → Pages/UI Layer → State Layer → Data Layer
 ```
 
 **Weitere Vorteile:**
+- **Reaktive Updates**: UI aktualisiert sich automatisch bei State-Änderungen
+- **Single Source of Truth**: Alle Komponenten teilen denselben State
 - Einfache Navigation durch physische Ordnerstruktur
 - Bessere Wartbarkeit und Erweiterbarkeit
-- Isolierte Testbarkeit einzelner Schichten
+- Isolierte Testbarkeit einzelner Schichten (161 Tests total)
 - Wiederverwendbarkeit von Modulen
 - Vermeidung von zirkulären Abhängigkeiten
+
+Siehe [client/ARCHITECTURE.md](client/ARCHITECTURE.md) und [client/STATE_LAYER.md](client/STATE_LAYER.md) für Details.
 
 ### Projekt-Entscheidungen
 

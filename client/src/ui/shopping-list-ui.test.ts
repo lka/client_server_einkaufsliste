@@ -4,12 +4,11 @@
 
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { initShoppingListUI, loadItems } from './shopping-list-ui.js';
-import * as api from '../data/api.js';
-import * as dom from '../data/dom.js';
+import { shoppingListState } from '../state/shopping-list-state.js';
 
-// Mock the data layer modules
-jest.mock('../data/api.js');
+// Mock the modules
 jest.mock('../data/dom.js');
+jest.mock('../state/shopping-list-state.js');
 
 describe('Shopping List UI', () => {
   let mockInput: HTMLInputElement;
@@ -37,39 +36,33 @@ describe('Shopping List UI', () => {
   });
 
   describe('loadItems', () => {
-    it('should fetch and render items', async () => {
-      const mockItems = [
-        { id: '1', name: 'Milk' },
-        { id: '2', name: 'Bread' },
-      ];
-
-      jest.spyOn(api, 'fetchItems').mockResolvedValue(mockItems);
-      jest.spyOn(dom, 'renderItems').mockImplementation(() => {});
+    it('should load items via state', async () => {
+      (shoppingListState.loadItems as jest.Mock).mockResolvedValue(true);
 
       await loadItems();
 
-      expect(api.fetchItems).toHaveBeenCalled();
-      expect(dom.renderItems).toHaveBeenCalledWith(mockItems);
+      expect(shoppingListState.loadItems).toHaveBeenCalled();
     });
   });
 
   describe('initShoppingListUI', () => {
-    it('should initialize event handlers', () => {
-      jest.spyOn(api, 'fetchItems').mockResolvedValue([]);
-      jest.spyOn(dom, 'renderItems').mockImplementation(() => {});
+    it('should initialize event handlers and subscribe to state', () => {
+      (shoppingListState.subscribe as jest.Mock).mockReturnValue(() => {});
+      (shoppingListState.loadItems as jest.Mock).mockResolvedValue(true);
 
       initShoppingListUI();
 
       expect(mockInput).toBeDefined();
       expect(mockButton).toBeDefined();
       expect(mockItemsList).toBeDefined();
+      expect(shoppingListState.subscribe).toHaveBeenCalled();
     });
 
     it('should handle add button click with valid input', async () => {
       const mockItem = { id: '123', name: 'New Item' };
-      jest.spyOn(api, 'addItem').mockResolvedValue(mockItem);
-      jest.spyOn(api, 'fetchItems').mockResolvedValue([mockItem]);
-      jest.spyOn(dom, 'renderItems').mockImplementation(() => {});
+      (shoppingListState.subscribe as jest.Mock).mockReturnValue(() => {});
+      (shoppingListState.addItem as jest.Mock).mockResolvedValue(mockItem);
+      (shoppingListState.loadItems as jest.Mock).mockResolvedValue(true);
 
       initShoppingListUI();
 
@@ -78,15 +71,13 @@ describe('Shopping List UI', () => {
 
       await new Promise(resolve => setTimeout(resolve, 0));
 
-      expect(api.addItem).toHaveBeenCalledWith('New Item');
+      expect(shoppingListState.addItem).toHaveBeenCalledWith('New Item');
       expect(mockInput.value).toBe('');
-      expect(api.fetchItems).toHaveBeenCalled();
     });
 
     it('should ignore add button click with empty input', async () => {
-      jest.spyOn(api, 'addItem').mockResolvedValue(null);
-      jest.spyOn(api, 'fetchItems').mockResolvedValue([]);
-      jest.spyOn(dom, 'renderItems').mockImplementation(() => {});
+      (shoppingListState.subscribe as jest.Mock).mockReturnValue(() => {});
+      (shoppingListState.loadItems as jest.Mock).mockResolvedValue(true);
 
       initShoppingListUI();
 
@@ -95,13 +86,13 @@ describe('Shopping List UI', () => {
 
       await new Promise(resolve => setTimeout(resolve, 0));
 
-      expect(api.addItem).not.toHaveBeenCalled();
+      expect(shoppingListState.addItem).not.toHaveBeenCalled();
     });
 
     it('should handle add button click when addItem returns null', async () => {
-      jest.spyOn(api, 'addItem').mockResolvedValue(null);
-      jest.spyOn(api, 'fetchItems').mockResolvedValue([]);
-      jest.spyOn(dom, 'renderItems').mockImplementation(() => {});
+      (shoppingListState.subscribe as jest.Mock).mockReturnValue(() => {});
+      (shoppingListState.addItem as jest.Mock).mockResolvedValue(null);
+      (shoppingListState.loadItems as jest.Mock).mockResolvedValue(true);
 
       initShoppingListUI();
 
@@ -110,106 +101,119 @@ describe('Shopping List UI', () => {
 
       await new Promise(resolve => setTimeout(resolve, 0));
 
-      expect(api.addItem).toHaveBeenCalledWith('Failed Item');
+      expect(shoppingListState.addItem).toHaveBeenCalledWith('Failed Item');
       expect(mockInput.value).toBe('Failed Item'); // Not cleared on failure
     });
 
     it('should handle Enter key press', async () => {
       const mockItem = { id: '123', name: 'New Item' };
-      jest.spyOn(api, 'addItem').mockResolvedValue(mockItem);
-      jest.spyOn(api, 'fetchItems').mockResolvedValue([mockItem]);
-      jest.spyOn(dom, 'renderItems').mockImplementation(() => {});
+      (shoppingListState.subscribe as jest.Mock).mockReturnValue(() => {});
+      (shoppingListState.addItem as jest.Mock).mockResolvedValue(mockItem);
+      (shoppingListState.loadItems as jest.Mock).mockResolvedValue(true);
 
       initShoppingListUI();
 
       mockInput.value = 'New Item';
-      const enterEvent = new KeyboardEvent('keyup', { key: 'Enter' });
-      mockInput.dispatchEvent(enterEvent);
+      const event = new KeyboardEvent('keyup', { key: 'Enter' });
+      mockInput.dispatchEvent(event);
 
       await new Promise(resolve => setTimeout(resolve, 0));
 
-      expect(api.addItem).toHaveBeenCalledWith('New Item');
+      expect(shoppingListState.addItem).toHaveBeenCalledWith('New Item');
     });
 
     it('should handle delete button click via event delegation', async () => {
-      jest.spyOn(api, 'deleteItem').mockResolvedValue(true);
-      jest.spyOn(api, 'fetchItems').mockResolvedValue([]);
-      jest.spyOn(dom, 'renderItems').mockImplementation(() => {});
+      (shoppingListState.subscribe as jest.Mock).mockReturnValue(() => {});
+      (shoppingListState.deleteItem as jest.Mock).mockResolvedValue(true);
+      (shoppingListState.loadItems as jest.Mock).mockResolvedValue(true);
 
       initShoppingListUI();
 
       // Create a mock delete button
-      const deleteBtn = document.createElement('button');
-      deleteBtn.className = 'removeBtn';
-      deleteBtn.dataset.itemId = '123';
-      mockItemsList.appendChild(deleteBtn);
+      const deleteButton = document.createElement('button');
+      deleteButton.className = 'removeBtn';
+      deleteButton.dataset.itemId = '123';
+      mockItemsList.appendChild(deleteButton);
 
-      deleteBtn.click();
+      deleteButton.click();
 
       await new Promise(resolve => setTimeout(resolve, 0));
 
-      expect(api.deleteItem).toHaveBeenCalledWith('123');
-      expect(api.fetchItems).toHaveBeenCalled();
+      expect(shoppingListState.deleteItem).toHaveBeenCalledWith('123');
     });
 
-    it('should handle delete button click when deletion fails', async () => {
-      jest.spyOn(api, 'deleteItem').mockResolvedValue(false);
-      jest.spyOn(api, 'fetchItems').mockResolvedValue([]);
-      jest.spyOn(dom, 'renderItems').mockImplementation(() => {});
+    it('should disable button during deletion', async () => {
+      (shoppingListState.subscribe as jest.Mock).mockReturnValue(() => {});
+      (shoppingListState.deleteItem as jest.Mock).mockImplementation(
+        () => new Promise(resolve => setTimeout(() => resolve(true), 50))
+      );
+      (shoppingListState.loadItems as jest.Mock).mockResolvedValue(true);
 
       initShoppingListUI();
 
-      const deleteBtn = document.createElement('button');
-      deleteBtn.className = 'removeBtn';
-      deleteBtn.dataset.itemId = '123';
-      mockItemsList.appendChild(deleteBtn);
+      // Create a mock delete button
+      const deleteButton = document.createElement('button');
+      deleteButton.className = 'removeBtn';
+      deleteButton.dataset.itemId = '123';
+      mockItemsList.appendChild(deleteButton);
 
-      deleteBtn.click();
+      deleteButton.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      // Button should be disabled immediately
+      expect(deleteButton.hasAttribute('disabled')).toBe(true);
 
-      expect(api.deleteItem).toHaveBeenCalledWith('123');
-      // fetchItems should not be called if deletion fails
+      await new Promise(resolve => setTimeout(resolve, 100));
     });
 
-    it('should ignore clicks on non-delete buttons', async () => {
-      jest.spyOn(api, 'deleteItem').mockResolvedValue(true);
-      jest.spyOn(api, 'fetchItems').mockResolvedValue([]);
-      jest.spyOn(dom, 'renderItems').mockImplementation(() => {});
+    it('should re-enable button if deletion fails', async () => {
+      (shoppingListState.subscribe as jest.Mock).mockReturnValue(() => {});
+      (shoppingListState.deleteItem as jest.Mock).mockResolvedValue(false);
+      (shoppingListState.loadItems as jest.Mock).mockResolvedValue(true);
 
       initShoppingListUI();
 
-      const otherBtn = document.createElement('button');
-      otherBtn.className = 'someOtherBtn';
-      mockItemsList.appendChild(otherBtn);
+      // Create a mock delete button
+      const deleteButton = document.createElement('button');
+      deleteButton.className = 'removeBtn';
+      deleteButton.dataset.itemId = '123';
+      mockItemsList.appendChild(deleteButton);
 
-      otherBtn.click();
+      deleteButton.click();
 
       await new Promise(resolve => setTimeout(resolve, 0));
 
-      expect(api.deleteItem).not.toHaveBeenCalled();
+      expect(deleteButton.hasAttribute('disabled')).toBe(false);
     });
 
-    it('should handle missing elements gracefully', () => {
-      document.body.innerHTML = '<div></div>'; // No required elements
+    it('should prevent multiple rapid clicks on delete button', async () => {
+      (shoppingListState.subscribe as jest.Mock).mockReturnValue(() => {});
+      (shoppingListState.deleteItem as jest.Mock).mockResolvedValue(true);
+      (shoppingListState.loadItems as jest.Mock).mockResolvedValue(true);
 
-      jest.spyOn(console, 'error').mockImplementation(() => {});
+      initShoppingListUI();
+
+      // Create a mock delete button
+      const deleteButton = document.createElement('button');
+      deleteButton.className = 'removeBtn';
+      deleteButton.dataset.itemId = '123';
+      mockItemsList.appendChild(deleteButton);
+
+      deleteButton.click();
+      deleteButton.setAttribute('disabled', 'true');
+      deleteButton.click(); // Second click while disabled
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      // Should only be called once
+      expect(shoppingListState.deleteItem).toHaveBeenCalledTimes(1);
+    });
+
+    it('should log error when required elements not found', () => {
+      document.body.innerHTML = '<div></div>';
 
       initShoppingListUI();
 
       expect(console.error).toHaveBeenCalledWith('Required shopping list elements not found');
-    });
-
-    it('should load items on initialization', async () => {
-      jest.spyOn(api, 'fetchItems').mockResolvedValue([]);
-      jest.spyOn(dom, 'renderItems').mockImplementation(() => {});
-
-      initShoppingListUI();
-
-      await new Promise(resolve => setTimeout(resolve, 0));
-
-      expect(api.fetchItems).toHaveBeenCalled();
-      expect(dom.renderItems).toHaveBeenCalled();
     });
   });
 });

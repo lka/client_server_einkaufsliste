@@ -63,6 +63,10 @@ The client includes comprehensive unit tests across all layers:
 - **auth.test.ts** (36 tests): Authentication, token management, user operations, and token refresh optimization
 - **dom.test.ts** (14 tests): DOM manipulation, rendering, template caching, and DOM batching
 
+**State Layer Tests**:
+- **shopping-list-state.test.ts** (35 tests): Shopping list state management, subscriptions, and reactivity
+- **user-state.test.ts** (24 tests): User state management, loading, and deletion
+
 **UI Layer Tests**:
 - **shopping-list-ui.test.ts** (14 tests): Shopping list UI interactions
 - **user-menu.test.ts** (16 tests): User menu functionality
@@ -70,10 +74,11 @@ The client includes comprehensive unit tests across all layers:
 **Pages Layer Tests**:
 - **login.test.ts** (20 tests): Login/registration page controller
 
-**Total**: **102 tests**, all passing ✅
+**Total**: **161 tests**, all passing ✅
 
 **Coverage**: **98.5%+ overall code coverage**
 - Data Layer: auth.ts (100%), dom.ts (98%), api.ts (100%)
+- State Layer: shopping-list-state.ts (100%), user-state.ts (100%)
 - UI Layer: user-menu.ts (100%), shopping-list-ui.ts (97%)
 - Pages Layer: login.ts (100%)
 
@@ -84,11 +89,16 @@ client/
 ├── src/
 │   ├── data/                    # Data Layer
 │   │   ├── api.ts               # API client functions
-│   │   ├── api.test.ts          # API tests (9 tests)
+│   │   ├── api.test.ts          # API tests (18 tests)
 │   │   ├── auth.ts              # Authentication utilities
-│   │   ├── auth.test.ts         # Auth tests (33 tests)
+│   │   ├── auth.test.ts         # Auth tests (36 tests)
 │   │   ├── dom.ts               # DOM manipulation utilities
-│   │   └── dom.test.ts          # DOM tests (7 tests)
+│   │   └── dom.test.ts          # DOM tests (14 tests)
+│   ├── state/                   # State Layer
+│   │   ├── shopping-list-state.ts      # Shopping list state manager
+│   │   ├── shopping-list-state.test.ts # State tests (35 tests)
+│   │   ├── user-state.ts               # User state manager
+│   │   └── user-state.test.ts          # State tests (24 tests)
 │   ├── ui/                      # UI Layer
 │   │   ├── shopping-list-ui.ts  # Shopping list UI module
 │   │   ├── shopping-list-ui.test.ts  # Shopping list tests (14 tests)
@@ -106,17 +116,19 @@ client/
 ├── node_modules/                # NPM dependencies (gitignored)
 ├── index.html                   # Login page
 ├── index-app.html               # Main app page
+├── favicon.svg                  # Application icon
 ├── styles.css                   # Styles
 ├── tsconfig.json                # TypeScript configuration
 ├── jest.config.js               # Jest testing configuration
 ├── package.json                 # Node dependencies and scripts
 ├── ARCHITECTURE.md              # Architecture documentation
+├── STATE_LAYER.md               # State layer documentation
 └── .gitignore                   # Git ignore rules
 ```
 
 ### Layered Architecture
 
-The client follows a **three-layer architecture** with physical folder separation:
+The client follows a **four-layer architecture** with physical folder separation:
 
 #### **Data Layer** (`src/data/`)
 Core functionality for data operations and utilities. This layer has no UI knowledge.
@@ -126,11 +138,23 @@ Core functionality for data operations and utilities. This layer has no UI knowl
 - **dom.ts**: DOM manipulation utilities (renderItems with batching, loadTemplate with caching)
 - **Tests**: api.test.ts (18), auth.test.ts (36), dom.test.ts (14) - **68 tests total**, 99.5%+ coverage
 
-#### **UI Layer** (`src/ui/`)
-Feature-specific UI logic and event handlers. Uses the Data Layer via clear interfaces.
+#### **State Layer** (`src/state/`)
+Centralized state management with reactive updates using the Observer pattern.
 
-- **shopping-list-ui.ts**: Shopping list UI logic (add, delete, render items)
-- **user-menu.ts**: User menu functionality (logout, account deletion, user display)
+- **shopping-list-state.ts**: Manages shopping list items state with subscriptions
+- **user-state.ts**: Manages current user state with subscriptions
+- **Key Features**:
+  - Single source of truth for application state
+  - Reactive UI updates via Observer pattern
+  - Loading state tracking
+  - Immutability (returns copies, not references)
+- **Tests**: shopping-list-state.test.ts (35), user-state.test.ts (24) - **59 tests total**, 100% coverage
+
+#### **UI Layer** (`src/ui/`)
+Feature-specific UI logic and event handlers. Subscribes to state changes for automatic updates.
+
+- **shopping-list-ui.ts**: Shopping list UI logic (subscribes to state, triggers state updates)
+- **user-menu.ts**: User menu functionality (subscribes to user state, handles logout/deletion)
 - **Tests**: shopping-list-ui.test.ts (14), user-menu.test.ts (16) - **30 tests total**, 100% coverage
 
 #### **Pages Layer** (`src/pages/`)
@@ -144,7 +168,7 @@ Page controllers and HTML templates that combine UI modules into complete pages.
 #### **Entry Points** (`src/`)
 Minimal orchestration code that initializes appropriate layers.
 
-- **script.ts**: Main app entry point (orchestrates UI and Data layers)
+- **script.ts**: Main app entry point (initializes UI and State layers)
 - **index-login.ts**: Login page entry point
 
 ### Dependency Flow
@@ -154,10 +178,14 @@ Entry Points (script.ts, index-login.ts)
          ↓
 Pages/UI Layer (login.ts, shopping-list-ui.ts, user-menu.ts)
          ↓
+State Layer (shopping-list-state.ts, user-state.ts)
+         ↓
 Data Layer (api.ts, auth.ts, dom.ts)
 ```
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed architecture documentation.
+The State Layer provides reactive state management - UI components subscribe to state changes and automatically re-render when state updates.
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed architecture documentation and [STATE_LAYER.md](STATE_LAYER.md) for state management patterns.
 
 ## TypeScript Features
 
@@ -245,10 +273,12 @@ The application consists of two main pages:
 
 ### Architecture Benefits
 
-- **Layer Separation**: Clear boundaries between data, UI, and pages
+- **Layer Separation**: Clear boundaries between data, state, UI, and pages
+- **Reactive Updates**: Automatic UI re-renders via state subscriptions
+- **Single Source of Truth**: All components share the same state
 - **Type Safety**: TypeScript ensures compile-time correctness
 - **Maintainability**: Easy to find and modify features
-- **Testability**: Each layer tested independently
+- **Testability**: Each layer tested independently (161 tests total)
 - **Scalability**: Easy to add new features or UI modules
 - **Security**: Token-based authentication with automatic refresh
 - **Performance**: Event delegation and optimized token refresh reduce overhead
