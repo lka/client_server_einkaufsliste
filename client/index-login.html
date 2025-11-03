@@ -4,7 +4,6 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Einkaufsliste - Login</title>
-  <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="styles.css">
   <style>
     .js-required {
@@ -102,33 +101,8 @@
     </div>
   </noscript>
 
-  <div id="app">
-    <section class="auth-container">
-      <div id="loginForm" class="auth-form">
-        <h2>Anmelden</h2>
-        <input id="loginUsername" type="text" placeholder="Benutzername" required />
-        <input id="loginPassword" type="password" placeholder="Passwort" required />
-        <button id="loginBtn" type="button">Anmelden</button>
-        <p class="auth-switch">
-          Noch kein Konto? <a href="javascript:void(0)" id="showRegister">Registrieren</a>
-        </p>
-        <p id="loginError" class="error-message"></p>
-      </div>
+  <div id="app"></div>
 
-      <div id="registerForm" class="auth-form" style="display: none;">
-        <h2>Registrieren</h2>
-        <input id="registerUsername" type="text" placeholder="Benutzername" required />
-        <input id="registerEmail" type="email" placeholder="E-Mail" required />
-        <input id="registerPassword" type="password" placeholder="Passwort" required />
-        <button id="registerBtn" type="button">Registrieren</button>
-        <p class="auth-switch">
-          Bereits registriert? <a href="javascript:void(0)" id="showLogin">Anmelden</a>
-        </p>
-        <p id="registerError" class="error-message"></p>
-      </div>
-    </section>
-  </div>
-
-  <script type="module" src="dist/index-login.js"></script>
+  <script src="dist/index-login.js"></script>
 </body>
 </html>

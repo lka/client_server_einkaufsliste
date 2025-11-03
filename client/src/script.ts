@@ -1,75 +1,23 @@
 /**
  * Shopping list client application entry point.
- * Manages items via REST API with TypeScript type safety.
+ * Orchestrates the initialization of all application modules.
  */
 
-import { fetchItems, addItem, deleteItem } from './api';
-import { renderItems, loadAppTemplate } from './dom';
-
-/**
- * Load and display all items.
- */
-async function load(): Promise<void> {
-  const list = await fetchItems();
-  renderItems(list);
-}
-
-/**
- * Initialize event handlers for the application.
- */
-function initializeEventHandlers(): void {
-  const input = document.getElementById('itemInput') as HTMLInputElement;
-  const addBtn = document.getElementById('addBtn') as HTMLButtonElement;
-
-  if (!input || !addBtn) {
-    console.error('Required elements not found');
-    return;
-  }
-
-  addBtn.addEventListener('click', async () => {
-    const val = input.value.trim();
-    if (!val) {
-      return;
-    }
-
-    const item = await addItem(val);
-    if (item) {
-      input.value = '';
-      await load();
-    }
-  });
-
-  input.addEventListener('keyup', (e: KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      addBtn.click();
-    }
-  });
-
-  // Event delegation for delete buttons
-  const itemsList = document.getElementById('items');
-  if (itemsList) {
-    itemsList.addEventListener('click', async (e: Event) => {
-      const target = e.target as HTMLElement;
-      if (target.classList.contains('removeBtn')) {
-        const itemId = target.dataset.itemId;
-        if (itemId) {
-          const success = await deleteItem(itemId);
-          if (success) {
-            await load();
-          }
-        }
-      }
-    });
-  }
-
-  // Initial load
-  load();
-}
+import { loadAppTemplate } from './data/dom.js';
+import { isAuthenticated } from './data/auth.js';
+import { initShoppingListUI } from './ui/shopping-list-ui.js';
+import { initUserMenu, updateUserDisplay } from './ui/user-menu.js';
 
 /**
  * Initialize the application when DOM is ready.
  */
 window.addEventListener('DOMContentLoaded', async () => {
+  // Check authentication first
+  if (!isAuthenticated()) {
+    window.location.href = '/';
+    return;
+  }
+
   // Load the app template first
   const templateLoaded = await loadAppTemplate();
   if (!templateLoaded) {
@@ -77,6 +25,10 @@ window.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
-  // Initialize event handlers after template is loaded
-  initializeEventHandlers();
+  // Update user display
+  await updateUserDisplay();
+
+  // Initialize feature modules
+  initShoppingListUI();
+  initUserMenu();
 });

@@ -1,0 +1,30 @@
+<header>
+  <h1>Einkaufsliste - Anmeldung</h1>
+</header>
+
+<main>
+  <section class="auth-container">
+    <div id="loginForm" class="auth-form">
+      <h2>Anmelden</h2>
+      <input id="loginUsername" type="text" placeholder="Benutzername" required />
+      <input id="loginPassword" type="password" placeholder="Passwort" required />
+      <button id="loginBtn">Anmelden</button>
+      <p class="auth-switch">
+        Noch kein Konto? <a href="#" id="showRegister">Registrieren</a>
+      </p>
+      <p id="loginError" class="error-message"></p>
+    </div>
+
+    <div id="registerForm" class="auth-form" style="display: none;">
+      <h2>Registrieren</h2>
+      <input id="registerUsername" type="text" placeholder="Benutzername" required />
+      <input id="registerEmail" type="email" placeholder="E-Mail" required />
+      <input id="registerPassword" type="password" placeholder="Passwort" required />
+      <button id="registerBtn">Registrieren</button>
+      <p class="auth-switch">
+        Bereits registriert? <a href="#" id="showLogin">Anmelden</a>
+      </p>
+      <p id="registerError" class="error-message"></p>
+    </div>
+  </section>
+</main>

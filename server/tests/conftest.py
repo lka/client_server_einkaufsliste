@@ -13,6 +13,7 @@ def setup_test_database():
     """Set up test database with tables before running tests."""
     from server.src.db import reset_engine, get_engine, create_db_and_tables
     from server.src.models import Item  # noqa: F401 - ensure model is registered
+    from server.src.user_models import User  # noqa: F401 - ensure model is registered
 
     # Reset engine to pick up test DATABASE_URL
     reset_engine()
