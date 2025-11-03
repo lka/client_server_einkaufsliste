@@ -62,3 +62,325 @@ def test_crud_items():
     # no longer present
     r = client.get("/api/items", headers=headers)
     assert all(it["id"] != created["id"] for it in r.json())
+
+
+def test_item_with_menge():
+    """Test creating items with optional menge (quantity) field."""
+    # Get authentication token
+    token = get_auth_token()
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Create item without menge
+    r = client.post("/api/items", json={"name": "Äpfel"}, headers=headers)
+    assert r.status_code == 201
+    item_without_menge = r.json()
+    assert item_without_menge["name"] == "Äpfel"
+    assert item_without_menge.get("menge") is None
+
+    # Create item with menge
+    r = client.post(
+        "/api/items", json={"name": "Möhren", "menge": "500 g"}, headers=headers
+    )
+    assert r.status_code == 201
+    item_with_menge = r.json()
+    assert item_with_menge["name"] == "Möhren"
+    assert item_with_menge["menge"] == "500 g"
+
+    # Verify both items are in the list
+    r = client.get("/api/items", headers=headers)
+    assert r.status_code == 200
+    items = r.json()
+    assert any(
+        it["id"] == item_without_menge["id"] and it.get("menge") is None
+        for it in items
+    )
+    assert any(
+        it["id"] == item_with_menge["id"] and it["menge"] == "500 g" for it in items
+    )
+
+    # Cleanup
+    client.delete(f"/api/items/{item_without_menge['id']}", headers=headers)
+    client.delete(f"/api/items/{item_with_menge['id']}", headers=headers)
+
+
+def test_quantity_merging_same_unit():
+    """Test that adding an existing item with same unit sums the quantities."""
+    # Get authentication token
+    token = get_auth_token()
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Create item with quantity
+    r = client.post(
+        "/api/items", json={"name": "Kartoffeln", "menge": "500 g"}, headers=headers
+    )
+    assert r.status_code == 201
+    first_item = r.json()
+    assert first_item["menge"] == "500 g"
+    first_id = first_item["id"]
+
+    # Add same item with same unit - should merge
+    r = client.post(
+        "/api/items", json={"name": "Kartoffeln", "menge": "300 g"}, headers=headers
+    )
+    assert r.status_code == 201
+    merged_item = r.json()
+    assert merged_item["name"] == "Kartoffeln"
+    assert merged_item["menge"] == "800 g"
+    assert merged_item["id"] == first_id  # Same ID
+
+    # Verify only one item exists
+    r = client.get("/api/items", headers=headers)
+    items = r.json()
+    kartoffeln_items = [it for it in items if it["name"] == "Kartoffeln"]
+    assert len(kartoffeln_items) == 1
+    assert kartoffeln_items[0]["menge"] == "800 g"
+
+    # Cleanup
+    client.delete(f"/api/items/{first_id}", headers=headers)
+
+
+def test_quantity_merging_different_unit():
+    """Test that adding an existing item with different unit combines quantities."""
+    # Get authentication token
+    token = get_auth_token()
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Create item with quantity in grams
+    r = client.post(
+        "/api/items", json={"name": "Zucker", "menge": "500 g"}, headers=headers
+    )
+    assert r.status_code == 201
+    first_item = r.json()
+    first_id = first_item["id"]
+
+    # Add same item with different unit - should combine with comma
+    r = client.post(
+        "/api/items", json={"name": "Zucker", "menge": "2 Packungen"}, headers=headers
+    )
+    assert r.status_code == 201
+    updated_item = r.json()
+    assert updated_item["name"] == "Zucker"
+    assert updated_item["menge"] == "500 g, 2 Packungen"
+    assert updated_item["id"] == first_id
+
+    # Cleanup
+    client.delete(f"/api/items/{first_id}", headers=headers)
+
+
+def test_quantity_merging_no_unit():
+    """Test that adding items without units sums the numbers."""
+    # Get authentication token
+    token = get_auth_token()
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Create item with number only
+    r = client.post(
+        "/api/items", json={"name": "Eier", "menge": "6"}, headers=headers
+    )
+    assert r.status_code == 201
+    first_item = r.json()
+    first_id = first_item["id"]
+
+    # Add same item with number only - should sum
+    r = client.post(
+        "/api/items", json={"name": "Eier", "menge": "12"}, headers=headers
+    )
+    assert r.status_code == 201
+    merged_item = r.json()
+    assert merged_item["name"] == "Eier"
+    assert merged_item["menge"] == "18"
+    assert merged_item["id"] == first_id
+
+    # Cleanup
+    client.delete(f"/api/items/{first_id}", headers=headers)
+
+
+def test_quantity_merging_complex_list():
+    """Test merging quantities in a comma-separated list."""
+    # Get authentication token
+    token = get_auth_token()
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Create item with quantity in grams
+    r = client.post(
+        "/api/items", json={"name": "Mehl", "menge": "500 g"}, headers=headers
+    )
+    assert r.status_code == 201
+    first_item = r.json()
+    first_id = first_item["id"]
+
+    # Add different unit - should combine with comma
+    r = client.post(
+        "/api/items", json={"name": "Mehl", "menge": "2 Packungen"}, headers=headers
+    )
+    assert r.status_code == 201
+    updated_item = r.json()
+    assert updated_item["menge"] == "500 g, 2 Packungen"
+
+    # Add more grams - should find and sum the existing grams
+    r = client.post(
+        "/api/items", json={"name": "Mehl", "menge": "300 g"}, headers=headers
+    )
+    assert r.status_code == 201
+    updated_item = r.json()
+    assert updated_item["menge"] == "800 g, 2 Packungen"
+
+    # Add more Packungen - should find and sum the existing Packungen
+    r = client.post(
+        "/api/items", json={"name": "Mehl", "menge": "3 Packungen"}, headers=headers
+    )
+    assert r.status_code == 201
+    updated_item = r.json()
+    assert updated_item["menge"] == "800 g, 5 Packungen"
+
+    # Cleanup
+    client.delete(f"/api/items/{first_id}", headers=headers)
+
+
+def test_fuzzy_matching_similar_names():
+    """Test that similar product names are merged using fuzzy matching."""
+    # Get authentication token
+    token = get_auth_token()
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Create item with "Möhren"
+    r = client.post(
+        "/api/items", json={"name": "Möhren", "menge": "500 g"}, headers=headers
+    )
+    assert r.status_code == 201
+    first_item = r.json()
+    first_id = first_item["id"]
+    assert first_item["name"] == "Möhren"
+    assert first_item["menge"] == "500 g"
+
+    # Add "Möhre" (singular) - should match with "Möhren" via fuzzy matching
+    r = client.post(
+        "/api/items", json={"name": "Möhre", "menge": "300 g"}, headers=headers
+    )
+    assert r.status_code == 201
+    merged_item = r.json()
+    assert merged_item["id"] == first_id  # Same item
+    assert merged_item["name"] == "Möhren"  # Keeps original name
+    assert merged_item["menge"] == "800 g"  # Quantities merged
+
+    # Add "Moehre" (alternative spelling) - should also match
+    r = client.post(
+        "/api/items", json={"name": "Moehre", "menge": "200 g"}, headers=headers
+    )
+    assert r.status_code == 201
+    merged_item = r.json()
+    assert merged_item["id"] == first_id  # Same item
+    assert merged_item["name"] == "Möhren"  # Still keeps original name
+    assert merged_item["menge"] == "1000 g"  # 800 + 200
+
+    # Verify only one item exists
+    r = client.get("/api/items", headers=headers)
+    items = r.json()
+    moehren_items = [
+        it for it in items if it["name"].lower() in ["möhren", "möhre", "moehre"]
+    ]
+    assert len(moehren_items) == 1
+    assert moehren_items[0]["menge"] == "1000 g"
+
+    # Cleanup
+    client.delete(f"/api/items/{first_id}", headers=headers)
+
+
+def test_fuzzy_matching_kartoffel():
+    """Test fuzzy matching with Kartoffel/Kartoffeln."""
+    # Get authentication token
+    token = get_auth_token()
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Create item with "Kartoffeln"
+    r = client.post(
+        "/api/items", json={"name": "Kartoffeln", "menge": "1000 g"}, headers=headers
+    )
+    assert r.status_code == 201
+    first_item = r.json()
+    first_id = first_item["id"]
+
+    # Add "Kartoffel" (singular) - should match
+    r = client.post(
+        "/api/items", json={"name": "Kartoffel", "menge": "500 g"}, headers=headers
+    )
+    assert r.status_code == 201
+    merged_item = r.json()
+    assert merged_item["id"] == first_id
+    assert merged_item["name"] == "Kartoffeln"
+    assert merged_item["menge"] == "1500 g"
+
+    # Cleanup
+    client.delete(f"/api/items/{first_id}", headers=headers)
+
+
+def test_fuzzy_matching_no_false_positives():
+    """Test that dissimilar names don't match."""
+    # Get authentication token
+    token = get_auth_token()
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Create "Äpfel"
+    r = client.post(
+        "/api/items", json={"name": "Äpfel", "menge": "500 g"}, headers=headers
+    )
+    assert r.status_code == 201
+    apfel_item = r.json()
+    apfel_id = apfel_item["id"]
+
+    # Add "Birnen" - should NOT match (too different)
+    r = client.post(
+        "/api/items", json={"name": "Birnen", "menge": "300 g"}, headers=headers
+    )
+    assert r.status_code == 201
+    birnen_item = r.json()
+    birnen_id = birnen_item["id"]
+    assert birnen_id != apfel_id  # Different items
+
+    # Verify two separate items exist
+    r = client.get("/api/items", headers=headers)
+    items = r.json()
+    fruit_items = [it for it in items if it["name"] in ["Äpfel", "Birnen"]]
+    assert len(fruit_items) == 2
+
+    # Cleanup
+    client.delete(f"/api/items/{apfel_id}", headers=headers)
+    client.delete(f"/api/items/{birnen_id}", headers=headers)
+
+
+def test_comma_separated_input():
+    """Test that comma-separated input quantities are processed separately."""
+    # Get authentication token
+    token = get_auth_token()
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Create item with quantity in grams
+    r = client.post(
+        "/api/items", json={"name": "Reis", "menge": "500 g"}, headers=headers
+    )
+    assert r.status_code == 201
+    first_item = r.json()
+    first_id = first_item["id"]
+    assert first_item["menge"] == "500 g"
+
+    # Add comma-separated input: "2, 300 g"
+    # Should process "2" (no unit) and "300 g" separately
+    r = client.post(
+        "/api/items", json={"name": "Reis", "menge": "2, 300 g"}, headers=headers
+    )
+    assert r.status_code == 201
+    updated_item = r.json()
+    assert updated_item["name"] == "Reis"
+    # Should sum the grams (500 + 300 = 800) and append "2"
+    assert updated_item["menge"] == "800 g, 2"
+    assert updated_item["id"] == first_id
+
+    # Verify only one item exists
+    r = client.get("/api/items", headers=headers)
+    items = r.json()
+    reis_items = [it for it in items if it["name"] == "Reis"]
+    assert len(reis_items) == 1
+    assert reis_items[0]["menge"] == "800 g, 2"
+
+    # Cleanup
+    client.delete(f"/api/items/{first_id}", headers=headers)

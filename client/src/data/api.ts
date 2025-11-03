@@ -7,6 +7,7 @@ import { getToken, clearToken, refreshToken } from './auth.js';
 export interface Item {
   id: string;
   name: string;
+  menge?: string;
 }
 
 export const API_BASE = '/api/items';
@@ -85,7 +86,7 @@ export async function fetchItems(): Promise<Item[]> {
 /**
  * Add a new item to the shopping list.
  */
-export async function addItem(name: string): Promise<Item | null> {
+export async function addItem(name: string, menge?: string): Promise<Item | null> {
   // Refresh token before making the request
   const tokenRefreshed = await ensureFreshToken();
   if (!tokenRefreshed) {
@@ -96,7 +97,7 @@ export async function addItem(name: string): Promise<Item | null> {
     const res = await fetch(API_BASE, {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, menge }),
     });
     if (res.status === 401) {
       handleUnauthorized();

@@ -2,7 +2,28 @@
 
 Python FastAPI Server + TypeScript Client mit JWT-Authentifizierung und umfassender Testabdeckung.
 
-Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, persistenter Datenspeicherung und vollständig getesteter API.
+Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, persistenter Datenspeicherung, **Mengenangaben** und vollständig getesteter API.
+
+## Features
+
+- ✅ **JWT-Authentifizierung**: Sichere Benutzerauthentifizierung mit automatischem Token-Refresh
+- ✅ **Mengenangaben mit Smart-Merging & Fuzzy Matching**: Optionale Mengenangaben für jeden Artikel (z.B. "500 g", "2 Stück")
+  - **Kommagetrennte Eingaben**: Mehrere Mengen gleichzeitig eingeben (z.B. "2, 500 g")
+  - Automatisches Summieren von Mengen mit gleicher Einheit
+  - Intelligente Suche in kommagetrennte Listen
+  - **Fuzzy Matching**: Ähnliche Produktnamen werden automatisch zusammengeführt
+    - "Möhre" wird zu "Möhren" hinzugefügt (Singular/Plural)
+    - "Moehre" wird zu "Möhren" hinzugefügt (alternative Schreibweise)
+    - "Kartoffel" wird zu "Kartoffeln" hinzugefügt
+  - Beispiele:
+    - "Möhren 500 g" + "Möhren 300 g" = "Möhren 800 g"
+    - "Zucker 500 g, 2 Packungen" + "Zucker 300 g" = "Zucker 800 g, 2 Packungen"
+    - "Reis 500 g" + "2, 300 g" = "Reis 800 g, 2"
+- ✅ **Reaktive UI**: Automatische UI-Updates durch State-Management mit Observer Pattern
+- ✅ **Vollständige Tests**: 164 Tests (10 Server + 154 Client) mit 99%+ Code-Abdeckung
+- ✅ **TypeScript Client**: Typsicherer Client mit vier-Schichten-Architektur
+- ✅ **FastAPI Server**: Moderne Python API mit SQLModel ORM
+- ✅ **Account-Verwaltung**: Benutzer können sich registrieren, anmelden und Account löschen
 
 ## Project Structure
 
@@ -186,7 +207,19 @@ Die Anwendung verwendet **JWT (JSON Web Tokens)** für sichere Authentifizierung
 
 **Shopping List (alle authentifiziert):**
 - `GET /api/items` - Alle Artikel abrufen
-- `POST /api/items` - Neuen Artikel erstellen
+- `POST /api/items` - Neuen Artikel erstellen oder Menge aktualisieren
+  - Body: `{"name": "Artikelname", "menge": "500 g"}` (menge ist optional)
+  - Beispiele:
+    - `{"name": "Möhren", "menge": "500 g"}`
+    - `{"name": "Milch"}` (ohne Menge)
+    - `{"name": "Reis", "menge": "2, 500 g"}` (kommagetrennte Eingabe)
+  - **Smart-Merging mit Einheiten-Suche & Fuzzy Matching**: Wenn ein Artikel bereits existiert oder ähnlich ist:
+    - **Fuzzy Matching**: Ähnliche Namen werden erkannt ("Möhre" → "Möhren", "Moehre" → "Möhren")
+    - **Kommagetrennte Eingaben**: Mehrere Mengen werden separat verarbeitet ("2, 500 g" → ["2", "500 g"])
+    - Gleiche Einheit → Mengen werden summiert (z.B. "500 g" + "300 g" = "800 g")
+    - Verschiedene Einheiten → Als kommagetrennte Liste gespeichert (z.B. "500 g" + "2 Packungen" = "500 g, 2 Packungen")
+    - Einheit in Liste vorhanden → Nur diese Einheit wird summiert (z.B. "500 g, 2 Packungen" + "300 g" = "800 g, 2 Packungen")
+    - Keine Einheit → Zahlen werden summiert (z.B. "6" + "12" = "18")
 - `DELETE /api/items/{id}` - Artikel löschen
 
 ## Code-Qualität
@@ -229,9 +262,21 @@ pytest --cov=server --cov-report=html
 ```
 
 **Aktuelle Test-Abdeckung:**
-- ✅ 11 Tests insgesamt
+- ✅ 10 Tests insgesamt
 - ✅ Authentifizierung (Registrierung, Login, Token-Validierung, Token-Refresh, Account-Löschung)
 - ✅ Shopping-List CRUD-Operationen mit JWT
+- ✅ **Mengenangaben**: Items mit und ohne optionale Menge
+- ✅ **Smart-Merging mit Einheiten-Suche**:
+  - Summierung bei gleicher Einheit ("500 g" + "300 g" = "800 g")
+  - Kombination bei verschiedenen Einheiten ("500 g" + "2 Packungen" = "500 g, 2 Packungen")
+  - Intelligente Suche in kommagetrennte Listen ("500 g, 2 Packungen" + "300 g" = "800 g, 2 Packungen")
+  - Summierung ohne Einheit ("6" + "12" = "18")
+  - **Kommagetrennte Eingaben**: Verarbeitung mehrerer Mengen ("500 g" + "2, 300 g" = "800 g, 2")
+- ✅ **Fuzzy Matching**:
+  - Ähnliche Produktnamen werden erkannt ("Möhre" → "Möhren")
+  - Alternative Schreibweisen ("Moehre" → "Möhren")
+  - Singular/Plural ("Kartoffel" → "Kartoffeln")
+  - Keine False Positives bei unterschiedlichen Produkten
 - ✅ Geschützte Endpunkte (401/403 Tests)
 - ✅ User-Verwaltung (Account-Löschung, Token-Invalidierung)
 - ✅ Token-Refresh-Mechanismus
@@ -252,19 +297,24 @@ npm test -- --watch
 ```
 
 **Aktuelle Test-Abdeckung:**
-- ✅ 161 Tests insgesamt (8 Test-Suites)
-- ✅ 98.5%+ Code-Abdeckung
-- ✅ Data Layer: API Client (18), Authentication (36), DOM (14)
+- ✅ 154 Tests insgesamt (10 Test-Suites)
+- ✅ 99.36% Code-Abdeckung
+- ✅ Data Layer: API Client (19), Authentication (36), DOM (15) = 70 Tests
   - Inklusive 401 Handling & Token Refresh Failures
   - Inklusive Token-Refresh-Optimierung (Singleton, Cooldown, Concurrent Requests)
   - Inklusive Template-Caching (Memory Cache, Load Flag, Zero Network Cost)
   - Inklusive DOM-Batching (DocumentFragment, O(1) Reflows)
-- ✅ State Layer: Shopping List State (35), User State (24)
+  - **Neu**: Tests für Mengenangaben in API und DOM
+- ✅ State Layer: Shopping List State (36), User State (24) = 60 Tests
   - Inklusive Observer Pattern, Subscriptions, Reactivity
   - Inklusive Loading State Tracking
   - Inklusive Immutability Tests
-- ✅ UI Layer: Shopping List UI (14), User Menu (16)
-- ✅ Pages Layer: Login Controller (20)
+  - **Neu**: Tests für Mengenangaben im State
+  - **Neu**: Test für Fuzzy-Matching-Update (verhindert Duplikate)
+- ✅ UI Layer: Shopping List UI (16), User Menu (16) = 32 Tests
+  - **Neu**: Tests für Mengenfeld-Eingabe
+- ✅ Pages Layer: Login Controller (20) = 20 Tests
+- ✅ Entry Points: Login Entry (4), Main App Entry (7) = 11 Tests
 - ✅ Error Handling, Edge Cases, User Interactions
 
 ### Continuous Integration (CI)
@@ -274,11 +324,11 @@ Das Projekt nutzt GitHub Actions für automatisierte Tests bei jedem Push/Pull R
 **Server Tests (Python):**
 - Black Code-Formatierung prüfen
 - Flake8 Linting
-- Pytest Tests (11 Tests)
+- Pytest Tests (15 Tests)
 
 **Client Tests (TypeScript):**
 - TypeScript Build
-- Jest Tests (161 Tests, 98.5%+ Coverage)
+- Jest Tests (154 Tests, 99.36% Coverage)
 
 Beide Jobs laufen parallel für maximale Geschwindigkeit. Die CI-Konfiguration befindet sich in `.github/workflows/ci.yml`.
 
@@ -361,7 +411,7 @@ Entry Points → Pages/UI Layer → State Layer → Data Layer
 - **Single Source of Truth**: Alle Komponenten teilen denselben State
 - Einfache Navigation durch physische Ordnerstruktur
 - Bessere Wartbarkeit und Erweiterbarkeit
-- Isolierte Testbarkeit einzelner Schichten (161 Tests total)
+- Isolierte Testbarkeit einzelner Schichten (164 Tests total)
 - Wiederverwendbarkeit von Modulen
 - Vermeidung von zirkulären Abhängigkeiten
 

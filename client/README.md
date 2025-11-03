@@ -1,10 +1,18 @@
 # Einkaufsliste Client (TypeScript)
 
-Shopping list client application written in TypeScript.
+Shopping list client application written in TypeScript with **quantity support**.
 
 ## Overview
 
 This client application has been migrated from vanilla JavaScript to TypeScript, providing enhanced type safety, better IDE support, and improved maintainability.
+
+### Features
+
+- ✅ **Mengenangaben**: Optional quantity field for each item (e.g., "500 g", "2 Stück")
+- ✅ **Reactive State Management**: Observer pattern with automatic UI updates
+- ✅ **Four-Layer Architecture**: Entry Points → UI → State → Data
+- ✅ **Type Safety**: Full TypeScript with strict mode
+- ✅ **154 Tests**: Comprehensive test coverage (99.36%)
 
 ## Setup
 
@@ -59,28 +67,33 @@ npm run test:coverage
 The client includes comprehensive unit tests across all layers:
 
 **Data Layer Tests**:
-- **api.test.ts** (18 tests): API client functions with token refresh, 401 handling, and edge cases
+- **api.test.ts** (19 tests): API client functions with token refresh, 401 handling, edge cases, and **quantity support**
 - **auth.test.ts** (36 tests): Authentication, token management, user operations, and token refresh optimization
-- **dom.test.ts** (14 tests): DOM manipulation, rendering, template caching, and DOM batching
+- **dom.test.ts** (15 tests): DOM manipulation, rendering, template caching, DOM batching, and **quantity display**
 
 **State Layer Tests**:
-- **shopping-list-state.test.ts** (35 tests): Shopping list state management, subscriptions, and reactivity
+- **shopping-list-state.test.ts** (36 tests): Shopping list state management, subscriptions, reactivity, and **quantity handling**
 - **user-state.test.ts** (24 tests): User state management, loading, and deletion
 
 **UI Layer Tests**:
-- **shopping-list-ui.test.ts** (14 tests): Shopping list UI interactions
+- **shopping-list-ui.test.ts** (16 tests): Shopping list UI interactions and **quantity input**
 - **user-menu.test.ts** (16 tests): User menu functionality
 
 **Pages Layer Tests**:
 - **login.test.ts** (20 tests): Login/registration page controller
 
-**Total**: **161 tests**, all passing ✅
+**Entry Points Tests**:
+- **index-login.test.ts** (4 tests): Login page entry point initialization
+- **script.test.ts** (7 tests): Main app entry point initialization, authentication flow, error handling
 
-**Coverage**: **98.5%+ overall code coverage**
+**Total**: **154 tests**, all passing ✅
+
+**Coverage**: **99.36% overall code coverage**
 - Data Layer: auth.ts (100%), dom.ts (98%), api.ts (100%)
 - State Layer: shopping-list-state.ts (100%), user-state.ts (100%)
-- UI Layer: user-menu.ts (100%), shopping-list-ui.ts (97%)
+- UI Layer: user-menu.ts (100%), shopping-list-ui.ts (95%)
 - Pages Layer: login.ts (100%)
+- Entry Points: index-login.ts (100%), script.ts (100%)
 
 ## Project Structure
 
@@ -190,7 +203,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed architecture documentation a
 ## TypeScript Features
 
 ### Type Safety
-- **Item Interface**: Strongly typed data structure with `id: string` and `name: string`
+- **Item Interface**: Strongly typed data structure with `id: string`, `name: string`, and optional `menge?: string`
 - **Type Annotations**: All functions have explicit parameter and return types
 - **DOM Type Safety**: Type assertions for HTML elements (`HTMLInputElement`, `HTMLButtonElement`)
 - **Strict Mode**: All TypeScript strict compiler options enabled
@@ -278,7 +291,7 @@ The application consists of two main pages:
 - **Single Source of Truth**: All components share the same state
 - **Type Safety**: TypeScript ensures compile-time correctness
 - **Maintainability**: Easy to find and modify features
-- **Testability**: Each layer tested independently (161 tests total)
+- **Testability**: Each layer tested independently (154 tests total, 99.36% coverage)
 - **Scalability**: Easy to add new features or UI modules
 - **Security**: Token-based authentication with automatic refresh
 - **Performance**: Event delegation and optimized token refresh reduce overhead

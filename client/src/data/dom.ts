@@ -50,6 +50,9 @@ export function createItemElement(item: Item): HTMLLIElement {
 
   const span = document.createElement('span');
   span.textContent = item.name;
+  if (item.menge) {
+    span.textContent += ` (${item.menge})`;
+  }
 
   const btn = document.createElement('button');
   btn.className = 'removeBtn';

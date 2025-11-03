@@ -150,7 +150,35 @@ describe('API Client', () => {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer refreshed-token-456',
         },
-        body: JSON.stringify({ name: 'Eggs' }),
+        body: JSON.stringify({ name: 'Eggs', menge: undefined }),
+      });
+      expect(result).toEqual(newItem);
+    });
+
+    it('should add item with menge successfully', async () => {
+      const newItem: Item = { id: '123', name: 'Möhren', menge: '500 g' };
+
+      // Mock token refresh response
+      (global.fetch as jest.MockedFunction<typeof fetch>)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ access_token: 'refreshed-token-456', token_type: 'bearer' }),
+        } as Response)
+        // Mock addItem response
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => newItem,
+        } as Response);
+
+      const result = await addItem('Möhren', '500 g');
+
+      expect(global.fetch).toHaveBeenCalledWith(API_BASE, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer refreshed-token-456',
+        },
+        body: JSON.stringify({ name: 'Möhren', menge: '500 g' }),
       });
       expect(result).toEqual(newItem);
     });

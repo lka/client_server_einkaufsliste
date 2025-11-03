@@ -49,6 +49,31 @@ describe('DOM Utilities', () => {
       expect(firstItem?.querySelector('button')?.textContent).toBe('Entfernen');
     });
 
+    it('should render items with menge', () => {
+      const items: Item[] = [
+        { id: '1', name: 'Möhren', menge: '500 g' },
+        { id: '2', name: 'Äpfel' },
+        { id: '3', name: 'Milch', menge: '2 Liter' },
+      ];
+
+      renderItems(items);
+
+      const ul = document.getElementById('items');
+      expect(ul?.children.length).toBe(3);
+
+      // Check first item with menge
+      const firstItem = ul?.children[0];
+      expect(firstItem?.querySelector('span')?.textContent).toBe('Möhren (500 g)');
+
+      // Check second item without menge
+      const secondItem = ul?.children[1];
+      expect(secondItem?.querySelector('span')?.textContent).toBe('Äpfel');
+
+      // Check third item with menge
+      const thirdItem = ul?.children[2];
+      expect(thirdItem?.querySelector('span')?.textContent).toBe('Milch (2 Liter)');
+    });
+
     it('should clear previous items before rendering', () => {
       const items1: Item[] = [{ id: '1', name: 'Milk' }];
       const items2: Item[] = [{ id: '2', name: 'Bread' }];

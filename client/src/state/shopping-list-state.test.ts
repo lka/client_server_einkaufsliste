@@ -157,6 +157,45 @@ describe('Shopping List State', () => {
       expect(listener).toHaveBeenCalledWith([newItem]);
     });
 
+    it('should add item with menge via API and update state', async () => {
+      const newItem: Item = { id: '1', name: 'Möhren', menge: '500 g' };
+      (api.addItem as jest.MockedFunction<typeof api.addItem>).mockResolvedValue(newItem);
+
+      const listener = jest.fn();
+      shoppingListState.subscribe(listener);
+
+      const result = await shoppingListState.addItem('Möhren', '500 g');
+
+      expect(api.addItem).toHaveBeenCalledWith('Möhren', '500 g');
+      expect(result).toEqual(newItem);
+      expect(shoppingListState.getItems()).toContain(newItem);
+      expect(listener).toHaveBeenCalledWith([newItem]);
+    });
+
+    it('should update existing item if server returns same ID (fuzzy matching)', async () => {
+      // First, add an item "Möhren"
+      const existingItem: Item = { id: '1', name: 'Möhren', menge: '500 g' };
+      (api.addItem as jest.MockedFunction<typeof api.addItem>).mockResolvedValue(existingItem);
+      await shoppingListState.addItem('Möhren', '500 g');
+
+      // Now add "Möhre" (singular) - server returns the same item with updated quantity
+      const updatedItem: Item = { id: '1', name: 'Möhren', menge: '800 g' };
+      (api.addItem as jest.MockedFunction<typeof api.addItem>).mockResolvedValue(updatedItem);
+
+      const listener = jest.fn();
+      shoppingListState.subscribe(listener);
+
+      const result = await shoppingListState.addItem('Möhre', '300 g');
+
+      expect(result).toEqual(updatedItem);
+      // Should have only ONE item (the updated one)
+      const items = shoppingListState.getItems();
+      expect(items).toHaveLength(1);
+      expect(items[0]).toEqual(updatedItem);
+      expect(items[0].menge).toBe('800 g');
+      expect(listener).toHaveBeenCalledWith([updatedItem]);
+    });
+
     it('should reject empty item name', async () => {
       const result = await shoppingListState.addItem('   ');
 

@@ -246,9 +246,176 @@ def read_items(current_user: str = Depends(get_current_user)):
         return items
 
 
+def parse_quantity(menge: str | None) -> tuple[float | None, str | None]:
+    """Parse quantity string into number and unit.
+
+    Args:
+        menge: Quantity string like "500 g" or "2 Stück"
+
+    Returns:
+        Tuple of (number, unit) or (None, None) if parsing fails
+    """
+    if not menge:
+        return None, None
+
+    import re
+    # Match number (int or float) followed by optional unit
+    match = re.match(r'^(\d+(?:[.,]\d+)?)\s*(.*)$', menge.strip())
+    if match:
+        number_str = match.group(1).replace(',', '.')
+        unit = match.group(2).strip() if match.group(2) else None
+        try:
+            number = float(number_str)
+            return number, unit
+        except ValueError:
+            return None, None
+    return None, None
+
+
+def find_similar_item(session, item_name: str, threshold: float = 0.8) -> Item | None:
+    """Find an item with a similar name using fuzzy matching.
+
+    Args:
+        session: Database session
+        item_name: Name to search for
+        threshold: Similarity threshold (0.0 to 1.0, default 0.8)
+
+    Returns:
+        Item with most similar name above threshold, or None
+
+    Examples:
+        - "Möhre" matches "Möhren"
+        - "Moehre" matches "Möhren"
+        - "Kartoffel" matches "Kartoffeln"
+    """
+    from difflib import SequenceMatcher
+
+    # Get all items
+    all_items = session.exec(select(Item)).all()
+
+    if not all_items:
+        return None
+
+    # Normalize input for comparison (lowercase, normalize umlauts)
+    def normalize(name: str) -> str:
+        """Normalize name for comparison by converting to lowercase and normalizing umlauts."""
+        s = name.lower().strip()
+        # Normalize German umlauts
+        s = s.replace('ä', 'ae').replace('ö', 'oe').replace('ü', 'ue')
+        s = s.replace('ß', 'ss')
+        return s
+
+    normalized_input = normalize(item_name)
+    best_match = None
+    best_ratio = 0.0
+
+    for existing_item in all_items:
+        normalized_existing = normalize(existing_item.name)
+
+        # Calculate similarity ratio
+        ratio = SequenceMatcher(None, normalized_input, normalized_existing).ratio()
+
+        if ratio > best_ratio and ratio >= threshold:
+            best_ratio = ratio
+            best_match = existing_item
+
+    return best_match
+
+
+def merge_quantities(existing_menge: str | None, new_menge: str | None) -> str | None:
+    """Merge two quantities, searching for matching units in comma-separated list.
+
+    Args:
+        existing_menge: Existing quantity string (may be comma-separated like "500 g, 2 Packungen")
+        new_menge: New quantity to add (may also be comma-separated like "2, 500 g")
+
+    Returns:
+        Merged quantity string. If unit exists in list, sums it. Otherwise appends to list.
+
+    Examples:
+        - merge_quantities("500 g", "300 g") -> "800 g"
+        - merge_quantities("500 g", "2 Packungen") -> "500 g, 2 Packungen"
+        - merge_quantities("500 g, 2 Packungen", "300 g") -> "800 g, 2 Packungen"
+        - merge_quantities("500 g, 2 Packungen", "3 Packungen") -> "500 g, 5 Packungen"
+        - merge_quantities("500 g", "2, 300 g") -> "800 g, 2"
+    """
+    if not existing_menge:
+        return new_menge
+    if not new_menge:
+        return existing_menge
+
+    # Split new_menge by comma and process each part separately
+    new_parts = [part.strip() for part in new_menge.split(',')]
+
+    # Start with existing quantities
+    result_menge = existing_menge
+
+    # Merge each new part one at a time
+    for new_part in new_parts:
+        if not new_part:
+            continue
+
+        # Parse this part of the new quantity
+        new_num, new_unit = parse_quantity(new_part)
+
+        if new_num is None:
+            # Can't parse - just append it
+            result_menge = f"{result_menge}, {new_part}"
+            continue
+
+        # Split current result quantities by comma
+        existing_parts = [part.strip() for part in result_menge.split(',')]
+
+        # Try to find matching unit in existing parts
+        found_match = False
+        merged_parts = []
+
+        for part in existing_parts:
+            part_num, part_unit = parse_quantity(part)
+
+            if part_num is not None and part_unit == new_unit and not found_match:
+                # Found matching unit - sum them
+                total = part_num + new_num
+                # Format nicely: use int if whole number, otherwise float
+                if total == int(total):
+                    total_str = str(int(total))
+                else:
+                    total_str = str(total).replace('.', ',')
+
+                if part_unit:
+                    merged_parts.append(f"{total_str} {part_unit}")
+                else:
+                    merged_parts.append(total_str)
+                found_match = True
+            else:
+                # Keep existing part as-is
+                merged_parts.append(part)
+
+        # If no match found, append this new part
+        if not found_match:
+            merged_parts.append(new_part)
+
+        result_menge = ', '.join(merged_parts)
+
+    return result_menge
+
+
 @app.post("/api/items", status_code=201, response_model=Item)
 def create_item(item: Item, current_user: str = Depends(get_current_user)):
-    """Create a new item in the database (requires authentication).
+    """Create a new item or update quantity if item already exists.
+
+    Uses fuzzy matching to find similar item names (e.g., "Möhre" matches "Möhren").
+
+    If an item with the same or similar name already exists:
+    - If the new unit matches an existing unit in the list, they are summed
+    - If the new unit is different, it is appended to the comma-separated list
+
+    Examples:
+    - "Möhren 500 g" + "300 g" = "Möhren 800 g"
+    - "Möhre 300 g" → merges with existing "Möhren" (fuzzy match)
+    - "Zucker 500 g" + "2 Packungen" = "Zucker 500 g, 2 Packungen"
+    - "Zucker 500 g, 2 Packungen" + "300 g" = "Zucker 800 g, 2 Packungen"
+    - "Zucker 500 g, 2 Packungen" + "3 Packungen" = "Zucker 500 g, 5 Packungen"
 
     Args:
         item (Item): Item payload to create. The id will be autogenerated
@@ -256,18 +423,35 @@ def create_item(item: Item, current_user: str = Depends(get_current_user)):
         current_user: Current authenticated username from JWT
 
     Returns:
-        Item: The created item with assigned id.
+        Item: The created or updated item with assigned id.
     """
     import uuid
 
-    # Generate UUID if not provided
-    if not item.id:
-        item.id = str(uuid.uuid4())
     with get_session() as session:
-        session.add(item)
-        session.commit()
-        session.refresh(item)
-        return item
+        # First, check for exact match
+        existing_item = session.exec(
+            select(Item).where(Item.name == item.name)
+        ).first()
+
+        # If no exact match, try fuzzy matching
+        if not existing_item:
+            existing_item = find_similar_item(session, item.name, threshold=0.8)
+
+        if existing_item:
+            # Merge quantities into existing item
+            existing_item.menge = merge_quantities(existing_item.menge, item.menge)
+            session.add(existing_item)
+            session.commit()
+            session.refresh(existing_item)
+            return existing_item
+        else:
+            # Create new item
+            if not item.id:
+                item.id = str(uuid.uuid4())
+            session.add(item)
+            session.commit()
+            session.refresh(item)
+            return item
 
 
 @app.delete("/api/items/{item_id}", status_code=204)

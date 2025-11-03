@@ -12,6 +12,7 @@ jest.mock('../state/shopping-list-state.js');
 
 describe('Shopping List UI', () => {
   let mockInput: HTMLInputElement;
+  let mockMengeInput: HTMLInputElement;
   let mockButton: HTMLButtonElement;
   let mockItemsList: HTMLUListElement;
 
@@ -22,12 +23,14 @@ describe('Shopping List UI', () => {
     document.body.innerHTML = `
       <div>
         <input id="itemInput" type="text" />
+        <input id="mengeInput" type="text" />
         <button id="addBtn">Add</button>
         <ul id="items"></ul>
       </div>
     `;
 
     mockInput = document.getElementById('itemInput') as HTMLInputElement;
+    mockMengeInput = document.getElementById('mengeInput') as HTMLInputElement;
     mockButton = document.getElementById('addBtn') as HTMLButtonElement;
     mockItemsList = document.getElementById('items') as HTMLUListElement;
 
@@ -71,8 +74,9 @@ describe('Shopping List UI', () => {
 
       await new Promise(resolve => setTimeout(resolve, 0));
 
-      expect(shoppingListState.addItem).toHaveBeenCalledWith('New Item');
+      expect(shoppingListState.addItem).toHaveBeenCalledWith('New Item', undefined);
       expect(mockInput.value).toBe('');
+      expect(mockMengeInput.value).toBe('');
     });
 
     it('should ignore add button click with empty input', async () => {
@@ -89,6 +93,25 @@ describe('Shopping List UI', () => {
       expect(shoppingListState.addItem).not.toHaveBeenCalled();
     });
 
+    it('should handle add button click with valid input and menge', async () => {
+      const mockItem = { id: '123', name: 'Möhren', menge: '500 g' };
+      (shoppingListState.subscribe as jest.Mock).mockReturnValue(() => {});
+      (shoppingListState.addItem as jest.MockedFunction<typeof shoppingListState.addItem>).mockResolvedValue(mockItem);
+      (shoppingListState.loadItems as jest.MockedFunction<typeof shoppingListState.loadItems>).mockResolvedValue(true);
+
+      initShoppingListUI();
+
+      mockInput.value = 'Möhren';
+      mockMengeInput.value = '500 g';
+      mockButton.click();
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(shoppingListState.addItem).toHaveBeenCalledWith('Möhren', '500 g');
+      expect(mockInput.value).toBe('');
+      expect(mockMengeInput.value).toBe('');
+    });
+
     it('should handle add button click when addItem returns null', async () => {
       (shoppingListState.subscribe as jest.Mock).mockReturnValue(() => {});
       (shoppingListState.addItem as jest.MockedFunction<typeof shoppingListState.addItem>).mockResolvedValue(null);
@@ -101,11 +124,11 @@ describe('Shopping List UI', () => {
 
       await new Promise(resolve => setTimeout(resolve, 0));
 
-      expect(shoppingListState.addItem).toHaveBeenCalledWith('Failed Item');
+      expect(shoppingListState.addItem).toHaveBeenCalledWith('Failed Item', undefined);
       expect(mockInput.value).toBe('Failed Item'); // Not cleared on failure
     });
 
-    it('should handle Enter key press', async () => {
+    it('should handle Enter key press on itemInput', async () => {
       const mockItem = { id: '123', name: 'New Item' };
       (shoppingListState.subscribe as jest.Mock).mockReturnValue(() => {});
       (shoppingListState.addItem as jest.MockedFunction<typeof shoppingListState.addItem>).mockResolvedValue(mockItem);
@@ -119,7 +142,25 @@ describe('Shopping List UI', () => {
 
       await new Promise(resolve => setTimeout(resolve, 0));
 
-      expect(shoppingListState.addItem).toHaveBeenCalledWith('New Item');
+      expect(shoppingListState.addItem).toHaveBeenCalledWith('New Item', undefined);
+    });
+
+    it('should handle Enter key press on mengeInput', async () => {
+      const mockItem = { id: '123', name: 'Möhren', menge: '500 g' };
+      (shoppingListState.subscribe as jest.Mock).mockReturnValue(() => {});
+      (shoppingListState.addItem as jest.MockedFunction<typeof shoppingListState.addItem>).mockResolvedValue(mockItem);
+      (shoppingListState.loadItems as jest.MockedFunction<typeof shoppingListState.loadItems>).mockResolvedValue(true);
+
+      initShoppingListUI();
+
+      mockInput.value = 'Möhren';
+      mockMengeInput.value = '500 g';
+      const event = new KeyboardEvent('keyup', { key: 'Enter' });
+      mockMengeInput.dispatchEvent(event);
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(shoppingListState.addItem).toHaveBeenCalledWith('Möhren', '500 g');
     });
 
     it('should handle delete button click via event delegation', async () => {

@@ -19,10 +19,11 @@ export async function loadItems(): Promise<void> {
  */
 export function initShoppingListUI(): void {
   const input = document.getElementById('itemInput') as HTMLInputElement;
+  const mengeInput = document.getElementById('mengeInput') as HTMLInputElement;
   const addBtn = document.getElementById('addBtn') as HTMLButtonElement;
   const itemsList = document.getElementById('items');
 
-  if (!input || !addBtn) {
+  if (!input || !mengeInput || !addBtn) {
     console.error('Required shopping list elements not found');
     return;
   }
@@ -39,15 +40,23 @@ export function initShoppingListUI(): void {
       return;
     }
 
-    const item = await shoppingListState.addItem(val);
+    const menge = mengeInput.value.trim() || undefined;
+    const item = await shoppingListState.addItem(val, menge);
     if (item) {
       input.value = '';
+      mengeInput.value = '';
       // UI updates automatically via state subscription
     }
   });
 
-  // Enter key handler
+  // Enter key handler for both inputs
   input.addEventListener('keyup', (e: KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      addBtn.click();
+    }
+  });
+
+  mengeInput.addEventListener('keyup', (e: KeyboardEvent) => {
     if (e.key === 'Enter') {
       addBtn.click();
     }
