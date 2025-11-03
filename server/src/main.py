@@ -299,7 +299,8 @@ def find_similar_item(session, item_name: str, threshold: float = 0.8) -> Item |
 
     # Normalize input for comparison (lowercase, normalize umlauts)
     def normalize(name: str) -> str:
-        """Normalize name for comparison by converting to lowercase and normalizing umlauts."""
+        """Normalize name for comparison by converting to lowercase
+        and normalizing umlauts."""
         s = name.lower().strip()
         # Normalize German umlauts
         s = s.replace("ä", "ae").replace("ö", "oe").replace("ü", "ue")
@@ -327,11 +328,13 @@ def merge_quantities(existing_menge: str | None, new_menge: str | None) -> str |
     """Merge two quantities, searching for matching units in comma-separated list.
 
     Args:
-        existing_menge: Existing quantity string (may be comma-separated like "500 g, 2 Packungen")
+        existing_menge: Existing quantity string (may be comma-separated
+        like "500 g, 2 Packungen")
         new_menge: New quantity to add (may also be comma-separated like "2, 500 g")
 
     Returns:
-        Merged quantity string. If unit exists in list, sums it. Otherwise appends to list.
+        Merged quantity string. If unit exists in list, sums it.
+        Otherwise appends to list.
 
     Examples:
         - merge_quantities("500 g", "300 g") -> "800 g"
