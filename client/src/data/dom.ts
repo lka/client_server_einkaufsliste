@@ -27,17 +27,62 @@ export function renderItems(list: Item[]): void {
     return;
   }
 
+  // Group items by department
+  const departmentGroups = new Map<string, Item[]>();
+  const ungroupedItems: Item[] = [];
+
+  for (const item of list) {
+    if (item.department_name) {
+      const existing = departmentGroups.get(item.department_name) || [];
+      existing.push(item);
+      departmentGroups.set(item.department_name, existing);
+    } else {
+      ungroupedItems.push(item);
+    }
+  }
+
   // Use DocumentFragment to batch DOM operations
   // This causes only ONE reflow instead of one per item
   const fragment = document.createDocumentFragment();
 
-  for (const item of list) {
-    const li = createItemElement(item);
-    fragment.appendChild(li);
+  // Render each department group
+  for (const [deptName, items] of departmentGroups.entries()) {
+    const deptSection = createDepartmentSection(deptName, items);
+    fragment.appendChild(deptSection);
+  }
+
+  // Render ungrouped items if any
+  if (ungroupedItems.length > 0) {
+    const ungroupedSection = createDepartmentSection('Sonstiges', ungroupedItems);
+    fragment.appendChild(ungroupedSection);
   }
 
   // Single DOM operation - triggers only one reflow
   ul.appendChild(fragment);
+}
+
+/**
+ * Create a department section with header and items.
+ */
+function createDepartmentSection(departmentName: string, items: Item[]): HTMLElement {
+  const section = document.createElement('li');
+  section.className = 'department-section';
+
+  const header = document.createElement('h3');
+  header.className = 'department-header';
+  header.textContent = departmentName;
+  section.appendChild(header);
+
+  const itemsList = document.createElement('ul');
+  itemsList.className = 'department-items';
+
+  for (const item of items) {
+    const li = createItemElement(item);
+    itemsList.appendChild(li);
+  }
+
+  section.appendChild(itemsList);
+  return section;
 }
 
 /**

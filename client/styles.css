@@ -145,6 +145,56 @@ main{
 .list .muted{color:var(--muted);font-size:.9rem}
 .removeBtn{background:transparent;border:none;color:#c33;font-weight:600}
 
+/* Department Grouping - Horizontal Layout */
+#items{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(250px, 1fr));
+  gap:1rem;
+  align-items:start;
+}
+.department-section{
+  background:transparent;
+  padding:0;
+  border-radius:0;
+  box-shadow:none;
+  display:flex;
+  flex-direction:column;
+}
+.department-header{
+  margin:0 0 .75rem 0;
+  font-size:1rem;
+  font-weight:600;
+  color:white;
+  background:var(--accent);
+  padding:.6rem .8rem;
+  border-radius:6px 6px 0 0;
+  text-align:left!important;
+}
+.department-items{
+  list-style:none;
+  padding:0;
+  margin:0;
+  display:flex;
+  flex-direction:column;
+  gap:.5rem;
+}
+.department-items li{
+  background:var(--card);
+  padding:.8rem;
+  border-radius:8px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  box-shadow:0 1px 2px rgba(0,0,0,.04);
+}
+
+/* Responsive: Stack columns on mobile */
+@media (max-width: 768px) {
+  #items {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Store Admin Styles */
 .stores-admin-container{
   max-width:900px;

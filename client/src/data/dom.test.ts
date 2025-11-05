@@ -42,9 +42,18 @@ describe('DOM Utilities', () => {
       renderItems(items);
 
       const ul = document.getElementById('items');
-      expect(ul?.children.length).toBe(3);
+      // Items without department_name go into "Sonstiges" section
+      expect(ul?.children.length).toBe(1);
+      expect(ul?.children[0].className).toBe('department-section');
 
-      const firstItem = ul?.children[0];
+      const section = ul?.children[0];
+      const header = section?.querySelector('.department-header');
+      expect(header?.textContent).toBe('Sonstiges');
+
+      const itemsList = section?.querySelector('.department-items');
+      expect(itemsList?.children.length).toBe(3);
+
+      const firstItem = itemsList?.children[0];
       expect(firstItem?.querySelector('span')?.textContent).toBe('Milk');
       expect(firstItem?.querySelector('button')?.textContent).toBe('Entfernen');
     });
@@ -59,18 +68,23 @@ describe('DOM Utilities', () => {
       renderItems(items);
 
       const ul = document.getElementById('items');
-      expect(ul?.children.length).toBe(3);
+      // Items without department_name go into "Sonstiges" section
+      expect(ul?.children.length).toBe(1);
+
+      const section = ul?.children[0];
+      const itemsList = section?.querySelector('.department-items');
+      expect(itemsList?.children.length).toBe(3);
 
       // Check first item with menge
-      const firstItem = ul?.children[0];
+      const firstItem = itemsList?.children[0];
       expect(firstItem?.querySelector('span')?.textContent).toBe('Möhren (500 g)');
 
       // Check second item without menge
-      const secondItem = ul?.children[1];
+      const secondItem = itemsList?.children[1];
       expect(secondItem?.querySelector('span')?.textContent).toBe('Äpfel');
 
       // Check third item with menge
-      const thirdItem = ul?.children[2];
+      const thirdItem = itemsList?.children[2];
       expect(thirdItem?.querySelector('span')?.textContent).toBe('Milch (2 Liter)');
     });
 
@@ -113,10 +127,75 @@ describe('DOM Utilities', () => {
       // Plus the innerHTML clear doesn't count as appendChild
       expect(appendChildSpy).toHaveBeenCalledTimes(1);
 
-      // Verify all items are rendered
-      expect(ul?.children.length).toBe(3);
+      // Verify all items are rendered (in one department section)
+      expect(ul?.children.length).toBe(1);
+      const section = ul?.children[0];
+      const itemsList = section?.querySelector('.department-items');
+      expect(itemsList?.children.length).toBe(3);
 
       appendChildSpy.mockRestore();
+    });
+
+    it('should group items by department', () => {
+      const items: Item[] = [
+        { id: '1', name: 'Möhren', department_name: 'Obst & Gemüse' },
+        { id: '2', name: 'Milch', department_name: 'Milchprodukte' },
+        { id: '3', name: 'Äpfel', department_name: 'Obst & Gemüse' },
+      ];
+
+      renderItems(items);
+
+      const ul = document.getElementById('items');
+      // Should have 2 department sections
+      expect(ul?.children.length).toBe(2);
+
+      // Check first department section
+      const sections = ul?.querySelectorAll('.department-section');
+      expect(sections?.length).toBe(2);
+
+      // Verify department headers exist
+      const headers = ul?.querySelectorAll('.department-header');
+      expect(headers?.length).toBe(2);
+    });
+
+    it('should render ungrouped items in Sonstiges section', () => {
+      const items: Item[] = [
+        { id: '1', name: 'Möhren', department_name: 'Obst & Gemüse' },
+        { id: '2', name: 'Random Item' },
+        { id: '3', name: 'Another Random' },
+      ];
+
+      renderItems(items);
+
+      const ul = document.getElementById('items');
+      // Should have 2 sections: department + Sonstiges
+      expect(ul?.children.length).toBe(2);
+
+      const sections = Array.from(ul?.children || []);
+      const headers = sections.map(s => s.querySelector('.department-header')?.textContent);
+
+      expect(headers).toContain('Sonstiges');
+      expect(headers).toContain('Obst & Gemüse');
+    });
+
+    it('should render items only in department sections when all have departments', () => {
+      const items: Item[] = [
+        { id: '1', name: 'Möhren', department_name: 'Obst & Gemüse' },
+        { id: '2', name: 'Milch', department_name: 'Milchprodukte' },
+      ];
+
+      renderItems(items);
+
+      const ul = document.getElementById('items');
+      // Should have 2 sections, no Sonstiges
+      expect(ul?.children.length).toBe(2);
+
+      const headers = Array.from(ul?.querySelectorAll('.department-header') || []);
+      const headerTexts = headers.map(h => h.textContent);
+
+      expect(headerTexts).not.toContain('Sonstiges');
+      expect(headerTexts).toContain('Obst & Gemüse');
+      expect(headerTexts).toContain('Milchprodukte');
     });
   });
 

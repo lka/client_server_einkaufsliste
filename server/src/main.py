@@ -51,6 +51,19 @@ class ProductUpdate(BaseModel):
     fresh: bool | None = None
 
 
+class ItemWithDepartment(BaseModel):
+    """Item response model with department information."""
+
+    id: str
+    user_id: int | None
+    store_id: int | None
+    product_id: int | None
+    name: str
+    menge: str | None
+    department_id: int | None = None
+    department_name: str | None = None
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifespan context manager for the FastAPI application.
@@ -358,6 +371,68 @@ def get_store_products(store_id: int, current_user: str = Depends(get_current_us
         return products
 
 
+@app.get("/api/stores/{store_id}/products/search")
+def search_products_fuzzy(
+    store_id: int, q: str, current_user: str = Depends(get_current_user)
+):
+    """Fuzzy search for products in a specific store (requires authentication).
+
+    Args:
+        store_id: Store ID
+        q: Search query string
+        current_user: Current authenticated username from JWT
+
+    Returns:
+        Product or None: Best matching product above threshold (0.6)
+
+    Raises:
+        HTTPException: If store not found
+    """
+    from difflib import SequenceMatcher
+
+    def normalize(name: str) -> str:
+        """Normalize name for comparison."""
+        return (
+            name.lower()
+            .replace("ä", "ae")
+            .replace("ö", "oe")
+            .replace("ü", "ue")
+            .replace("ß", "ss")
+        )
+
+    with get_session() as session:
+        store = session.get(Store, store_id)
+        if not store:
+            raise HTTPException(status_code=404, detail="Store not found")
+
+        # Get all products for this store
+        products = session.exec(
+            select(Product).where(Product.store_id == store_id)
+        ).all()
+
+        if not products:
+            return None
+
+        # Fuzzy match against all products
+        normalized_query = normalize(q)
+        best_match = None
+        best_ratio = 0.0
+
+        for product in products:
+            normalized_product = normalize(product.name)
+            ratio = SequenceMatcher(None, normalized_query, normalized_product).ratio()
+
+            if ratio > best_ratio:
+                best_ratio = ratio
+                best_match = product
+
+        # Return best match if above threshold
+        if best_ratio >= 0.6:
+            return best_match
+
+        return None
+
+
 @app.post("/api/stores", response_model=Store, status_code=201)
 def create_store(
     store_data: StoreCreate, current_user: str = Depends(get_current_user)
@@ -620,15 +695,17 @@ def delete_product(product_id: int, current_user: str = Depends(get_current_user
 # === Items Endpoints (Protected) ===
 
 
-@app.get("/api/items", response_model=List[Item])
+@app.get("/api/items", response_model=List[ItemWithDepartment])
 def read_items(current_user: str = Depends(get_current_user)):
     """Read all items from the database for the current user (requires authentication).
+
+    Returns items with department information for grouping by department.
 
     Args:
         current_user: Current authenticated username from JWT
 
     Returns:
-        List[Item]: All items for the current user.
+        List[ItemWithDepartment]: All items for the current user with department info.
     """
     with get_session() as session:
         # Get user ID
@@ -638,7 +715,36 @@ def read_items(current_user: str = Depends(get_current_user)):
 
         # Get items for this user only
         items = session.exec(select(Item).where(Item.user_id == user.id)).all()
-        return items
+
+        # Enrich items with department information
+        items_with_dept = []
+        for item in items:
+            dept_id = None
+            dept_name = None
+
+            # If item has a product, get department from product
+            if item.product_id:
+                product = session.get(Product, item.product_id)
+                if product:
+                    dept_id = product.department_id
+                    department = session.get(Department, product.department_id)
+                    if department:
+                        dept_name = department.name
+
+            items_with_dept.append(
+                ItemWithDepartment(
+                    id=item.id,
+                    user_id=item.user_id,
+                    store_id=item.store_id,
+                    product_id=item.product_id,
+                    name=item.name,
+                    menge=item.menge,
+                    department_id=dept_id,
+                    department_name=dept_name,
+                )
+            )
+
+        return items_with_dept
 
 
 def parse_quantity(menge: str | None) -> tuple[float | None, str | None]:
@@ -802,11 +908,12 @@ def merge_quantities(existing_menge: str | None, new_menge: str | None) -> str |
     return result_menge
 
 
-@app.post("/api/items", status_code=201, response_model=Item)
+@app.post("/api/items", status_code=201, response_model=ItemWithDepartment)
 def create_item(item: Item, current_user: str = Depends(get_current_user)):
     """Create a new item or update quantity if item already exists.
 
     Uses fuzzy matching to find similar item names (e.g., "Möhre" matches "Möhren").
+    Automatically matches items to products in the store's catalog using fuzzy matching.
 
     If an item with the same or similar name already exists for this user:
     - If the new unit matches an existing unit in the list, they are summed
@@ -825,7 +932,7 @@ def create_item(item: Item, current_user: str = Depends(get_current_user)):
         current_user: Current authenticated username from JWT
 
     Returns:
-        Item: The created or updated item with assigned id.
+        ItemWithDepartment: The created or updated item with department information.
     """
     import uuid
 
@@ -846,22 +953,86 @@ def create_item(item: Item, current_user: str = Depends(get_current_user)):
                 session, item.name, user.id, threshold=0.8
             )
 
+        result_item = None
         if existing_item:
             # Merge quantities into existing item
             existing_item.menge = merge_quantities(existing_item.menge, item.menge)
             session.add(existing_item)
             session.commit()
             session.refresh(existing_item)
-            return existing_item
+            result_item = existing_item
         else:
             # Create new item
             if not item.id:
                 item.id = str(uuid.uuid4())
             item.user_id = user.id
+
+            # If store_id is provided, try to find matching product
+            if item.store_id and not item.product_id:
+                from difflib import SequenceMatcher
+
+                def normalize(name: str) -> str:
+                    """Normalize name for comparison."""
+                    return (
+                        name.lower()
+                        .replace("ä", "ae")
+                        .replace("ö", "oe")
+                        .replace("ü", "ue")
+                        .replace("ß", "ss")
+                    )
+
+                # Get all products for this store
+                products = session.exec(
+                    select(Product).where(Product.store_id == item.store_id)
+                ).all()
+
+                if products:
+                    # Fuzzy match against all products
+                    normalized_query = normalize(item.name)
+                    best_match = None
+                    best_ratio = 0.0
+
+                    for product in products:
+                        normalized_product = normalize(product.name)
+                        ratio = SequenceMatcher(
+                            None, normalized_query, normalized_product
+                        ).ratio()
+
+                        if ratio > best_ratio:
+                            best_ratio = ratio
+                            best_match = product
+
+                    # Assign product if match is good enough (threshold 0.6)
+                    if best_ratio >= 0.6 and best_match:
+                        item.product_id = best_match.id
+
             session.add(item)
             session.commit()
             session.refresh(item)
-            return item
+            result_item = item
+
+        # Enrich with department information
+        dept_id = None
+        dept_name = None
+
+        if result_item.product_id:
+            product = session.get(Product, result_item.product_id)
+            if product:
+                dept_id = product.department_id
+                department = session.get(Department, product.department_id)
+                if department:
+                    dept_name = department.name
+
+        return ItemWithDepartment(
+            id=result_item.id,
+            user_id=result_item.user_id,
+            store_id=result_item.store_id,
+            product_id=result_item.product_id,
+            name=result_item.name,
+            menge=result_item.menge,
+            department_id=dept_id,
+            department_name=dept_name,
+        )
 
 
 @app.delete("/api/items/{item_id}", status_code=204)

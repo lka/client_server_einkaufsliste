@@ -11,6 +11,8 @@ export interface Item {
   user_id?: number;
   store_id?: number;
   product_id?: number;
+  department_id?: number;
+  department_name?: string;
 }
 
 export interface Store {
