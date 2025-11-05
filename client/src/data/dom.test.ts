@@ -55,7 +55,7 @@ describe('DOM Utilities', () => {
 
       const firstItem = itemsList?.children[0];
       expect(firstItem?.querySelector('span')?.textContent).toBe('Milk');
-      expect(firstItem?.querySelector('button')?.textContent).toBe('Entfernen');
+      expect(firstItem?.querySelector('button')?.textContent).toBe('🗑️');
     });
 
     it('should render items with menge', () => {
@@ -211,7 +211,7 @@ describe('DOM Utilities', () => {
 
       const button = li.querySelector('button');
       expect(button?.className).toBe('removeBtn');
-      expect(button?.textContent).toBe('Entfernen');
+      expect(button?.textContent).toBe('🗑️');
       expect(button?.dataset.itemId).toBe('123');
     });
 

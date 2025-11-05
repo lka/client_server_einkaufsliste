@@ -1,4 +1,4 @@
-# client_server_einkaufsliste
+# Client/Server Einkaufsliste
 
 Python FastAPI Server + TypeScript Client mit JWT-Authentifizierung und umfassender Testabdeckung.
 
@@ -8,13 +8,13 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
 
 - ✅ **JWT-Authentifizierung**: Sichere Benutzerauthentifizierung mit automatischem Token-Refresh
 - ✅ **Multi-Store-Management**: Organisation nach Geschäften und Abteilungen
-  - 3 vorkonfigurierte Geschäfte: Rewe, Edeka, Aldi
+  - 3 vorkonfigurierte Geschäfte: Rewe, Edeka, Kaufland
   - Je 9 Abteilungen pro Geschäft (z.B. "Obst & Gemüse", "Backwaren", "Milchprodukte")
   - Produktkatalog mit über 17 gängigen Produkten
   - Zuordnung von Produkten zu Geschäften und Abteilungen
-  - **Produktkatalog-Browser**: Visueller Browser zum Durchsuchen und Hinzufügen von Produkten
-  - **Department-Filter**: Filtern nach Abteilungen für schnelleres Finden
-  - **Ein-Klick-Hinzufügen**: Produkte direkt aus dem Katalog zur Liste hinzufügen
+  - **Automatische Produkt-Zuordnung**: Neue Items werden automatisch mit Produkten im Katalog gematcht (Fuzzy-Matching mit 60% Schwellwert)
+  - **Abteilungs-Gruppierung**: Shopping-Liste zeigt Items gruppiert nach Abteilungen in Spalten-Layout
+  - **Erstes Geschäft als Standard**: Automatische Auswahl des ersten Geschäfts beim Laden
   - Benutzerspezifische Einkaufslisten (jeder User sieht nur seine eigenen Items)
 - ✅ **Store-Verwaltung**: Dedizierte Admin-Seite für Geschäfte und Abteilungen
   - **CRUD-Operationen**: Erstellen, Bearbeiten und Löschen von Stores und Departments
@@ -40,7 +40,7 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - "Zucker 500 g, 2 Packungen" + "Zucker 300 g" = "Zucker 800 g, 2 Packungen"
     - "Reis 500 g" + "2, 300 g" = "Reis 800 g, 2"
 - ✅ **Reaktive UI**: Automatische UI-Updates durch State-Management mit Observer Pattern
-- ✅ **Vollständige Tests**: 217 Tests (46 Server + 171 Client) mit 99%+ Code-Abdeckung
+- ✅ **Vollständige Tests**: 220 Tests (46 Server + 174 Client) mit 99%+ Code-Abdeckung
 - ✅ **TypeScript Client**: Typsicherer Client mit vier-Schichten-Architektur
 - ✅ **FastAPI Server**: Moderne Python API mit SQLModel ORM
 - ✅ **Account-Verwaltung**: Benutzer können sich registrieren, anmelden und Account löschen
@@ -181,14 +181,16 @@ uvicorn server.src.main:app --reload --port 8000
 
 Sie sehen zuerst die Login-Seite. Registrieren Sie einen neuen Benutzer und melden Sie sich an.
 
-### 7. Produktkatalog nutzen (Optional)
+### 7. Einkaufsliste nutzen
 
-Nach dem Login können Sie den Produktkatalog verwenden:
-1. Klicken Sie auf **"📖 Produktkatalog"** im Header
-2. Wählen Sie ein Geschäft (z.B. "Rewe") aus dem Dropdown
-3. Filtern Sie optional nach Abteilung (z.B. "Obst & Gemüse")
-4. Klicken Sie auf **"+ Zur Liste"** bei Produkten, um sie hinzuzufügen
-5. Die Standardeinheit wird automatisch übernommen (z.B. "kg", "Liter")
+Nach dem Login können Sie die Einkaufsliste verwenden:
+1. **Automatische Geschäfts-Auswahl**: Das erste Geschäft wird automatisch ausgewählt
+2. **Produkte hinzufügen**: Geben Sie den Produktnamen ein (z.B. "Möhren")
+3. **Automatisches Matching**: Das System findet automatisch das passende Produkt im Katalog
+4. **Abteilungs-Gruppierung**: Items werden automatisch nach Abteilungen gruppiert angezeigt
+   - Spalten-Layout auf Desktop (z.B. "Obst & Gemüse", "Milchprodukte", "Sonstiges")
+   - Gestapeltes Layout auf Mobile
+5. **Items entfernen**: Klicken Sie auf das Papierkorb-Icon (🗑️) neben dem Item
 
 ### 8. Store- und Produkt-Verwaltung nutzen
 
@@ -282,12 +284,18 @@ Die Anwendung verwendet **JWT (JSON Web Tokens)** für sichere Authentifizierung
 
 **Shopping List (alle authentifiziert, benutzerspezifisch):**
 - `GET /api/items` - Alle Artikel des aktuellen Benutzers abrufen
+  - Response: `ItemWithDepartment` - Enthält `department_id` und `department_name` für Gruppierung
 - `POST /api/items` - Neuen Artikel erstellen oder Menge aktualisieren
-  - Body: `{"name": "Artikelname", "menge": "500 g"}` (menge ist optional)
+  - Body: `{"name": "Artikelname", "menge": "500 g", "store_id": 1}` (menge und store_id sind optional)
+  - Response: `ItemWithDepartment` - Enthält Department-Informationen für sofortiges Rendering
   - Beispiele:
-    - `{"name": "Möhren", "menge": "500 g"}`
-    - `{"name": "Milch"}` (ohne Menge)
+    - `{"name": "Möhren", "menge": "500 g", "store_id": 1}` → Automatisches Matching zu Produkt "Möhren" in Abteilung "Obst & Gemüse"
+    - `{"name": "Milch", "store_id": 1}` (ohne Menge) → Matching zu "Milch" in "Milchprodukte"
     - `{"name": "Reis", "menge": "2, 500 g"}` (kommagetrennte Eingabe)
+  - **Automatisches Produkt-Matching**: Wenn `store_id` angegeben ist:
+    - Fuzzy-Matching gegen alle Produkte im Store (60% Schwellwert)
+    - Automatische Zuweisung von `product_id` bei Match
+    - Normalisierung deutscher Umlaute (ä→ae, ö→oe, ü→ue, ß→ss)
   - **Smart-Merging mit Einheiten-Suche & Fuzzy Matching**: Wenn ein Artikel bereits existiert oder ähnlich ist:
     - **Benutzerspezifisch**: Nur eigene Items werden berücksichtigt
     - **Fuzzy Matching**: Ähnliche Namen werden erkannt ("Möhre" → "Möhren", "Moehre" → "Möhren")
@@ -296,6 +304,9 @@ Die Anwendung verwendet **JWT (JSON Web Tokens)** für sichere Authentifizierung
     - Verschiedene Einheiten → Als kommagetrennte Liste gespeichert (z.B. "500 g" + "2 Packungen" = "500 g, 2 Packungen")
     - Einheit in Liste vorhanden → Nur diese Einheit wird summiert (z.B. "500 g, 2 Packungen" + "300 g" = "800 g, 2 Packungen")
     - Keine Einheit → Zahlen werden summiert (z.B. "6" + "12" = "18")
+- `GET /api/stores/{store_id}/products/search?q={query}` - Fuzzy-Suche nach Produkten in einem Store
+  - Query-Parameter: `q` (Produktname)
+  - Response: Bestes Match (≥60% Ähnlichkeit) oder `null`
 - `DELETE /api/items/{id}` - Eigenen Artikel löschen (nur eigene Items)
 
 ## Code-Qualität
@@ -393,14 +404,15 @@ npm test -- --watch
 ```
 
 **Aktuelle Test-Abdeckung:**
-- ✅ 171 Tests insgesamt (11 Test-Suites)
+- ✅ 174 Tests insgesamt (11 Test-Suites)
 - ✅ 99%+ Code-Abdeckung
-- ✅ Data Layer: API Client (19), Authentication (36), DOM (15) = 70 Tests
+- ✅ Data Layer: API Client (19), Authentication (36), DOM (18) = 73 Tests
   - Inklusive 401 Handling & Token Refresh Failures
   - Inklusive Token-Refresh-Optimierung (Singleton, Cooldown, Concurrent Requests)
   - Inklusive Template-Caching (Memory Cache, Load Flag, Zero Network Cost)
   - Inklusive DOM-Batching (DocumentFragment, O(1) Reflows)
   - Tests für Mengenangaben in API und DOM
+  - Tests für Department-Gruppierung (3 neue Tests)
 - ✅ State Layer: Shopping List State (36), User State (24) = 60 Tests
   - Inklusive Observer Pattern, Subscriptions, Reactivity
   - Inklusive Loading State Tracking

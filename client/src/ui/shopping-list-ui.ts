@@ -39,6 +39,16 @@ async function loadStoreFilter(): Promise<void> {
     option.textContent = store.name;
     storeFilter.appendChild(option);
   });
+
+  // Select first store by default if stores exist
+  if (stores.length > 0) {
+    storeFilter.value = stores[0].id.toString();
+    selectedStoreId = stores[0].id;
+    // Trigger re-render with filtered items
+    const items = shoppingListState.getItems();
+    const filteredItems = filterItemsByStore(items);
+    renderItems(filteredItems);
+  }
 }
 
 /**
@@ -66,14 +76,14 @@ export function initShoppingListUI(): void {
     return;
   }
 
-  // Load stores into filter
-  loadStoreFilter();
-
   // Subscribe to state changes for automatic UI updates
   shoppingListState.subscribe((items) => {
     const filteredItems = filterItemsByStore(items);
     renderItems(filteredItems);
   });
+
+  // Load stores into filter (this will also set the default selection)
+  loadStoreFilter();
 
   // Store filter change handler
   if (storeFilter) {

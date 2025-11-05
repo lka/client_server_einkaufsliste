@@ -101,7 +101,8 @@ export function createItemElement(item: Item): HTMLLIElement {
 
   const btn = document.createElement('button');
   btn.className = 'removeBtn';
-  btn.textContent = 'Entfernen';
+  btn.textContent = '🗑️';
+  btn.setAttribute('aria-label', 'Entfernen');
   btn.dataset.itemId = item.id;
   // No individual click handler - relies on event delegation from parent
 

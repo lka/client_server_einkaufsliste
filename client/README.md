@@ -9,10 +9,12 @@ This client application has been migrated from vanilla JavaScript to TypeScript,
 ### Features
 
 - ✅ **Mengenangaben**: Optional quantity field for each item (e.g., "500 g", "2 Stück")
+- ✅ **Department Grouping**: Shopping list items grouped by store departments in column layout
+- ✅ **Auto Product Matching**: Automatic fuzzy matching of items to product catalog (60% threshold)
 - ✅ **Reactive State Management**: Observer pattern with automatic UI updates
 - ✅ **Four-Layer Architecture**: Entry Points → UI → State → Data
 - ✅ **Type Safety**: Full TypeScript with strict mode
-- ✅ **154 Tests**: Comprehensive test coverage (99.36%)
+- ✅ **174 Tests**: Comprehensive test coverage (99%+)
 
 ## Setup
 
@@ -69,7 +71,7 @@ The client includes comprehensive unit tests across all layers:
 **Data Layer Tests**:
 - **api.test.ts** (19 tests): API client functions with token refresh, 401 handling, edge cases, and **quantity support**
 - **auth.test.ts** (36 tests): Authentication, token management, user operations, and token refresh optimization
-- **dom.test.ts** (15 tests): DOM manipulation, rendering, template caching, DOM batching, and **quantity display**
+- **dom.test.ts** (18 tests): DOM manipulation, rendering, template caching, DOM batching, **quantity display**, and **department grouping** (3 new tests)
 
 **State Layer Tests**:
 - **shopping-list-state.test.ts** (36 tests): Shopping list state management, subscriptions, reactivity, and **quantity handling**
@@ -86,9 +88,9 @@ The client includes comprehensive unit tests across all layers:
 - **index-login.test.ts** (4 tests): Login page entry point initialization
 - **script.test.ts** (7 tests): Main app entry point initialization, authentication flow, error handling
 
-**Total**: **154 tests**, all passing ✅
+**Total**: **174 tests**, all passing ✅
 
-**Coverage**: **99.36% overall code coverage**
+**Coverage**: **99%+ overall code coverage**
 - Data Layer: auth.ts (100%), dom.ts (98%), api.ts (100%)
 - State Layer: shopping-list-state.ts (100%), user-state.ts (100%)
 - UI Layer: user-menu.ts (100%), shopping-list-ui.ts (95%)
@@ -148,8 +150,8 @@ Core functionality for data operations and utilities. This layer has no UI knowl
 
 - **api.ts**: API client for shopping list operations (fetchItems, addItem, deleteItem)
 - **auth.ts**: Authentication utilities (login, register, logout, token management with optimization)
-- **dom.ts**: DOM manipulation utilities (renderItems with batching, loadTemplate with caching)
-- **Tests**: api.test.ts (18), auth.test.ts (36), dom.test.ts (14) - **68 tests total**, 99.5%+ coverage
+- **dom.ts**: DOM manipulation utilities (renderItems with department grouping and batching, loadTemplate with caching)
+- **Tests**: api.test.ts (19), auth.test.ts (36), dom.test.ts (18) - **73 tests total**, 99.5%+ coverage
 
 #### **State Layer** (`src/state/`)
 Centralized state management with reactive updates using the Observer pattern.
@@ -203,7 +205,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed architecture documentation a
 ## TypeScript Features
 
 ### Type Safety
-- **Item Interface**: Strongly typed data structure with `id: string`, `name: string`, and optional `menge?: string`
+- **Item Interface**: Strongly typed data structure with `id: string`, `name: string`, optional `menge?: string`, and optional department fields (`department_id?: number`, `department_name?: string`)
 - **Type Annotations**: All functions have explicit parameter and return types
 - **DOM Type Safety**: Type assertions for HTML elements (`HTMLInputElement`, `HTMLButtonElement`)
 - **Strict Mode**: All TypeScript strict compiler options enabled
@@ -291,7 +293,7 @@ The application consists of two main pages:
 - **Single Source of Truth**: All components share the same state
 - **Type Safety**: TypeScript ensures compile-time correctness
 - **Maintainability**: Easy to find and modify features
-- **Testability**: Each layer tested independently (154 tests total, 99.36% coverage)
+- **Testability**: Each layer tested independently (174 tests total, 99%+ coverage)
 - **Scalability**: Easy to add new features or UI modules
 - **Security**: Token-based authentication with automatic refresh
 - **Performance**: Event delegation and optimized token refresh reduce overhead
