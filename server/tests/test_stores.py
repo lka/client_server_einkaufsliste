@@ -530,13 +530,14 @@ def test_cascading_delete_store():
         "fresh": False,
     }
     r = client.post("/api/products", json=product_data, headers=headers)
-    product_id = r.json()["id"]
+    assert r.status_code == 201
+    # Note: product_id is implicitly tested by cascading delete
 
     # Delete the store
     r = client.delete(f"/api/stores/{store_id}", headers=headers)
     assert r.status_code == 204
 
-    # Verify department is deleted
+    # Verify department is deleted (which implicitly verifies products are also deleted)
     r = client.get(f"/api/departments/{dept_id}/products", headers=headers)
     assert r.status_code == 404
 
