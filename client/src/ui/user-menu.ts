@@ -9,13 +9,19 @@ import { shoppingListState } from '../state/shopping-list-state.js';
 
 /**
  * Update user display in header with current username.
+ * Appends username to existing header text.
  */
 export async function updateUserDisplay(): Promise<void> {
   const user = await userState.loadCurrentUser();
   if (user) {
     const header = document.querySelector('header h1');
     if (header) {
-      header.innerHTML = `Einkaufsliste <small>(${user.username})</small>`;
+      // Get current text and check if username is already added
+      const currentText = header.textContent || '';
+      if (!currentText.includes(`(${user.username})`)) {
+        // Append username to existing header text
+        header.innerHTML = `${currentText} <small>(${user.username})</small>`;
+      }
     }
   }
 }
@@ -26,6 +32,9 @@ export async function updateUserDisplay(): Promise<void> {
 export function initUserMenu(): void {
   const menuBtn = document.getElementById('menuBtn');
   const menuDropdown = document.getElementById('menuDropdown');
+  const backToAppBtn = document.getElementById('backToAppBtn');
+  const manageStoresBtn = document.getElementById('manageStoresBtn');
+  const manageProductsBtn = document.getElementById('manageProductsBtn');
   const logoutBtn = document.getElementById('logoutBtn');
   const deleteAccountBtn = document.getElementById('deleteAccountBtn');
 
@@ -49,6 +58,27 @@ export function initUserMenu(): void {
   menuDropdown.addEventListener('click', (e) => {
     e.stopPropagation();
   });
+
+  // Back to app button handler
+  if (backToAppBtn) {
+    backToAppBtn.addEventListener('click', () => {
+      window.location.href = '/app';
+    });
+  }
+
+  // Manage stores button handler
+  if (manageStoresBtn) {
+    manageStoresBtn.addEventListener('click', () => {
+      window.location.href = '/stores';
+    });
+  }
+
+  // Manage products button handler
+  if (manageProductsBtn) {
+    manageProductsBtn.addEventListener('click', () => {
+      window.location.href = '/products';
+    });
+  }
 
   // Logout button handler
   if (logoutBtn) {

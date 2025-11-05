@@ -117,8 +117,8 @@ export async function loadTemplate(templatePath: string): Promise<boolean> {
 /**
  * Load the application HTML template into the DOM.
  */
-export async function loadAppTemplate(): Promise<boolean> {
-  return loadTemplate('src/pages/app.html');
+export async function loadAppTemplate(templateName: string = 'app.html'): Promise<boolean> {
+  return loadTemplate(`src/pages/${templateName}`);
 }
 
 /**

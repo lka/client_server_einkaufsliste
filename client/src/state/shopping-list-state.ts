@@ -72,7 +72,7 @@ class ShoppingListState {
    * If the server returns an existing item (due to fuzzy matching or exact match),
    * the existing item in state is updated instead of adding a duplicate.
    */
-  async addItem(name: string, menge?: string): Promise<Item | null> {
+  async addItem(name: string, menge?: string, storeId?: number): Promise<Item | null> {
     if (!name.trim()) {
       console.error('Cannot add empty item');
       return null;
@@ -80,7 +80,7 @@ class ShoppingListState {
 
     this.loading = true;
     try {
-      const returnedItem = await apiAddItem(name, menge);
+      const returnedItem = await apiAddItem(name, menge, storeId);
       if (returnedItem) {
         // Check if item already exists in state (by ID)
         const existingIndex = this.items.findIndex(item => item.id === returnedItem.id);

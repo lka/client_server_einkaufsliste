@@ -7,6 +7,7 @@ import { loadAppTemplate } from './data/dom.js';
 import { isAuthenticated } from './data/auth.js';
 import { initShoppingListUI } from './ui/shopping-list-ui.js';
 import { initUserMenu, updateUserDisplay } from './ui/user-menu.js';
+import { initStoreBrowser, toggleStoreBrowser } from './ui/store-browser.js';
 
 /**
  * Initialize the application when DOM is ready.
@@ -31,4 +32,13 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Initialize feature modules
   initShoppingListUI();
   initUserMenu();
+  initStoreBrowser();
+
+  // Add toggle button listener
+  const toggleBtn = document.getElementById('toggleBrowserBtn');
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      toggleStoreBrowser();
+    });
+  }
 });

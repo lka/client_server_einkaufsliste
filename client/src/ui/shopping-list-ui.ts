@@ -5,6 +5,10 @@
 
 import { shoppingListState } from '../state/shopping-list-state.js';
 import { renderItems } from '../data/dom.js';
+import { fetchStores } from '../data/api.js';
+
+// Current selected store ID (null = all stores)
+let selectedStoreId: number | null = null;
 
 /**
  * Load and display all items from state.
@@ -15,12 +19,46 @@ export async function loadItems(): Promise<void> {
 }
 
 /**
+ * Load stores into the filter dropdown.
+ */
+async function loadStoreFilter(): Promise<void> {
+  const storeFilter = document.getElementById('storeFilter') as HTMLSelectElement;
+  if (!storeFilter) return;
+
+  const stores = await fetchStores();
+
+  // Clear existing options except first (Alle Geschäfte)
+  while (storeFilter.options.length > 1) {
+    storeFilter.remove(1);
+  }
+
+  // Add store options
+  stores.forEach(store => {
+    const option = document.createElement('option');
+    option.value = store.id.toString();
+    option.textContent = store.name;
+    storeFilter.appendChild(option);
+  });
+}
+
+/**
+ * Filter items by selected store.
+ */
+function filterItemsByStore(items: any[]): any[] {
+  if (selectedStoreId === null) {
+    return items; // Show all items
+  }
+  return items.filter(item => item.store_id === selectedStoreId);
+}
+
+/**
  * Initialize shopping list event handlers.
  */
 export function initShoppingListUI(): void {
   const input = document.getElementById('itemInput') as HTMLInputElement;
   const mengeInput = document.getElementById('mengeInput') as HTMLInputElement;
   const addBtn = document.getElementById('addBtn') as HTMLButtonElement;
+  const storeFilter = document.getElementById('storeFilter') as HTMLSelectElement;
   const itemsList = document.getElementById('items');
 
   if (!input || !mengeInput || !addBtn) {
@@ -28,10 +66,27 @@ export function initShoppingListUI(): void {
     return;
   }
 
+  // Load stores into filter
+  loadStoreFilter();
+
   // Subscribe to state changes for automatic UI updates
   shoppingListState.subscribe((items) => {
-    renderItems(items);
+    const filteredItems = filterItemsByStore(items);
+    renderItems(filteredItems);
   });
+
+  // Store filter change handler
+  if (storeFilter) {
+    storeFilter.addEventListener('change', () => {
+      const value = storeFilter.value;
+      selectedStoreId = value ? parseInt(value, 10) : null;
+
+      // Re-render with filtered items
+      const items = shoppingListState.getItems();
+      const filteredItems = filterItemsByStore(items);
+      renderItems(filteredItems);
+    });
+  }
 
   // Add button handler
   addBtn.addEventListener('click', async () => {
@@ -41,7 +96,7 @@ export function initShoppingListUI(): void {
     }
 
     const menge = mengeInput.value.trim() || undefined;
-    const item = await shoppingListState.addItem(val, menge);
+    const item = await shoppingListState.addItem(val, menge, selectedStoreId || undefined);
     if (item) {
       input.value = '';
       mengeInput.value = '';

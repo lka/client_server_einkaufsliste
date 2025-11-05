@@ -12,8 +12,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Depends, status
 from starlette.staticfiles import StaticFiles
 from sqlmodel import select
+from pydantic import BaseModel
 
-from .models import Item
+from .models import Item, Store, Department, Product
 from .db import get_engine, create_db_and_tables, get_session
 from .user_models import User, UserCreate, UserLogin, Token, UserResponse
 from .auth import (
@@ -23,6 +24,31 @@ from .auth import (
     get_current_user,
     ACCESS_TOKEN_EXPIRE_MINUTES,
 )
+
+
+# Request models for store management
+class StoreCreate(BaseModel):
+    name: str
+    location: str = ""
+
+
+class DepartmentCreate(BaseModel):
+    name: str
+    sort_order: int = 0
+
+
+class ProductCreate(BaseModel):
+    name: str
+    store_id: int
+    department_id: int
+    fresh: bool = False
+
+
+class ProductUpdate(BaseModel):
+    name: str | None = None
+    store_id: int | None = None
+    department_id: int | None = None
+    fresh: bool | None = None
 
 
 @asynccontextmanager
@@ -35,9 +61,16 @@ async def lifespan(app: FastAPI):
     """
     # Import models to register them with SQLModel
     from .user_models import User  # noqa: F401
+    from .models import Store, Department, Product  # noqa: F401
 
     engine = get_engine()
     create_db_and_tables(engine)
+
+    # Seed database with initial data if empty
+    from .seed_data import seed_database
+
+    seed_database(engine)
+
     try:
         yield
     finally:
@@ -228,21 +261,383 @@ def delete_current_user(current_user: str = Depends(get_current_user)):
         return None
 
 
-# === Items Endpoints (Protected) ===
+# === Store Management Endpoints (Protected) ===
 
 
-@app.get("/api/items", response_model=List[Item])
-def read_items(current_user: str = Depends(get_current_user)):
-    """Read all items from the database (requires authentication).
+@app.get("/api/stores", response_model=List[Store])
+def get_stores(current_user: str = Depends(get_current_user)):
+    """Get all stores (requires authentication).
 
     Args:
         current_user: Current authenticated username from JWT
 
     Returns:
-        List[Item]: All items stored in the database.
+        List[Store]: All stores in the database
     """
     with get_session() as session:
-        items = session.exec(select(Item)).all()
+        stores = session.exec(select(Store)).all()
+        return stores
+
+
+@app.get("/api/stores/{store_id}/departments", response_model=List[Department])
+def get_store_departments(store_id: int, current_user: str = Depends(get_current_user)):
+    """Get all departments for a specific store (requires authentication).
+
+    Args:
+        store_id: Store ID
+        current_user: Current authenticated username from JWT
+
+    Returns:
+        List[Department]: All departments in the store
+
+    Raises:
+        HTTPException: If store not found
+    """
+    with get_session() as session:
+        store = session.get(Store, store_id)
+        if not store:
+            raise HTTPException(status_code=404, detail="Store not found")
+
+        departments = session.exec(
+            select(Department)
+            .where(Department.store_id == store_id)
+            .order_by(Department.sort_order)
+        ).all()
+        return departments
+
+
+@app.get("/api/departments/{department_id}/products", response_model=List[Product])
+def get_department_products(
+    department_id: int, current_user: str = Depends(get_current_user)
+):
+    """Get all products in a specific department (requires authentication).
+
+    Args:
+        department_id: Department ID
+        current_user: Current authenticated username from JWT
+
+    Returns:
+        List[Product]: All products in the department
+
+    Raises:
+        HTTPException: If department not found
+    """
+    with get_session() as session:
+        department = session.get(Department, department_id)
+        if not department:
+            raise HTTPException(status_code=404, detail="Department not found")
+
+        products = session.exec(
+            select(Product).where(Product.department_id == department_id)
+        ).all()
+        return products
+
+
+@app.get("/api/stores/{store_id}/products", response_model=List[Product])
+def get_store_products(store_id: int, current_user: str = Depends(get_current_user)):
+    """Get all products for a specific store (requires authentication).
+
+    Args:
+        store_id: Store ID
+        current_user: Current authenticated username from JWT
+
+    Returns:
+        List[Product]: All products in the store
+
+    Raises:
+        HTTPException: If store not found
+    """
+    with get_session() as session:
+        store = session.get(Store, store_id)
+        if not store:
+            raise HTTPException(status_code=404, detail="Store not found")
+
+        products = session.exec(
+            select(Product).where(Product.store_id == store_id)
+        ).all()
+        return products
+
+
+@app.post("/api/stores", response_model=Store, status_code=201)
+def create_store(
+    store_data: StoreCreate, current_user: str = Depends(get_current_user)
+):
+    """Create a new store (requires authentication).
+
+    Args:
+        store_data: Store creation data
+        current_user: Current authenticated username from JWT
+
+    Returns:
+        Store: The created store
+
+    Raises:
+        HTTPException: If store with same name already exists
+    """
+    with get_session() as session:
+        # Check if store already exists
+        existing = session.exec(
+            select(Store).where(Store.name == store_data.name)
+        ).first()
+        if existing:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Store with name '{store_data.name}' already exists",
+            )
+
+        store = Store(name=store_data.name, location=store_data.location)
+        session.add(store)
+        session.commit()
+        session.refresh(store)
+        return store
+
+
+@app.delete("/api/stores/{store_id}", status_code=204)
+def delete_store(store_id: int, current_user: str = Depends(get_current_user)):
+    """Delete a store and all its departments and products (requires authentication).
+
+    Args:
+        store_id: Store ID
+        current_user: Current authenticated username from JWT
+
+    Raises:
+        HTTPException: If store not found
+    """
+    with get_session() as session:
+        store = session.get(Store, store_id)
+        if not store:
+            raise HTTPException(status_code=404, detail="Store not found")
+
+        # Delete all products for this store
+        products = session.exec(
+            select(Product).where(Product.store_id == store_id)
+        ).all()
+        for product in products:
+            session.delete(product)
+
+        # Delete all departments for this store
+        departments = session.exec(
+            select(Department).where(Department.store_id == store_id)
+        ).all()
+        for dept in departments:
+            session.delete(dept)
+
+        # Delete the store
+        session.delete(store)
+        session.commit()
+        return None
+
+
+@app.post(
+    "/api/stores/{store_id}/departments", response_model=Department, status_code=201
+)
+def create_department(
+    store_id: int,
+    dept_data: DepartmentCreate,
+    current_user: str = Depends(get_current_user),
+):
+    """Create a new department for a store (requires authentication).
+
+    Args:
+        store_id: Store ID
+        dept_data: Department creation data
+        current_user: Current authenticated username from JWT
+
+    Returns:
+        Department: The created department
+
+    Raises:
+        HTTPException: If store not found
+    """
+    with get_session() as session:
+        store = session.get(Store, store_id)
+        if not store:
+            raise HTTPException(status_code=404, detail="Store not found")
+
+        department = Department(
+            name=dept_data.name, store_id=store_id, sort_order=dept_data.sort_order
+        )
+        session.add(department)
+        session.commit()
+        session.refresh(department)
+        return department
+
+
+@app.delete("/api/departments/{department_id}", status_code=204)
+def delete_department(
+    department_id: int, current_user: str = Depends(get_current_user)
+):
+    """Delete a department and all its products (requires authentication).
+
+    Args:
+        department_id: Department ID
+        current_user: Current authenticated username from JWT
+
+    Raises:
+        HTTPException: If department not found
+    """
+    with get_session() as session:
+        department = session.get(Department, department_id)
+        if not department:
+            raise HTTPException(status_code=404, detail="Department not found")
+
+        # Delete all products in this department
+        products = session.exec(
+            select(Product).where(Product.department_id == department_id)
+        ).all()
+        for product in products:
+            session.delete(product)
+
+        # Delete the department
+        session.delete(department)
+        session.commit()
+        return None
+
+
+# === Product Management Endpoints (Protected) ===
+
+
+@app.post("/api/products", response_model=Product, status_code=201)
+def create_product(
+    product_data: ProductCreate, current_user: str = Depends(get_current_user)
+):
+    """Create a new product (requires authentication).
+
+    Args:
+        product_data: Product creation data
+        current_user: Current authenticated username from JWT
+
+    Returns:
+        Product: The created product
+
+    Raises:
+        HTTPException: If store or department not found
+    """
+    with get_session() as session:
+        # Verify store exists
+        store = session.get(Store, product_data.store_id)
+        if not store:
+            raise HTTPException(status_code=404, detail="Store not found")
+
+        # Verify department exists and belongs to the store
+        department = session.get(Department, product_data.department_id)
+        if not department:
+            raise HTTPException(status_code=404, detail="Department not found")
+        if department.store_id != product_data.store_id:
+            raise HTTPException(
+                status_code=400,
+                detail="Department does not belong to the specified store",
+            )
+
+        product = Product(
+            name=product_data.name,
+            store_id=product_data.store_id,
+            department_id=product_data.department_id,
+            fresh=product_data.fresh,
+        )
+        session.add(product)
+        session.commit()
+        session.refresh(product)
+        return product
+
+
+@app.put("/api/products/{product_id}", response_model=Product)
+def update_product(
+    product_id: int,
+    product_data: ProductUpdate,
+    current_user: str = Depends(get_current_user),
+):
+    """Update a product (requires authentication).
+
+    Args:
+        product_id: Product ID
+        product_data: Product update data (only provided fields are updated)
+        current_user: Current authenticated username from JWT
+
+    Returns:
+        Product: The updated product
+
+    Raises:
+        HTTPException: If product, store, or department not found
+    """
+    with get_session() as session:
+        product = session.get(Product, product_id)
+        if not product:
+            raise HTTPException(status_code=404, detail="Product not found")
+
+        # Update fields if provided
+        if product_data.name is not None:
+            product.name = product_data.name
+        if product_data.fresh is not None:
+            product.fresh = product_data.fresh
+
+        # If store_id is being updated, verify it exists
+        if product_data.store_id is not None:
+            store = session.get(Store, product_data.store_id)
+            if not store:
+                raise HTTPException(status_code=404, detail="Store not found")
+            product.store_id = product_data.store_id
+
+        # If department_id is being updated, verify it exists and belongs to store
+        if product_data.department_id is not None:
+            department = session.get(Department, product_data.department_id)
+            if not department:
+                raise HTTPException(status_code=404, detail="Department not found")
+            if department.store_id != product.store_id:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Department does not belong to the product's store",
+                )
+            product.department_id = product_data.department_id
+
+        session.add(product)
+        session.commit()
+        session.refresh(product)
+        return product
+
+
+@app.delete("/api/products/{product_id}", status_code=204)
+def delete_product(product_id: int, current_user: str = Depends(get_current_user)):
+    """Delete a product (requires authentication).
+
+    Args:
+        product_id: Product ID
+        current_user: Current authenticated username from JWT
+
+    Raises:
+        HTTPException: If product not found
+    """
+    with get_session() as session:
+        product = session.get(Product, product_id)
+        if not product:
+            raise HTTPException(status_code=404, detail="Product not found")
+
+        session.delete(product)
+        session.commit()
+        return None
+
+
+# === Items Endpoints (Protected) ===
+
+
+@app.get("/api/items", response_model=List[Item])
+def read_items(current_user: str = Depends(get_current_user)):
+    """Read all items from the database for the current user (requires authentication).
+
+    Args:
+        current_user: Current authenticated username from JWT
+
+    Returns:
+        List[Item]: All items for the current user.
+    """
+    with get_session() as session:
+        # Get user ID
+        user = session.exec(select(User).where(User.username == current_user)).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Get items for this user only
+        items = session.exec(select(Item).where(Item.user_id == user.id)).all()
         return items
 
 
@@ -273,12 +668,15 @@ def parse_quantity(menge: str | None) -> tuple[float | None, str | None]:
     return None, None
 
 
-def find_similar_item(session, item_name: str, threshold: float = 0.8) -> Item | None:
-    """Find an item with a similar name using fuzzy matching.
+def find_similar_item(
+    session, item_name: str, user_id: int, threshold: float = 0.8
+) -> Item | None:
+    """Find an item with a similar name using fuzzy matching for a specific user.
 
     Args:
         session: Database session
         item_name: Name to search for
+        user_id: User ID to filter items
         threshold: Similarity threshold (0.0 to 1.0, default 0.8)
 
     Returns:
@@ -291,8 +689,8 @@ def find_similar_item(session, item_name: str, threshold: float = 0.8) -> Item |
     """
     from difflib import SequenceMatcher
 
-    # Get all items
-    all_items = session.exec(select(Item)).all()
+    # Get all items for this user
+    all_items = session.exec(select(Item).where(Item.user_id == user_id)).all()
 
     if not all_items:
         return None
@@ -410,7 +808,7 @@ def create_item(item: Item, current_user: str = Depends(get_current_user)):
 
     Uses fuzzy matching to find similar item names (e.g., "Möhre" matches "Möhren").
 
-    If an item with the same or similar name already exists:
+    If an item with the same or similar name already exists for this user:
     - If the new unit matches an existing unit in the list, they are summed
     - If the new unit is different, it is appended to the comma-separated list
 
@@ -432,12 +830,21 @@ def create_item(item: Item, current_user: str = Depends(get_current_user)):
     import uuid
 
     with get_session() as session:
-        # First, check for exact match
-        existing_item = session.exec(select(Item).where(Item.name == item.name)).first()
+        # Get user ID
+        user = session.exec(select(User).where(User.username == current_user)).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
 
-        # If no exact match, try fuzzy matching
+        # First, check for exact match in user's items
+        existing_item = session.exec(
+            select(Item).where(Item.name == item.name, Item.user_id == user.id)
+        ).first()
+
+        # If no exact match, try fuzzy matching in user's items
         if not existing_item:
-            existing_item = find_similar_item(session, item.name, threshold=0.8)
+            existing_item = find_similar_item(
+                session, item.name, user.id, threshold=0.8
+            )
 
         if existing_item:
             # Merge quantities into existing item
@@ -450,6 +857,7 @@ def create_item(item: Item, current_user: str = Depends(get_current_user)):
             # Create new item
             if not item.id:
                 item.id = str(uuid.uuid4())
+            item.user_id = user.id
             session.add(item)
             session.commit()
             session.refresh(item)
@@ -460,16 +868,23 @@ def create_item(item: Item, current_user: str = Depends(get_current_user)):
 def delete_item(item_id: str, current_user: str = Depends(get_current_user)):
     """Delete an item by its id from the database (requires authentication).
 
+    Only allows deleting items that belong to the current user.
+
     Args:
         item_id (str): The id of the item to delete.
         current_user: Current authenticated username from JWT
 
     Raises:
-        HTTPException: If the item does not exist (404).
+        HTTPException: If the item does not exist or belongs to another user (404).
     """
     with get_session() as session:
+        # Get user ID
+        user = session.exec(select(User).where(User.username == current_user)).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
         item = session.get(Item, item_id)
-        if not item:
+        if not item or item.user_id != user.id:
             raise HTTPException(status_code=404, detail="Not found")
         session.delete(item)
         session.commit()
@@ -485,6 +900,26 @@ def serve_app():
 
     app_file = os.path.join(CLIENT_DIR, "index-app.html")
     return FileResponse(app_file)
+
+
+@app.get("/stores")
+def serve_stores_page():
+    """Serve the stores management page."""
+    from fastapi.responses import FileResponse
+    import os
+
+    stores_file = os.path.join(CLIENT_DIR, "index-stores.html")
+    return FileResponse(stores_file)
+
+
+@app.get("/products")
+def serve_products_page():
+    """Serve the products management page."""
+    from fastapi.responses import FileResponse
+    import os
+
+    products_file = os.path.join(CLIENT_DIR, "index-products.html")
+    return FileResponse(products_file)
 
 
 # Serve favicon

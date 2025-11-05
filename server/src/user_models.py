@@ -1,7 +1,10 @@
 """User models for authentication."""
 
-from typing import Optional
-from sqlmodel import SQLModel, Field
+from typing import Optional, TYPE_CHECKING
+from sqlmodel import SQLModel, Field, Relationship
+
+if TYPE_CHECKING:
+    from .models import Item
 
 
 class User(SQLModel, table=True):
@@ -20,6 +23,9 @@ class User(SQLModel, table=True):
     email: str = Field(unique=True, max_length=100)
     hashed_password: str
     is_active: bool = Field(default=True)
+
+    # Relationships
+    items: list["Item"] = Relationship(back_populates="user")
 
 
 class UserCreate(SQLModel):

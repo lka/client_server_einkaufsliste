@@ -69,10 +69,41 @@ describe('Authentication Utilities', () => {
 
     it('should check if authenticated', () => {
       expect(isAuthenticated()).toBe(false);
-      setToken('test-token');
+
+      // Create a valid JWT token (not expired)
+      const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+      const payload = btoa(JSON.stringify({
+        sub: 'testuser',
+        exp: Math.floor(Date.now() / 1000) + 3600 // Expires in 1 hour
+      }));
+      const signature = 'fake-signature';
+      const validToken = `${header}.${payload}.${signature}`;
+
+      setToken(validToken);
       expect(isAuthenticated()).toBe(true);
       clearToken();
       expect(isAuthenticated()).toBe(false);
+    });
+
+    it('should reject expired tokens', () => {
+      // Create an expired JWT token
+      const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+      const payload = btoa(JSON.stringify({
+        sub: 'testuser',
+        exp: Math.floor(Date.now() / 1000) - 3600 // Expired 1 hour ago
+      }));
+      const signature = 'fake-signature';
+      const expiredToken = `${header}.${payload}.${signature}`;
+
+      setToken(expiredToken);
+      expect(isAuthenticated()).toBe(false);
+      expect(getToken()).toBeNull(); // Token should be cleared
+    });
+
+    it('should reject invalid token format', () => {
+      setToken('invalid-token');
+      expect(isAuthenticated()).toBe(false);
+      expect(getToken()).toBeNull(); // Token should be cleared
     });
   });
 
@@ -192,7 +223,15 @@ describe('Authentication Utilities', () => {
 
   describe('logout', () => {
     it('should clear token on logout', () => {
-      setToken('test-token');
+      // Create a valid JWT token
+      const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+      const payload = btoa(JSON.stringify({
+        sub: 'testuser',
+        exp: Math.floor(Date.now() / 1000) + 3600
+      }));
+      const validToken = `${header}.${payload}.fake-signature`;
+
+      setToken(validToken);
       expect(isAuthenticated()).toBe(true);
 
       logout();

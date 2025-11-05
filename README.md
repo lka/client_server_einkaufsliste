@@ -7,6 +7,15 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
 ## Features
 
 - ✅ **JWT-Authentifizierung**: Sichere Benutzerauthentifizierung mit automatischem Token-Refresh
+- ✅ **Multi-Store-Management**: Organisation nach Geschäften und Abteilungen
+  - 3 vorkonfigurierte Geschäfte: Rewe, Edeka, Aldi
+  - Je 9 Abteilungen pro Geschäft (z.B. "Obst & Gemüse", "Backwaren", "Milchprodukte")
+  - Produktkatalog mit über 17 gängigen Produkten
+  - Zuordnung von Produkten zu Geschäften und Abteilungen
+  - **Produktkatalog-Browser**: Visueller Browser zum Durchsuchen und Hinzufügen von Produkten
+  - **Department-Filter**: Filtern nach Abteilungen für schnelleres Finden
+  - **Ein-Klick-Hinzufügen**: Produkte direkt aus dem Katalog zur Liste hinzufügen
+  - Benutzerspezifische Einkaufslisten (jeder User sieht nur seine eigenen Items)
 - ✅ **Mengenangaben mit Smart-Merging & Fuzzy Matching**: Optionale Mengenangaben für jeden Artikel (z.B. "500 g", "2 Stück")
   - **Kommagetrennte Eingaben**: Mehrere Mengen gleichzeitig eingeben (z.B. "2, 500 g")
   - Automatisches Summieren von Mengen mit gleicher Einheit
@@ -20,7 +29,7 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - "Zucker 500 g, 2 Packungen" + "Zucker 300 g" = "Zucker 800 g, 2 Packungen"
     - "Reis 500 g" + "2, 300 g" = "Reis 800 g, 2"
 - ✅ **Reaktive UI**: Automatische UI-Updates durch State-Management mit Observer Pattern
-- ✅ **Vollständige Tests**: 164 Tests (10 Server + 154 Client) mit 99%+ Code-Abdeckung
+- ✅ **Vollständige Tests**: 171 Tests (17 Server + 154 Client) mit 99%+ Code-Abdeckung
 - ✅ **TypeScript Client**: Typsicherer Client mit vier-Schichten-Architektur
 - ✅ **FastAPI Server**: Moderne Python API mit SQLModel ORM
 - ✅ **Account-Verwaltung**: Benutzer können sich registrieren, anmelden und Account löschen
@@ -33,18 +42,20 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
 │   │   ├── __init__.py       # Package initialization
 │   │   ├── app.py            # Simple HTTP server (stdlib)
 │   │   ├── main.py           # FastAPI application
-│   │   ├── models.py         # SQLModel data models
+│   │   ├── models.py         # SQLModel data models (Item, Store, Department, Product)
 │   │   ├── user_models.py    # User authentication models
 │   │   ├── auth.py           # JWT authentication utilities
-│   │   └── db.py             # Database utilities
+│   │   ├── db.py             # Database utilities
+│   │   └── seed_data.py      # Database seed data (stores, departments, products)
 │   └── tests/
 │       ├── conftest.py       # Pytest fixtures
 │       ├── test_api.py       # API integration tests
-│       └── test_auth.py      # Authentication tests
+│       ├── test_auth.py      # Authentication tests
+│       └── test_stores.py    # Store management tests
 ├── client/
 │   ├── src/
 │   │   ├── data/                 # Data layer (API, auth, DOM utilities)
-│   │   │   ├── api.ts            # API client functions
+│   │   │   ├── api.ts            # API client functions (items, stores, departments, products)
 │   │   │   ├── api.test.ts       # API tests
 │   │   │   ├── auth.ts           # Authentication utilities
 │   │   │   ├── dom.ts            # DOM utilities
@@ -52,15 +63,17 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
 │   │   ├── state/                # State layer (state management)
 │   │   │   ├── shopping-list-state.ts      # Shopping list state manager
 │   │   │   ├── shopping-list-state.test.ts # State tests
+│   │   │   ├── store-state.ts              # Store/product state manager
 │   │   │   ├── user-state.ts               # User state manager
 │   │   │   └── user-state.test.ts          # State tests
 │   │   ├── ui/                   # UI layer (feature-specific UI modules)
 │   │   │   ├── shopping-list-ui.ts   # Shopping list UI module
+│   │   │   ├── store-browser.ts      # Store/product browser UI module
 │   │   │   └── user-menu.ts          # User menu module
 │   │   ├── pages/                # Pages layer (page controllers & templates)
 │   │   │   ├── login.ts          # Login page controller
 │   │   │   ├── login.html        # Login HTML template
-│   │   │   └── app.html          # App HTML template
+│   │   │   └── app.html          # App HTML template (with store browser)
 │   │   ├── script.ts             # Main app entry point
 │   │   └── index-login.ts        # Login entry point
 │   ├── dist/                 # Compiled JavaScript
@@ -149,6 +162,15 @@ uvicorn server.src.main:app --reload --port 8000
 
 Sie sehen zuerst die Login-Seite. Registrieren Sie einen neuen Benutzer und melden Sie sich an.
 
+### 7. Produktkatalog nutzen (Optional)
+
+Nach dem Login können Sie den Produktkatalog verwenden:
+1. Klicken Sie auf **"📖 Produktkatalog"** im Header
+2. Wählen Sie ein Geschäft (z.B. "Rewe") aus dem Dropdown
+3. Filtern Sie optional nach Abteilung (z.B. "Obst & Gemüse")
+4. Klicken Sie auf **"+ Zur Liste"** bei Produkten, um sie hinzuzufügen
+5. Die Standardeinheit wird automatisch übernommen (z.B. "kg", "Liter")
+
 ## Authentifizierung
 
 Die Anwendung verwendet **JWT (JSON Web Tokens)** für sichere Authentifizierung:
@@ -205,8 +227,14 @@ Die Anwendung verwendet **JWT (JSON Web Tokens)** für sichere Authentifizierung
 - `GET /api/auth/me` - Aktuelle Benutzerinfo abrufen (authentifiziert)
 - `DELETE /api/auth/me` - Eigenen Account löschen (authentifiziert)
 
-**Shopping List (alle authentifiziert):**
-- `GET /api/items` - Alle Artikel abrufen
+**Store Management (alle authentifiziert):**
+- `GET /api/stores` - Alle Geschäfte abrufen
+- `GET /api/stores/{store_id}/departments` - Abteilungen eines Geschäfts
+- `GET /api/stores/{store_id}/products` - Alle Produkte eines Geschäfts
+- `GET /api/departments/{department_id}/products` - Produkte einer Abteilung
+
+**Shopping List (alle authentifiziert, benutzerspezifisch):**
+- `GET /api/items` - Alle Artikel des aktuellen Benutzers abrufen
 - `POST /api/items` - Neuen Artikel erstellen oder Menge aktualisieren
   - Body: `{"name": "Artikelname", "menge": "500 g"}` (menge ist optional)
   - Beispiele:
@@ -214,13 +242,14 @@ Die Anwendung verwendet **JWT (JSON Web Tokens)** für sichere Authentifizierung
     - `{"name": "Milch"}` (ohne Menge)
     - `{"name": "Reis", "menge": "2, 500 g"}` (kommagetrennte Eingabe)
   - **Smart-Merging mit Einheiten-Suche & Fuzzy Matching**: Wenn ein Artikel bereits existiert oder ähnlich ist:
+    - **Benutzerspezifisch**: Nur eigene Items werden berücksichtigt
     - **Fuzzy Matching**: Ähnliche Namen werden erkannt ("Möhre" → "Möhren", "Moehre" → "Möhren")
     - **Kommagetrennte Eingaben**: Mehrere Mengen werden separat verarbeitet ("2, 500 g" → ["2", "500 g"])
     - Gleiche Einheit → Mengen werden summiert (z.B. "500 g" + "300 g" = "800 g")
     - Verschiedene Einheiten → Als kommagetrennte Liste gespeichert (z.B. "500 g" + "2 Packungen" = "500 g, 2 Packungen")
     - Einheit in Liste vorhanden → Nur diese Einheit wird summiert (z.B. "500 g, 2 Packungen" + "300 g" = "800 g, 2 Packungen")
     - Keine Einheit → Zahlen werden summiert (z.B. "6" + "12" = "18")
-- `DELETE /api/items/{id}` - Artikel löschen
+- `DELETE /api/items/{id}` - Eigenen Artikel löschen (nur eigene Items)
 
 ## Code-Qualität
 
@@ -262,21 +291,29 @@ pytest --cov=server --cov-report=html
 ```
 
 **Aktuelle Test-Abdeckung:**
-- ✅ 10 Tests insgesamt
-- ✅ Authentifizierung (Registrierung, Login, Token-Validierung, Token-Refresh, Account-Löschung)
-- ✅ Shopping-List CRUD-Operationen mit JWT
-- ✅ **Mengenangaben**: Items mit und ohne optionale Menge
-- ✅ **Smart-Merging mit Einheiten-Suche**:
-  - Summierung bei gleicher Einheit ("500 g" + "300 g" = "800 g")
-  - Kombination bei verschiedenen Einheiten ("500 g" + "2 Packungen" = "500 g, 2 Packungen")
-  - Intelligente Suche in kommagetrennte Listen ("500 g, 2 Packungen" + "300 g" = "800 g, 2 Packungen")
-  - Summierung ohne Einheit ("6" + "12" = "18")
-  - **Kommagetrennte Eingaben**: Verarbeitung mehrerer Mengen ("500 g" + "2, 300 g" = "800 g, 2")
-- ✅ **Fuzzy Matching**:
-  - Ähnliche Produktnamen werden erkannt ("Möhre" → "Möhren")
-  - Alternative Schreibweisen ("Moehre" → "Möhren")
-  - Singular/Plural ("Kartoffel" → "Kartoffeln")
-  - Keine False Positives bei unterschiedlichen Produkten
+- ✅ 27 Tests insgesamt
+- ✅ **Authentifizierung** (10 Tests):
+  - Registrierung, Login, Token-Validierung, Token-Refresh, Account-Löschung
+- ✅ **Shopping-List CRUD** (10 Tests):
+  - CRUD-Operationen mit JWT-Authentifizierung
+  - **Mengenangaben**: Items mit und ohne optionale Menge
+  - **Smart-Merging mit Einheiten-Suche**:
+    - Summierung bei gleicher Einheit ("500 g" + "300 g" = "800 g")
+    - Kombination bei verschiedenen Einheiten ("500 g" + "2 Packungen" = "500 g, 2 Packungen")
+    - Intelligente Suche in kommagetrennte Listen ("500 g, 2 Packungen" + "300 g" = "800 g, 2 Packungen")
+    - Summierung ohne Einheit ("6" + "12" = "18")
+    - **Kommagetrennte Eingaben**: Verarbeitung mehrerer Mengen ("500 g" + "2, 300 g" = "800 g, 2")
+  - **Fuzzy Matching**:
+    - Ähnliche Produktnamen werden erkannt ("Möhre" → "Möhren")
+    - Alternative Schreibweisen ("Moehre" → "Möhren")
+    - Singular/Plural ("Kartoffel" → "Kartoffeln")
+    - Keine False Positives bei unterschiedlichen Produkten
+  - **Benutzerspezifisch**: Jeder User sieht nur seine eigenen Items
+- ✅ **Store Management** (7 Tests):
+  - Stores, Departments und Products abrufen
+  - Beziehungen zwischen Stores, Departments und Products
+  - Fehlerbehandlung für nicht existierende Ressourcen
+  - Authentifizierungsschutz für alle Endpoints
 - ✅ Geschützte Endpunkte (401/403 Tests)
 - ✅ User-Verwaltung (Account-Löschung, Token-Invalidierung)
 - ✅ Token-Refresh-Mechanismus
@@ -339,6 +376,16 @@ Beide Jobs laufen parallel für maximale Geschwindigkeit. Die CI-Konfiguration b
 - SQLite wird für lokale Entwicklung verwendet
 - Datenbank-Datei: `data.db` (wird automatisch erstellt)
 - Schema wird beim ersten Start automatisch erstellt
+- **Automatisches Seeding**: Beim ersten Start werden Beispieldaten geladen:
+  - 3 Geschäfte: Rewe, Edeka, Aldi
+  - 27 Abteilungen (9 pro Geschäft)
+  - 17 Produkte für Rewe
+- **Datenbankschema**:
+  - `user` - Benutzerkonten
+  - `store` - Geschäfte
+  - `department` - Abteilungen (mit Foreign Key zu store)
+  - `product` - Produkte (mit Foreign Keys zu store und department)
+  - `item` - Einkaufslisten-Items (mit Foreign Keys zu user und optional zu product)
 - Für Tests: In-Memory-Datenbank (siehe `conftest.py`)
 
 ### Technologie-Stack
@@ -370,17 +417,20 @@ Kernfunktionalität für Daten und Utilities:
 #### **State Layer** (`src/state/`)
 Zentralisiertes State-Management mit reaktiven Updates (Observer Pattern):
 - **shopping-list-state.ts** - Shopping-List State-Manager (Single Source of Truth)
+- **store-state.ts** - Store/Product State-Manager (Geschäfte, Abteilungen, Produkte)
 - **user-state.ts** - User State-Manager (Authentifizierungs-Status)
 - **Features**:
   - Observer Pattern für reaktive UI-Updates
   - Loading State Tracking
   - Immutable State (gibt Kopien zurück)
   - Subscription-basierte Benachrichtigungen
+  - Paralleles Laden von Daten für Performance
 - **Tests**: shopping-list-state.test.ts (35), user-state.test.ts (24)
 
 #### **UI Layer** (`src/ui/`)
 Feature-spezifische UI-Logik und Event-Handler (abonniert State-Änderungen):
 - **shopping-list-ui.ts** - Shopping-List UI-Logik (abonniert State, triggert Updates)
+- **store-browser.ts** - Store/Product-Browser UI (Katalog-Durchsuchung, Filter, Produktauswahl)
 - **user-menu.ts** - Benutzermenü-Funktionalität (abonniert User-State)
 
 #### **Pages Layer** (`src/pages/`)

@@ -1,0 +1,222 @@
+/**
+ * Store administration UI component.
+ *
+ * Provides UI for managing stores and departments (create, delete).
+ */
+
+import {
+  fetchStores,
+  fetchDepartments,
+  createStore,
+  deleteStore,
+  createDepartment,
+  deleteDepartment,
+} from '../data/api.js';
+import type { Store } from '../data/api.js';
+
+/**
+ * Initialize the store admin UI.
+ */
+export function initStoreAdmin(): void {
+  // Load and render stores
+  loadStores();
+
+  // Attach event listeners
+  attachStoreAdminListeners();
+}
+
+/**
+ * Load and render stores from API.
+ */
+async function loadStores(): Promise<void> {
+  const stores = await fetchStores();
+  await renderStores(stores);
+}
+
+/**
+ * Render stores list with departments.
+ */
+async function renderStores(stores: readonly Store[]): Promise<void> {
+  const container = document.getElementById('storesList');
+  if (!container) return;
+
+  if (stores.length === 0) {
+    container.innerHTML = '<div class="no-stores">Keine Geschäfte vorhanden.</div>';
+    return;
+  }
+
+  // Load departments for each store
+  const storesWithDepartments = await Promise.all(
+    stores.map(async (store) => {
+      const departments = await fetchDepartments(store.id);
+      return { store, departments };
+    })
+  );
+
+  const html = storesWithDepartments
+    .map(
+      ({ store, departments }) => `
+    <div class="store-item" data-store-id="${store.id}">
+      <div class="store-header">
+        <div class="store-info">
+          <h3>${store.name}</h3>
+          ${store.location ? `<span class="store-location">${store.location}</span>` : ''}
+        </div>
+        <button class="delete-store-btn" data-store-id="${store.id}">
+          Löschen
+        </button>
+      </div>
+
+      <div class="departments-section">
+        <h4>Abteilungen (${departments.length})</h4>
+        <div class="add-department-form">
+          <input
+            type="text"
+            placeholder="Neue Abteilung"
+            class="department-name-input"
+            data-store-id="${store.id}"
+          />
+          <button class="add-department-btn" data-store-id="${store.id}">
+            + Hinzufügen
+          </button>
+        </div>
+
+        <div class="departments-list">
+          ${
+            departments.length > 0
+              ? departments
+                  .map(
+                    (dept) => `
+            <div class="department-item" data-department-id="${dept.id}">
+              <span class="department-name">${dept.name}</span>
+              <button class="delete-department-btn" data-department-id="${dept.id}">
+                ×
+              </button>
+            </div>
+          `
+                  )
+                  .join('')
+              : '<div class="no-departments">Keine Abteilungen</div>'
+          }
+        </div>
+      </div>
+    </div>
+  `
+    )
+    .join('');
+
+  container.innerHTML = html;
+
+  // Re-attach event listeners after rendering
+  attachDynamicListeners();
+}
+
+/**
+ * Attach event listeners to admin controls.
+ */
+function attachStoreAdminListeners(): void {
+  // Add store button
+  const addStoreBtn = document.getElementById('addStoreBtn');
+  if (addStoreBtn) {
+    addStoreBtn.addEventListener('click', async () => {
+      const nameInput = document.getElementById('storeNameInput') as HTMLInputElement;
+      const locationInput = document.getElementById('storeLocationInput') as HTMLInputElement;
+
+      const name = nameInput.value.trim();
+      const location = locationInput.value.trim();
+
+      if (!name) {
+        alert('Bitte geben Sie einen Geschäftsnamen ein.');
+        return;
+      }
+
+      const newStore = await createStore(name, location);
+      if (newStore) {
+        nameInput.value = '';
+        locationInput.value = '';
+        await loadStores();
+      } else {
+        alert('Fehler beim Erstellen des Geschäfts. Existiert es bereits?');
+      }
+    });
+  }
+
+  // Back button
+  const backBtn = document.getElementById('backToAppBtn');
+  if (backBtn) {
+    backBtn.addEventListener('click', () => {
+      window.location.href = '/app';
+    });
+  }
+}
+
+/**
+ * Attach event listeners to dynamically created elements.
+ */
+function attachDynamicListeners(): void {
+  // Delete store buttons
+  const deleteStoreBtns = document.querySelectorAll('.delete-store-btn');
+  deleteStoreBtns.forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      const target = e.currentTarget as HTMLElement;
+      const storeId = parseInt(target.dataset.storeId || '0', 10);
+
+      if (!confirm('Möchten Sie dieses Geschäft wirklich löschen? Alle Abteilungen und Produkte werden ebenfalls gelöscht.')) {
+        return;
+      }
+
+      const success = await deleteStore(storeId);
+      if (success) {
+        await loadStores();
+      } else {
+        alert('Fehler beim Löschen des Geschäfts.');
+      }
+    });
+  });
+
+  // Add department buttons
+  const addDepartmentBtns = document.querySelectorAll('.add-department-btn');
+  addDepartmentBtns.forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      const target = e.currentTarget as HTMLElement;
+      const storeId = parseInt(target.dataset.storeId || '0', 10);
+      const input = document.querySelector(
+        `.department-name-input[data-store-id="${storeId}"]`
+      ) as HTMLInputElement;
+
+      const name = input.value.trim();
+      if (!name) {
+        alert('Bitte geben Sie einen Abteilungsnamen ein.');
+        return;
+      }
+
+      const newDepartment = await createDepartment(storeId, name);
+      if (newDepartment) {
+        input.value = '';
+        await loadStores();
+      } else {
+        alert('Fehler beim Erstellen der Abteilung.');
+      }
+    });
+  });
+
+  // Delete department buttons
+  const deleteDepartmentBtns = document.querySelectorAll('.delete-department-btn');
+  deleteDepartmentBtns.forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      const target = e.currentTarget as HTMLElement;
+      const departmentId = parseInt(target.dataset.departmentId || '0', 10);
+
+      if (!confirm('Möchten Sie diese Abteilung wirklich löschen? Alle Produkte in dieser Abteilung werden ebenfalls gelöscht.')) {
+        return;
+      }
+
+      const success = await deleteDepartment(departmentId);
+      if (success) {
+        await loadStores();
+      } else {
+        alert('Fehler beim Löschen der Abteilung.');
+      }
+    });
+  });
+}

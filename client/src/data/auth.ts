@@ -44,10 +44,41 @@ export function clearToken(): void {
 }
 
 /**
- * Check if user is authenticated.
+ * Check if user is authenticated by verifying token exists and is valid.
+ * This is a synchronous check - it only verifies the token exists.
+ * For actual validation, the API calls will check token validity.
  */
 export function isAuthenticated(): boolean {
-  return getToken() !== null;
+  const token = getToken();
+  if (!token) {
+    return false;
+  }
+
+  // Basic JWT structure validation (header.payload.signature)
+  const parts = token.split('.');
+  if (parts.length !== 3) {
+    clearToken();
+    return false;
+  }
+
+  try {
+    // Decode payload to check expiration
+    const payload = JSON.parse(atob(parts[1]));
+    if (payload.exp) {
+      // Check if token is expired (exp is in seconds, Date.now() is in ms)
+      const isExpired = payload.exp * 1000 < Date.now();
+      if (isExpired) {
+        clearToken();
+        return false;
+      }
+    }
+    return true;
+  } catch (error) {
+    // Invalid token format
+    console.error('Invalid token format:', error);
+    clearToken();
+    return false;
+  }
 }
 
 /**

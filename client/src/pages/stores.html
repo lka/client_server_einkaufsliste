@@ -1,0 +1,36 @@
+<header>
+  <h1>Geschäfte verwalten</h1>
+  <div class="header-actions">
+    <div class="user-menu">
+      <button id="menuBtn" class="menu-btn" aria-label="Benutzermenü">⋮</button>
+      <div id="menuDropdown" class="menu-dropdown">
+        <button id="backToAppBtn" class="menu-item">← Zurück zur Einkaufsliste</button>
+        <button id="manageProductsBtn" class="menu-item">📦 Produkte verwalten</button>
+        <button id="logoutBtn" class="menu-item">Abmelden</button>
+        <button id="deleteAccountBtn" class="menu-item menu-item-danger">Account löschen</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="stores-admin-container">
+    <!-- Add Store Section -->
+    <section class="add-store-section">
+      <h2>Neues Geschäft hinzufügen</h2>
+      <div class="add-store-form">
+        <input id="storeNameInput" type="text" placeholder="Geschäftsname (z.B. Rewe)" />
+        <input id="storeLocationInput" type="text" placeholder="Standort (optional)" />
+        <button id="addStoreBtn">Geschäft hinzufügen</button>
+      </div>
+    </section>
+
+    <!-- Stores List Section -->
+    <section class="stores-list-section">
+      <h2>Vorhandene Geschäfte</h2>
+      <div id="storesList" class="stores-list">
+        <!-- Stores will be rendered here -->
+      </div>
+    </section>
+  </div>
+</main>

@@ -1,76 +1,83 @@
-"""Database helpers: engine and session factory."""
+"""Database utilities for SQLModel with SQLite.
+
+This module provides database connection management and session handling.
+"""
 
 import os
+from contextlib import contextmanager
+from typing import Generator
 
-from sqlmodel import create_engine, SQLModel, Session
-
-
-# Global engine instance to ensure single engine per process
-_engine = None
-
-
-def get_database_url() -> str:
-    """Get the database URL from environment or return SQLite default.
-
-    Returns:
-        str: Database URL, defaults to local SQLite file 'data.db'
-    """
-    return os.environ.get("DATABASE_URL", "sqlite:///./data.db")
+from sqlmodel import SQLModel, Session, create_engine
+from sqlalchemy import Engine
 
 
-def get_engine():
-    """Get or create SQLAlchemy engine with appropriate configuration.
+# Global engine instance
+_engine: Engine | None = None
 
-    For SQLite, enables check_same_thread=False for multithreaded access.
-    Uses get_database_url() to determine connection URL.
-    Reuses the same engine instance to maintain database connection.
-    This is critical for in-memory SQLite databases to work correctly.
+
+def get_engine() -> Engine:
+    """Get or create the database engine.
 
     Returns:
-        Engine: Configured SQLAlchemy engine instance
+        Engine: SQLAlchemy engine instance
     """
     global _engine
+
     if _engine is None:
-        url = get_database_url()
-        connect_args = {}
-        if url.startswith("sqlite"):
-            # SQLite needs this in multithreaded environments
-            # For in-memory databases, same engine must be reused
-            connect_args = {"check_same_thread": False}
-        _engine = create_engine(url, echo=False, connect_args=connect_args)
+        # Get DATABASE_URL from environment or use default
+        database_url = os.getenv("DATABASE_URL", "sqlite:///./data.db")
+
+        # Create engine with connection args for SQLite
+        connect_args = (
+            {"check_same_thread": False} if database_url.startswith("sqlite") else {}
+        )
+
+        _engine = create_engine(
+            database_url,
+            echo=False,  # Set to True for SQL query logging
+            connect_args=connect_args,
+        )
+
     return _engine
 
 
-def create_db_and_tables(engine=None):
-    """Create all tables defined in SQLModel metadata.
-
-    Args:
-        engine: Optional SQLAlchemy engine. If None, creates new engine.
-    """
-    if engine is None:
-        engine = get_engine()
-    SQLModel.metadata.create_all(engine)
-
-
-def get_session(engine=None):
-    """Create a new SQLModel database session.
-
-    Args:
-        engine: Optional SQLAlchemy engine. If None, creates new engine.
-
-    Returns:
-        Session: New SQLModel session bound to the engine
-    """
-    if engine is None:
-        engine = get_engine()
-    return Session(engine)
-
-
-def reset_engine():
+def reset_engine() -> None:
     """Reset the global engine instance.
 
-    Useful for testing when you need to recreate the engine with
-    different configuration (e.g., switching to in-memory database).
+    Useful for testing to ensure a fresh engine with new DATABASE_URL.
     """
     global _engine
     _engine = None
+
+
+def create_db_and_tables(engine: Engine | None = None) -> None:
+    """Create all database tables.
+
+    Args:
+        engine: Optional engine to use. If None, uses default engine.
+    """
+    if engine is None:
+        engine = get_engine()
+
+    SQLModel.metadata.create_all(engine)
+
+
+@contextmanager
+def get_session(engine: Engine | None = None) -> Generator[Session, None, None]:
+    """Context manager for database sessions.
+
+    Args:
+        engine: Optional engine to use. If None, uses default engine.
+
+    Yields:
+        Session: SQLModel session for database operations
+
+    Example:
+        with get_session() as session:
+            items = session.exec(select(Item)).all()
+    """
+    if engine is None:
+        engine = get_engine()
+
+    with Session(engine) as session:
+        yield session
