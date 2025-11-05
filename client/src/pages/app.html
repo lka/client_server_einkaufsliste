@@ -1,7 +1,6 @@
 <header>
   <h1>Einkaufsliste</h1>
   <div class="header-actions">
-    <button id="toggleBrowserBtn" class="browse-btn" aria-label="Produktkatalog">📖 Produktkatalog</button>
     <div class="user-menu">
       <button id="menuBtn" class="menu-btn" aria-label="Benutzermenü">⋮</button>
       <div id="menuDropdown" class="menu-dropdown">
@@ -15,32 +14,22 @@
 </header>
 
 <main>
-  <div class="app-layout">
-    <!-- Shopping List Section -->
-    <div class="shopping-list-section">
-      <!-- Store Filter -->
-      <section class="store-filter">
-        <label for="storeFilter">Geschäft:</label>
-        <select id="storeFilter">
-          <option value="">Alle Geschäfte</option>
-          <!-- Options will be populated dynamically -->
-        </select>
-      </section>
+  <!-- Store Filter -->
+  <section class="store-filter">
+    <label for="storeFilter">Geschäft:</label>
+    <select id="storeFilter">
+      <option value="">Alle Geschäfte</option>
+      <!-- Options will be populated dynamically -->
+    </select>
+  </section>
 
-      <section class="add">
-        <input id="itemInput" type="text" placeholder="Neues Produkt eingeben" />
-        <input id="mengeInput" type="text" placeholder="Menge (z.B. 500 g, 2 Stück)" />
-        <button id="addBtn">Hinzufügen</button>
-      </section>
+  <section class="add">
+    <input id="itemInput" type="text" placeholder="Neues Produkt eingeben" />
+    <input id="mengeInput" type="text" placeholder="Menge (z.B. 500 g, 2 Stück)" />
+    <button id="addBtn">Hinzufügen</button>
+  </section>
 
-      <section class="list">
-        <ul id="items"></ul>
-      </section>
-    </div>
-
-    <!-- Store Browser Section (initially hidden) -->
-    <aside id="store-browser" class="store-browser hidden">
-      <!-- Store browser content will be dynamically rendered -->
-    </aside>
-  </div>
+  <section class="list">
+    <ul id="items"></ul>
+  </section>
 </main>
