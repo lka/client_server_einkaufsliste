@@ -308,13 +308,24 @@ SQLite unterstützt Foreign Keys (müssen aktiviert sein):
 - Items werden NICHT automatisch gelöscht (manuell in Code)
 - Ermöglicht Kontrolle über Datenbereinigung
 
-**Bei Store-Löschung:**
-- Departments sollten CASCADE gelöscht werden
-- Products sollten CASCADE gelöscht werden
+**Bei Store-Löschung (IMPLEMENTIERT):**
+- Departments werden CASCADE gelöscht (manuell im Code)
+- Products werden CASCADE gelöscht (manuell im Code)
+- **Ablauf**:
+  1. Alle Products des Stores werden gelöscht
+  2. Alle Departments des Stores werden gelöscht
+  3. Der Store selbst wird gelöscht
+- **SQLite-Limitierung**: Da SQLite keine echten CASCADE-Foreign-Keys unterstützt, wird dies im Backend-Code manuell durchgeführt
+
+**Bei Department-Löschung (IMPLEMENTIERT):**
+- Products der Abteilung werden CASCADE gelöscht (manuell im Code)
+- **Ablauf**:
+  1. Alle Products des Departments werden gelöscht
+  2. Das Department selbst wird gelöscht
 
 **Bei Product-Löschung:**
 - Items behalten ihre `product_id` (NULL erlaubt)
-- Oder Items werden zu freien Text-Items
+- Items werden zu freien Text-Items ohne Produktreferenz
 
 ## Test-Datenbank
 
@@ -358,6 +369,92 @@ items = session.exec(
 item = session.get(Item, item_id)
 if not item or item.user_id != current_user.id:
     raise HTTPException(status_code=404)
+```
+
+## API-Endpunkte für CRUD-Operationen
+
+Alle folgenden Endpunkte erfordern JWT-Authentifizierung.
+
+### Store CRUD
+
+**POST /api/stores** - Neues Geschäft erstellen
+```json
+Request Body: { "name": "Lidl", "location": "Musterstraße 1" }
+Response: { "id": 4, "name": "Lidl", "location": "Musterstraße 1" }
+Status: 201 Created
+```
+
+**PUT /api/stores/{store_id}** - Geschäft aktualisieren
+```json
+Request Body: { "name": "Lidl Plus", "location": "Neue Straße 2" }
+Response: { "id": 4, "name": "Lidl Plus", "location": "Neue Straße 2" }
+Status: 200 OK
+```
+
+**DELETE /api/stores/{store_id}** - Geschäft löschen (mit Cascading)
+```
+Response: None
+Status: 204 No Content
+Hinweis: Löscht automatisch alle Departments und Products des Stores
+```
+
+### Department CRUD
+
+**POST /api/departments** - Neue Abteilung erstellen
+```json
+Request Body: { "name": "Neue Abteilung", "store_id": 1, "sort_order": 10 }
+Response: { "id": 28, "name": "Neue Abteilung", "store_id": 1, "sort_order": 10 }
+Status: 201 Created
+Validierung: Store muss existieren
+```
+
+**PUT /api/departments/{department_id}** - Abteilung aktualisieren
+```json
+Request Body: { "name": "Aktualisierte Abteilung", "sort_order": 5 }
+Response: { "id": 28, "name": "Aktualisierte Abteilung", "store_id": 1, "sort_order": 5 }
+Status: 200 OK
+Hinweis: store_id kann nicht geändert werden
+```
+
+**DELETE /api/departments/{department_id}** - Abteilung löschen (mit Cascading)
+```
+Response: None
+Status: 204 No Content
+Hinweis: Löscht automatisch alle Products der Abteilung
+```
+
+### Product CRUD
+
+**POST /api/products** - Neues Produkt erstellen
+```json
+Request Body: {
+  "name": "Zwiebeln",
+  "store_id": 1,
+  "department_id": 1,
+  "fresh": true
+}
+Response: { "id": 18, "name": "Zwiebeln", "store_id": 1, "department_id": 1, "fresh": true }
+Status: 201 Created
+Validierung:
+  - Store muss existieren
+  - Department muss existieren
+  - Department muss zum Store gehören
+```
+
+**PUT /api/products/{product_id}** - Produkt aktualisieren
+```json
+Request Body: { "name": "Bio-Zwiebeln", "fresh": false }
+Response: { "id": 18, "name": "Bio-Zwiebeln", "store_id": 1, "department_id": 1, "fresh": false }
+Status: 200 OK
+Hinweis: Partial Updates unterstützt (alle Felder optional)
+Validierung: Bei store_id/department_id Änderung wird Zugehörigkeit geprüft
+```
+
+**DELETE /api/products/{product_id}** - Produkt löschen
+```
+Response: None
+Status: 204 No Content
+Hinweis: Items behalten ihre product_id-Referenz (werden zu freien Text-Items)
 ```
 
 ## Erweiterungsmöglichkeiten

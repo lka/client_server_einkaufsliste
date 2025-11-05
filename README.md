@@ -16,6 +16,17 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
   - **Department-Filter**: Filtern nach Abteilungen für schnelleres Finden
   - **Ein-Klick-Hinzufügen**: Produkte direkt aus dem Katalog zur Liste hinzufügen
   - Benutzerspezifische Einkaufslisten (jeder User sieht nur seine eigenen Items)
+- ✅ **Store-Verwaltung**: Dedizierte Admin-Seite für Geschäfte und Abteilungen
+  - **CRUD-Operationen**: Erstellen, Bearbeiten und Löschen von Stores und Departments
+  - **Cascading Deletes**: Beim Löschen eines Stores werden automatisch alle zugehörigen Departments und Products entfernt
+  - **Visuelle Organisation**: Übersichtliche Darstellung der Store-Department-Hierarchie
+  - Navigation über Benutzermenü: "🏪 Geschäfte verwalten"
+- ✅ **Produkt-Verwaltung**: Dedizierte Admin-Seite für Produkte
+  - **CRUD-Operationen**: Erstellen, Bearbeiten und Löschen von Produkten
+  - **Store- und Department-Zuordnung**: Jedes Produkt ist einem Store und einer Abteilung zugeordnet
+  - **Frische-Kennzeichnung**: Optionale Markierung für frische/verderbliche Produkte
+  - **Store-Filter**: Anzeige und Verwaltung nach ausgewähltem Geschäft
+  - Navigation über Benutzermenü: "📦 Produkte verwalten"
 - ✅ **Mengenangaben mit Smart-Merging & Fuzzy Matching**: Optionale Mengenangaben für jeden Artikel (z.B. "500 g", "2 Stück")
   - **Kommagetrennte Eingaben**: Mehrere Mengen gleichzeitig eingeben (z.B. "2, 500 g")
   - Automatisches Summieren von Mengen mit gleicher Einheit
@@ -29,7 +40,7 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - "Zucker 500 g, 2 Packungen" + "Zucker 300 g" = "Zucker 800 g, 2 Packungen"
     - "Reis 500 g" + "2, 300 g" = "Reis 800 g, 2"
 - ✅ **Reaktive UI**: Automatische UI-Updates durch State-Management mit Observer Pattern
-- ✅ **Vollständige Tests**: 171 Tests (17 Server + 154 Client) mit 99%+ Code-Abdeckung
+- ✅ **Vollständige Tests**: 217 Tests (46 Server + 171 Client) mit 99%+ Code-Abdeckung
 - ✅ **TypeScript Client**: Typsicherer Client mit vier-Schichten-Architektur
 - ✅ **FastAPI Server**: Moderne Python API mit SQLModel ORM
 - ✅ **Account-Verwaltung**: Benutzer können sich registrieren, anmelden und Account löschen
@@ -51,7 +62,7 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
 │       ├── conftest.py       # Pytest fixtures
 │       ├── test_api.py       # API integration tests
 │       ├── test_auth.py      # Authentication tests
-│       └── test_stores.py    # Store management tests
+│       └── test_stores.py    # Store/Department/Product CRUD tests (19 tests)
 ├── client/
 │   ├── src/
 │   │   ├── data/                 # Data layer (API, auth, DOM utilities)
@@ -69,16 +80,24 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
 │   │   ├── ui/                   # UI layer (feature-specific UI modules)
 │   │   │   ├── shopping-list-ui.ts   # Shopping list UI module
 │   │   │   ├── store-browser.ts      # Store/product browser UI module
+│   │   │   ├── store-admin.ts        # Store administration UI (CRUD)
+│   │   │   ├── product-admin.ts      # Product administration UI (CRUD)
 │   │   │   └── user-menu.ts          # User menu module
 │   │   ├── pages/                # Pages layer (page controllers & templates)
 │   │   │   ├── login.ts          # Login page controller
 │   │   │   ├── login.html        # Login HTML template
-│   │   │   └── app.html          # App HTML template (with store browser)
+│   │   │   ├── app.html          # App HTML template (with store browser)
+│   │   │   ├── stores.html       # Store admin HTML template
+│   │   │   └── products.html     # Product admin HTML template
 │   │   ├── script.ts             # Main app entry point
+│   │   ├── script-stores.ts      # Store admin entry point
+│   │   ├── script-products.ts    # Product admin entry point
 │   │   └── index-login.ts        # Login entry point
 │   ├── dist/                 # Compiled JavaScript
 │   ├── index.html            # Login page
 │   ├── index-app.html        # Main app page
+│   ├── index-stores.html     # Store admin page
+│   ├── index-products.html   # Product admin page
 │   ├── favicon.svg           # Application icon
 │   ├── styles.css            # Styles
 │   ├── package.json          # Node dependencies
@@ -171,6 +190,23 @@ Nach dem Login können Sie den Produktkatalog verwenden:
 4. Klicken Sie auf **"+ Zur Liste"** bei Produkten, um sie hinzuzufügen
 5. Die Standardeinheit wird automatisch übernommen (z.B. "kg", "Liter")
 
+### 8. Store- und Produkt-Verwaltung nutzen
+
+Sie können Geschäfte, Abteilungen und Produkte verwalten:
+
+**Geschäfte und Abteilungen verwalten:**
+1. Klicken Sie auf das Menü (⋮) im Header
+2. Wählen Sie **"🏪 Geschäfte verwalten"**
+3. Erstellen, bearbeiten oder löschen Sie Stores und Departments
+4. **Hinweis**: Beim Löschen eines Stores werden automatisch alle zugehörigen Departments und Products entfernt
+
+**Produkte verwalten:**
+1. Klicken Sie auf das Menü (⋮) im Header
+2. Wählen Sie **"📦 Produkte verwalten"**
+3. Wählen Sie ein Geschäft aus dem Dropdown
+4. Erstellen, bearbeiten oder löschen Sie Produkte
+5. Ordnen Sie Produkte Abteilungen zu und kennzeichnen Sie frische Produkte
+
 ## Authentifizierung
 
 Die Anwendung verwendet **JWT (JSON Web Tokens)** für sichere Authentifizierung:
@@ -229,9 +265,20 @@ Die Anwendung verwendet **JWT (JSON Web Tokens)** für sichere Authentifizierung
 
 **Store Management (alle authentifiziert):**
 - `GET /api/stores` - Alle Geschäfte abrufen
+- `POST /api/stores` - Neues Geschäft erstellen
+- `PUT /api/stores/{store_id}` - Geschäft aktualisieren
+- `DELETE /api/stores/{store_id}` - Geschäft löschen (cascading: löscht auch Departments und Products)
 - `GET /api/stores/{store_id}/departments` - Abteilungen eines Geschäfts
+- `POST /api/departments` - Neue Abteilung erstellen
+- `PUT /api/departments/{department_id}` - Abteilung aktualisieren
+- `DELETE /api/departments/{department_id}` - Abteilung löschen (cascading: löscht auch Products)
 - `GET /api/stores/{store_id}/products` - Alle Produkte eines Geschäfts
 - `GET /api/departments/{department_id}/products` - Produkte einer Abteilung
+
+**Product Management (alle authentifiziert):**
+- `POST /api/products` - Neues Produkt erstellen
+- `PUT /api/products/{product_id}` - Produkt aktualisieren
+- `DELETE /api/products/{product_id}` - Produkt löschen
 
 **Shopping List (alle authentifiziert, benutzerspezifisch):**
 - `GET /api/items` - Alle Artikel des aktuellen Benutzers abrufen
@@ -291,7 +338,7 @@ pytest --cov=server --cov-report=html
 ```
 
 **Aktuelle Test-Abdeckung:**
-- ✅ 27 Tests insgesamt
+- ✅ 46 Tests insgesamt
 - ✅ **Authentifizierung** (10 Tests):
   - Registrierung, Login, Token-Validierung, Token-Refresh, Account-Löschung
 - ✅ **Shopping-List CRUD** (10 Tests):
@@ -309,11 +356,23 @@ pytest --cov=server --cov-report=html
     - Singular/Plural ("Kartoffel" → "Kartoffeln")
     - Keine False Positives bei unterschiedlichen Produkten
   - **Benutzerspezifisch**: Jeder User sieht nur seine eigenen Items
-- ✅ **Store Management** (7 Tests):
-  - Stores, Departments und Products abrufen
-  - Beziehungen zwischen Stores, Departments und Products
-  - Fehlerbehandlung für nicht existierende Ressourcen
-  - Authentifizierungsschutz für alle Endpoints
+- ✅ **Store Management & CRUD** (26 Tests):
+  - **Store CRUD** (8 Tests):
+    - Stores erstellen, abrufen, aktualisieren, löschen
+    - Validierung (leerer Name, zu langer Name)
+    - Cascading Delete: Löscht automatisch zugehörige Departments und Products
+  - **Department CRUD** (7 Tests):
+    - Departments erstellen, abrufen, aktualisieren, löschen
+    - Validierung (Store-Existenz, leerer Name)
+    - Cascading Delete: Löscht automatisch zugehörige Products
+  - **Product CRUD** (8 Tests):
+    - Products erstellen, abrufen, aktualisieren, löschen
+    - Validierung (Store-Existenz, Department-Existenz, Department-Store-Zuordnung)
+    - Partial Updates (optionale Felder)
+  - **Beziehungen & Constraints** (3 Tests):
+    - Store-Department-Product Hierarchie
+    - Cascading Deletes über mehrere Ebenen
+    - Fehlerbehandlung für nicht existierende Ressourcen
 - ✅ Geschützte Endpunkte (401/403 Tests)
 - ✅ User-Verwaltung (Account-Löschung, Token-Invalidierung)
 - ✅ Token-Refresh-Mechanismus
@@ -334,22 +393,27 @@ npm test -- --watch
 ```
 
 **Aktuelle Test-Abdeckung:**
-- ✅ 154 Tests insgesamt (10 Test-Suites)
-- ✅ 99.36% Code-Abdeckung
+- ✅ 171 Tests insgesamt (11 Test-Suites)
+- ✅ 99%+ Code-Abdeckung
 - ✅ Data Layer: API Client (19), Authentication (36), DOM (15) = 70 Tests
   - Inklusive 401 Handling & Token Refresh Failures
   - Inklusive Token-Refresh-Optimierung (Singleton, Cooldown, Concurrent Requests)
   - Inklusive Template-Caching (Memory Cache, Load Flag, Zero Network Cost)
   - Inklusive DOM-Batching (DocumentFragment, O(1) Reflows)
-  - **Neu**: Tests für Mengenangaben in API und DOM
+  - Tests für Mengenangaben in API und DOM
 - ✅ State Layer: Shopping List State (36), User State (24) = 60 Tests
   - Inklusive Observer Pattern, Subscriptions, Reactivity
   - Inklusive Loading State Tracking
   - Inklusive Immutability Tests
-  - **Neu**: Tests für Mengenangaben im State
-  - **Neu**: Test für Fuzzy-Matching-Update (verhindert Duplikate)
-- ✅ UI Layer: Shopping List UI (16), User Menu (16) = 32 Tests
-  - **Neu**: Tests für Mengenfeld-Eingabe
+  - Tests für Mengenangaben im State
+  - Test für Fuzzy-Matching-Update (verhindert Duplikate)
+- ✅ UI Layer: Shopping List UI (16), User Menu (16), Product Admin (15) = 47 Tests
+  - Tests für Mengenfeld-Eingabe
+  - **Neu**: Product Admin CRUD Tests (15 Tests):
+    - Store-Auswahl und Department-Verwaltung
+    - Product CRUD-Operationen (Create, Update, Delete)
+    - Form-Validierung und Fehlerbehandlung
+    - UI-Interaktionen (Edit-Modus, Cancel, Save)
 - ✅ Pages Layer: Login Controller (20) = 20 Tests
 - ✅ Entry Points: Login Entry (4), Main App Entry (7) = 11 Tests
 - ✅ Error Handling, Edge Cases, User Interactions
