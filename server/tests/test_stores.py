@@ -248,7 +248,11 @@ def test_update_store():
     store_id = r.json()["id"]
 
     # Update the store
-    update_data = {"name": "Updated Store", "location": "New Location", "sort_order": 10}
+    update_data = {
+        "name": "Updated Store",
+        "location": "New Location",
+        "sort_order": 10,
+    }
     r = client.put(f"/api/stores/{store_id}", json=update_data, headers=headers)
     assert r.status_code == 200
     updated_store = r.json()

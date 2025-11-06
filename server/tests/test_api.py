@@ -379,3 +379,59 @@ def test_comma_separated_input():
 
     # Cleanup
     client.delete(f"/api/items/{first_id}", headers=headers)
+
+
+def test_delete_store_items():
+    """Test deleting all items for a specific store."""
+    # Get authentication token
+    token = get_auth_token()
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Get a store ID (should have seeded stores)
+    r = client.get("/api/stores", headers=headers)
+    assert r.status_code == 200
+    stores = r.json()
+    assert len(stores) > 0
+    store_id = stores[0]["id"]
+
+    # Create multiple items for this store (use unique names to avoid merging)
+    r1 = client.post(
+        "/api/items",
+        json={"name": "TestItemApple", "store_id": store_id},
+        headers=headers,
+    )
+    assert r1.status_code == 201
+
+    r2 = client.post(
+        "/api/items",
+        json={"name": "TestItemBanana", "store_id": store_id},
+        headers=headers,
+    )
+    assert r2.status_code == 201
+
+    # Create item for different store (if exists) or without store
+    r3 = client.post("/api/items", json={"name": "TestItemCherry"}, headers=headers)
+    assert r3.status_code == 201
+    item3_id = r3.json()["id"]
+
+    # Verify all 3 distinct items exist
+    r = client.get("/api/items", headers=headers)
+    items = r.json()
+    test_items = [it for it in items if "TestItem" in it["name"]]
+    assert len(test_items) == 3
+
+    # Delete all items for the store
+    r = client.delete(f"/api/stores/{store_id}/items", headers=headers)
+    assert r.status_code == 204
+
+    # Verify items for this store are deleted
+    r = client.get("/api/items", headers=headers)
+    items = r.json()
+    test_items = [it for it in items if "TestItem" in it["name"]]
+    # Should only have item3 (Cherry) remaining
+    assert len(test_items) == 1
+    assert test_items[0]["id"] == item3_id
+    assert test_items[0]["name"] == "TestItemCherry"
+
+    # Cleanup
+    client.delete(f"/api/items/{item3_id}", headers=headers)

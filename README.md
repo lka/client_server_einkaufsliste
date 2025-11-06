@@ -15,6 +15,7 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
   - **Automatische Produkt-Zuordnung**: Neue Items werden automatisch mit Produkten im Katalog gematcht (Fuzzy-Matching mit 60% Schwellwert)
   - **Abteilungs-Gruppierung**: Shopping-Liste zeigt Items gruppiert nach Abteilungen in Spalten-Layout
   - **Erstes Geschäft als Standard**: Automatische Auswahl des ersten Geschäfts beim Laden
+  - **Liste leeren**: Alle Items eines Geschäfts mit einem Klick löschen (mit Sicherheitsabfrage)
   - Benutzerspezifische Einkaufslisten (jeder User sieht nur seine eigenen Items)
 - ✅ **Store-Verwaltung**: Dedizierte Admin-Seite für Geschäfte und Abteilungen
   - **CRUD-Operationen**: Erstellen, Bearbeiten und Löschen von Stores und Departments
@@ -46,7 +47,7 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - "Zucker 500 g, 2 Packungen" + "Zucker 300 g" = "Zucker 800 g, 2 Packungen"
     - "Reis 500 g" + "2, 300 g" = "Reis 800 g, 2"
 - ✅ **Reaktive UI**: Automatische UI-Updates durch State-Management mit Observer Pattern
-- ✅ **Vollständige Tests**: 425 Tests (50 Server + 375 Client) mit 97%+ Code-Abdeckung
+- ✅ **Vollständige Tests**: 426 Tests (51 Server + 375 Client) mit 97%+ Code-Abdeckung
 - ✅ **TypeScript Client**: Typsicherer Client mit vier-Schichten-Architektur
 - ✅ **FastAPI Server**: Moderne Python API mit SQLModel ORM
 - ✅ **Account-Verwaltung**: Benutzer können sich registrieren, anmelden und Account löschen
@@ -197,6 +198,9 @@ Nach dem Login können Sie die Einkaufsliste verwenden:
    - Spalten-Layout auf Desktop (z.B. "Obst & Gemüse", "Milchprodukte", "Sonstiges")
    - Gestapeltes Layout auf Mobile
 5. **Items entfernen**: Klicken Sie auf das Papierkorb-Icon (🗑️) neben dem Item
+6. **Liste leeren**: Klicken Sie auf "🗑️ Liste leeren" um alle Items des ausgewählten Geschäfts zu löschen
+   - Funktioniert nur bei ausgewähltem Geschäft (nicht bei "Alle Geschäfte")
+   - Sicherheitsabfrage vor dem Löschen
 
 ### 8. Store- und Produkt-Verwaltung nutzen
 
@@ -287,6 +291,7 @@ Die Anwendung verwendet **JWT (JSON Web Tokens)** für sichere Authentifizierung
   - Body: `{"name": "Neuer Name", "location": "Neuer Standort", "sort_order": 5}` (alle Felder optional, partial update)
   - Beispiel nur sort_order: `{"sort_order": 2}` (für Reordering)
 - `DELETE /api/stores/{store_id}` - Geschäft löschen (cascading: löscht auch Departments und Products)
+- `DELETE /api/stores/{store_id}/items` - Alle Items eines Geschäfts löschen (nur eigene Items des angemeldeten Users)
 - `GET /api/stores/{store_id}/departments` - Abteilungen eines Geschäfts (sortiert nach sort_order)
 - `POST /api/departments` - Neue Abteilung erstellen
   - Body: `{"name": "Abteilungsname", "sort_order": 0}` (sort_order optional, default: 0)
@@ -368,10 +373,11 @@ pytest --cov=server --cov-report=html
 ```
 
 **Aktuelle Test-Abdeckung:**
-- ✅ 50 Tests insgesamt (+4 neue Tests für Store-Sortierung)
+- ✅ 51 Tests insgesamt (+5 neue Tests: 4 für Store-Sortierung, 1 für Store-Items löschen)
 - ✅ **Authentifizierung** (10 Tests):
   - Registrierung, Login, Token-Validierung, Token-Refresh, Account-Löschung
-- ✅ **Shopping-List CRUD** (10 Tests):
+- ✅ **Shopping-List CRUD** (11 Tests):
+  - **Store-Items löschen**: Alle Items eines Geschäfts löschen (benutzerspezifisch)
   - CRUD-Operationen mit JWT-Authentifizierung
   - **Mengenangaben**: Items mit und ohne optionale Menge
   - **Smart-Merging mit Einheiten-Suche**:

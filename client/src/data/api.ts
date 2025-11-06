@@ -177,6 +177,35 @@ export async function deleteItem(id: string): Promise<boolean> {
 }
 
 /**
+ * Delete all items for a specific store.
+ */
+export async function deleteStoreItems(storeId: number): Promise<boolean> {
+  const tokenRefreshed = await ensureFreshToken();
+  if (!tokenRefreshed) {
+    console.error('Token refresh failed');
+    return false;
+  }
+
+  try {
+    const res = await fetch(`/api/stores/${storeId}/items`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    if (res.status === 401) {
+      handleUnauthorized();
+      return false;
+    }
+    if (!res.ok) {
+      console.error('Failed to delete store items:', res.status, res.statusText);
+    }
+    return res.ok;
+  } catch (error) {
+    console.error('Error deleting store items:', error);
+    return false;
+  }
+}
+
+/**
  * Fetch all stores from the API.
  */
 export async function fetchStores(): Promise<Store[]> {

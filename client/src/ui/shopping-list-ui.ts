@@ -69,6 +69,7 @@ export function initShoppingListUI(): void {
   const mengeInput = document.getElementById('mengeInput') as HTMLInputElement;
   const addBtn = document.getElementById('addBtn') as HTMLButtonElement;
   const storeFilter = document.getElementById('storeFilter') as HTMLSelectElement;
+  const clearStoreBtn = document.getElementById('clearStoreBtn') as HTMLButtonElement;
   const itemsList = document.getElementById('items');
 
   if (!input || !mengeInput || !addBtn) {
@@ -126,6 +127,43 @@ export function initShoppingListUI(): void {
       addBtn.click();
     }
   });
+
+  // Clear store items button handler
+  if (clearStoreBtn) {
+    clearStoreBtn.addEventListener('click', async () => {
+      // Only allow clearing if a specific store is selected
+      if (selectedStoreId === null) {
+        alert('Bitte wählen Sie ein spezifisches Geschäft aus, um dessen Liste zu leeren.');
+        return;
+      }
+
+      // Get store name for confirmation
+      const storeFilter = document.getElementById('storeFilter') as HTMLSelectElement;
+      const storeName = storeFilter.options[storeFilter.selectedIndex].text;
+
+      // Confirm deletion
+      const confirmed = confirm(
+        `Möchten Sie wirklich alle Einträge für "${storeName}" löschen? Diese Aktion kann nicht rückgängig gemacht werden.`
+      );
+
+      if (!confirmed) {
+        return;
+      }
+
+      // Disable button during deletion
+      clearStoreBtn.disabled = true;
+
+      const success = await shoppingListState.deleteStoreItems(selectedStoreId);
+
+      // Re-enable button
+      clearStoreBtn.disabled = false;
+
+      if (!success) {
+        alert('Fehler beim Löschen der Einträge.');
+      }
+      // UI updates automatically via state subscription on success
+    });
+  }
 
   // Event delegation for delete buttons - single listener for all delete operations
   // This is more efficient than attaching individual listeners to each button
