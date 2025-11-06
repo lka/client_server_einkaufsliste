@@ -20,6 +20,7 @@ export interface Store {
   id: number;
   name: string;
   location?: string;
+  sort_order?: number;
 }
 
 export interface Department {
@@ -313,6 +314,45 @@ export async function createStore(name: string, location: string = ''): Promise<
     return await res.json();
   } catch (error) {
     console.error('Error creating store:', error);
+    return null;
+  }
+}
+
+/**
+ * Update a store.
+ */
+export async function updateStore(
+  storeId: number,
+  name?: string,
+  location?: string,
+  sortOrder?: number
+): Promise<Store | null> {
+  const tokenRefreshed = await ensureFreshToken();
+  if (!tokenRefreshed) {
+    return null;
+  }
+
+  try {
+    const body: Record<string, string | number> = {};
+    if (name !== undefined) body.name = name;
+    if (location !== undefined) body.location = location;
+    if (sortOrder !== undefined) body.sort_order = sortOrder;
+
+    const res = await fetch(`/api/stores/${storeId}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(body),
+    });
+    if (res.status === 401) {
+      handleUnauthorized();
+      return null;
+    }
+    if (!res.ok) {
+      return null;
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Error updating store:', error);
     return null;
   }
 }

@@ -12,6 +12,7 @@ import {
   fetchStoreProducts,
   fetchDepartmentProducts,
   createStore,
+  updateStore,
   deleteStore,
   createDepartment,
   deleteDepartment,
@@ -981,6 +982,121 @@ describe('API Client', () => {
     it('should return null when no token exists', async () => {
       localStorage.clear();
       const result = await createStore('Rewe');
+      expect(result).toBeNull();
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('updateStore', () => {
+    it('should update store successfully', async () => {
+      const updatedStore: Store = { id: 1, name: 'Updated Store', location: 'New Location', sort_order: 5 };
+
+      (global.fetch as jest.MockedFunction<typeof fetch>)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ access_token: 'refreshed-token-456', token_type: 'bearer' }),
+        } as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => updatedStore,
+        } as Response);
+
+      const result = await updateStore(1, 'Updated Store', 'New Location', 5);
+
+      expect(global.fetch).toHaveBeenCalledWith('/api/stores/1', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer refreshed-token-456',
+        },
+        body: JSON.stringify({
+          name: 'Updated Store',
+          location: 'New Location',
+          sort_order: 5,
+        }),
+      });
+      expect(result).toEqual(updatedStore);
+    });
+
+    it('should update only sort_order', async () => {
+      const updatedStore: Store = { id: 1, name: 'Test Store', location: 'Location', sort_order: 10 };
+
+      (global.fetch as jest.MockedFunction<typeof fetch>)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ access_token: 'refreshed-token-456', token_type: 'bearer' }),
+        } as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => updatedStore,
+        } as Response);
+
+      const result = await updateStore(1, undefined, undefined, 10);
+
+      expect(global.fetch).toHaveBeenCalledWith('/api/stores/1', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer refreshed-token-456',
+        },
+        body: JSON.stringify({
+          sort_order: 10,
+        }),
+      });
+      expect(result).toEqual(updatedStore);
+    });
+
+    it('should return null when update fails', async () => {
+      (global.fetch as jest.MockedFunction<typeof fetch>)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ access_token: 'refreshed-token-456', token_type: 'bearer' }),
+        } as Response)
+        .mockResolvedValueOnce({
+          ok: false,
+        } as Response);
+
+      const result = await updateStore(999, 'NonExistent');
+
+      expect(result).toBeNull();
+    });
+
+    it('should return null when network error occurs', async () => {
+      (global.fetch as jest.MockedFunction<typeof fetch>)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ access_token: 'refreshed-token-456', token_type: 'bearer' }),
+        } as Response)
+        .mockRejectedValueOnce(new Error('Network error'));
+
+      const result = await updateStore(1, 'Test');
+
+      expect(result).toBeNull();
+      expect(console.error).toHaveBeenCalledWith('Error updating store:', expect.any(Error));
+    });
+
+    it('should handle 401 response by redirecting to login', async () => {
+      (global.fetch as jest.MockedFunction<typeof fetch>)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ access_token: 'refreshed-token-456', token_type: 'bearer' }),
+        } as Response)
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 401,
+          statusText: 'Unauthorized',
+        } as Response);
+
+      const result = await updateStore(1, 'Test');
+
+      expect(result).toBeNull();
+      expect(localStorage.getItem('auth_token')).toBeNull();
+      expect(window.location.href).toBe('/');
+    });
+
+    it('should return null when no token exists', async () => {
+      localStorage.clear();
+      const result = await updateStore(1, 'Test');
       expect(result).toBeNull();
       expect(global.fetch).not.toHaveBeenCalled();
     });

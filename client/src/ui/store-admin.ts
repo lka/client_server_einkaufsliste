@@ -8,6 +8,7 @@ import {
   fetchStores,
   fetchDepartments,
   createStore,
+  updateStore,
   deleteStore,
   createDepartment,
   deleteDepartment,
@@ -56,16 +57,24 @@ async function renderStores(stores: readonly Store[]): Promise<void> {
 
   const html = storesWithDepartments
     .map(
-      ({ store, departments }) => `
+      ({ store, departments }, index) => `
     <div class="store-item" data-store-id="${store.id}">
       <div class="store-header">
         <div class="store-info">
           <h3>${store.name}</h3>
           ${store.location ? `<span class="store-location">${store.location}</span>` : ''}
         </div>
-        <button class="delete-store-btn" data-store-id="${store.id}">
-          Löschen
-        </button>
+        <div class="store-controls">
+          <button class="reorder-store-btn up-btn" data-store-id="${store.id}" data-direction="up" ${index === 0 ? 'disabled' : ''}>
+            ↑
+          </button>
+          <button class="reorder-store-btn down-btn" data-store-id="${store.id}" data-direction="down" ${index === storesWithDepartments.length - 1 ? 'disabled' : ''}>
+            ↓
+          </button>
+          <button class="delete-store-btn" data-store-id="${store.id}">
+            Löschen
+          </button>
+        </div>
       </div>
 
       <div class="departments-section">
@@ -163,6 +172,61 @@ function attachStoreAdminListeners(): void {
  * Attach event listeners to dynamically created elements.
  */
 function attachDynamicListeners(): void {
+  // Reorder store buttons (up/down arrows)
+  const reorderStoreBtns = document.querySelectorAll('.reorder-store-btn');
+  reorderStoreBtns.forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      const target = e.currentTarget as HTMLElement;
+      const storeId = parseInt(target.dataset.storeId || '0', 10);
+      const direction = target.dataset.direction as 'up' | 'down';
+
+      // Find all stores
+      const storeItem = target.closest('.store-item');
+      const container = storeItem?.parentElement;
+      const allStoreItems = container?.querySelectorAll('.store-item');
+
+      if (!allStoreItems || allStoreItems.length < 2) {
+        return;
+      }
+
+      // Find current index
+      const currentIndex = Array.from(allStoreItems).findIndex(
+        (item) => parseInt((item as HTMLElement).dataset.storeId || '0', 10) === storeId
+      );
+
+      if (currentIndex === -1) {
+        return;
+      }
+
+      // Calculate swap target
+      const swapIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+
+      if (swapIndex < 0 || swapIndex >= allStoreItems.length) {
+        return;
+      }
+
+      // Get the store to swap with
+      const swapStoreId = parseInt(
+        (allStoreItems[swapIndex] as HTMLElement).dataset.storeId || '0',
+        10
+      );
+
+      // Swap sort_order values
+      const currentSortOrder = currentIndex;
+      const swapSortOrder = swapIndex;
+
+      // Update both stores
+      const success1 = await updateStore(storeId, undefined, undefined, swapSortOrder);
+      const success2 = await updateStore(swapStoreId, undefined, undefined, currentSortOrder);
+
+      if (success1 && success2) {
+        await loadStores();
+      } else {
+        alert('Fehler beim Ändern der Reihenfolge.');
+      }
+    });
+  });
+
   // Delete store buttons
   const deleteStoreBtns = document.querySelectorAll('.delete-store-btn');
   deleteStoreBtns.forEach((btn) => {

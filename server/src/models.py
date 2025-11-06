@@ -21,11 +21,13 @@ class Store(SQLModel, table=True):
         id: Primary key (auto-generated integer)
         name: Store name (e.g., "Rewe", "Edeka", "Aldi")
         location: Optional location/address information
+        sort_order: Optional sort order for organizing stores
     """
 
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(index=True, unique=True)
     location: Optional[str] = None
+    sort_order: Optional[int] = None
 
     # Relationships
     departments: list["Department"] = Relationship(back_populates="store")

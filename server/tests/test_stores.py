@@ -236,6 +236,98 @@ def test_delete_nonexistent_store():
     assert r.status_code == 404
 
 
+def test_update_store():
+    """Test updating a store."""
+    token = get_auth_token()
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Create a store to update
+    store_data = {"name": "UpdateTest Store", "location": "Old Location"}
+    r = client.post("/api/stores", json=store_data, headers=headers)
+    assert r.status_code == 201
+    store_id = r.json()["id"]
+
+    # Update the store
+    update_data = {"name": "Updated Store", "location": "New Location", "sort_order": 10}
+    r = client.put(f"/api/stores/{store_id}", json=update_data, headers=headers)
+    assert r.status_code == 200
+    updated_store = r.json()
+    assert updated_store["name"] == "Updated Store"
+    assert updated_store["location"] == "New Location"
+    assert updated_store["sort_order"] == 10
+
+
+def test_update_store_partial():
+    """Test partially updating a store (only some fields)."""
+    token = get_auth_token()
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Create a store
+    store_data = {"name": "PartialUpdate Store", "location": "Location"}
+    r = client.post("/api/stores", json=store_data, headers=headers)
+    assert r.status_code == 201
+    store_id = r.json()["id"]
+
+    # Update only sort_order
+    update_data = {"sort_order": 5}
+    r = client.put(f"/api/stores/{store_id}", json=update_data, headers=headers)
+    assert r.status_code == 200
+    updated_store = r.json()
+    assert updated_store["name"] == "PartialUpdate Store"  # Name unchanged
+    assert updated_store["sort_order"] == 5
+
+
+def test_update_nonexistent_store():
+    """Test updating a nonexistent store."""
+    token = get_auth_token()
+    headers = {"Authorization": f"Bearer {token}"}
+
+    update_data = {"name": "NonExistent"}
+    r = client.put("/api/stores/999999", json=update_data, headers=headers)
+    assert r.status_code == 404
+
+
+def test_store_sort_order():
+    """Test that stores are returned in sort_order."""
+    token = get_auth_token()
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Create three stores with specific sort orders
+    store1_data = {"name": "ZZZ Last Store", "location": ""}
+    r1 = client.post("/api/stores", json=store1_data, headers=headers)
+    assert r1.status_code == 201
+    store1_id = r1.json()["id"]
+
+    store2_data = {"name": "AAA First Store", "location": ""}
+    r2 = client.post("/api/stores", json=store2_data, headers=headers)
+    assert r2.status_code == 201
+    store2_id = r2.json()["id"]
+
+    store3_data = {"name": "MMM Middle Store", "location": ""}
+    r3 = client.post("/api/stores", json=store3_data, headers=headers)
+    assert r3.status_code == 201
+    store3_id = r3.json()["id"]
+
+    # Set sort orders: store2=0, store3=1, store1=2
+    client.put(f"/api/stores/{store2_id}", json={"sort_order": 0}, headers=headers)
+    client.put(f"/api/stores/{store3_id}", json={"sort_order": 1}, headers=headers)
+    client.put(f"/api/stores/{store1_id}", json={"sort_order": 2}, headers=headers)
+
+    # Get all stores and verify order
+    r = client.get("/api/stores", headers=headers)
+    assert r.status_code == 200
+    stores = r.json()
+
+    # Find our test stores in the list
+    test_stores = [s for s in stores if s["id"] in [store1_id, store2_id, store3_id]]
+    assert len(test_stores) == 3
+
+    # Verify they are in sort_order
+    assert test_stores[0]["id"] == store2_id  # AAA First Store (sort_order=0)
+    assert test_stores[1]["id"] == store3_id  # MMM Middle Store (sort_order=1)
+    assert test_stores[2]["id"] == store1_id  # ZZZ Last Store (sort_order=2)
+
+
 # === Department CRUD Tests ===
 
 

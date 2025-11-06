@@ -32,6 +32,12 @@ class StoreCreate(BaseModel):
     location: str = ""
 
 
+class StoreUpdate(BaseModel):
+    name: Optional[str] = None
+    location: Optional[str] = None
+    sort_order: Optional[int] = None
+
+
 class DepartmentCreate(BaseModel):
     name: str
     sort_order: int = 0
@@ -285,16 +291,18 @@ def delete_current_user(current_user: str = Depends(get_current_user)):
 
 @app.get("/api/stores", response_model=List[Store])
 def get_stores(current_user: str = Depends(get_current_user)):
-    """Get all stores (requires authentication).
+    """Get all stores ordered by sort_order (requires authentication).
 
     Args:
         current_user: Current authenticated username from JWT
 
     Returns:
-        List[Store]: All stores in the database
+        List[Store]: All stores in the database ordered by sort_order
     """
     with get_session() as session:
-        stores = session.exec(select(Store)).all()
+        stores = session.exec(
+            select(Store).order_by(Store.sort_order, Store.id)
+        ).all()
         return stores
 
 
@@ -467,6 +475,44 @@ def create_store(
             )
 
         store = Store(name=store_data.name, location=store_data.location)
+        session.add(store)
+        session.commit()
+        session.refresh(store)
+        return store
+
+
+@app.put("/api/stores/{store_id}", response_model=Store)
+def update_store(
+    store_id: int,
+    store_data: StoreUpdate,
+    current_user: str = Depends(get_current_user),
+):
+    """Update a store (requires authentication).
+
+    Args:
+        store_id: Store ID
+        store_data: Store update data
+        current_user: Current authenticated username from JWT
+
+    Returns:
+        Store: The updated store
+
+    Raises:
+        HTTPException: If store not found
+    """
+    with get_session() as session:
+        store = session.get(Store, store_id)
+        if not store:
+            raise HTTPException(status_code=404, detail="Store not found")
+
+        # Update only provided fields
+        if store_data.name is not None:
+            store.name = store_data.name
+        if store_data.location is not None:
+            store.location = store_data.location
+        if store_data.sort_order is not None:
+            store.sort_order = store_data.sort_order
+
         session.add(store)
         session.commit()
         session.refresh(store)

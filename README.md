@@ -18,8 +18,12 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
   - Benutzerspezifische Einkaufslisten (jeder User sieht nur seine eigenen Items)
 - ✅ **Store-Verwaltung**: Dedizierte Admin-Seite für Geschäfte und Abteilungen
   - **CRUD-Operationen**: Erstellen, Bearbeiten und Löschen von Stores und Departments
-  - **Abteilungs-Sortierung**: Reihenfolge der Abteilungen per Drag & Drop ändern (↑↓ Buttons)
-  - **Sortierung in Einkaufsliste**: Die Abteilungsreihenfolge wird automatisch in der Shopping-Liste übernommen
+  - **Geschäfts-Sortierung**: Reihenfolge der Geschäfte mit ↑↓ Buttons ändern
+    - Bestimmt die Reihenfolge im Store-Auswahlmenü
+    - Persistiert in der Datenbank (sort_order Feld)
+  - **Abteilungs-Sortierung**: Reihenfolge der Abteilungen mit ↑↓ Buttons ändern
+    - Die Abteilungsreihenfolge wird automatisch in der Shopping-Liste übernommen
+    - Produkte werden nach Abteilungsreihenfolge gruppiert angezeigt
   - **Cascading Deletes**: Beim Löschen eines Stores werden automatisch alle zugehörigen Departments und Products entfernt
   - **Visuelle Organisation**: Übersichtliche Darstellung der Store-Department-Hierarchie
   - Navigation über Benutzermenü: "🏪 Geschäfte verwalten"
@@ -42,7 +46,7 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - "Zucker 500 g, 2 Packungen" + "Zucker 300 g" = "Zucker 800 g, 2 Packungen"
     - "Reis 500 g" + "2, 300 g" = "Reis 800 g, 2"
 - ✅ **Reaktive UI**: Automatische UI-Updates durch State-Management mit Observer Pattern
-- ✅ **Vollständige Tests**: 407 Tests (46 Server + 361 Client) mit 97%+ Code-Abdeckung
+- ✅ **Vollständige Tests**: 425 Tests (50 Server + 375 Client) mit 97%+ Code-Abdeckung
 - ✅ **TypeScript Client**: Typsicherer Client mit vier-Schichten-Architektur
 - ✅ **FastAPI Server**: Moderne Python API mit SQLModel ORM
 - ✅ **Account-Verwaltung**: Benutzer können sich registrieren, anmelden und Account löschen
@@ -202,10 +206,15 @@ Sie können Geschäfte, Abteilungen und Produkte verwalten:
 1. Klicken Sie auf das Menü (⋮) im Header
 2. Wählen Sie **"🏪 Geschäfte verwalten"**
 3. Erstellen, bearbeiten oder löschen Sie Stores und Departments
-4. **Abteilungsreihenfolge ändern**: Nutzen Sie die ↑↓ Buttons neben jeder Abteilung
+4. **Geschäftsreihenfolge ändern**: Nutzen Sie die ↑↓ Buttons im Store-Header
+   - Die Reihenfolge bestimmt, wie Geschäfte im Auswahlmenü angezeigt werden
+   - Erste Position = Standardgeschäft beim Laden der App
+   - ↑ Button ist beim ersten Geschäft deaktiviert
+   - ↓ Button ist beim letzten Geschäft deaktiviert
+5. **Abteilungsreihenfolge ändern**: Nutzen Sie die ↑↓ Buttons neben jeder Abteilung
    - Die Reihenfolge bestimmt, wie Abteilungen in der Einkaufsliste angezeigt werden
    - Änderungen werden sofort in der Shopping-Liste übernommen
-5. **Hinweis**: Beim Löschen eines Stores werden automatisch alle zugehörigen Departments und Products entfernt
+6. **Hinweis**: Beim Löschen eines Stores werden automatisch alle zugehörigen Departments und Products entfernt
 
 **Produkte verwalten:**
 1. Klicken Sie auf das Menü (⋮) im Header
@@ -271,9 +280,12 @@ Die Anwendung verwendet **JWT (JSON Web Tokens)** für sichere Authentifizierung
 - `DELETE /api/auth/me` - Eigenen Account löschen (authentifiziert)
 
 **Store Management (alle authentifiziert):**
-- `GET /api/stores` - Alle Geschäfte abrufen
+- `GET /api/stores` - Alle Geschäfte abrufen (sortiert nach sort_order, dann ID)
 - `POST /api/stores` - Neues Geschäft erstellen
-- `PUT /api/stores/{store_id}` - Geschäft aktualisieren
+  - Body: `{"name": "Geschäftsname", "location": "Standort"}` (location optional)
+- `PUT /api/stores/{store_id}` - Geschäft aktualisieren (Name, Standort und/oder Sortierreihenfolge)
+  - Body: `{"name": "Neuer Name", "location": "Neuer Standort", "sort_order": 5}` (alle Felder optional, partial update)
+  - Beispiel nur sort_order: `{"sort_order": 2}` (für Reordering)
 - `DELETE /api/stores/{store_id}` - Geschäft löschen (cascading: löscht auch Departments und Products)
 - `GET /api/stores/{store_id}/departments` - Abteilungen eines Geschäfts (sortiert nach sort_order)
 - `POST /api/departments` - Neue Abteilung erstellen
@@ -356,7 +368,7 @@ pytest --cov=server --cov-report=html
 ```
 
 **Aktuelle Test-Abdeckung:**
-- ✅ 46 Tests insgesamt
+- ✅ 50 Tests insgesamt (+4 neue Tests für Store-Sortierung)
 - ✅ **Authentifizierung** (10 Tests):
   - Registrierung, Login, Token-Validierung, Token-Refresh, Account-Löschung
 - ✅ **Shopping-List CRUD** (10 Tests):
@@ -374,10 +386,11 @@ pytest --cov=server --cov-report=html
     - Singular/Plural ("Kartoffel" → "Kartoffeln")
     - Keine False Positives bei unterschiedlichen Produkten
   - **Benutzerspezifisch**: Jeder User sieht nur seine eigenen Items
-- ✅ **Store Management & CRUD** (26 Tests):
-  - **Store CRUD** (8 Tests):
+- ✅ **Store Management & CRUD** (30 Tests):
+  - **Store CRUD** (12 Tests):
     - Stores erstellen, abrufen, aktualisieren, löschen
     - Validierung (leerer Name, zu langer Name)
+    - **Store-Sortierung**: Update sort_order, partielle Updates, Sortierreihenfolge-Tests
     - Cascading Delete: Löscht automatisch zugehörige Departments und Products
   - **Department CRUD** (7 Tests):
     - Departments erstellen, abrufen, aktualisieren, löschen
@@ -411,16 +424,17 @@ npm test -- --watch
 ```
 
 **Aktuelle Test-Abdeckung:**
-- ✅ 314 Tests insgesamt (15 Test-Suites)
+- ✅ 375 Tests insgesamt (16 Test-Suites) (+6 neue Tests für Store-Update)
 - ✅ 100% Code-Abdeckung
-- ✅ Data Layer: API Client (88), Authentication (36), DOM (18) = 142 Tests
+- ✅ Data Layer: API Client (94), Authentication (36), DOM (18) = 148 Tests
   - Inklusive 401 Handling & Token Refresh Failures
   - Inklusive Token-Refresh-Optimierung (Singleton, Cooldown, Concurrent Requests)
   - Inklusive Template-Caching (Memory Cache, Load Flag, Zero Network Cost)
   - Inklusive DOM-Batching (DocumentFragment, O(1) Reflows)
   - Tests für Mengenangaben in API und DOM
   - Tests für Department-Gruppierung und Sortierung
-  - **Vollständige CRUD-Abdeckung**: Stores, Departments, Products (alle Operationen getestet)
+  - **Vollständige CRUD-Abdeckung**: Stores (inkl. updateStore), Departments, Products (alle Operationen getestet)
+  - **Store-Update-Tests**: Vollständige/partielle Updates, sort_order, Fehlerbehandlung
 - ✅ State Layer: Shopping List State (36), User State (24), Store State (34) = 94 Tests
   - Inklusive Observer Pattern, Subscriptions, Reactivity
   - Inklusive Loading State Tracking
@@ -428,10 +442,10 @@ npm test -- --watch
   - Tests für Mengenangaben im State
   - Test für Fuzzy-Matching-Update (verhindert Duplikate)
   - Tests für Store/Department/Product State Management
-- ✅ UI Layer: Shopping List UI (16), User Menu (16), Store Admin (19), Product Admin (15) = 66 Tests
+- ✅ UI Layer: Shopping List UI (16), User Menu (16), Store Admin (27), Product Admin (15) = 74 Tests
   - Tests für Mengenfeld-Eingabe
   - Tests für CRUD-Operationen
-  - Tests für Department Reordering (↑↓ Buttons)
+  - **Store Admin Tests**: Store-Reordering (↑↓ Buttons), Department-Reordering
   - Product Admin Tests: Store-Auswahl, Department-Verwaltung, Form-Validierung
 - ✅ Pages Layer: Login Controller (20) = 20 Tests
 - ✅ Entry Points: script.ts (7), script-stores.ts (9), script-products.ts (9), index-login.ts (4) = 29 Tests
@@ -468,8 +482,8 @@ Beide Jobs laufen parallel für maximale Geschwindigkeit. Die CI-Konfiguration b
   - 17 Produkte für Rewe
 - **Datenbankschema**:
   - `user` - Benutzerkonten
-  - `store` - Geschäfte
-  - `department` - Abteilungen (mit Foreign Key zu store)
+  - `store` - Geschäfte (mit sort_order für benutzerdefinierte Reihenfolge)
+  - `department` - Abteilungen (mit Foreign Key zu store, sort_order für Reihenfolge)
   - `product` - Produkte (mit Foreign Keys zu store und department)
   - `item` - Einkaufslisten-Items (mit Foreign Keys zu user und optional zu product)
 - Für Tests: In-Memory-Datenbank (siehe `conftest.py`)
