@@ -27,15 +27,21 @@ export function renderItems(list: Item[]): void {
     return;
   }
 
-  // Group items by department
-  const departmentGroups = new Map<string, Item[]>();
+  // Group items by department with sort_order tracking
+  const departmentGroups = new Map<string, { items: Item[]; sortOrder: number }>();
   const ungroupedItems: Item[] = [];
 
   for (const item of list) {
     if (item.department_name) {
-      const existing = departmentGroups.get(item.department_name) || [];
-      existing.push(item);
-      departmentGroups.set(item.department_name, existing);
+      const existing = departmentGroups.get(item.department_name);
+      if (existing) {
+        existing.items.push(item);
+      } else {
+        departmentGroups.set(item.department_name, {
+          items: [item],
+          sortOrder: item.department_sort_order ?? 999, // Default high value for undefined sort_order
+        });
+      }
     } else {
       ungroupedItems.push(item);
     }
@@ -45,13 +51,17 @@ export function renderItems(list: Item[]): void {
   // This causes only ONE reflow instead of one per item
   const fragment = document.createDocumentFragment();
 
-  // Render each department group
-  for (const [deptName, items] of departmentGroups.entries()) {
+  // Sort departments by sort_order and render
+  const sortedDepartments = Array.from(departmentGroups.entries()).sort(
+    ([, a], [, b]) => a.sortOrder - b.sortOrder
+  );
+
+  for (const [deptName, { items }] of sortedDepartments) {
     const deptSection = createDepartmentSection(deptName, items);
     fragment.appendChild(deptSection);
   }
 
-  // Render ungrouped items if any
+  // Render ungrouped items if any (at the end)
   if (ungroupedItems.length > 0) {
     const ungroupedSection = createDepartmentSection('Sonstiges', ungroupedItems);
     fragment.appendChild(ungroupedSection);

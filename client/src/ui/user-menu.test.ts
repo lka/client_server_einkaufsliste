@@ -5,9 +5,13 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { initUserMenu, updateUserDisplay } from './user-menu.js';
 import * as auth from '../data/auth.js';
+import { userState } from '../state/user-state.js';
+import { shoppingListState } from '../state/shopping-list-state.js';
 
-// Mock the auth module
+// Mock the modules
 jest.mock('../data/auth.js');
+jest.mock('../state/user-state.js');
+jest.mock('../state/shopping-list-state.js');
 
 // Mock window.location
 delete (window as any).location;
@@ -29,6 +33,9 @@ describe('User Menu UI', () => {
         <div class="user-menu">
           <button id="menuBtn">⋮</button>
           <div id="menuDropdown" class="menu-dropdown">
+            <button id="backToAppBtn">Zurück zur App</button>
+            <button id="manageStoresBtn">Geschäfte verwalten</button>
+            <button id="manageProductsBtn">Produkte verwalten</button>
             <button id="logoutBtn">Abmelden</button>
             <button id="deleteAccountBtn">Account löschen</button>
           </div>
@@ -48,7 +55,9 @@ describe('User Menu UI', () => {
         is_active: true,
       };
 
-      jest.spyOn(auth, 'getCurrentUser').mockResolvedValue(mockUser);
+      (userState.loadCurrentUser as jest.MockedFunction<typeof userState.loadCurrentUser>).mockResolvedValue(
+        mockUser
+      );
 
       await updateUserDisplay();
 
@@ -57,7 +66,9 @@ describe('User Menu UI', () => {
     });
 
     it('should not update header when no user', async () => {
-      jest.spyOn(auth, 'getCurrentUser').mockResolvedValue(null);
+      (userState.loadCurrentUser as jest.MockedFunction<typeof userState.loadCurrentUser>).mockResolvedValue(
+        null
+      );
 
       await updateUserDisplay();
 
@@ -75,12 +86,36 @@ describe('User Menu UI', () => {
         is_active: true,
       };
 
-      jest.spyOn(auth, 'getCurrentUser').mockResolvedValue(mockUser);
+      (userState.loadCurrentUser as jest.MockedFunction<typeof userState.loadCurrentUser>).mockResolvedValue(
+        mockUser
+      );
 
       await updateUserDisplay();
 
       // Should not throw error
-      expect(auth.getCurrentUser).toHaveBeenCalled();
+      expect(userState.loadCurrentUser).toHaveBeenCalled();
+    });
+
+    it('should not add username twice if already present', async () => {
+      const mockUser = {
+        id: 1,
+        username: 'testuser',
+        email: 'test@example.com',
+        is_active: true,
+      };
+
+      (userState.loadCurrentUser as jest.MockedFunction<typeof userState.loadCurrentUser>).mockResolvedValue(
+        mockUser
+      );
+
+      // First call
+      await updateUserDisplay();
+      const header = document.querySelector('header h1');
+      expect(header?.innerHTML).toBe('Einkaufsliste <small>(testuser)</small>');
+
+      // Second call - should not add username again
+      await updateUserDisplay();
+      expect(header?.innerHTML).toBe('Einkaufsliste <small>(testuser)</small>');
     });
   });
 
@@ -140,8 +175,37 @@ describe('User Menu UI', () => {
       expect(menuDropdown.classList.contains('show')).toBe(true);
     });
 
+    it('should navigate to app when back button clicked', () => {
+      initUserMenu();
+
+      const backToAppBtn = document.getElementById('backToAppBtn')!;
+      backToAppBtn.click();
+
+      expect((window as any).location.href).toBe('/app');
+    });
+
+    it('should navigate to stores when manage stores button clicked', () => {
+      initUserMenu();
+
+      const manageStoresBtn = document.getElementById('manageStoresBtn')!;
+      manageStoresBtn.click();
+
+      expect((window as any).location.href).toBe('/stores');
+    });
+
+    it('should navigate to products when manage products button clicked', () => {
+      initUserMenu();
+
+      const manageProductsBtn = document.getElementById('manageProductsBtn')!;
+      manageProductsBtn.click();
+
+      expect((window as any).location.href).toBe('/products');
+    });
+
     it('should logout when logout button clicked', () => {
-      jest.spyOn(auth, 'logout').mockImplementation(() => {});
+      (auth.logout as jest.MockedFunction<typeof auth.logout>).mockImplementation(() => {});
+      (userState.clearUser as jest.MockedFunction<typeof userState.clearUser>).mockImplementation(() => {});
+      (shoppingListState.clear as jest.MockedFunction<typeof shoppingListState.clear>).mockImplementation(() => {});
 
       initUserMenu();
 
@@ -149,57 +213,67 @@ describe('User Menu UI', () => {
       logoutBtn.click();
 
       expect(auth.logout).toHaveBeenCalled();
+      expect(userState.clearUser).toHaveBeenCalled();
+      expect(shoppingListState.clear).toHaveBeenCalled();
       expect((window as any).location.href).toBe('/');
     });
 
     it('should handle delete account with confirmation', async () => {
       (global.confirm as jest.Mock).mockReturnValue(true);
       (global.alert as jest.Mock).mockImplementation(() => {});
-      jest.spyOn(auth, 'deleteUser').mockResolvedValue(true);
+      (userState.deleteCurrentUser as jest.MockedFunction<typeof userState.deleteCurrentUser>).mockResolvedValue(
+        true
+      );
+      (shoppingListState.clear as jest.MockedFunction<typeof shoppingListState.clear>).mockImplementation(() => {});
 
       initUserMenu();
 
       const deleteBtn = document.getElementById('deleteAccountBtn')!;
       deleteBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(global.confirm).toHaveBeenCalledWith(
         'Möchten Sie Ihren Account wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.'
       );
-      expect(auth.deleteUser).toHaveBeenCalled();
+      expect(userState.deleteCurrentUser).toHaveBeenCalled();
+      expect(shoppingListState.clear).toHaveBeenCalled();
       expect(global.alert).toHaveBeenCalledWith('Ihr Account wurde erfolgreich gelöscht.');
       expect((window as any).location.href).toBe('/');
     });
 
     it('should not delete account when user cancels confirmation', async () => {
       (global.confirm as jest.Mock).mockReturnValue(false);
-      jest.spyOn(auth, 'deleteUser').mockResolvedValue(true);
+      (userState.deleteCurrentUser as jest.MockedFunction<typeof userState.deleteCurrentUser>).mockResolvedValue(
+        true
+      );
 
       initUserMenu();
 
       const deleteBtn = document.getElementById('deleteAccountBtn')!;
       deleteBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(global.confirm).toHaveBeenCalled();
-      expect(auth.deleteUser).not.toHaveBeenCalled();
+      expect(userState.deleteCurrentUser).not.toHaveBeenCalled();
     });
 
     it('should show error when account deletion fails', async () => {
       (global.confirm as jest.Mock).mockReturnValue(true);
       (global.alert as jest.Mock).mockImplementation(() => {});
-      jest.spyOn(auth, 'deleteUser').mockResolvedValue(false);
+      (userState.deleteCurrentUser as jest.MockedFunction<typeof userState.deleteCurrentUser>).mockResolvedValue(
+        false
+      );
 
       initUserMenu();
 
       const deleteBtn = document.getElementById('deleteAccountBtn')!;
       deleteBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
-      expect(auth.deleteUser).toHaveBeenCalled();
+      expect(userState.deleteCurrentUser).toHaveBeenCalled();
       expect(global.alert).toHaveBeenCalledWith(
         'Fehler beim Löschen des Accounts. Bitte versuchen Sie es erneut.'
       );
@@ -216,10 +290,37 @@ describe('User Menu UI', () => {
       expect(console.error).toHaveBeenCalledWith('User menu elements not found');
     });
 
+    it('should handle missing back to app button', () => {
+      document.getElementById('backToAppBtn')?.remove();
+
+      initUserMenu();
+
+      // Should not throw error
+      expect(document.getElementById('backToAppBtn')).toBeNull();
+    });
+
+    it('should handle missing manage stores button', () => {
+      document.getElementById('manageStoresBtn')?.remove();
+
+      initUserMenu();
+
+      // Should not throw error
+      expect(document.getElementById('manageStoresBtn')).toBeNull();
+    });
+
+    it('should handle missing manage products button', () => {
+      document.getElementById('manageProductsBtn')?.remove();
+
+      initUserMenu();
+
+      // Should not throw error
+      expect(document.getElementById('manageProductsBtn')).toBeNull();
+    });
+
     it('should handle missing logout button', () => {
       document.getElementById('logoutBtn')?.remove();
 
-      jest.spyOn(auth, 'logout').mockImplementation(() => {});
+      (auth.logout as jest.MockedFunction<typeof auth.logout>).mockImplementation(() => {});
 
       initUserMenu();
 
@@ -230,7 +331,9 @@ describe('User Menu UI', () => {
     it('should handle missing delete button', async () => {
       document.getElementById('deleteAccountBtn')?.remove();
 
-      jest.spyOn(auth, 'deleteUser').mockResolvedValue(true);
+      (userState.deleteCurrentUser as jest.MockedFunction<typeof userState.deleteCurrentUser>).mockResolvedValue(
+        true
+      );
 
       initUserMenu();
 

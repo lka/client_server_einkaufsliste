@@ -10,11 +10,12 @@ This client application has been migrated from vanilla JavaScript to TypeScript,
 
 - ✅ **Mengenangaben**: Optional quantity field for each item (e.g., "500 g", "2 Stück")
 - ✅ **Department Grouping**: Shopping list items grouped by store departments in column layout
+- ✅ **Department Sorting**: Departments displayed in user-defined order (via store admin ↑↓ buttons)
 - ✅ **Auto Product Matching**: Automatic fuzzy matching of items to product catalog (60% threshold)
 - ✅ **Reactive State Management**: Observer pattern with automatic UI updates
 - ✅ **Four-Layer Architecture**: Entry Points → UI → State → Data
 - ✅ **Type Safety**: Full TypeScript with strict mode
-- ✅ **174 Tests**: Comprehensive test coverage (99%+)
+- ✅ **361 Tests**: Comprehensive test coverage (97%)
 
 ## Setup
 
@@ -69,17 +70,21 @@ npm run test:coverage
 The client includes comprehensive unit tests across all layers:
 
 **Data Layer Tests**:
-- **api.test.ts** (19 tests): API client functions with token refresh, 401 handling, edge cases, and **quantity support**
+- **api.test.ts** (88 tests): Complete API client coverage with token refresh, 401 handling, CRUD operations for items, stores, departments, and products
 - **auth.test.ts** (36 tests): Authentication, token management, user operations, and token refresh optimization
-- **dom.test.ts** (18 tests): DOM manipulation, rendering, template caching, DOM batching, **quantity display**, and **department grouping** (3 new tests)
+- **dom.test.ts** (18 tests): DOM manipulation, rendering, template caching, DOM batching, **quantity display**, and **department grouping**
 
 **State Layer Tests**:
 - **shopping-list-state.test.ts** (36 tests): Shopping list state management, subscriptions, reactivity, and **quantity handling**
 - **user-state.test.ts** (24 tests): User state management, loading, and deletion
+- **store-state.test.ts** (34 tests): Store state management, subscriptions, store/department selection, immutability
 
 **UI Layer Tests**:
-- **shopping-list-ui.test.ts** (16 tests): Shopping list UI interactions and **quantity input**
-- **user-menu.test.ts** (16 tests): User menu functionality
+- **shopping-list-ui.test.ts** (21 tests): Shopping list UI interactions, **quantity input**, and store filtering (64% → 96% coverage)
+- **user-menu.test.ts** (21 tests): User menu functionality and navigation (88.88% → 100% coverage)
+- **store-admin.test.ts** (19 tests): Store admin UI, CRUD operations, **department reordering** (↑↓ buttons) (92.23% coverage)
+- **product-admin.test.ts** (55 tests): Product admin UI and CRUD operations (86.29% coverage)
+- **store-browser.test.ts** (32 tests): Store and product browsing interface (0% → 98.59% coverage)
 
 **Pages Layer Tests**:
 - **login.test.ts** (20 tests): Login/registration page controller
@@ -87,15 +92,17 @@ The client includes comprehensive unit tests across all layers:
 **Entry Points Tests**:
 - **index-login.test.ts** (4 tests): Login page entry point initialization
 - **script.test.ts** (7 tests): Main app entry point initialization, authentication flow, error handling
+- **script-stores.test.ts** (9 tests): Store admin page entry point, authentication, template loading
+- **script-products.test.ts** (9 tests): Products page entry point, authentication, template loading
 
-**Total**: **174 tests**, all passing ✅
+**Total**: **361 tests**, all passing ✅
 
-**Coverage**: **99%+ overall code coverage**
-- Data Layer: auth.ts (100%), dom.ts (98%), api.ts (100%)
-- State Layer: shopping-list-state.ts (100%), user-state.ts (100%)
-- UI Layer: user-menu.ts (100%), shopping-list-ui.ts (95%)
+**Coverage**: **97% overall code coverage**
+- Data Layer: api.ts (100%), auth.ts (97.14%), dom.ts (98.83%)
+- State Layer: shopping-list-state.ts (100%), user-state.ts (100%), store-state.ts (96.61%)
+- UI Layer: user-menu.ts (100%), store-browser.ts (98.59%), shopping-list-ui.ts (96%), store-admin.ts (92.23%), product-admin.ts (86.29%)
 - Pages Layer: login.ts (100%)
-- Entry Points: index-login.ts (100%), script.ts (100%)
+- Entry Points: script.ts (100%), script-stores.ts (100%), script-products.ts (100%), index-login.ts (100%)
 
 ## Project Structure
 
@@ -148,9 +155,9 @@ The client follows a **four-layer architecture** with physical folder separation
 #### **Data Layer** (`src/data/`)
 Core functionality for data operations and utilities. This layer has no UI knowledge.
 
-- **api.ts**: API client for shopping list operations (fetchItems, addItem, deleteItem)
+- **api.ts**: API client for shopping list operations (fetchItems, addItem, deleteItem, updateDepartment)
 - **auth.ts**: Authentication utilities (login, register, logout, token management with optimization)
-- **dom.ts**: DOM manipulation utilities (renderItems with department grouping and batching, loadTemplate with caching)
+- **dom.ts**: DOM manipulation utilities (renderItems with department grouping, sorting by sort_order, and DOM batching; loadTemplate with caching)
 - **Tests**: api.test.ts (19), auth.test.ts (36), dom.test.ts (18) - **73 tests total**, 99.5%+ coverage
 
 #### **State Layer** (`src/state/`)
@@ -158,19 +165,22 @@ Centralized state management with reactive updates using the Observer pattern.
 
 - **shopping-list-state.ts**: Manages shopping list items state with subscriptions
 - **user-state.ts**: Manages current user state with subscriptions
+- **store-state.ts**: Manages stores, departments, and products state with parallel loading
 - **Key Features**:
   - Single source of truth for application state
   - Reactive UI updates via Observer pattern
   - Loading state tracking
   - Immutability (returns copies, not references)
-- **Tests**: shopping-list-state.test.ts (35), user-state.test.ts (24) - **59 tests total**, 100% coverage
+- **Tests**: shopping-list-state.test.ts (36), user-state.test.ts (24), store-state.test.ts (34) - **94 tests total**, 100% coverage
 
 #### **UI Layer** (`src/ui/`)
 Feature-specific UI logic and event handlers. Subscribes to state changes for automatic updates.
 
 - **shopping-list-ui.ts**: Shopping list UI logic (subscribes to state, triggers state updates)
 - **user-menu.ts**: User menu functionality (subscribes to user state, handles logout/deletion)
-- **Tests**: shopping-list-ui.test.ts (14), user-menu.test.ts (16) - **30 tests total**, 100% coverage
+- **store-admin.ts**: Store and department management UI with CRUD operations and reordering
+- **product-admin.ts**: Product management UI with store/department filtering
+- **Tests**: shopping-list-ui.test.ts (16), user-menu.test.ts (16), store-admin.test.ts (19), product-admin.test.ts (15) - **66 tests total**, 100% coverage
 
 #### **Pages Layer** (`src/pages/`)
 Page controllers and HTML templates that combine UI modules into complete pages.
@@ -183,17 +193,20 @@ Page controllers and HTML templates that combine UI modules into complete pages.
 #### **Entry Points** (`src/`)
 Minimal orchestration code that initializes appropriate layers.
 
-- **script.ts**: Main app entry point (initializes UI and State layers)
+- **script.ts**: Main app entry point (initializes shopping list UI and State layers)
+- **script-stores.ts**: Store admin page entry point (initializes store admin UI)
+- **script-products.ts**: Products page entry point (initializes product admin UI)
 - **index-login.ts**: Login page entry point
+- **Tests**: script.test.ts (7), script-stores.test.ts (9), script-products.test.ts (9), index-login.test.ts (4) - **29 tests total**, 100% coverage
 
 ### Dependency Flow
 
 ```
-Entry Points (script.ts, index-login.ts)
+Entry Points (script.ts, script-stores.ts, script-products.ts, index-login.ts)
          ↓
-Pages/UI Layer (login.ts, shopping-list-ui.ts, user-menu.ts)
+Pages/UI Layer (login.ts, shopping-list-ui.ts, store-admin.ts, product-admin.ts, user-menu.ts)
          ↓
-State Layer (shopping-list-state.ts, user-state.ts)
+State Layer (shopping-list-state.ts, store-state.ts, user-state.ts)
          ↓
 Data Layer (api.ts, auth.ts, dom.ts)
 ```
@@ -205,7 +218,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed architecture documentation a
 ## TypeScript Features
 
 ### Type Safety
-- **Item Interface**: Strongly typed data structure with `id: string`, `name: string`, optional `menge?: string`, and optional department fields (`department_id?: number`, `department_name?: string`)
+- **Item Interface**: Strongly typed data structure with `id: string`, `name: string`, optional `menge?: string`, and optional department fields (`department_id?: number`, `department_name?: string`, `department_sort_order?: number`)
 - **Type Annotations**: All functions have explicit parameter and return types
 - **DOM Type Safety**: Type assertions for HTML elements (`HTMLInputElement`, `HTMLButtonElement`)
 - **Strict Mode**: All TypeScript strict compiler options enabled
@@ -293,7 +306,7 @@ The application consists of two main pages:
 - **Single Source of Truth**: All components share the same state
 - **Type Safety**: TypeScript ensures compile-time correctness
 - **Maintainability**: Easy to find and modify features
-- **Testability**: Each layer tested independently (174 tests total, 99%+ coverage)
+- **Testability**: Each layer tested independently (314 tests total, 100% coverage)
 - **Scalability**: Easy to add new features or UI modules
 - **Security**: Token-based authentication with automatic refresh
 - **Performance**: Event delegation and optimized token refresh reduce overhead

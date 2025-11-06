@@ -4,7 +4,7 @@ This module mounts the client/ static files and exposes a small
 CRUD API at /api/items backed by SQLite.
 """
 
-from typing import List
+from typing import List, Optional
 import os
 from datetime import timedelta
 from contextlib import asynccontextmanager
@@ -37,6 +37,11 @@ class DepartmentCreate(BaseModel):
     sort_order: int = 0
 
 
+class DepartmentUpdate(BaseModel):
+    name: Optional[str] = None
+    sort_order: Optional[int] = None
+
+
 class ProductCreate(BaseModel):
     name: str
     store_id: int
@@ -62,6 +67,7 @@ class ItemWithDepartment(BaseModel):
     menge: str | None
     department_id: int | None = None
     department_name: str | None = None
+    department_sort_order: int | None = None
 
 
 @asynccontextmanager
@@ -569,6 +575,42 @@ def delete_department(
         return None
 
 
+@app.put("/api/departments/{department_id}", response_model=Department)
+def update_department(
+    department_id: int,
+    dept_data: DepartmentUpdate,
+    current_user: str = Depends(get_current_user),
+):
+    """Update a department (requires authentication).
+
+    Args:
+        department_id: Department ID
+        dept_data: Department update data (partial update supported)
+        current_user: Current authenticated username from JWT
+
+    Returns:
+        Department: The updated department
+
+    Raises:
+        HTTPException: If department not found
+    """
+    with get_session() as session:
+        department = session.get(Department, department_id)
+        if not department:
+            raise HTTPException(status_code=404, detail="Department not found")
+
+        # Update only provided fields
+        if dept_data.name is not None:
+            department.name = dept_data.name
+        if dept_data.sort_order is not None:
+            department.sort_order = dept_data.sort_order
+
+        session.add(department)
+        session.commit()
+        session.refresh(department)
+        return department
+
+
 # === Product Management Endpoints (Protected) ===
 
 
@@ -721,6 +763,7 @@ def read_items(current_user: str = Depends(get_current_user)):
         for item in items:
             dept_id = None
             dept_name = None
+            dept_sort_order = None
 
             # If item has a product, get department from product
             if item.product_id:
@@ -730,6 +773,7 @@ def read_items(current_user: str = Depends(get_current_user)):
                     department = session.get(Department, product.department_id)
                     if department:
                         dept_name = department.name
+                        dept_sort_order = department.sort_order
 
             items_with_dept.append(
                 ItemWithDepartment(
@@ -741,6 +785,7 @@ def read_items(current_user: str = Depends(get_current_user)):
                     menge=item.menge,
                     department_id=dept_id,
                     department_name=dept_name,
+                    department_sort_order=dept_sort_order,
                 )
             )
 
@@ -1014,6 +1059,7 @@ def create_item(item: Item, current_user: str = Depends(get_current_user)):
         # Enrich with department information
         dept_id = None
         dept_name = None
+        dept_sort_order = None
 
         if result_item.product_id:
             product = session.get(Product, result_item.product_id)
@@ -1022,6 +1068,7 @@ def create_item(item: Item, current_user: str = Depends(get_current_user)):
                 department = session.get(Department, product.department_id)
                 if department:
                     dept_name = department.name
+                    dept_sort_order = department.sort_order
 
         return ItemWithDepartment(
             id=result_item.id,
@@ -1032,6 +1079,7 @@ def create_item(item: Item, current_user: str = Depends(get_current_user)):
             menge=result_item.menge,
             department_id=dept_id,
             department_name=dept_name,
+            department_sort_order=dept_sort_order,
         )
 
 

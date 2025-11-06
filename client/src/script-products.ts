@@ -7,7 +7,10 @@ import { isAuthenticated } from './data/auth.js';
 import { initProductAdmin } from './ui/product-admin.js';
 import { initUserMenu, updateUserDisplay } from './ui/user-menu.js';
 
-async function main() {
+/**
+ * Initialize the products admin page when DOM is ready.
+ */
+window.addEventListener('DOMContentLoaded', async () => {
   // Check authentication first
   if (!isAuthenticated()) {
     window.location.href = '/';
@@ -27,6 +30,4 @@ async function main() {
   // Initialize UI components
   initUserMenu();
   await initProductAdmin();
-}
-
-main();
+});

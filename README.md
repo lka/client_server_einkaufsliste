@@ -18,6 +18,8 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
   - Benutzerspezifische Einkaufslisten (jeder User sieht nur seine eigenen Items)
 - ✅ **Store-Verwaltung**: Dedizierte Admin-Seite für Geschäfte und Abteilungen
   - **CRUD-Operationen**: Erstellen, Bearbeiten und Löschen von Stores und Departments
+  - **Abteilungs-Sortierung**: Reihenfolge der Abteilungen per Drag & Drop ändern (↑↓ Buttons)
+  - **Sortierung in Einkaufsliste**: Die Abteilungsreihenfolge wird automatisch in der Shopping-Liste übernommen
   - **Cascading Deletes**: Beim Löschen eines Stores werden automatisch alle zugehörigen Departments und Products entfernt
   - **Visuelle Organisation**: Übersichtliche Darstellung der Store-Department-Hierarchie
   - Navigation über Benutzermenü: "🏪 Geschäfte verwalten"
@@ -40,7 +42,7 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - "Zucker 500 g, 2 Packungen" + "Zucker 300 g" = "Zucker 800 g, 2 Packungen"
     - "Reis 500 g" + "2, 300 g" = "Reis 800 g, 2"
 - ✅ **Reaktive UI**: Automatische UI-Updates durch State-Management mit Observer Pattern
-- ✅ **Vollständige Tests**: 220 Tests (46 Server + 174 Client) mit 99%+ Code-Abdeckung
+- ✅ **Vollständige Tests**: 407 Tests (46 Server + 361 Client) mit 97%+ Code-Abdeckung
 - ✅ **TypeScript Client**: Typsicherer Client mit vier-Schichten-Architektur
 - ✅ **FastAPI Server**: Moderne Python API mit SQLModel ORM
 - ✅ **Account-Verwaltung**: Benutzer können sich registrieren, anmelden und Account löschen
@@ -200,7 +202,10 @@ Sie können Geschäfte, Abteilungen und Produkte verwalten:
 1. Klicken Sie auf das Menü (⋮) im Header
 2. Wählen Sie **"🏪 Geschäfte verwalten"**
 3. Erstellen, bearbeiten oder löschen Sie Stores und Departments
-4. **Hinweis**: Beim Löschen eines Stores werden automatisch alle zugehörigen Departments und Products entfernt
+4. **Abteilungsreihenfolge ändern**: Nutzen Sie die ↑↓ Buttons neben jeder Abteilung
+   - Die Reihenfolge bestimmt, wie Abteilungen in der Einkaufsliste angezeigt werden
+   - Änderungen werden sofort in der Shopping-Liste übernommen
+5. **Hinweis**: Beim Löschen eines Stores werden automatisch alle zugehörigen Departments und Products entfernt
 
 **Produkte verwalten:**
 1. Klicken Sie auf das Menü (⋮) im Header
@@ -270,9 +275,11 @@ Die Anwendung verwendet **JWT (JSON Web Tokens)** für sichere Authentifizierung
 - `POST /api/stores` - Neues Geschäft erstellen
 - `PUT /api/stores/{store_id}` - Geschäft aktualisieren
 - `DELETE /api/stores/{store_id}` - Geschäft löschen (cascading: löscht auch Departments und Products)
-- `GET /api/stores/{store_id}/departments` - Abteilungen eines Geschäfts
+- `GET /api/stores/{store_id}/departments` - Abteilungen eines Geschäfts (sortiert nach sort_order)
 - `POST /api/departments` - Neue Abteilung erstellen
-- `PUT /api/departments/{department_id}` - Abteilung aktualisieren
+  - Body: `{"name": "Abteilungsname", "sort_order": 0}` (sort_order optional, default: 0)
+- `PUT /api/departments/{department_id}` - Abteilung aktualisieren (Name und/oder Sortierreihenfolge)
+  - Body: `{"name": "Neuer Name", "sort_order": 5}` (beide Felder optional, partial update)
 - `DELETE /api/departments/{department_id}` - Abteilung löschen (cascading: löscht auch Products)
 - `GET /api/stores/{store_id}/products` - Alle Produkte eines Geschäfts
 - `GET /api/departments/{department_id}/products` - Produkte einer Abteilung
@@ -284,10 +291,10 @@ Die Anwendung verwendet **JWT (JSON Web Tokens)** für sichere Authentifizierung
 
 **Shopping List (alle authentifiziert, benutzerspezifisch):**
 - `GET /api/items` - Alle Artikel des aktuellen Benutzers abrufen
-  - Response: `ItemWithDepartment` - Enthält `department_id` und `department_name` für Gruppierung
+  - Response: `ItemWithDepartment` - Enthält `department_id`, `department_name` und `department_sort_order` für Gruppierung und Sortierung
 - `POST /api/items` - Neuen Artikel erstellen oder Menge aktualisieren
   - Body: `{"name": "Artikelname", "menge": "500 g", "store_id": 1}` (menge und store_id sind optional)
-  - Response: `ItemWithDepartment` - Enthält Department-Informationen für sofortiges Rendering
+  - Response: `ItemWithDepartment` - Enthält Department-Informationen inkl. sort_order für sofortiges Rendering
   - Beispiele:
     - `{"name": "Möhren", "menge": "500 g", "store_id": 1}` → Automatisches Matching zu Produkt "Möhren" in Abteilung "Obst & Gemüse"
     - `{"name": "Milch", "store_id": 1}` (ohne Menge) → Matching zu "Milch" in "Milchprodukte"
@@ -404,30 +411,33 @@ npm test -- --watch
 ```
 
 **Aktuelle Test-Abdeckung:**
-- ✅ 174 Tests insgesamt (11 Test-Suites)
-- ✅ 99%+ Code-Abdeckung
-- ✅ Data Layer: API Client (19), Authentication (36), DOM (18) = 73 Tests
+- ✅ 314 Tests insgesamt (15 Test-Suites)
+- ✅ 100% Code-Abdeckung
+- ✅ Data Layer: API Client (88), Authentication (36), DOM (18) = 142 Tests
   - Inklusive 401 Handling & Token Refresh Failures
   - Inklusive Token-Refresh-Optimierung (Singleton, Cooldown, Concurrent Requests)
   - Inklusive Template-Caching (Memory Cache, Load Flag, Zero Network Cost)
   - Inklusive DOM-Batching (DocumentFragment, O(1) Reflows)
   - Tests für Mengenangaben in API und DOM
-  - Tests für Department-Gruppierung (3 neue Tests)
-- ✅ State Layer: Shopping List State (36), User State (24) = 60 Tests
+  - Tests für Department-Gruppierung und Sortierung
+  - **Vollständige CRUD-Abdeckung**: Stores, Departments, Products (alle Operationen getestet)
+- ✅ State Layer: Shopping List State (36), User State (24), Store State (34) = 94 Tests
   - Inklusive Observer Pattern, Subscriptions, Reactivity
   - Inklusive Loading State Tracking
   - Inklusive Immutability Tests
   - Tests für Mengenangaben im State
   - Test für Fuzzy-Matching-Update (verhindert Duplikate)
-- ✅ UI Layer: Shopping List UI (16), User Menu (16), Product Admin (15) = 47 Tests
+  - Tests für Store/Department/Product State Management
+- ✅ UI Layer: Shopping List UI (16), User Menu (16), Store Admin (19), Product Admin (15) = 66 Tests
   - Tests für Mengenfeld-Eingabe
-  - **Neu**: Product Admin CRUD Tests (15 Tests):
-    - Store-Auswahl und Department-Verwaltung
-    - Product CRUD-Operationen (Create, Update, Delete)
-    - Form-Validierung und Fehlerbehandlung
-    - UI-Interaktionen (Edit-Modus, Cancel, Save)
+  - Tests für CRUD-Operationen
+  - Tests für Department Reordering (↑↓ Buttons)
+  - Product Admin Tests: Store-Auswahl, Department-Verwaltung, Form-Validierung
 - ✅ Pages Layer: Login Controller (20) = 20 Tests
-- ✅ Entry Points: Login Entry (4), Main App Entry (7) = 11 Tests
+- ✅ Entry Points: script.ts (7), script-stores.ts (9), script-products.ts (9), index-login.ts (4) = 29 Tests
+  - Tests für DOMContentLoaded Event-Handling
+  - Tests für Authentication Checks
+  - Tests für Template Loading
 - ✅ Error Handling, Edge Cases, User Interactions
 
 ### Continuous Integration (CI)
@@ -453,7 +463,7 @@ Beide Jobs laufen parallel für maximale Geschwindigkeit. Die CI-Konfiguration b
 - Datenbank-Datei: `data.db` (wird automatisch erstellt)
 - Schema wird beim ersten Start automatisch erstellt
 - **Automatisches Seeding**: Beim ersten Start werden Beispieldaten geladen:
-  - 3 Geschäfte: Rewe, Edeka, Aldi
+  - 3 Geschäfte: Rewe, Edeka, Kaufland
   - 27 Abteilungen (9 pro Geschäft)
   - 17 Produkte für Rewe
 - **Datenbankschema**:

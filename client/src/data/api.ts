@@ -13,6 +13,7 @@ export interface Item {
   product_id?: number;
   department_id?: number;
   department_name?: string;
+  department_sort_order?: number;
 }
 
 export interface Store {
@@ -397,6 +398,52 @@ export async function deleteDepartment(departmentId: number): Promise<boolean> {
   } catch (error) {
     console.error('Error deleting department:', error);
     return false;
+  }
+}
+
+/**
+ * Update a department (partial update).
+ */
+export async function updateDepartment(
+  departmentId: number,
+  name?: string,
+  sortOrder?: number
+): Promise<Department | null> {
+  const tokenRefreshed = await ensureFreshToken();
+  if (!tokenRefreshed) {
+    return null;
+  }
+
+  try {
+    const body: { name?: string; sort_order?: number } = {};
+
+    if (name !== undefined) {
+      body.name = name;
+    }
+    if (sortOrder !== undefined) {
+      body.sort_order = sortOrder;
+    }
+
+    const res = await fetch(`/api/departments/${departmentId}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(body),
+    });
+
+    if (res.status === 401) {
+      handleUnauthorized();
+      return null;
+    }
+
+    if (!res.ok) {
+      console.error('Failed to update department:', res.statusText);
+      return null;
+    }
+
+    return await res.json();
+  } catch (error) {
+    console.error('Error updating department:', error);
+    return null;
   }
 }
 

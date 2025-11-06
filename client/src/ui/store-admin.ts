@@ -11,6 +11,7 @@ import {
   deleteStore,
   createDepartment,
   deleteDepartment,
+  updateDepartment,
 } from '../data/api.js';
 import type { Store } from '../data/api.js';
 
@@ -86,12 +87,20 @@ async function renderStores(stores: readonly Store[]): Promise<void> {
             departments.length > 0
               ? departments
                   .map(
-                    (dept) => `
+                    (dept, index) => `
             <div class="department-item" data-department-id="${dept.id}">
               <span class="department-name">${dept.name}</span>
-              <button class="delete-department-btn" data-department-id="${dept.id}">
-                ×
-              </button>
+              <div class="department-controls">
+                <button class="reorder-btn up-btn" data-department-id="${dept.id}" data-direction="up" ${index === 0 ? 'disabled' : ''}>
+                  ↑
+                </button>
+                <button class="reorder-btn down-btn" data-department-id="${dept.id}" data-direction="down" ${index === departments.length - 1 ? 'disabled' : ''}>
+                  ↓
+                </button>
+                <button class="delete-department-btn" data-department-id="${dept.id}">
+                  ×
+                </button>
+              </div>
             </div>
           `
                   )
@@ -216,6 +225,62 @@ function attachDynamicListeners(): void {
         await loadStores();
       } else {
         alert('Fehler beim Löschen der Abteilung.');
+      }
+    });
+  });
+
+  // Reorder department buttons (up/down arrows)
+  const reorderBtns = document.querySelectorAll('.reorder-btn');
+  reorderBtns.forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      const target = e.currentTarget as HTMLElement;
+      const departmentId = parseInt(target.dataset.departmentId || '0', 10);
+      const direction = target.dataset.direction as 'up' | 'down';
+
+      // Find all departments for this store (siblings in the same departments-list)
+      const departmentItem = target.closest('.department-item');
+      const departmentsList = departmentItem?.closest('.departments-list');
+      const allDeptItems = departmentsList?.querySelectorAll('.department-item');
+
+      if (!allDeptItems || allDeptItems.length < 2) {
+        return;
+      }
+
+      // Find current index
+      const currentIndex = Array.from(allDeptItems).findIndex(
+        (item) => parseInt((item as HTMLElement).dataset.departmentId || '0', 10) === departmentId
+      );
+
+      if (currentIndex === -1) {
+        return;
+      }
+
+      // Calculate swap target
+      const swapIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+
+      if (swapIndex < 0 || swapIndex >= allDeptItems.length) {
+        return;
+      }
+
+      // Get the department to swap with
+      const swapDeptId = parseInt(
+        (allDeptItems[swapIndex] as HTMLElement).dataset.departmentId || '0',
+        10
+      );
+
+      // Swap sort_order values
+      // Current department gets swap target's sort_order, and vice versa
+      const currentSortOrder = currentIndex;
+      const swapSortOrder = swapIndex;
+
+      // Update both departments
+      const success1 = await updateDepartment(departmentId, undefined, swapSortOrder);
+      const success2 = await updateDepartment(swapDeptId, undefined, currentSortOrder);
+
+      if (success1 && success2) {
+        await loadStores();
+      } else {
+        alert('Fehler beim Ändern der Reihenfolge.');
       }
     });
   });

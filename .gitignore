@@ -6,6 +6,7 @@ data.db
 .DS_Store
 .pytest_cache
 .claude
+.coverage
 venv
 develop-eggs/
 *.egg-info/

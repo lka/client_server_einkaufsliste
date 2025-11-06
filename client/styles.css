@@ -331,6 +331,7 @@ main{
 .department-item{
   display:flex;
   align-items:center;
+  justify-content:space-between;
   gap:.5rem;
   padding:.4rem .8rem;
   background:#f5f5f5;
@@ -340,6 +341,36 @@ main{
 }
 .department-name{
   color:#333;
+  flex:1;
+}
+.department-controls{
+  display:flex;
+  gap:.3rem;
+  align-items:center;
+}
+.reorder-btn{
+  background:transparent;
+  border:1px solid #999;
+  color:#555;
+  font-size:1rem;
+  cursor:pointer;
+  padding:0;
+  width:24px;
+  height:24px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:4px;
+  transition:all .2s;
+}
+.reorder-btn:hover:not(:disabled){
+  background:#e0e0e0;
+  color:#000;
+  border-color:#666;
+}
+.reorder-btn:disabled{
+  opacity:.3;
+  cursor:not-allowed;
 }
 .delete-department-btn{
   background:transparent;

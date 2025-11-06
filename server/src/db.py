@@ -47,6 +47,8 @@ def reset_engine() -> None:
     Useful for testing to ensure a fresh engine with new DATABASE_URL.
     """
     global _engine
+    if _engine is not None:
+        _engine.dispose()
     _engine = None
 
 
