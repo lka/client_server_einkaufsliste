@@ -435,3 +435,117 @@ def test_delete_store_items():
 
     # Cleanup
     client.delete(f"/api/items/{item3_id}", headers=headers)
+
+
+def test_convert_item_to_product():
+    """Test converting an item to a product with department assignment."""
+    token = get_auth_token()
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Get a store and department
+    r = client.get("/api/stores", headers=headers)
+    stores = r.json()
+    store_id = stores[0]["id"]
+
+    r = client.get(f"/api/stores/{store_id}/departments", headers=headers)
+    departments = r.json()
+    department_id = departments[0]["id"]
+
+    # Create an item without product assignment (will be in "Sonstiges")
+    r = client.post(
+        "/api/items",
+        json={"name": "TestKiwi", "store_id": store_id},
+        headers=headers,
+    )
+    assert r.status_code == 201
+    item = r.json()
+    item_id = item["id"]
+    assert item["department_id"] is None  # Not assigned to department yet
+    assert item["product_id"] is None  # No product yet
+
+    # Convert item to product by assigning department
+    r = client.post(
+        f"/api/items/{item_id}/convert-to-product",
+        json={"department_id": department_id},
+        headers=headers,
+    )
+    assert r.status_code == 200
+    updated_item = r.json()
+    assert updated_item["department_id"] == department_id
+    assert updated_item["product_id"] is not None
+    assert updated_item["department_name"] == departments[0]["name"]
+
+    # Verify product was created by checking store products
+    product_id = updated_item["product_id"]
+    r = client.get(f"/api/stores/{store_id}/products", headers=headers)
+    assert r.status_code == 200
+    products = r.json()
+    created_product = next((p for p in products if p["id"] == product_id), None)
+    assert created_product is not None
+    assert created_product["name"] == "TestKiwi"
+    assert created_product["department_id"] == department_id
+    assert created_product["store_id"] == store_id
+
+    # Cleanup
+    client.delete(f"/api/items/{item_id}", headers=headers)
+    r = client.delete(f"/api/products/{product_id}", headers=headers)
+    # Product delete might return 404 if cascading delete, that's ok
+
+
+def test_convert_item_to_product_existing_product():
+    """Test converting item when product already exists."""
+    token = get_auth_token()
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Get a store and department
+    r = client.get("/api/stores", headers=headers)
+    stores = r.json()
+    store_id = stores[0]["id"]
+
+    r = client.get(f"/api/stores/{store_id}/departments", headers=headers)
+    departments = r.json()
+    department_id = departments[0]["id"]
+
+    # Create a product first
+    r = client.post(
+        "/api/products",
+        json={
+            "name": "ExistingProduct",
+            "store_id": store_id,
+            "department_id": department_id,
+            "fresh": False,
+        },
+        headers=headers,
+    )
+    assert r.status_code == 201
+    existing_product = r.json()
+    existing_product_id = existing_product["id"]
+
+    # Create an item with the same name
+    r = client.post(
+        "/api/items",
+        json={"name": "ExistingProduct", "store_id": store_id},
+        headers=headers,
+    )
+    assert r.status_code == 201
+    item = r.json()
+    item_id = item["id"]
+
+    # Convert item - should use existing product
+    r = client.post(
+        f"/api/items/{item_id}/convert-to-product",
+        json={"department_id": department_id},
+        headers=headers,
+    )
+    assert r.status_code == 200
+    updated_item = r.json()
+    assert updated_item["product_id"] == existing_product_id
+
+    # Verify no new product was created
+    r = client.get(f"/api/stores/{store_id}/products", headers=headers)
+    products = [p for p in r.json() if p["name"] == "ExistingProduct"]
+    assert len(products) == 1  # Should still be only one product
+
+    # Cleanup
+    client.delete(f"/api/items/{item_id}", headers=headers)
+    client.delete(f"/api/products/{existing_product_id}", headers=headers)

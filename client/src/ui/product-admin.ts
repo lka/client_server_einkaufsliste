@@ -168,8 +168,8 @@ function renderProductList(): string {
                   ${product.fresh ? '<span class="product-badge fresh">🌿 Frisch</span>' : ''}
                 </div>
                 <div class="product-actions">
-                  <button class="btn-edit" data-product-id="${product.id}">Bearbeiten</button>
-                  <button class="btn-delete" data-product-id="${product.id}">Löschen</button>
+                  <button class="btn-edit" data-product-id="${product.id}" title="Bearbeiten">✏️</button>
+                  <button class="btn-delete" data-product-id="${product.id}" title="Löschen">🗑️</button>
                 </div>
               </div>
             `).join('')}

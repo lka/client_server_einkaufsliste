@@ -62,6 +62,10 @@ class ProductUpdate(BaseModel):
     fresh: bool | None = None
 
 
+class ConvertItemRequest(BaseModel):
+    department_id: int
+
+
 class ItemWithDepartment(BaseModel):
     """Item response model with department information."""
 
@@ -1183,6 +1187,96 @@ def delete_store_items(store_id: int, current_user: str = Depends(get_current_us
 
         session.commit()
         return None
+
+
+@app.post("/api/items/{item_id}/convert-to-product", response_model=ItemWithDepartment)
+def convert_item_to_product(
+    item_id: str,
+    request: ConvertItemRequest,
+    current_user: str = Depends(get_current_user),
+):
+    """Convert an item to a product and update the item's department assignment.
+
+    Creates a new product based on the item name (without quantity),
+    assigns it to the specified department, and updates the item to reference
+    the new product.
+
+    Args:
+        item_id: Item ID to convert
+        department_id: Department ID to assign the product to
+        current_user: Current authenticated username from JWT
+
+    Returns:
+        Updated item with department information
+    """
+    with get_session() as session:
+        # Get user
+        user = session.exec(select(User).where(User.username == current_user)).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Get item and verify ownership
+        item = session.get(Item, item_id)
+        if not item:
+            raise HTTPException(status_code=404, detail="Item not found")
+        if item.user_id != user.id:
+            raise HTTPException(
+                status_code=403, detail="Not authorized to modify this item"
+            )
+
+        # Get department and verify it exists
+        department = session.get(Department, request.department_id)
+        if not department:
+            raise HTTPException(status_code=404, detail="Department not found")
+
+        # Extract product name from item (remove quantity info)
+        product_name = item.name.strip()
+
+        # Check if product already exists with this name in this store
+        existing_product = session.exec(
+            select(Product).where(
+                Product.name == product_name,
+                Product.store_id == department.store_id,
+            )
+        ).first()
+
+        if existing_product:
+            # Use existing product
+            product = existing_product
+            # Update department if different
+            if product.department_id != request.department_id:
+                product.department_id = request.department_id
+                session.add(product)
+        else:
+            # Create new product
+            product = Product(
+                name=product_name,
+                store_id=department.store_id,
+                department_id=request.department_id,
+                fresh=False,
+            )
+            session.add(product)
+            session.flush()  # Get product ID
+
+        # Update item with product reference
+        item.product_id = product.id
+        session.add(item)
+        session.commit()
+        session.refresh(item)
+
+        # Return item with department info
+        dept = session.get(Department, request.department_id)
+        return ItemWithDepartment(
+            id=str(item.id),
+            user_id=item.user_id,
+            name=item.name,
+            menge=item.menge,
+            store_id=item.store_id,
+            product_id=item.product_id,
+            department_id=dept.id if dept else None,
+            department_name=dept.name if dept else None,
+            department_sort_order=dept.sort_order if dept else None,
+        )
 
 
 # Serve the app page for authenticated users

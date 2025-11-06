@@ -71,8 +71,8 @@ async function renderStores(stores: readonly Store[]): Promise<void> {
           <button class="reorder-store-btn down-btn" data-store-id="${store.id}" data-direction="down" ${index === storesWithDepartments.length - 1 ? 'disabled' : ''}>
             ↓
           </button>
-          <button class="delete-store-btn" data-store-id="${store.id}">
-            Löschen
+          <button class="delete-store-btn" data-store-id="${store.id}" title="Geschäft löschen">
+            🗑️
           </button>
         </div>
       </div>

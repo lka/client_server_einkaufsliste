@@ -74,9 +74,13 @@ The shopping list client is a TypeScript application built with a **four-layer a
   - `fetchItems()`: Get all shopping list items
   - `addItem(name)`: Add a new item
   - `deleteItem(id)`: Remove an item
+  - `deleteStoreItems(storeId)`: Delete all items for a store
+  - `convertItemToProduct(itemId, departmentId)`: Convert item to product with department assignment
+  - `fetchStores()`: Get all stores
+  - `fetchDepartments(storeId)`: Get departments for a store
   - `ensureFreshToken()`: Refresh JWT before API calls
 - **Dependencies**: auth.ts (for token management)
-- **Interface**: `Item { id: string, name: string }`
+- **Interfaces**: `Item`, `Store`, `Department`, `Product`
 
 #### auth.ts
 - **Responsibility**: Authentication and user management
@@ -102,7 +106,9 @@ The shopping list client is a TypeScript application built with a **four-layer a
 - **Responsibility**: DOM manipulation and template loading
 - **Functions**:
   - `renderItems(items)`: Render shopping list to DOM with batched updates
-  - `createItemElement(item)`: Create DOM element for item (no individual event handlers)
+  - `createItemElement(item, isInSonstiges)`: Create DOM element for item (no individual event handlers)
+    - Shows edit button (✏️) for items in "Sonstiges" section
+    - Shows delete button (🗑️) for all items
   - `loadTemplate(path)`: Load HTML template with caching
   - `loadAppTemplate()`: Load main app template
   - `clearTemplateCache()`: Internal function for testing
@@ -110,7 +116,7 @@ The shopping list client is a TypeScript application built with a **four-layer a
 - **Event Delegation Support**:
   - `createItemElement()` creates buttons with `data-item-id` attributes
   - No `onDelete` callback parameter - enforces event delegation pattern
-  - Buttons include `removeBtn` class for delegation selector
+  - Buttons include `removeBtn` and `editBtn` classes for delegation selectors
   - Parent container is responsible for event handling
 - **Template Caching**:
   - Templates are fetched once and cached in memory (Map)
@@ -205,6 +211,8 @@ The shopping list client is a TypeScript application built with a **four-layer a
 - **Functions**:
   - `initShoppingListUI()`: Initialize event handlers and state subscriptions
   - `loadItems()`: Trigger state to load items
+  - `handleEditItem(itemId)`: Handle edit button click for "Sonstiges" items
+  - `showDepartmentSelectionDialog(departments)`: Show modal dialog for department selection
 - **State Integration**:
   - Subscribes to `shoppingListState` for automatic UI updates
   - UI re-renders automatically when state changes
@@ -212,16 +220,24 @@ The shopping list client is a TypeScript application built with a **four-layer a
 - **Event Handlers**:
   - Add button click → `shoppingListState.addItem()`
   - Enter key for adding items
-  - Delete button click (event delegation on parent container) → `shoppingListState.deleteItem()`
+  - Delete button click (event delegation) → `shoppingListState.deleteItem()`
+  - Edit button click (event delegation) → `handleEditItem()` → Department selection dialog
+  - Clear store button → `shoppingListState.deleteStoreItems()`
 - **Event Delegation Pattern**:
   - Single click listener attached to `<ul id="items">` parent
   - Checks `target.classList.contains('removeBtn')` to identify delete buttons
+  - Checks `target.classList.contains('editBtn')` to identify edit buttons
   - Extracts `data-item-id` from clicked button
-  - Disables button during deletion to prevent double-clicks
-  - Re-enables button only if deletion fails
+  - Disables button during operations to prevent double-clicks
+  - Re-enables button only if operation fails
+- **Modal Dialogs**:
+  - Department selection dialog with backdrop
+  - List of department buttons for selection
+  - Cancel option and backdrop click to close
 - **Dependencies**:
   - `../state/shopping-list-state.js`: State management
   - `../data/dom.js`: renderItems (called by subscription)
+  - `../data/api.js`: fetchDepartments, convertItemToProduct
 
 #### user-menu.ts
 - **Responsibility**: User menu feature UI

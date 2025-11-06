@@ -55,7 +55,11 @@ describe('DOM Utilities', () => {
 
       const firstItem = itemsList?.children[0];
       expect(firstItem?.querySelector('span')?.textContent).toBe('Milk');
-      expect(firstItem?.querySelector('button')?.textContent).toBe('🗑️');
+      // Items in "Sonstiges" have both edit and delete buttons
+      const buttons = firstItem?.querySelectorAll('button');
+      expect(buttons?.length).toBe(2);
+      expect(buttons?.[0]?.textContent).toBe('✏️'); // Edit button
+      expect(buttons?.[1]?.textContent).toBe('🗑️'); // Delete button
     });
 
     it('should render items with menge', () => {

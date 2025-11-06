@@ -16,6 +16,10 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
   - **Abteilungs-Gruppierung**: Shopping-Liste zeigt Items gruppiert nach Abteilungen in Spalten-Layout
   - **Erstes Geschäft als Standard**: Automatische Auswahl des ersten Geschäfts beim Laden
   - **Liste leeren**: Alle Items eines Geschäfts mit einem Klick löschen (mit Sicherheitsabfrage)
+  - **Produktkatalog erweitern**: Items aus "Sonstiges" per ✏️-Icon einer Abteilung zuweisen
+    - Erstellt automatisch ein Produkt im Katalog (ohne Mengenangaben)
+    - Item erscheint danach in der gewählten Abteilung statt in "Sonstiges"
+    - Nutzt vorhandene Produkte, falls gleichnamiges Produkt bereits existiert
   - Benutzerspezifische Einkaufslisten (jeder User sieht nur seine eigenen Items)
 - ✅ **Store-Verwaltung**: Dedizierte Admin-Seite für Geschäfte und Abteilungen
   - **CRUD-Operationen**: Erstellen, Bearbeiten und Löschen von Stores und Departments
@@ -47,7 +51,7 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - "Zucker 500 g, 2 Packungen" + "Zucker 300 g" = "Zucker 800 g, 2 Packungen"
     - "Reis 500 g" + "2, 300 g" = "Reis 800 g, 2"
 - ✅ **Reaktive UI**: Automatische UI-Updates durch State-Management mit Observer Pattern
-- ✅ **Vollständige Tests**: 426 Tests (51 Server + 375 Client) mit 97%+ Code-Abdeckung
+- ✅ **Vollständige Tests**: 428 Tests (53 Server + 375 Client) mit 97%+ Code-Abdeckung
 - ✅ **TypeScript Client**: Typsicherer Client mit vier-Schichten-Architektur
 - ✅ **FastAPI Server**: Moderne Python API mit SQLModel ORM
 - ✅ **Account-Verwaltung**: Benutzer können sich registrieren, anmelden und Account löschen
@@ -198,7 +202,12 @@ Nach dem Login können Sie die Einkaufsliste verwenden:
    - Spalten-Layout auf Desktop (z.B. "Obst & Gemüse", "Milchprodukte", "Sonstiges")
    - Gestapeltes Layout auf Mobile
 5. **Items entfernen**: Klicken Sie auf das Papierkorb-Icon (🗑️) neben dem Item
-6. **Liste leeren**: Klicken Sie auf "🗑️ Liste leeren" um alle Items des ausgewählten Geschäfts zu löschen
+6. **Produktkatalog erweitern**: Items in "Sonstiges" können dem Katalog hinzugefügt werden
+   - Klicken Sie auf das Bearbeiten-Icon (✏️) neben einem Item in "Sonstiges"
+   - Wählen Sie eine Abteilung aus dem Dialog
+   - Das Produkt wird automatisch dem Katalog hinzugefügt (ohne Mengenangaben)
+   - Das Item erscheint danach in der gewählten Abteilung
+7. **Liste leeren**: Klicken Sie auf "🗑️ Liste leeren" um alle Items des ausgewählten Geschäfts zu löschen
    - Funktioniert nur bei ausgewähltem Geschäft (nicht bei "Alle Geschäfte")
    - Sicherheitsabfrage vor dem Löschen
 
@@ -331,6 +340,15 @@ Die Anwendung verwendet **JWT (JSON Web Tokens)** für sichere Authentifizierung
 - `GET /api/stores/{store_id}/products/search?q={query}` - Fuzzy-Suche nach Produkten in einem Store
   - Query-Parameter: `q` (Produktname)
   - Response: Bestes Match (≥60% Ähnlichkeit) oder `null`
+- `POST /api/items/{item_id}/convert-to-product` - Item in Produkt konvertieren und Abteilung zuweisen
+  - Body: `{"department_id": 1}` (ID der Abteilung)
+  - Response: `ItemWithDepartment` - Aktualisiertes Item mit Department-Informationen
+  - Funktion:
+    - Erstellt neues Produkt mit Item-Name (ohne Mengenangaben)
+    - Ordnet Produkt der angegebenen Abteilung zu
+    - Aktualisiert Item mit `product_id` Referenz
+    - Nutzt vorhandenes Produkt, falls gleichnamiges bereits existiert
+  - Authentifizierung: Nur eigene Items können konvertiert werden
 - `DELETE /api/items/{id}` - Eigenen Artikel löschen (nur eigene Items)
 
 ## Code-Qualität
@@ -373,10 +391,13 @@ pytest --cov=server --cov-report=html
 ```
 
 **Aktuelle Test-Abdeckung:**
-- ✅ 51 Tests insgesamt (+5 neue Tests: 4 für Store-Sortierung, 1 für Store-Items löschen)
+- ✅ 53 Tests insgesamt (+7 neue Tests: 4 für Store-Sortierung, 1 für Store-Items löschen, 2 für Item-zu-Produkt Konvertierung)
 - ✅ **Authentifizierung** (10 Tests):
   - Registrierung, Login, Token-Validierung, Token-Refresh, Account-Löschung
-- ✅ **Shopping-List CRUD** (11 Tests):
+- ✅ **Shopping-List CRUD** (13 Tests):
+  - **Item zu Produkt konvertieren**: Items aus "Sonstiges" in Produktkatalog aufnehmen (2 Tests)
+    - Neues Produkt erstellen und Abteilung zuweisen
+    - Vorhandenes Produkt wiederverwenden
   - **Store-Items löschen**: Alle Items eines Geschäfts löschen (benutzerspezifisch)
   - CRUD-Operationen mit JWT-Authentifizierung
   - **Mengenangaben**: Items mit und ohne optionale Menge

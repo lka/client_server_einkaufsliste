@@ -63,7 +63,7 @@ export function renderItems(list: Item[]): void {
 
   // Render ungrouped items if any (at the end)
   if (ungroupedItems.length > 0) {
-    const ungroupedSection = createDepartmentSection('Sonstiges', ungroupedItems);
+    const ungroupedSection = createDepartmentSection('Sonstiges', ungroupedItems, true);
     fragment.appendChild(ungroupedSection);
   }
 
@@ -74,7 +74,11 @@ export function renderItems(list: Item[]): void {
 /**
  * Create a department section with header and items.
  */
-function createDepartmentSection(departmentName: string, items: Item[]): HTMLElement {
+function createDepartmentSection(
+  departmentName: string,
+  items: Item[],
+  isInSonstiges: boolean = false
+): HTMLElement {
   const section = document.createElement('li');
   section.className = 'department-section';
 
@@ -87,7 +91,7 @@ function createDepartmentSection(departmentName: string, items: Item[]): HTMLEle
   itemsList.className = 'department-items';
 
   for (const item of items) {
-    const li = createItemElement(item);
+    const li = createItemElement(item, isInSonstiges);
     itemsList.appendChild(li);
   }
 
@@ -100,7 +104,7 @@ function createDepartmentSection(departmentName: string, items: Item[]): HTMLEle
  * Uses data attributes for event delegation - no individual click handlers needed.
  * The parent container should handle click events via event delegation.
  */
-export function createItemElement(item: Item): HTMLLIElement {
+export function createItemElement(item: Item, isInSonstiges: boolean = false): HTMLLIElement {
   const li = document.createElement('li');
 
   const span = document.createElement('span');
@@ -109,15 +113,27 @@ export function createItemElement(item: Item): HTMLLIElement {
     span.textContent += ` (${item.menge})`;
   }
 
-  const btn = document.createElement('button');
-  btn.className = 'removeBtn';
-  btn.textContent = '🗑️';
-  btn.setAttribute('aria-label', 'Entfernen');
-  btn.dataset.itemId = item.id;
+  li.appendChild(span);
+
+  // Add edit button for items in "Sonstiges" (items without department)
+  if (isInSonstiges) {
+    const editBtn = document.createElement('button');
+    editBtn.className = 'editBtn';
+    editBtn.textContent = '✏️';
+    editBtn.setAttribute('aria-label', 'Abteilung zuweisen');
+    editBtn.setAttribute('title', 'Abteilung zuweisen');
+    editBtn.dataset.itemId = item.id;
+    li.appendChild(editBtn);
+  }
+
+  const deleteBtn = document.createElement('button');
+  deleteBtn.className = 'removeBtn';
+  deleteBtn.textContent = '🗑️';
+  deleteBtn.setAttribute('aria-label', 'Entfernen');
+  deleteBtn.dataset.itemId = item.id;
   // No individual click handler - relies on event delegation from parent
 
-  li.appendChild(span);
-  li.appendChild(btn);
+  li.appendChild(deleteBtn);
 
   return li;
 }
