@@ -20,6 +20,16 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - Erstellt automatisch ein Produkt im Katalog (ohne Mengenangaben)
     - Item erscheint danach in der gewählten Abteilung statt in "Sonstiges"
     - Nutzt vorhandene Produkte, falls gleichnamiges Produkt bereits existiert
+  - **Intelligente Druckfunktion**: Einkaufsliste als DIN A5-Heft drucken
+    - Druckt auf DIN A4 Querformat → in der Mitte falten ergibt A5-Heft
+    - Automatische Layout-Optimierung: Bei vielen Einträgen (>35 Zeilen) wird die Liste auf Vorder- und Rückseite verteilt
+    - Bei wenigen Einträgen: Rückseite zeigt Notizen-Bereich mit Linien
+    - **Scrollbare Print-Preview**: Überschrift und Buttons bleiben fixiert, Vorschaubereich ist scrollbar
+    - Print-Preview zeigt beide Seiten nebeneinander mit gestrichelter Falzlinie
+    - **Kompakter Header**: Geschäftsname und Datum in einer Zeile (ohne "Einkaufsliste -" Präfix)
+    - Option zum Ausblenden der Abteilungsüberschriften (Live-Vorschau)
+    - Optimierte Schriftgrößen und Abstände für kompakten Druck
+    - Keine Aufzählungspunkte, reduzierte Zeilenabstände
   - Benutzerspezifische Einkaufslisten (jeder User sieht nur seine eigenen Items)
 - ✅ **Store-Verwaltung**: Dedizierte Admin-Seite für Geschäfte und Abteilungen
   - **CRUD-Operationen**: Erstellen, Bearbeiten und Löschen von Stores und Departments
@@ -176,19 +186,41 @@ cd ..
 
 ### 5. Server starten
 
-Mit venv:
+**Für Netzwerkzugriff (empfohlen - Server ist über IP erreichbar):**
 ```powershell
-venv\Scripts\python.exe -m uvicorn server.src.main:app --reload --port 8000
+# Mit venv:
+venv\Scripts\python.exe -m uvicorn server.src.main:app --reload --host 0.0.0.0 --port 8000
+
+# Oder global (falls uvicorn installiert):
+uvicorn server.src.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Oder global (falls uvicorn installiert):
+**Nur lokaler Zugriff (Standard):**
 ```powershell
+# Mit venv:
+venv\Scripts\python.exe -m uvicorn server.src.main:app --reload --port 8000
+
+# Oder global (falls uvicorn installiert):
 uvicorn server.src.main:app --reload --port 8000
 ```
 
+Mit `--host 0.0.0.0` läuft der Server auf **allen Netzwerkschnittstellen** und ist über die IP-Adresse erreichbar:
+- **Local**: `http://127.0.0.1:8000` - für lokalen Zugriff
+- **Network**: `http://<ihre-ip>:8000` - für Zugriff von anderen Geräten im Netzwerk
+
 ### 6. Anwendung öffnen
 
+**Lokaler Zugriff:**
 Öffnen Sie Ihren Browser und navigieren Sie zu: **http://localhost:8000/**
+
+**Netzwerkzugriff (von anderen Geräten):**
+1. Notieren Sie die Network-URL, die beim Serverstart angezeigt wird (z.B. `http://192.168.1.100:8000`)
+2. Stellen Sie sicher, dass die Windows Firewall den Port 8000 erlaubt:
+   ```powershell
+   # Firewall-Regel hinzufügen (als Administrator ausführen)
+   netsh advfirewall firewall add rule name="Einkaufsliste HTTP" dir=in action=allow protocol=TCP localport=8000
+   ```
+3. Öffnen Sie die Network-URL auf einem anderen Gerät im gleichen Netzwerk
 
 Sie sehen zuerst die Login-Seite. Registrieren Sie einen neuen Benutzer und melden Sie sich an.
 

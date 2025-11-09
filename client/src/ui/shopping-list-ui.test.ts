@@ -43,6 +43,7 @@ describe('Shopping List UI', () => {
         <select id="storeFilter">
           <option value="">Alle Geschäfte</option>
         </select>
+        <button id="printBtn">Print</button>
         <button id="clearStoreBtn">Clear</button>
         <ul id="items"></ul>
       </div>
@@ -893,6 +894,223 @@ describe('Shopping List UI', () => {
       expect(shoppingListState.deleteStoreItems).toHaveBeenCalledWith(1);
 
       confirmSpy.mockRestore();
+    });
+  });
+
+  describe('Print functionality', () => {
+    const mockItemsWithDepts = [
+      { id: '1', name: 'Äpfel', menge: '500 g', store_id: 1, department_name: 'Obst & Gemüse' },
+      { id: '2', name: 'Milch', menge: '1 L', store_id: 1, department_name: 'Milchprodukte' },
+      { id: '3', name: 'Zahnpasta', store_id: 1 },
+    ];
+
+    beforeEach(() => {
+      // Mock fetchStores to return stores
+      (fetchStores as jest.MockedFunction<typeof fetchStores>).mockResolvedValue(mockStores);
+    });
+
+    it('should show alert when print button clicked with no items', async () => {
+      const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
+
+      // Mock getItems to return empty array
+      (shoppingListState.getItems as jest.MockedFunction<typeof shoppingListState.getItems>).mockReturnValue([]);
+
+      initShoppingListUI();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      const printButton = document.getElementById('printBtn') as HTMLButtonElement;
+      printButton.click();
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      expect(alertSpy).toHaveBeenCalledWith('Keine Einträge zum Drucken vorhanden.');
+
+      alertSpy.mockRestore();
+    });
+
+    it('should show print preview dialog when print button clicked with items', async () => {
+      // Mock getItems to return items
+      (shoppingListState.getItems as jest.MockedFunction<typeof shoppingListState.getItems>).mockReturnValue(mockItemsWithDepts);
+
+      initShoppingListUI();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      // Select first store
+      mockStoreFilter.value = '1';
+      mockStoreFilter.dispatchEvent(new Event('change'));
+
+      const printButton = document.getElementById('printBtn') as HTMLButtonElement;
+      printButton.click();
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Check that print preview dialog was created
+      const dialog = document.querySelector('.print-preview-dialog');
+      expect(dialog).toBeTruthy();
+
+      // Check that dialog contains title
+      const title = dialog?.querySelector('h3');
+      expect(title?.textContent).toContain('Druckvorschau');
+    });
+
+    it('should display grouped items in print preview', async () => {
+      // Mock getItems to return items
+      (shoppingListState.getItems as jest.MockedFunction<typeof shoppingListState.getItems>).mockReturnValue(mockItemsWithDepts);
+
+      initShoppingListUI();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      // Select first store
+      mockStoreFilter.value = '1';
+      mockStoreFilter.dispatchEvent(new Event('change'));
+
+      const printButton = document.getElementById('printBtn') as HTMLButtonElement;
+      printButton.click();
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Check that dialog contains department sections
+      const dialog = document.querySelector('.print-preview-dialog');
+      const departmentTitles = dialog?.querySelectorAll('h4');
+
+      expect(departmentTitles?.length).toBeGreaterThan(0);
+
+      // Check for specific departments
+      const deptTexts = Array.from(departmentTitles || []).map(h4 => h4.textContent);
+      expect(deptTexts).toContain('Obst & Gemüse');
+      expect(deptTexts).toContain('Milchprodukte');
+      expect(deptTexts).toContain('Sonstiges');
+    });
+
+    it('should close dialog when cancel button clicked', async () => {
+      // Mock getItems to return items
+      (shoppingListState.getItems as jest.MockedFunction<typeof shoppingListState.getItems>).mockReturnValue(mockItemsWithDepts);
+
+      initShoppingListUI();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      // Select first store
+      mockStoreFilter.value = '1';
+      mockStoreFilter.dispatchEvent(new Event('change'));
+
+      const printButton = document.getElementById('printBtn') as HTMLButtonElement;
+      printButton.click();
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Find and click cancel button
+      const buttons = Array.from(document.querySelectorAll('button'));
+      const cancelButton = buttons.find(btn => btn.textContent === 'Abbrechen');
+
+      cancelButton?.click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      // Dialog should be removed
+      const dialog = document.querySelector('.print-preview-dialog');
+      expect(dialog).toBeFalsy();
+    });
+
+    it('should trigger print when print button in dialog clicked', async () => {
+      // Mock window.open
+      const mockPrintWindow = {
+        document: {
+          open: jest.fn(),
+          write: jest.fn(),
+          close: jest.fn(),
+        },
+        focus: jest.fn(),
+        print: jest.fn(),
+        onload: null as any,
+        onafterprint: null as any,
+        close: jest.fn(),
+      };
+
+      const windowOpenSpy = jest.spyOn(window, 'open').mockReturnValue(mockPrintWindow as any);
+
+      // Mock getItems to return items
+      (shoppingListState.getItems as jest.MockedFunction<typeof shoppingListState.getItems>).mockReturnValue(mockItemsWithDepts);
+
+      initShoppingListUI();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      // Select first store
+      mockStoreFilter.value = '1';
+      mockStoreFilter.dispatchEvent(new Event('change'));
+
+      const printButton = document.getElementById('printBtn') as HTMLButtonElement;
+      printButton.click();
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Find and click print button in dialog
+      const buttons = Array.from(document.querySelectorAll('button'));
+      const dialogPrintButton = buttons.find(btn => btn.textContent?.includes('Drucken'));
+
+      dialogPrintButton?.click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      // Check that window.open was called
+      expect(windowOpenSpy).toHaveBeenCalledWith('', '_blank');
+
+      // Dialog should be removed
+      const dialog = document.querySelector('.print-preview-dialog');
+      expect(dialog).toBeFalsy();
+
+      windowOpenSpy.mockRestore();
+    });
+
+    it('should close dialog when backdrop clicked', async () => {
+      // Mock getItems to return items
+      (shoppingListState.getItems as jest.MockedFunction<typeof shoppingListState.getItems>).mockReturnValue(mockItemsWithDepts);
+
+      initShoppingListUI();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      // Select first store
+      mockStoreFilter.value = '1';
+      mockStoreFilter.dispatchEvent(new Event('change'));
+
+      const printButton = document.getElementById('printBtn') as HTMLButtonElement;
+      printButton.click();
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Click backdrop
+      const backdrop = document.querySelector('.print-preview-backdrop') as HTMLElement;
+      backdrop?.click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      // Dialog should be removed
+      const dialog = document.querySelector('.print-preview-dialog');
+      expect(dialog).toBeFalsy();
+    });
+
+    it('should show alert when popup is blocked', async () => {
+      const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
+      const windowOpenSpy = jest.spyOn(window, 'open').mockReturnValue(null);
+
+      // Mock getItems to return items
+      (shoppingListState.getItems as jest.MockedFunction<typeof shoppingListState.getItems>).mockReturnValue(mockItemsWithDepts);
+
+      initShoppingListUI();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      // Select first store
+      mockStoreFilter.value = '1';
+      mockStoreFilter.dispatchEvent(new Event('change'));
+
+      const printButton = document.getElementById('printBtn') as HTMLButtonElement;
+      printButton.click();
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Find and click print button in dialog
+      const buttons = Array.from(document.querySelectorAll('button'));
+      const dialogPrintButton = buttons.find(btn => btn.textContent?.includes('Drucken'));
+
+      dialogPrintButton?.click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      // Check that alert was shown
+      expect(alertSpy).toHaveBeenCalledWith(
+        'Popup-Blocker verhindert das Drucken. Bitte erlauben Sie Popups für diese Seite.'
+      );
+
+      windowOpenSpy.mockRestore();
+      alertSpy.mockRestore();
     });
   });
 });

@@ -142,7 +142,13 @@ def run(server_class=http.server.ThreadingHTTPServer, handler_class=APIHandler):
     """
     addr = ("", PORT)
     with server_class(addr, handler_class) as httpd:
+        import socket
+        hostname = socket.gethostname()
+        local_ip = socket.gethostbyname(hostname)
+
         print(f"Serving HTTP on port {PORT} (client dir: {CLIENT_DIR})")
+        print(f"Local:   http://127.0.0.1:{PORT}")
+        print(f"Network: http://{local_ip}:{PORT}")
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:
