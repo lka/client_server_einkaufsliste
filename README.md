@@ -51,7 +51,7 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - "Zucker 500 g, 2 Packungen" + "Zucker 300 g" = "Zucker 800 g, 2 Packungen"
     - "Reis 500 g" + "2, 300 g" = "Reis 800 g, 2"
 - ✅ **Reaktive UI**: Automatische UI-Updates durch State-Management mit Observer Pattern
-- ✅ **Vollständige Tests**: 428 Tests (53 Server + 375 Client) mit 97%+ Code-Abdeckung
+- ✅ **Vollständige Tests**: 442 Tests (53 Server + 389 Client) mit 97%+ Code-Abdeckung
 - ✅ **TypeScript Client**: Typsicherer Client mit vier-Schichten-Architektur
 - ✅ **FastAPI Server**: Moderne Python API mit SQLModel ORM
 - ✅ **Account-Verwaltung**: Benutzer können sich registrieren, anmelden und Account löschen
@@ -451,8 +451,8 @@ npm test -- --watch
 ```
 
 **Aktuelle Test-Abdeckung:**
-- ✅ 375 Tests insgesamt (16 Test-Suites) (+6 neue Tests für Store-Update)
-- ✅ 100% Code-Abdeckung
+- ✅ 389 Tests insgesamt (16 Test-Suites) (+14 neue Tests für Edit-Item & Clear-Store Funktionalität)
+- ✅ 98%+ Code-Abdeckung
 - ✅ Data Layer: API Client (94), Authentication (36), DOM (18) = 148 Tests
   - Inklusive 401 Handling & Token Refresh Failures
   - Inklusive Token-Refresh-Optimierung (Singleton, Cooldown, Concurrent Requests)
@@ -460,8 +460,10 @@ npm test -- --watch
   - Inklusive DOM-Batching (DocumentFragment, O(1) Reflows)
   - Tests für Mengenangaben in API und DOM
   - Tests für Department-Gruppierung und Sortierung
+  - Tests für Edit-Icon in "Sonstiges" Items
   - **Vollständige CRUD-Abdeckung**: Stores (inkl. updateStore), Departments, Products (alle Operationen getestet)
   - **Store-Update-Tests**: Vollständige/partielle Updates, sort_order, Fehlerbehandlung
+  - **Convert-Item-to-Product Tests**: API-Funktion für Item-Konvertierung
 - ✅ State Layer: Shopping List State (36), User State (24), Store State (34) = 94 Tests
   - Inklusive Observer Pattern, Subscriptions, Reactivity
   - Inklusive Loading State Tracking
@@ -469,9 +471,13 @@ npm test -- --watch
   - Tests für Mengenangaben im State
   - Test für Fuzzy-Matching-Update (verhindert Duplikate)
   - Tests für Store/Department/Product State Management
-- ✅ UI Layer: Shopping List UI (16), User Menu (16), Store Admin (27), Product Admin (15) = 74 Tests
+- ✅ UI Layer: Shopping List UI (35), User Menu (16), Store Admin (27), Product Admin (15) = 93 Tests
   - Tests für Mengenfeld-Eingabe
   - Tests für CRUD-Operationen
+  - **Shopping List UI Tests (35)**: +14 neue Tests für:
+    - Edit-Button Funktionalität (8 Tests): Dialog-Anzeige, Department-Auswahl, Fehlerbehandlung
+    - Clear-Store-Button (6 Tests): Confirmation-Dialog, Löschung, Button-Disable-Logik
+    - **94.87% Coverage** (vorher 48%)
   - **Store Admin Tests**: Store-Reordering (↑↓ Buttons), Department-Reordering
   - Product Admin Tests: Store-Auswahl, Department-Verwaltung, Form-Validierung
 - ✅ Pages Layer: Login Controller (20) = 20 Tests
