@@ -143,6 +143,7 @@ def run(server_class=http.server.ThreadingHTTPServer, handler_class=APIHandler):
     addr = ("", PORT)
     with server_class(addr, handler_class) as httpd:
         import socket
+
         hostname = socket.gethostname()
         local_ip = socket.gethostbyname(hostname)
 
