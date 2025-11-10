@@ -38,8 +38,19 @@ export interface Product {
   fresh: boolean;
 }
 
+export interface User {
+  id: number;
+  username: string;
+  email: string;
+  is_active: boolean;
+  is_approved: boolean;
+  is_admin: boolean;
+  created_at: string;
+}
+
 export const API_BASE = '/api/items';
 export const API_STORES = '/api/stores';
+export const API_USERS = '/api/users';
 
 /**
  * Get authorization headers with JWT token.
@@ -661,5 +672,90 @@ export async function deleteProduct(productId: number): Promise<boolean> {
   } catch (error) {
     console.error('Error deleting product:', error);
     return false;
+  }
+}
+
+/**
+ * Fetch all users.
+ */
+export async function fetchAllUsers(): Promise<User[]> {
+  const tokenRefreshed = await ensureFreshToken();
+  if (!tokenRefreshed) {
+    return [];
+  }
+
+  try {
+    const res = await fetch(API_USERS, {
+      headers: getAuthHeaders(),
+    });
+    if (res.status === 401) {
+      handleUnauthorized();
+      return [];
+    }
+    if (!res.ok) {
+      console.error('Failed to fetch users:', res.statusText);
+      return [];
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    return [];
+  }
+}
+
+/**
+ * Fetch pending (unapproved) users.
+ */
+export async function fetchPendingUsers(): Promise<User[]> {
+  const tokenRefreshed = await ensureFreshToken();
+  if (!tokenRefreshed) {
+    return [];
+  }
+
+  try {
+    const res = await fetch(`${API_USERS}/pending`, {
+      headers: getAuthHeaders(),
+    });
+    if (res.status === 401) {
+      handleUnauthorized();
+      return [];
+    }
+    if (!res.ok) {
+      console.error('Failed to fetch pending users:', res.statusText);
+      return [];
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Error fetching pending users:', error);
+    return [];
+  }
+}
+
+/**
+ * Approve a user.
+ */
+export async function approveUser(userId: number): Promise<User | null> {
+  const tokenRefreshed = await ensureFreshToken();
+  if (!tokenRefreshed) {
+    return null;
+  }
+
+  try {
+    const res = await fetch(`${API_USERS}/${userId}/approve`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    });
+    if (res.status === 401) {
+      handleUnauthorized();
+      return null;
+    }
+    if (!res.ok) {
+      console.error('Failed to approve user:', res.statusText);
+      return null;
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Error approving user:', error);
+    return null;
   }
 }

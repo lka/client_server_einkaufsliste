@@ -35,6 +35,7 @@ export function initUserMenu(): void {
   const backToAppBtn = document.getElementById('backToAppBtn');
   const manageStoresBtn = document.getElementById('manageStoresBtn');
   const manageProductsBtn = document.getElementById('manageProductsBtn');
+  const manageUsersBtn = document.getElementById('manageUsersBtn');
   const logoutBtn = document.getElementById('logoutBtn');
   const deleteAccountBtn = document.getElementById('deleteAccountBtn');
 
@@ -77,6 +78,13 @@ export function initUserMenu(): void {
   if (manageProductsBtn) {
     manageProductsBtn.addEventListener('click', () => {
       window.location.href = '/products';
+    });
+  }
+
+  // Manage users button handler
+  if (manageUsersBtn) {
+    manageUsersBtn.addEventListener('click', () => {
+      window.location.href = '/users';
     });
   }
 
