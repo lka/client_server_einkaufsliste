@@ -393,6 +393,16 @@ black server/
 
 Black formatiert den Python-Code automatisch nach PEP 8 Standards.
 
+**Pre-Commit Hook:**
+Das Projekt enthält einen Git pre-commit-hook, der automatisch alle Python-Dateien im `server/` Verzeichnis mit Black formatiert:
+- Hook-Datei: `.git/hooks/pre-commit`
+- Wird automatisch vor jedem Commit ausgeführt
+- Formatiert nur Dateien im `server/` Verzeichnis
+- Verhindert Commits mit unformatiertem Code
+- Zeigt an, welche Dateien formatiert wurden
+
+Der Hook ist bereits installiert und einsatzbereit. Falls Black nicht verfügbar ist, wird eine Fehlermeldung angezeigt.
+
 ### Linting mit Flake8
 
 ```powershell
