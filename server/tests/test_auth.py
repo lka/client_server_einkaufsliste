@@ -1,9 +1,24 @@
 """Integration tests for authentication endpoints."""
 
 from fastapi.testclient import TestClient
+from sqlmodel import Session, select
 from server.src.main import app
+from server.src.db import get_engine
+from server.src.user_models import User
 
 client = TestClient(app)
+
+
+def approve_user(username: str):
+    """Helper to approve a user for testing."""
+    engine = get_engine()
+    with Session(engine) as session:
+        statement = select(User).where(User.username == username)
+        user = session.exec(statement).first()
+        if user:
+            user.is_approved = True
+            session.add(user)
+            session.commit()
 
 
 def test_register_user():
@@ -34,6 +49,9 @@ def test_login_user():
         "password": "testpass123",
     }
     client.post("/api/auth/register", json=user_data)
+
+    # Approve user for testing
+    approve_user("logintest")
 
     # Now try to login
     login_data = {"username": "logintest", "password": "testpass123"}
@@ -67,6 +85,7 @@ def test_protected_endpoint_with_auth():
         "password": "testpass123",
     }
     client.post("/api/auth/register", json=user_data)
+    approve_user("authtest")
 
     login_data = {"username": "authtest", "password": "testpass123"}
     r = client.post("/api/auth/login", json=login_data)
@@ -87,6 +106,7 @@ def test_get_current_user():
         "password": "testpass123",
     }
     client.post("/api/auth/register", json=user_data)
+    approve_user("metest")
 
     login_data = {"username": "metest", "password": "testpass123"}
     r = client.post("/api/auth/login", json=login_data)
@@ -113,6 +133,7 @@ def test_delete_user():
     }
     r = client.post("/api/auth/register", json=user_data)
     assert r.status_code == 201
+    approve_user("deletetest")
 
     login_data = {"username": "deletetest", "password": "testpass123"}
     r = client.post("/api/auth/login", json=login_data)
@@ -147,6 +168,7 @@ def test_refresh_token():
         "password": "testpass123",
     }
     client.post("/api/auth/register", json=user_data)
+    approve_user("refreshtest")
 
     login_data = {"username": "refreshtest", "password": "testpass123"}
     r = client.post("/api/auth/login", json=login_data)

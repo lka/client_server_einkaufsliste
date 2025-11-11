@@ -8,6 +8,10 @@ client = TestClient(app)
 
 def get_auth_token():
     """Helper function to register a test user and get auth token."""
+    from sqlmodel import Session, select
+    from server.src.db import get_engine
+    from server.src.user_models import User
+
     # Register test user
     register_data = {
         "username": "testuser",
@@ -16,14 +20,19 @@ def get_auth_token():
     }
     r = client.post("/api/auth/register", json=register_data)
 
-    # If user already exists (from previous test run), just login
-    if r.status_code == 400:
-        login_data = {"username": "testuser", "password": "testpass123"}
-        r = client.post("/api/auth/login", json=login_data)
-    else:
-        # Login with newly registered user
-        login_data = {"username": "testuser", "password": "testpass123"}
-        r = client.post("/api/auth/login", json=login_data)
+    # Approve the user directly in the database (for testing)
+    engine = get_engine()
+    with Session(engine) as session:
+        statement = select(User).where(User.username == "testuser")
+        user = session.exec(statement).first()
+        if user:
+            user.is_approved = True
+            session.add(user)
+            session.commit()
+
+    # Login with approved user
+    login_data = {"username": "testuser", "password": "testpass123"}
+    r = client.post("/api/auth/login", json=login_data)
 
     assert r.status_code == 200
     token = r.json()["access_token"]

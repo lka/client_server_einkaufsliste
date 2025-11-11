@@ -6,6 +6,7 @@ CRUD API at /api/items backed by SQLite.
 
 from typing import List, Optional
 import os
+import readenv.loads
 from datetime import timedelta
 from contextlib import asynccontextmanager
 
@@ -24,6 +25,9 @@ from .auth import (
     get_current_user,
     ACCESS_TOKEN_EXPIRE_MINUTES,
 )
+
+
+readenv.loads  # Load .env file
 
 
 # Request models for store management
@@ -102,6 +106,7 @@ async def lifespan(app: FastAPI):
 
     # Create or update admin user from .env
     from .admin_setup import create_or_update_admin_user
+    from .user_cleanup import cleanup_expired_users
     from sqlmodel import Session
 
     with Session(engine) as session:
@@ -109,6 +114,9 @@ async def lifespan(app: FastAPI):
             create_or_update_admin_user(session)
         except ValueError as e:
             print(f"Warning: {e}")
+
+        # Cleanup expired unapproved users
+        cleanup_expired_users(session)
 
     try:
         yield
@@ -901,24 +909,25 @@ def delete_product(product_id: int, current_user: str = Depends(get_current_user
 
 @app.get("/api/items", response_model=List[ItemWithDepartment])
 def read_items(current_user: str = Depends(get_current_user)):
-    """Read all items from the database for the current user (requires authentication).
+    """Read all items from the database (requires authentication).
 
     Returns items with department information for grouping by department.
+    All authenticated users can access the same shared shopping list.
 
     Args:
         current_user: Current authenticated username from JWT
 
     Returns:
-        List[ItemWithDepartment]: All items for the current user with department info.
+        List[ItemWithDepartment]: All items with department info.
     """
     with get_session() as session:
-        # Get user ID
+        # Get user to verify authentication
         user = session.exec(select(User).where(User.username == current_user)).first()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
-        # Get items for this user only
-        items = session.exec(select(Item).where(Item.user_id == user.id)).all()
+        # Get all items (shared list)
+        items = session.exec(select(Item)).all()
 
         # Enrich items with department information
         items_with_dept = []

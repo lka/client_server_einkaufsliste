@@ -7,6 +7,10 @@ import pytest
 # Use a shared in-memory database so all connections see the same data
 os.environ["DATABASE_URL"] = "sqlite:///file::memory:?mode=memory&cache=shared&uri=true"
 
+# Disable admin auto-creation in tests
+os.environ["ADMIN_USERNAME"] = ""
+os.environ["ADMIN_PASSWORD"] = ""
+
 
 @pytest.fixture(scope="module", autouse=True)
 def setup_test_database():

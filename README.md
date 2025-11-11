@@ -30,7 +30,7 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - Option zum Ausblenden der Abteilungsüberschriften (Live-Vorschau)
     - Optimierte Schriftgrößen und Abstände für kompakten Druck
     - Keine Aufzählungspunkte, reduzierte Zeilenabstände
-  - Benutzerspezifische Einkaufslisten (jeder User sieht nur seine eigenen Items)
+  - **Geteilte Einkaufsliste**: Alle freigeschalteten Benutzer können die gleiche Einkaufsliste bearbeiten
 - ✅ **Store-Verwaltung**: Dedizierte Admin-Seite für Geschäfte und Abteilungen
   - **CRUD-Operationen**: Erstellen, Bearbeiten und Löschen von Stores und Departments
   - **Geschäfts-Sortierung**: Reihenfolge der Geschäfte mit ↑↓ Buttons ändern
@@ -64,7 +64,13 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
 - ✅ **Vollständige Tests**: 442 Tests (53 Server + 389 Client) mit 97%+ Code-Abdeckung
 - ✅ **TypeScript Client**: Typsicherer Client mit vier-Schichten-Architektur
 - ✅ **FastAPI Server**: Moderne Python API mit SQLModel ORM
-- ✅ **Account-Verwaltung**: Benutzer können sich registrieren, anmelden und Account löschen
+- ✅ **Benutzer-Verwaltung**: Freischaltungs-System für neue Benutzer
+  - **Administrator-Account**: Wird automatisch beim Serverstart aus `.env` erstellt/aktualisiert
+  - **Freischaltungs-Prozess**: Neue Benutzer müssen von freigeschalteten Benutzern genehmigt werden
+  - **Verwaltungsseite**: Dedizierte `/users` Seite zeigt ausstehende und alle Benutzer
+  - **Auto-Cleanup**: Nicht freigeschaltete Benutzer werden nach konfigurierbarer Zeit automatisch gelöscht (Standard: 48 Stunden)
+  - **Selbstverwaltung**: Jeder Benutzer kann sich selbst löschen
+  - Navigation über Benutzermenü: "👥 Benutzer verwalten"
 
 ## Project Structure
 
@@ -77,13 +83,16 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
 │   │   ├── models.py         # SQLModel data models (Item, Store, Department, Product)
 │   │   ├── user_models.py    # User authentication models
 │   │   ├── auth.py           # JWT authentication utilities
+│   │   ├── admin_setup.py    # Admin user setup utilities
+│   │   ├── user_cleanup.py   # User cleanup utilities
 │   │   ├── db.py             # Database utilities
 │   │   └── seed_data.py      # Database seed data (stores, departments, products)
 │   └── tests/
-│       ├── conftest.py       # Pytest fixtures
-│       ├── test_api.py       # API integration tests
-│       ├── test_auth.py      # Authentication tests
-│       └── test_stores.py    # Store/Department/Product CRUD tests (19 tests)
+│       ├── conftest.py              # Pytest fixtures
+│       ├── test_api.py              # API integration tests (13 tests)
+│       ├── test_auth.py             # Authentication tests (10 tests)
+│       ├── test_stores.py           # Store/Department/Product CRUD tests (30 tests)
+│       └── test_user_management.py  # User management tests (10 tests)
 ├── client/
 │   ├── src/
 │   │   ├── data/                 # Data layer (API, auth, DOM utilities)
@@ -103,22 +112,26 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
 │   │   │   ├── store-browser.ts      # Store/product browser UI module
 │   │   │   ├── store-admin.ts        # Store administration UI (CRUD)
 │   │   │   ├── product-admin.ts      # Product administration UI (CRUD)
+│   │   │   ├── user-admin.ts         # User administration UI (approval)
 │   │   │   └── user-menu.ts          # User menu module
 │   │   ├── pages/                # Pages layer (page controllers & templates)
 │   │   │   ├── login.ts          # Login page controller
 │   │   │   ├── login.html        # Login HTML template
 │   │   │   ├── app.html          # App HTML template (with store browser)
 │   │   │   ├── stores.html       # Store admin HTML template
-│   │   │   └── products.html     # Product admin HTML template
+│   │   │   ├── products.html     # Product admin HTML template
+│   │   │   └── users.html        # User admin HTML template
 │   │   ├── script.ts             # Main app entry point
 │   │   ├── script-stores.ts      # Store admin entry point
 │   │   ├── script-products.ts    # Product admin entry point
+│   │   ├── script-users.ts       # User admin entry point
 │   │   └── index-login.ts        # Login entry point
 │   ├── dist/                 # Compiled JavaScript
 │   ├── index.html            # Login page
 │   ├── index-app.html        # Main app page
 │   ├── index-stores.html     # Store admin page
 │   ├── index-products.html   # Product admin page
+│   ├── index-users.html      # User admin page
 │   ├── favicon.svg           # Application icon
 │   ├── styles.css            # Styles
 │   ├── package.json          # Node dependencies
@@ -166,14 +179,25 @@ copy .env.example .env
 python -c "import secrets; print(secrets.token_hex(32))"
 ```
 
-Tragen Sie den generierten Key in die `.env` Datei ein:
+Tragen Sie den generierten Key und die Admin-Zugangsdaten in die `.env` Datei ein:
 
 ```env
 SECRET_KEY=ihr-generierter-key-hier
 ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+# Admin User Configuration
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=ihr-sicheres-passwort
+ADMIN_EMAIL=admin@example.com
+
+# User Approval Settings
+UNAPPROVED_USER_EXPIRY_HOURS=48
 ```
 
-**Wichtig**: Der SECRET_KEY sollte geheim bleiben und niemals in Git committet werden!
+**Wichtig**:
+- Der SECRET_KEY und ADMIN_PASSWORD sollten geheim bleiben und niemals in Git committet werden!
+- Der Admin-Account wird beim Serverstart automatisch erstellt/aktualisiert
+- Ändern Sie das Admin-Passwort vor dem produktiven Einsatz!
 
 ### 4. Client Build (TypeScript)
 
@@ -306,6 +330,10 @@ Die Anwendung verwendet **JWT (JSON Web Tokens)** für sichere Authentifizierung
 | `SECRET_KEY` | Geheimer Schlüssel für JWT-Signierung | `dev-secret-key-change-in-production` | Ja (Produktion) |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | Token-Gültigkeitsdauer in Minuten | `30` | Nein |
 | `DATABASE_URL` | Datenbank-Verbindungs-URL | `sqlite:///./data.db` | Nein |
+| `ADMIN_USERNAME` | Administrator-Benutzername | - | Ja |
+| `ADMIN_PASSWORD` | Administrator-Passwort | - | Ja |
+| `ADMIN_EMAIL` | Administrator-E-Mail | `admin@example.com` | Nein |
+| `UNAPPROVED_USER_EXPIRY_HOURS` | Stunden bis nicht freigeschaltete Benutzer gelöscht werden | `48` | Nein |
 
 ### Sicherheitshinweise
 
@@ -318,11 +346,16 @@ Die Anwendung verwendet **JWT (JSON Web Tokens)** für sichere Authentifizierung
 ### API-Endpunkte
 
 **Authentifizierung:**
-- `POST /api/auth/register` - Neuen Benutzer registrieren
-- `POST /api/auth/login` - Login und Token erhalten
+- `POST /api/auth/register` - Neuen Benutzer registrieren (Status: unapproved)
+- `POST /api/auth/login` - Login und Token erhalten (nur für freigeschaltete Benutzer)
 - `POST /api/auth/refresh` - Token erneuern (authentifiziert)
 - `GET /api/auth/me` - Aktuelle Benutzerinfo abrufen (authentifiziert)
 - `DELETE /api/auth/me` - Eigenen Account löschen (authentifiziert)
+
+**Benutzer-Verwaltung (alle authentifiziert und freigeschaltet):**
+- `GET /api/users` - Alle Benutzer abrufen
+- `GET /api/users/pending` - Nicht freigeschaltete Benutzer abrufen
+- `POST /api/users/{user_id}/approve` - Benutzer freischalten
 
 **Store Management (alle authentifiziert):**
 - `GET /api/stores` - Alle Geschäfte abrufen (sortiert nach sort_order, dann ID)
@@ -433,9 +466,11 @@ pytest --cov=server --cov-report=html
 ```
 
 **Aktuelle Test-Abdeckung:**
-- ✅ 53 Tests insgesamt (+7 neue Tests: 4 für Store-Sortierung, 1 für Store-Items löschen, 2 für Item-zu-Produkt Konvertierung)
+- ✅ **63 Tests insgesamt** (+10 neue Tests für User-Management)
+  - **85% Code-Coverage** für Server-Code
 - ✅ **Authentifizierung** (10 Tests):
   - Registrierung, Login, Token-Validierung, Token-Refresh, Account-Löschung
+  - Genehmigungsprüfung beim Login
 - ✅ **Shopping-List CRUD** (13 Tests):
   - **Item zu Produkt konvertieren**: Items aus "Sonstiges" in Produktkatalog aufnehmen (2 Tests)
     - Neues Produkt erstellen und Abteilung zuweisen
@@ -454,7 +489,7 @@ pytest --cov=server --cov-report=html
     - Alternative Schreibweisen ("Moehre" → "Möhren")
     - Singular/Plural ("Kartoffel" → "Kartoffeln")
     - Keine False Positives bei unterschiedlichen Produkten
-  - **Benutzerspezifisch**: Jeder User sieht nur seine eigenen Items
+  - **Geteilte Einkaufsliste**: Alle genehmigten Benutzer sehen dieselbe Liste
 - ✅ **Store Management & CRUD** (30 Tests):
   - **Store CRUD** (12 Tests):
     - Stores erstellen, abrufen, aktualisieren, löschen
@@ -473,8 +508,17 @@ pytest --cov=server --cov-report=html
     - Store-Department-Product Hierarchie
     - Cascading Deletes über mehrere Ebenen
     - Fehlerbehandlung für nicht existierende Ressourcen
+- ✅ **Benutzer-Verwaltung** (10 Tests):
+  - Registrierung erstellt nicht genehmigte Benutzer (`is_approved=False`)
+  - Login-Sperre für nicht genehmigte Benutzer (403 Forbidden)
+  - Alle Benutzer abrufen (nur für genehmigte Benutzer)
+  - Ausstehende Benutzer abrufen (nicht genehmigte)
+  - Benutzer genehmigen (`POST /api/users/{id}/approve`)
+  - Genehmigter Benutzer kann sich anmelden
+  - Authentifizierungschecks für alle User-Management-Endpoints
+  - Genehmigte Benutzer können andere genehmigen
+  - Account-Löschung, Token-Invalidierung
 - ✅ Geschützte Endpunkte (401/403 Tests)
-- ✅ User-Verwaltung (Account-Löschung, Token-Invalidierung)
 - ✅ Token-Refresh-Mechanismus
 
 ### Client Tests (TypeScript/Jest)
@@ -493,8 +537,9 @@ npm test -- --watch
 ```
 
 **Aktuelle Test-Abdeckung:**
-- ✅ 389 Tests insgesamt (16 Test-Suites) (+14 neue Tests für Edit-Item & Clear-Store Funktionalität)
-- ✅ 98%+ Code-Abdeckung
+- ✅ **396 Tests insgesamt** (16 Test-Suites)
+  - **85.46% Code-Coverage** für Client-Code
+  - Neue Module `user-admin.ts` und `script-users.ts` noch ohne Tests (0%)
 - ✅ Data Layer: API Client (94), Authentication (36), DOM (18) = 148 Tests
   - Inklusive 401 Handling & Token Refresh Failures
   - Inklusive Token-Refresh-Optimierung (Singleton, Cooldown, Concurrent Requests)
@@ -529,6 +574,11 @@ npm test -- --watch
   - Tests für Template Loading
 - ✅ Error Handling, Edge Cases, User Interactions
 
+**Gesamt-Teststatistik:**
+- 📊 **Server**: 63 Tests, 85% Coverage
+- 📊 **Client**: 396 Tests, 85.46% Coverage
+- 📊 **Gesamt**: 459 Tests ✅
+
 ### Continuous Integration (CI)
 
 Das Projekt nutzt GitHub Actions für automatisierte Tests bei jedem Push/Pull Request:
@@ -536,11 +586,11 @@ Das Projekt nutzt GitHub Actions für automatisierte Tests bei jedem Push/Pull R
 **Server Tests (Python):**
 - Black Code-Formatierung prüfen
 - Flake8 Linting
-- Pytest Tests (15 Tests)
+- Pytest Tests (63 Tests mit 85% Coverage)
 
 **Client Tests (TypeScript):**
 - TypeScript Build
-- Jest Tests (154 Tests, 99.36% Coverage)
+- Jest Tests (396 Tests mit 85.46% Coverage)
 
 Beide Jobs laufen parallel für maximale Geschwindigkeit. Die CI-Konfiguration befindet sich in `.github/workflows/ci.yml`.
 
