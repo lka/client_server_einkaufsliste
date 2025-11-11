@@ -260,9 +260,171 @@ The shopping list client is a TypeScript application built with a **four-layer a
 
 ### 3. UI Layer (`src/ui/`)
 
-**Purpose**: Feature-specific UI logic and event handlers.
+**Purpose**: Feature-specific UI logic, event handlers, and reusable components.
 
 **Modules**:
+
+#### Component Library (`src/ui/components/`)
+
+**Purpose**: Reusable UI components for consistent styling and behavior across the application.
+
+**Components**:
+
+##### button.ts
+- **Exports**:
+  - `createButton(options: ButtonOptions)`: Create styled button with consistent behavior
+  - `updateButton(button, updates)`: Update button state dynamically
+  - `injectButtonStyles()`: Inject button CSS (call once at app start)
+- **Features**:
+  - Variants: primary (blue), secondary (gray), danger (red), success (green)
+  - Sizes: small, medium, large
+  - Loading state with animated spinner
+  - Icon support
+  - Async onClick with automatic disable/enable
+  - XSS protection via HTML escaping
+  - Custom className and aria-label support
+- **Usage**:
+  ```typescript
+  import { createButton } from './ui/components/button.js';
+
+  const btn = createButton({
+    label: 'Save',
+    variant: 'primary',
+    onClick: async () => { await saveData(); }
+  });
+  ```
+
+##### modal.ts
+- **Exports**:
+  - `Modal` class: Full-featured modal/dialog component
+  - `injectModalStyles()`: Inject modal CSS
+- **Features**:
+  - Backdrop with configurable click-to-close
+  - Keyboard support (Escape key)
+  - Focus management
+  - Body scroll prevention
+  - Smooth animations (opacity + scale)
+  - Sizes: small (400px), medium (600px), large (900px)
+  - Dynamic content and title updates
+- **Methods**: `open()`, `close()`, `setContent()`, `setTitle()`, `isModalOpen()`
+- **Usage**:
+  ```typescript
+  import { Modal } from './ui/components/modal.js';
+
+  const modal = new Modal({
+    title: 'Confirm Action',
+    content: 'Are you sure?',
+    size: 'small',
+    onClose: () => console.log('closed')
+  });
+  modal.open();
+  ```
+
+##### card.ts
+- **Exports**:
+  - `createCard(options)`: Create card container
+  - `updateCardContent(card, content)`: Update card body
+  - `updateCardTitle(card, title)`: Update card header
+  - `injectCardStyles()`: Inject card CSS
+- **Features**:
+  - Optional header with title
+  - Body content (string or HTMLElement)
+  - Optional footer
+  - Variants: default (border), elevated (shadow), outlined (blue border)
+- **Usage**:
+  ```typescript
+  import { createCard } from './ui/components/card.js';
+
+  const card = createCard({
+    title: 'Product Details',
+    content: 'Description here',
+    variant: 'elevated'
+  });
+  ```
+
+##### input.ts
+- **Exports**:
+  - `createInput(options)`: Create input with label
+  - `setInputError(inputGroup, error)`: Set error state
+  - `setInputValue(inputGroup, value)`: Set value
+  - `getInputValue(inputGroup)`: Get value
+  - `injectInputStyles()`: Inject input CSS
+  - `InputGroup` interface: `{ container, input, errorEl? }`
+- **Features**:
+  - Input types: text, email, password, number, tel, url
+  - Label with required indicator (red asterisk)
+  - Error state styling and messages
+  - Help text
+  - onChange and onBlur callbacks
+  - Returns InputGroup object for easy manipulation
+- **Usage**:
+  ```typescript
+  import { createInput, setInputError } from './ui/components/input.js';
+
+  const emailInput = createInput({
+    label: 'Email',
+    type: 'email',
+    required: true,
+    onChange: (value) => validateEmail(value)
+  });
+
+  if (invalid) {
+    setInputError(emailInput, 'Invalid email address');
+  }
+  ```
+
+##### loading.ts
+- **Exports**:
+  - `createSpinner(options?)`: Create loading spinner
+  - `showLoadingOverlay(label?)`: Show full-page overlay (returns cleanup function)
+  - `createSkeleton(options?)`: Create skeleton loader
+  - `injectLoadingStyles()`: Inject loading CSS
+- **Features**:
+  - Spinner sizes: small, medium, large
+  - Spinner variants: primary, secondary, light
+  - Full-page overlay option
+  - Skeleton variants: text, circular, rectangular
+  - Accessibility (aria-live, sr-only text)
+- **Usage**:
+  ```typescript
+  import { showLoadingOverlay } from './ui/components/loading.js';
+
+  const removeOverlay = showLoadingOverlay('Saving...');
+  await saveData();
+  removeOverlay();
+  ```
+
+##### index.ts
+- **Purpose**: Central export point for all components
+- **Exports**: All components and their types
+- **Functions**:
+  - `initializeComponents()`: Inject all component styles at once (idempotent)
+- **Usage**:
+  ```typescript
+  import { initializeComponents } from './ui/components/index.js';
+
+  // Call once at app start
+  initializeComponents();
+  ```
+
+**Component Design Principles**:
+- ✅ Factory functions for simple components (Button, Card, Input, Spinner)
+- ✅ Class-based for complex components (Modal) with lifecycle management
+- ✅ Style injection pattern - each component manages its own CSS
+- ✅ TypeScript interfaces for type-safe options
+- ✅ Accessibility first - ARIA attributes, keyboard support, screen reader text
+- ✅ XSS protection - escape user-provided HTML content
+- ✅ Flexible content - accept both strings and HTMLElements
+- ✅ No state management or API calls - pure UI components
+- ✅ Works with event delegation patterns
+
+**Testing**:
+- `button.test.ts`: 17 tests covering all button functionality (100% coverage)
+- **Total**: 17 tests for component library
+
+---
+
+#### Feature UI Modules
 
 #### shopping-list-ui.ts
 - **Responsibility**: Shopping list feature UI
@@ -318,7 +480,8 @@ The shopping list client is a TypeScript application built with a **four-layer a
 **Testing**:
 - `shopping-list-ui.test.ts`: 14 tests covering all UI interactions (100% coverage)
 - `user-menu.test.ts`: 16 tests covering menu functionality (100% coverage)
-- **Total**: 30 tests, 100% coverage
+- `button.test.ts`: 17 tests covering button component (100% coverage)
+- **Total**: 47 tests, 100% coverage
 
 **Principles**:
 - ✅ One module per feature
@@ -580,6 +743,14 @@ src/ui/
   shopping-list-ui.test.ts  ← Tests shopping-list-ui.ts (14 tests)
   user-menu.ts
   user-menu.test.ts         ← Tests user-menu.ts (16 tests)
+  components/
+    button.ts
+    button.test.ts          ← Tests button.ts (17 tests)
+    modal.ts
+    card.ts
+    input.ts
+    loading.ts
+    index.ts
 
 src/pages/
   login.ts
@@ -650,7 +821,7 @@ src/pages/
 - Test authentication flow
 
 ### Current Coverage
-- **434 tests total** (18 test suites)
+- **451 tests total** (19 test suites)
 - **98.5%+ overall code coverage**
 - All critical paths tested
 
@@ -663,9 +834,10 @@ src/pages/
   - shopping-list-state.ts: 100% coverage (35 tests)
   - user-state.ts: 100% coverage (24 tests)
   - store-state.ts: 100% coverage (34 tests including CRUD operations)
-- **UI Layer**: 30 tests (98%+ coverage)
+- **UI Layer**: 47 tests (98%+ coverage)
   - shopping-list-ui.ts: 97% coverage (14 tests)
   - user-menu.ts: 100% coverage (16 tests)
+  - button.ts: 100% coverage (17 tests)
 - **Pages Layer**: 20 tests (100% coverage)
   - login.ts: 100% coverage
 
@@ -718,10 +890,11 @@ src/pages/
 ### Potential Improvements
 1. ~~**State Management**: Add centralized state (e.g., observables)~~ ✅ **IMPLEMENTED** - Observer pattern with shopping-list-state, user-state, and store-state
 2. ~~**Store State**: Extend state management to stores, departments, and products~~ ✅ **IMPLEMENTED** - Full CRUD operations in store-state
-3. **Offline Support**: Service worker for PWA
-4. **Real-time Updates**: WebSocket integration
-5. **More UI Modules**: Search, filters, categories
-6. **Component Library**: Reusable UI components
+3. ~~**Component Library**: Reusable UI components~~ ✅ **IMPLEMENTED** - Button, Modal, Card, Input, Loading components
+4. **Offline Support**: Service worker for PWA
+5. **Real-time Updates**: WebSocket integration
+6. **More UI Modules**: Search, filters, categories
+7. **Additional Components**: Extend component library (Dropdown, Tabs, Toast notifications)
 
 ### Architecture Evolution
 - Previous: 3-layer architecture (Data → UI → Pages)

@@ -1,0 +1,78 @@
+/**
+ * Component Library - Central export point.
+ *
+ * This module exports all reusable UI components and provides
+ * a single initialization function to inject all component styles.
+ */
+
+// Import inject functions for initializeComponents
+import { injectButtonStyles } from './button.js';
+import { injectModalStyles } from './modal.js';
+import { injectCardStyles } from './card.js';
+import { injectInputStyles } from './input.js';
+import { injectLoadingStyles } from './loading.js';
+
+// Button
+export {
+  createButton,
+  updateButton,
+  type ButtonOptions,
+  type ButtonVariant,
+  type ButtonSize,
+} from './button.js';
+export { injectButtonStyles } from './button.js';
+
+// Modal
+export {
+  Modal,
+  type ModalOptions,
+} from './modal.js';
+export { injectModalStyles } from './modal.js';
+
+// Card
+export {
+  createCard,
+  updateCardContent,
+  updateCardTitle,
+  type CardOptions,
+} from './card.js';
+export { injectCardStyles } from './card.js';
+
+// Input
+export {
+  createInput,
+  setInputError,
+  setInputValue,
+  getInputValue,
+  type InputOptions,
+  type InputType,
+  type InputGroup,
+} from './input.js';
+export { injectInputStyles } from './input.js';
+
+// Loading
+export {
+  createSpinner,
+  showLoadingOverlay,
+  createSkeleton,
+  type SpinnerOptions,
+  type SpinnerSize,
+  type SpinnerVariant,
+} from './loading.js';
+export { injectLoadingStyles } from './loading.js';
+
+/**
+ * Initialize all component styles.
+ *
+ * Call this once when the application starts to inject
+ * all component CSS into the document head.
+ *
+ * This is idempotent - calling multiple times is safe.
+ */
+export function initializeComponents(): void {
+  injectButtonStyles();
+  injectModalStyles();
+  injectCardStyles();
+  injectInputStyles();
+  injectLoadingStyles();
+}
