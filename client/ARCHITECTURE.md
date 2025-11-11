@@ -33,15 +33,19 @@ The shopping list client is a TypeScript application built with a **four-layer a
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                      STATE LAYER (NEW)                       │
-│   ┌──────────────────────┬──────────────────────────┐       │
-│   │  shopping-list-state │  user-state              │       │
-│   │  - items: Item[]     │  - currentUser: User     │       │
-│   │  - listeners         │  - listeners             │       │
-│   │  - loading state     │  - loading state         │       │
-│   └──────────────────────┴──────────────────────────┘       │
+│   ┌──────────────┬──────────────┬──────────────────┐        │
+│   │  shopping-   │  user-state  │  store-state     │        │
+│   │  list-state  │              │                  │        │
+│   │  - items[]   │  - current   │  - stores[]      │        │
+│   │  - listeners │    User      │  - departments[] │        │
+│   │  - loading   │  - listeners │  - products[]    │        │
+│   │              │  - loading   │  - selected*     │        │
+│   │              │              │  - listeners     │        │
+│   │              │              │  - loading       │        │
+│   └──────────────┴──────────────┴──────────────────┘        │
 │         - Centralized state management                       │
 │         - Observer pattern for reactive updates              │
-│         - Single source of truth                             │
+│         - Single source of truth with CRUD operations        │
 └──────────────────────┬──────────────────────────────────────┘
                        │
                        ▼
@@ -184,10 +188,64 @@ The shopping list client is a TypeScript application built with a **four-layer a
   - Centralized user management
   - Loading state tracking
 
+#### store-state.ts
+- **Responsibility**: Manage stores, departments, and products state with full CRUD operations
+- **State Properties**:
+  - `stores: Store[]`: All available stores
+  - `selectedStore: Store | null`: Currently selected store
+  - `departments: Department[]`: Departments for selected store
+  - `selectedDepartment: Department | null`: Currently selected department
+  - `products: Product[]`: Products (filtered by selection)
+  - `isLoading: boolean`: Loading state indicator
+  - `error: string | null`: Error message if any
+- **Read Operations**:
+  - `getStores()`: Get all stores (immutable copy)
+  - `getSelectedStore()`: Get selected store (immutable copy)
+  - `getDepartments()`: Get departments (immutable copy)
+  - `getSelectedDepartment()`: Get selected department (immutable copy)
+  - `getProducts()`: Get products (immutable copy)
+  - `isLoading()`: Check if operation in progress
+  - `getError()`: Get error message
+  - `getState()`: Get complete state (immutable copy)
+  - `subscribe(listener)`: Subscribe to state changes (returns unsubscribe function)
+- **Load/Selection Operations**:
+  - `loadStores()`: Load all stores from API
+  - `selectStore(storeId)`: Select store and load its departments/products
+  - `selectDepartment(departmentId)`: Select department and filter products
+  - `clearSelection()`: Clear store/department selection
+  - `reset()`: Reset all state (for logout)
+- **Store CRUD Operations**:
+  - `addStore(name, location)`: Create new store and add to state
+  - `modifyStore(storeId, name?, location?, sortOrder?)`: Update store (partial updates supported)
+  - `removeStore(storeId)`: Delete store and cascade clear related data if selected
+- **Department CRUD Operations**:
+  - `addDepartment(storeId, name, sortOrder)`: Create new department
+  - `modifyDepartment(departmentId, name?, sortOrder?)`: Update department (partial updates)
+  - `removeDepartment(departmentId)`: Delete department and reload products if needed
+- **Product CRUD Operations**:
+  - `addProduct(name, departmentId)`: Create new product (requires selected store)
+  - `modifyProduct(productId, updates)`: Update product (handles department changes)
+  - `removeProduct(productId)`: Delete product from state
+- **Pattern**: Observer pattern for reactive UI updates
+- **State Management Features**:
+  - **Automatic UI Updates**: All CRUD operations notify subscribers
+  - **Smart Selection Handling**: Operations intelligently update related selections
+  - **Cascading Updates**: Deleting store clears departments/products
+  - **View Filtering**: Products added/removed based on current view
+  - **Error Handling**: Consistent error states and messages
+  - **Immutability**: All getters return copies, not references
+- **Benefits**:
+  - Consistent state management pattern across stores/departments/products
+  - Eliminates need for direct API calls from UI components
+  - Automatic UI synchronization via subscriptions
+  - Centralized business logic for data operations
+  - Type-safe CRUD operations
+
 **Testing**:
 - `shopping-list-state.test.ts`: 35 tests covering state management, subscriptions, and API integration
 - `user-state.test.ts`: 24 tests covering user state, subscriptions, and error handling
-- **Total**: 59 tests for state layer
+- `store-state.test.ts`: 34 tests covering stores, departments, products, selections, and immutability
+- **Total**: 93 tests for state layer
 
 **Principles**:
 - ✅ Single source of truth for application state
@@ -592,7 +650,7 @@ src/pages/
 - Test authentication flow
 
 ### Current Coverage
-- **102 tests total** (6 test suites)
+- **434 tests total** (18 test suites)
 - **98.5%+ overall code coverage**
 - All critical paths tested
 
@@ -601,6 +659,10 @@ src/pages/
   - auth.ts: 100% coverage (36 tests including token refresh optimization)
   - api.ts: 100% coverage (18 tests including 401 handling and edge cases)
   - dom.ts: 98% coverage (14 tests including template caching and DOM batching)
+- **State Layer**: 93 tests (100% coverage)
+  - shopping-list-state.ts: 100% coverage (35 tests)
+  - user-state.ts: 100% coverage (24 tests)
+  - store-state.ts: 100% coverage (34 tests including CRUD operations)
 - **UI Layer**: 30 tests (98%+ coverage)
   - shopping-list-ui.ts: 97% coverage (14 tests)
   - user-menu.ts: 100% coverage (16 tests)
@@ -654,18 +716,23 @@ src/pages/
 ## Future Enhancements
 
 ### Potential Improvements
-1. ~~**State Management**: Add centralized state (e.g., observables)~~ ✅ **IMPLEMENTED** - Observer pattern with shopping-list-state and user-state
-2. **Offline Support**: Service worker for PWA
-3. **Real-time Updates**: WebSocket integration
-4. **More UI Modules**: Search, filters, categories
-5. **Component Library**: Reusable UI components
-6. **Store State**: Extend state management to stores, departments, and products (currently implemented for shopping-list-state and user-state)
+1. ~~**State Management**: Add centralized state (e.g., observables)~~ ✅ **IMPLEMENTED** - Observer pattern with shopping-list-state, user-state, and store-state
+2. ~~**Store State**: Extend state management to stores, departments, and products~~ ✅ **IMPLEMENTED** - Full CRUD operations in store-state
+3. **Offline Support**: Service worker for PWA
+4. **Real-time Updates**: WebSocket integration
+5. **More UI Modules**: Search, filters, categories
+6. **Component Library**: Reusable UI components
 
 ### Architecture Evolution
 - Previous: 3-layer architecture (Data → UI → Pages)
 - Current: **4-layer architecture** (Data → State → UI → Pages)
 - Added State Layer with Observer pattern for reactive updates
+- Extended state management to all major data entities:
+  - shopping-list-state: Shopping list items with CRUD
+  - user-state: User management and authentication state
+  - store-state: Stores, departments, and products with full CRUD operations
 - Maintains separation of concerns principle
+- Consistent API across all state managers
 
 ---
 
