@@ -8,7 +8,6 @@
         <button id="manageStoresBtn" class="menu-item">🏪 Geschäfte verwalten</button>
         <button id="manageProductsBtn" class="menu-item">📦 Produkte verwalten</button>
         <button id="logoutBtn" class="menu-item">🚪 Abmelden</button>
-        <button id="deleteAccountBtn" class="menu-item menu-item-danger">🗑️ Account löschen</button>
       </div>
     </div>
   </div>
@@ -36,6 +35,17 @@
       <div id="allUsersList" class="users-list">
         <!-- All users will be rendered here -->
       </div>
+    </section>
+
+    <!-- Delete Own Account Section -->
+    <section class="delete-account-section" style="background: var(--card); border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,.08); border-left: 4px solid #d32f2f;">
+      <h2 style="margin: 0 0 0.5rem 0; font-size: 1.3rem; color: #d32f2f;">⚠️ Eigenen Account löschen</h2>
+      <p style="margin: 0 0 1rem 0; color: #666; font-size: 0.95rem;">
+        Löschen Sie Ihren eigenen Account dauerhaft. Diese Aktion kann nicht rückgängig gemacht werden.
+      </p>
+      <button id="deleteSelfAccountBtn" class="btn-delete" style="padding: 0.75rem 1.5rem; background: #d32f2f; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem; font-weight: 500; transition: background .2s;">
+        🗑️ Meinen Account löschen
+      </button>
     </section>
   </div>
 </main>

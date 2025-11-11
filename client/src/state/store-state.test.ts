@@ -345,6 +345,7 @@ describe('StoreState', () => {
     });
 
     it('should handle API errors when loading department products', async () => {
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
       const error = new Error('Network error');
       (api.fetchDepartmentProducts as jest.MockedFunction<typeof api.fetchDepartmentProducts>).mockRejectedValue(
         error
@@ -355,6 +356,9 @@ describe('StoreState', () => {
       expect(storeState.getSelectedDepartment()).toEqual(mockDepartments[0]);
       expect(storeState.isLoading()).toBe(false);
       expect(storeState.getError()).toBe('Failed to load products');
+      expect(consoleSpy).toHaveBeenCalledWith('Error loading department products:', error);
+
+      consoleSpy.mockRestore();
     });
 
     it('should handle clearing selection when no store is selected', async () => {

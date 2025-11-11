@@ -37,7 +37,6 @@ export function initUserMenu(): void {
   const manageProductsBtn = document.getElementById('manageProductsBtn');
   const manageUsersBtn = document.getElementById('manageUsersBtn');
   const logoutBtn = document.getElementById('logoutBtn');
-  const deleteAccountBtn = document.getElementById('deleteAccountBtn');
 
   if (!menuBtn || !menuDropdown) {
     console.error('User menu elements not found');
@@ -95,25 +94,6 @@ export function initUserMenu(): void {
       userState.clearUser();
       shoppingListState.clear();
       window.location.href = '/';
-    });
-  }
-
-  // Delete account button handler
-  if (deleteAccountBtn) {
-    deleteAccountBtn.addEventListener('click', async () => {
-      const confirmed = confirm(
-        'Möchten Sie Ihren Account wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.'
-      );
-      if (confirmed) {
-        const success = await userState.deleteCurrentUser();
-        if (success) {
-          shoppingListState.clear();
-          alert('Ihr Account wurde erfolgreich gelöscht.');
-          window.location.href = '/';
-        } else {
-          alert('Fehler beim Löschen des Accounts. Bitte versuchen Sie es erneut.');
-        }
-      }
     });
   }
 }

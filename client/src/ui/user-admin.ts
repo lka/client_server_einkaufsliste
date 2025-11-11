@@ -5,7 +5,9 @@
  */
 
 import { fetchAllUsers, fetchPendingUsers, approveUser, deleteUser, type User } from '../data/api.js';
-import { getCurrentUser } from '../data/auth.js';
+import { getCurrentUser, logout } from '../data/auth.js';
+import { userState } from '../state/user-state.js';
+import { shoppingListState } from '../state/shopping-list-state.js';
 
 let currentUser: User | null = null;
 
@@ -18,6 +20,9 @@ export async function initUserAdmin(): Promise<void> {
 
   // Load and render users
   loadUsers();
+
+  // Initialize delete own account button
+  initDeleteSelfAccountButton();
 }
 
 /**
@@ -206,4 +211,43 @@ function escapeHtml(text: string): string {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+/**
+ * Initialize delete own account button.
+ * Only visible for non-admin users.
+ */
+function initDeleteSelfAccountButton(): void {
+  const deleteSelfAccountSection = document.querySelector('.delete-account-section') as HTMLElement;
+  const deleteSelfAccountBtn = document.getElementById('deleteSelfAccountBtn');
+
+  // Hide the entire section if user is admin
+  if (currentUser?.is_admin) {
+    if (deleteSelfAccountSection) {
+      deleteSelfAccountSection.style.display = 'none';
+    }
+    return;
+  }
+
+  if (!deleteSelfAccountBtn) return;
+
+  deleteSelfAccountBtn.addEventListener('click', async () => {
+    const confirmed = confirm(
+      'Möchten Sie Ihren eigenen Account wirklich löschen?\n\n' +
+      'Diese Aktion kann nicht rückgängig gemacht werden!'
+    );
+
+    if (!confirmed) return;
+
+    const success = await userState.deleteCurrentUser();
+    if (success) {
+      logout();
+      userState.clearUser();
+      shoppingListState.clear();
+      alert('Ihr Account wurde erfolgreich gelöscht.');
+      window.location.href = '/';
+    } else {
+      alert('Fehler beim Löschen des Accounts. Bitte versuchen Sie es erneut.');
+    }
+  });
 }

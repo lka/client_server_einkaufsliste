@@ -22,6 +22,7 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - Nutzt vorhandene Produkte, falls gleichnamiges Produkt bereits existiert
   - **Intelligente Druckfunktion**: Einkaufsliste als DIN A5-Heft drucken
     - Druckt auf DIN A4 Querformat → in der Mitte falten ergibt A5-Heft
+    - **2-spaltige Darstellung**: Items werden in 2 Spalten angeordnet für optimale Platznutzung
     - Automatische Layout-Optimierung: Bei vielen Einträgen (>35 Zeilen) wird die Liste auf Vorder- und Rückseite verteilt
     - Bei wenigen Einträgen: Rückseite zeigt Notizen-Bereich mit Linien
     - **Scrollbare Print-Preview**: Überschrift und Buttons bleiben fixiert, Vorschaubereich ist scrollbar
@@ -30,6 +31,7 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - Option zum Ausblenden der Abteilungsüberschriften (Live-Vorschau)
     - Optimierte Schriftgrößen und Abstände für kompakten Druck
     - Keine Aufzählungspunkte, reduzierte Zeilenabstände
+    - Abteilungssektionen werden nicht zwischen Spalten aufgeteilt
   - **Geteilte Einkaufsliste**: Alle authentifizierten Benutzer teilen sich eine gemeinsame Einkaufsliste
     - Keine Benutzer-spezifischen Items mehr - alle Items gehören zur gemeinsamen Liste
     - Jeder kann Items hinzufügen, bearbeiten und löschen
@@ -81,7 +83,10 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - Cascading Delete: Löscht automatisch alle Items des Benutzers
     - Schutz vor Selbst-Löschung
   - **Auto-Cleanup**: Nicht freigeschaltete Benutzer werden nach konfigurierbarer Zeit automatisch gelöscht (Standard: 48 Stunden)
-  - **Selbstverwaltung**: Jeder Benutzer kann sich selbst löschen (über Account-Menü)
+  - **Selbstverwaltung**: Jeder Benutzer (außer Administratoren) kann den eigenen Account auf der User-Management-Seite löschen
+    - "Eigenen Account löschen"-Sektion am Ende der User-Management-Seite
+    - Nicht verfügbar für Administratoren (aus Sicherheitsgründen)
+    - Mit Bestätigungsdialog und Warnhinweis
   - Navigation über Benutzermenü: "👥 Benutzer verwalten"
 
 ## Project Structure
@@ -341,9 +346,10 @@ Die Anwendung verwendet **JWT (JSON Web Tokens)** für sichere Authentifizierung
 4. **Account-Verwaltung**:
    - Klicken Sie auf das **Drei-Punkte-Menü** (⋮) in der rechten oberen Ecke
    - **Abmelden**: Wählen Sie "Abmelden" um sich auszuloggen (Token wird gelöscht)
-   - **Account löschen**: Wählen Sie "Account löschen" um Ihren Account permanent zu löschen
-   - Beim Löschen wird eine Bestätigung abgefragt
-   - Nach erfolgreicher Löschung wird der Token invalidiert und Sie werden zum Login weitergeleitet
+   - **Account löschen**: Gehen Sie zu "👥 Benutzer verwalten" → Scrollen Sie zum Ende der Seite
+     - "Eigenen Account löschen"-Sektion (nur für Nicht-Administratoren sichtbar)
+     - Beim Löschen wird eine Bestätigung abgefragt
+     - Nach erfolgreicher Löschung wird der Token invalidiert und Sie werden zum Login weitergeleitet
 
 ### Umgebungsvariablen
 

@@ -227,67 +227,6 @@ describe('User Menu UI', () => {
       expect((window as any).location.href).toBe('/');
     });
 
-    it('should handle delete account with confirmation', async () => {
-      (global.confirm as jest.Mock).mockReturnValue(true);
-      (global.alert as jest.Mock).mockImplementation(() => {});
-      (userState.deleteCurrentUser as jest.MockedFunction<typeof userState.deleteCurrentUser>).mockResolvedValue(
-        true
-      );
-      (shoppingListState.clear as jest.MockedFunction<typeof shoppingListState.clear>).mockImplementation(() => {});
-
-      initUserMenu();
-
-      const deleteBtn = document.getElementById('deleteAccountBtn')!;
-      deleteBtn.click();
-
-      await new Promise((resolve) => setTimeout(resolve, 0));
-
-      expect(global.confirm).toHaveBeenCalledWith(
-        'Möchten Sie Ihren Account wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.'
-      );
-      expect(userState.deleteCurrentUser).toHaveBeenCalled();
-      expect(shoppingListState.clear).toHaveBeenCalled();
-      expect(global.alert).toHaveBeenCalledWith('Ihr Account wurde erfolgreich gelöscht.');
-      expect((window as any).location.href).toBe('/');
-    });
-
-    it('should not delete account when user cancels confirmation', async () => {
-      (global.confirm as jest.Mock).mockReturnValue(false);
-      (userState.deleteCurrentUser as jest.MockedFunction<typeof userState.deleteCurrentUser>).mockResolvedValue(
-        true
-      );
-
-      initUserMenu();
-
-      const deleteBtn = document.getElementById('deleteAccountBtn')!;
-      deleteBtn.click();
-
-      await new Promise((resolve) => setTimeout(resolve, 0));
-
-      expect(global.confirm).toHaveBeenCalled();
-      expect(userState.deleteCurrentUser).not.toHaveBeenCalled();
-    });
-
-    it('should show error when account deletion fails', async () => {
-      (global.confirm as jest.Mock).mockReturnValue(true);
-      (global.alert as jest.Mock).mockImplementation(() => {});
-      (userState.deleteCurrentUser as jest.MockedFunction<typeof userState.deleteCurrentUser>).mockResolvedValue(
-        false
-      );
-
-      initUserMenu();
-
-      const deleteBtn = document.getElementById('deleteAccountBtn')!;
-      deleteBtn.click();
-
-      await new Promise((resolve) => setTimeout(resolve, 0));
-
-      expect(userState.deleteCurrentUser).toHaveBeenCalled();
-      expect(global.alert).toHaveBeenCalledWith(
-        'Fehler beim Löschen des Accounts. Bitte versuchen Sie es erneut.'
-      );
-      expect((window as any).location.href).toBe(''); // Not redirected
-    });
 
     it('should handle missing menu elements gracefully', () => {
       document.body.innerHTML = '<div></div>';
