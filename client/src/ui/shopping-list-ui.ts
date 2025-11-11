@@ -175,10 +175,20 @@ function showPrintPreview(): Promise<boolean> {
     const itemsArray = Array.from(groupedItems.entries());
     const midPoint = fitsOnOnePage ? itemsArray.length : Math.ceil(itemsArray.length / 2);
 
+    // Create 2-column container for first page items
+    const twoColumnContainer = document.createElement('div');
+    twoColumnContainer.className = 'two-column-layout';
+    twoColumnContainer.style.cssText = `
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+      column-gap: 1rem;
+    `;
+
     // First page items
     itemsArray.slice(0, midPoint).forEach(([departmentName, items]) => {
       const section = document.createElement('div');
-      section.style.cssText = 'margin-bottom: 0.5rem;';
+      section.style.cssText = 'margin-bottom: 0.5rem; break-inside: avoid;';
 
       const deptTitle = document.createElement('h4');
       deptTitle.textContent = departmentName;
@@ -197,8 +207,10 @@ function showPrintPreview(): Promise<boolean> {
       });
 
       section.appendChild(itemList);
-      previewContent.appendChild(section);
+      twoColumnContainer.appendChild(section);
     });
+
+    previewContent.appendChild(twoColumnContainer);
 
     // Right A5 page (Back - Notes or continuation of list)
     const backPage = document.createElement('div');
@@ -246,10 +258,20 @@ function showPrintPreview(): Promise<boolean> {
       backHeader.appendChild(backDateInfo);
       backPage.appendChild(backHeader);
 
+      // Create 2-column container for back page items
+      const backTwoColumnContainer = document.createElement('div');
+      backTwoColumnContainer.className = 'two-column-layout';
+      backTwoColumnContainer.style.cssText = `
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+        column-gap: 1rem;
+      `;
+
       // Render remaining items
       itemsArray.slice(midPoint).forEach(([departmentName, items]) => {
         const section = document.createElement('div');
-        section.style.cssText = 'margin-bottom: 0.5rem;';
+        section.style.cssText = 'margin-bottom: 0.5rem; break-inside: avoid;';
 
         const deptTitle = document.createElement('h4');
         deptTitle.textContent = departmentName;
@@ -268,8 +290,10 @@ function showPrintPreview(): Promise<boolean> {
         });
 
         section.appendChild(itemList);
-        backPage.appendChild(section);
+        backTwoColumnContainer.appendChild(section);
       });
+
+      backPage.appendChild(backTwoColumnContainer);
     }
 
     // Add both pages to container
@@ -465,6 +489,20 @@ function printPreviewContent(frontContent: string, backContent: string, storeNam
           padding: 0;
           background: white;
           border: none;
+        }
+
+        /* 2-column layout for items */
+        .two-column-layout {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 0.5rem;
+          column-gap: 1rem;
+        }
+
+        /* Prevent department sections from breaking across columns */
+        .two-column-layout > div {
+          break-inside: avoid;
+          page-break-inside: avoid;
         }
 
         /* Hide department titles when requested */
