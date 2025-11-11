@@ -67,9 +67,17 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
 - ✅ **Benutzer-Verwaltung**: Freischaltungs-System für neue Benutzer
   - **Administrator-Account**: Wird automatisch beim Serverstart aus `.env` erstellt/aktualisiert
   - **Freischaltungs-Prozess**: Neue Benutzer müssen von freigeschalteten Benutzern genehmigt werden
-  - **Verwaltungsseite**: Dedizierte `/users` Seite zeigt ausstehende und alle Benutzer
+  - **Verwaltungsseite**: Dedizierte `/users` Seite mit übersichtlicher Card-basierter UI
+    - **Ausstehende Genehmigungen**: Separater Bereich für Pending-Users (orange)
+    - **Alle Benutzer**: Übersichtliche Liste sortiert nach Status mit Farbcodierung
+    - **Status-Badges**: ⏳ Ausstehend, ✓ Freigeschaltet, 👑 Administrator, ❌ Inaktiv
+  - **Admin-Funktionen**:
+    - Benutzer freischalten (✓ Freischalten Button)
+    - Benutzer löschen (🗑️ Löschen Button, nur für Admins sichtbar)
+    - Cascading Delete: Löscht automatisch alle Items des Benutzers
+    - Schutz vor Selbst-Löschung
   - **Auto-Cleanup**: Nicht freigeschaltete Benutzer werden nach konfigurierbarer Zeit automatisch gelöscht (Standard: 48 Stunden)
-  - **Selbstverwaltung**: Jeder Benutzer kann sich selbst löschen
+  - **Selbstverwaltung**: Jeder Benutzer kann sich selbst löschen (über Account-Menü)
   - Navigation über Benutzermenü: "👥 Benutzer verwalten"
 
 ## Project Structure
@@ -366,6 +374,9 @@ Die Anwendung verwendet **JWT (JSON Web Tokens)** für sichere Authentifizierung
 - `GET /api/users` - Alle Benutzer abrufen
 - `GET /api/users/pending` - Nicht freigeschaltete Benutzer abrufen
 - `POST /api/users/{user_id}/approve` - Benutzer freischalten
+- `DELETE /api/users/{user_id}` - Benutzer löschen (nur für Administratoren)
+  - Cascading Delete: Löscht automatisch alle zugehörigen Items
+  - Verhindert Selbst-Löschung (Admin muss `DELETE /api/auth/me` verwenden)
 
 **Store Management (alle authentifiziert):**
 - `GET /api/stores` - Alle Geschäfte abrufen (sortiert nach sort_order, dann ID)
@@ -659,10 +670,11 @@ Modulare Organisation von API-Endpunkten:
   - `GET /api/auth/me` - Current user info
   - `POST /api/auth/refresh` - Token refresh
   - `DELETE /api/auth/me` - Account deletion
-- **users.py** (116 Zeilen) - User Management Endpoints
+- **users.py** (149 Zeilen) - User Management Endpoints
   - `GET /api/users` - List all users
   - `GET /api/users/pending` - List pending approvals
   - `POST /api/users/{id}/approve` - Approve user
+  - `DELETE /api/users/{id}` - Delete user (admin only)
 - **stores.py** (291 Zeilen) - Store & Department Endpoints
   - Store CRUD operations
   - Department CRUD operations

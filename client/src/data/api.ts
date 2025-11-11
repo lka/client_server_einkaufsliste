@@ -759,3 +759,34 @@ export async function approveUser(userId: number): Promise<User | null> {
     return null;
   }
 }
+
+/**
+ * Delete a user (admin only).
+ */
+export async function deleteUser(userId: number): Promise<boolean> {
+  const tokenRefreshed = await ensureFreshToken();
+  if (!tokenRefreshed) {
+    return false;
+  }
+
+  try {
+    const res = await fetch(`${API_USERS}/${userId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    if (res.status === 401) {
+      handleUnauthorized();
+      return false;
+    }
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({ detail: res.statusText }));
+      console.error('Failed to delete user:', errorData.detail || res.statusText);
+      alert(`Fehler beim Löschen: ${errorData.detail || res.statusText}`);
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    return false;
+  }
+}

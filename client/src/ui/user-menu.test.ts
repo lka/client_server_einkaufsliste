@@ -53,6 +53,9 @@ describe('User Menu UI', () => {
         username: 'testuser',
         email: 'test@example.com',
         is_active: true,
+        is_approved: true,
+        is_admin: false,
+        created_at: '2024-01-01T00:00:00Z',
       };
 
       (userState.loadCurrentUser as jest.MockedFunction<typeof userState.loadCurrentUser>).mockResolvedValue(
@@ -84,6 +87,9 @@ describe('User Menu UI', () => {
         username: 'testuser',
         email: 'test@example.com',
         is_active: true,
+        is_approved: true,
+        is_admin: false,
+        created_at: '2024-01-01T00:00:00Z',
       };
 
       (userState.loadCurrentUser as jest.MockedFunction<typeof userState.loadCurrentUser>).mockResolvedValue(
@@ -102,6 +108,9 @@ describe('User Menu UI', () => {
         username: 'testuser',
         email: 'test@example.com',
         is_active: true,
+        is_approved: true,
+        is_admin: false,
+        created_at: '2024-01-01T00:00:00Z',
       };
 
       (userState.loadCurrentUser as jest.MockedFunction<typeof userState.loadCurrentUser>).mockResolvedValue(

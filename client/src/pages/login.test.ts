@@ -214,6 +214,9 @@ describe('Login Page Controller', () => {
         username: 'newuser',
         email: 'new@example.com',
         is_active: true,
+        is_approved: true,
+        is_admin: false,
+        created_at: '2024-01-01T00:00:00Z',
       };
       jest.spyOn(auth, 'register').mockResolvedValue(mockUser);
 
@@ -336,6 +339,9 @@ describe('Login Page Controller', () => {
         username: 'newuser',
         email: 'new@example.com',
         is_active: true,
+        is_approved: true,
+        is_admin: false,
+        created_at: '2024-01-01T00:00:00Z',
       };
       jest.spyOn(auth, 'register').mockResolvedValue(mockUser);
 
@@ -392,6 +398,9 @@ describe('Login Page Controller', () => {
         username: 'newuser',
         email: 'new@example.com',
         is_active: true,
+        is_approved: true,
+        is_admin: false,
+        created_at: '2024-01-01T00:00:00Z',
       };
       jest.spyOn(auth, 'register').mockResolvedValue(mockUser);
 

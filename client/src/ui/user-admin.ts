@@ -4,12 +4,18 @@
  * Provides UI for managing users (approve pending users, view all users).
  */
 
-import { fetchAllUsers, fetchPendingUsers, approveUser, type User } from '../data/api.js';
+import { fetchAllUsers, fetchPendingUsers, approveUser, deleteUser, type User } from '../data/api.js';
+import { getCurrentUser } from '../data/auth.js';
+
+let currentUser: User | null = null;
 
 /**
  * Initialize the user admin UI.
  */
-export function initUserAdmin(): void {
+export async function initUserAdmin(): Promise<void> {
+  // Load current user info
+  currentUser = await getCurrentUser();
+
   // Load and render users
   loadUsers();
 }
@@ -36,21 +42,24 @@ function renderPendingUsers(users: readonly User[]): void {
 
   if (users.length === 0) {
     container.innerHTML =
-      '<div class="no-users">Keine Benutzer zur Genehmigung vorhanden.</div>';
+      '<div class="empty-state">✓ Keine ausstehenden Genehmigungen</div>';
     return;
   }
 
   const html = users
     .map(
       (user) => `
-    <div class="user-item" data-user-id="${user.id}">
+    <div class="user-card pending" data-user-id="${user.id}">
       <div class="user-info">
-        <div class="user-name">${user.username}</div>
-        <div class="user-email">${user.email}</div>
-        <div class="user-meta">Registriert: ${formatDate(user.created_at)}</div>
+        <div class="user-name">${escapeHtml(user.username)}</div>
+        <div class="user-email">${escapeHtml(user.email)}</div>
+        <div class="user-meta">
+          <span class="user-badge pending">Wartet auf Freischaltung</span>
+          <span class="user-created">📅 ${formatDate(user.created_at)}</span>
+        </div>
       </div>
-      <div class="user-controls">
-        <button class="approve-user-btn" data-user-id="${user.id}" title="Benutzer freischalten">
+      <div class="user-actions">
+        <button class="btn-approve" data-user-id="${user.id}" title="Benutzer freischalten">
           ✓ Freischalten
         </button>
       </div>
@@ -62,7 +71,7 @@ function renderPendingUsers(users: readonly User[]): void {
   container.innerHTML = html;
 
   // Attach event listeners for approve buttons
-  container.querySelectorAll('.approve-user-btn').forEach((btn) => {
+  container.querySelectorAll('.btn-approve').forEach((btn) => {
     btn.addEventListener('click', async (e) => {
       const target = e.currentTarget as HTMLElement;
       const userId = parseInt(target.dataset.userId || '0', 10);
@@ -81,30 +90,60 @@ function renderAllUsers(users: readonly User[]): void {
   if (!container) return;
 
   if (users.length === 0) {
-    container.innerHTML = '<div class="no-users">Keine Benutzer vorhanden.</div>';
+    container.innerHTML = '<div class="empty-state">Keine Benutzer vorhanden.</div>';
     return;
   }
 
-  const html = users
+  // Separate users by status for better organization
+  const approvedUsers = users.filter(u => u.is_approved);
+  const pendingUsers = users.filter(u => !u.is_approved);
+
+  const isAdmin = currentUser?.is_admin ?? false;
+
+  const html = [...pendingUsers, ...approvedUsers]
     .map(
-      (user) => `
-    <div class="user-item${user.is_approved ? '' : ' pending'}" data-user-id="${user.id}">
+      (user) => {
+        const cardClass = user.is_admin ? 'admin' : user.is_approved ? 'approved' : 'pending';
+        const canDelete = isAdmin && currentUser?.id !== user.id;
+        return `
+    <div class="user-card ${cardClass}" data-user-id="${user.id}">
       <div class="user-info">
-        <div class="user-name">
-          ${user.username}
-          ${user.is_admin ? '<span class="user-badge admin">Admin</span>' : ''}
-          ${!user.is_approved ? '<span class="user-badge pending">Ausstehend</span>' : ''}
-          ${!user.is_active ? '<span class="user-badge inactive">Inaktiv</span>' : ''}
+        <div class="user-name">${escapeHtml(user.username)}</div>
+        <div class="user-email">${escapeHtml(user.email)}</div>
+        <div class="user-meta">
+          ${user.is_admin ? '<span class="user-badge admin">👑 Administrator</span>' : ''}
+          ${user.is_approved ? '<span class="user-badge approved">✓ Freigeschaltet</span>' : '<span class="user-badge pending">⏳ Ausstehend</span>'}
+          ${!user.is_active ? '<span class="user-badge inactive">❌ Inaktiv</span>' : ''}
+          <span class="user-created">📅 ${formatDate(user.created_at)}</span>
         </div>
-        <div class="user-email">${user.email}</div>
-        <div class="user-meta">Registriert: ${formatDate(user.created_at)}</div>
       </div>
+      ${canDelete ? `
+      <div class="user-actions">
+        <button class="btn-delete" data-user-id="${user.id}" title="Benutzer löschen">
+          🗑️ Löschen
+        </button>
+      </div>
+      ` : ''}
     </div>
-  `
+  `;
+      }
     )
     .join('');
 
   container.innerHTML = html;
+
+  // Attach event listeners for delete buttons
+  if (isAdmin) {
+    container.querySelectorAll('.btn-delete').forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        const target = e.currentTarget as HTMLElement;
+        const userId = parseInt(target.dataset.userId || '0', 10);
+        if (userId) {
+          await handleDeleteUser(userId);
+        }
+      });
+    });
+  }
 }
 
 /**
@@ -124,6 +163,25 @@ async function handleApproveUser(userId: number): Promise<void> {
 }
 
 /**
+ * Handle deleting a user.
+ */
+async function handleDeleteUser(userId: number): Promise<void> {
+  const confirmed = confirm(
+    'Möchten Sie diesen Benutzer wirklich löschen?\n\n' +
+    'Diese Aktion kann nicht rückgängig gemacht werden!\n' +
+    'Alle Items des Benutzers werden ebenfalls gelöscht.'
+  );
+  if (!confirmed) return;
+
+  const deleted = await deleteUser(userId);
+  if (deleted) {
+    // Reload users
+    await loadUsers();
+  }
+  // Error message is already shown in deleteUser function
+}
+
+/**
  * Format date string for display.
  */
 function formatDate(dateString: string): string {
@@ -139,4 +197,13 @@ function formatDate(dateString: string): string {
   } catch {
     return dateString;
   }
+}
+
+/**
+ * Escape HTML to prevent XSS.
+ */
+function escapeHtml(text: string): string {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }

@@ -9,6 +9,9 @@ export interface User {
   username: string;
   email: string;
   is_active: boolean;
+  is_approved: boolean;
+  is_admin: boolean;
+  created_at: string;
 }
 
 export interface LoginCredentials {

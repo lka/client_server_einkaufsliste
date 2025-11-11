@@ -104,3 +104,46 @@ def approve_user(user_id: int, current_user: str = Depends(get_current_user)):
         session.commit()
         session.refresh(target_user)
         return target_user
+
+
+@router.delete("/{user_id}", status_code=204)
+def delete_user(user_id: int, current_user: str = Depends(get_current_user)):
+    """Delete a user (requires admin privileges).
+
+    Args:
+        user_id: ID of user to delete
+        current_user: Current authenticated username from JWT
+
+    Raises:
+        HTTPException: If user not found, not authorized, or trying to delete self
+    """
+    with get_session() as session:
+        # Check if current user is admin
+        requester = session.exec(
+            select(User).where(User.username == current_user)
+        ).first()
+        if not requester:
+            raise HTTPException(status_code=404, detail="User not found")
+        if not requester.is_admin:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only administrators can delete users",
+            )
+
+        # Get target user
+        target_user = session.get(User, user_id)
+        if not target_user:
+            raise HTTPException(status_code=404, detail="User to delete not found")
+
+        # Prevent self-deletion
+        if target_user.id == requester.id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot delete your own account via this endpoint.\
+ Use DELETE /api/auth/me instead.",
+            )
+
+        # Delete the user (cascading delete will remove associated items)
+        session.delete(target_user)
+        session.commit()
+        return None

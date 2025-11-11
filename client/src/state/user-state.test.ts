@@ -39,6 +39,9 @@ describe('User State', () => {
         username: 'testuser',
         email: 'test@example.com',
         is_active: true,
+        is_approved: true,
+        is_admin: false,
+        created_at: '2024-01-01T00:00:00Z',
       };
       (auth.getCurrentUser as jest.MockedFunction<typeof auth.getCurrentUser>).mockResolvedValue(mockUser);
 
@@ -65,6 +68,9 @@ describe('User State', () => {
         username: 'testuser',
         email: 'test@example.com',
         is_active: true,
+        is_approved: true,
+        is_admin: false,
+        created_at: '2024-01-01T00:00:00Z',
       };
       (auth.getCurrentUser as jest.MockedFunction<typeof auth.getCurrentUser>).mockResolvedValue(mockUser);
 
@@ -83,6 +89,9 @@ describe('User State', () => {
         username: 'testuser',
         email: 'test@example.com',
         is_active: true,
+        is_approved: true,
+        is_admin: false,
+        created_at: '2024-01-01T00:00:00Z',
       };
       (auth.getCurrentUser as jest.MockedFunction<typeof auth.getCurrentUser>).mockResolvedValue(mockUser);
 
@@ -106,6 +115,9 @@ describe('User State', () => {
         username: 'testuser',
         email: 'test@example.com',
         is_active: true,
+        is_approved: true,
+        is_admin: false,
+        created_at: '2024-01-01T00:00:00Z',
       };
       (auth.getCurrentUser as jest.MockedFunction<typeof auth.getCurrentUser>).mockResolvedValue(mockUser);
 
@@ -123,6 +135,9 @@ describe('User State', () => {
         username: 'testuser',
         email: 'test@example.com',
         is_active: true,
+        is_approved: true,
+        is_admin: false,
+        created_at: '2024-01-01T00:00:00Z',
       };
       (auth.getCurrentUser as jest.MockedFunction<typeof auth.getCurrentUser>).mockResolvedValue(mockUser);
 
@@ -184,6 +199,9 @@ describe('User State', () => {
         username: 'testuser',
         email: 'test@example.com',
         is_active: true,
+        is_approved: true,
+        is_admin: false,
+        created_at: '2024-01-01T00:00:00Z',
       };
       (auth.getCurrentUser as jest.MockedFunction<typeof auth.getCurrentUser>).mockResolvedValue(mockUser);
       await userState.loadCurrentUser();
@@ -232,6 +250,9 @@ describe('User State', () => {
         username: 'testuser',
         email: 'test@example.com',
         is_active: true,
+        is_approved: true,
+        is_admin: false,
+        created_at: '2024-01-01T00:00:00Z',
       };
       (auth.getCurrentUser as jest.MockedFunction<typeof auth.getCurrentUser>).mockResolvedValue(mockUser);
       await userState.loadCurrentUser();
@@ -253,6 +274,9 @@ describe('User State', () => {
         username: 'testuser',
         email: 'test@example.com',
         is_active: true,
+        is_approved: true,
+        is_admin: false,
+        created_at: '2024-01-01T00:00:00Z',
       };
 
       const listener = jest.fn();
