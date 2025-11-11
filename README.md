@@ -30,7 +30,11 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - Option zum Ausblenden der Abteilungsüberschriften (Live-Vorschau)
     - Optimierte Schriftgrößen und Abstände für kompakten Druck
     - Keine Aufzählungspunkte, reduzierte Zeilenabstände
-  - **Geteilte Einkaufsliste**: Alle freigeschalteten Benutzer können die gleiche Einkaufsliste bearbeiten
+  - **Geteilte Einkaufsliste**: Alle authentifizierten Benutzer teilen sich eine gemeinsame Einkaufsliste
+    - Keine Benutzer-spezifischen Items mehr - alle Items gehören zur gemeinsamen Liste
+    - Jeder kann Items hinzufügen, bearbeiten und löschen
+    - Items werden mit `user_id=None` erstellt (gehören nicht zu einem spezifischen Benutzer)
+    - Ideal für Haushalts-Einkaufslisten, bei denen alle Familienmitglieder die gleiche Liste sehen und bearbeiten
 - ✅ **Store-Verwaltung**: Dedizierte Admin-Seite für Geschäfte und Abteilungen
   - **CRUD-Operationen**: Erstellen, Bearbeiten und Löschen von Stores und Departments
   - **Geschäfts-Sortierung**: Reihenfolge der Geschäfte mit ↑↓ Buttons ändern
@@ -386,7 +390,7 @@ Die Anwendung verwendet **JWT (JSON Web Tokens)** für sichere Authentifizierung
   - Body: `{"name": "Neuer Name", "location": "Neuer Standort", "sort_order": 5}` (alle Felder optional, partial update)
   - Beispiel nur sort_order: `{"sort_order": 2}` (für Reordering)
 - `DELETE /api/stores/{store_id}` - Geschäft löschen (cascading: löscht auch Departments und Products)
-- `DELETE /api/stores/{store_id}/items` - Alle Items eines Geschäfts löschen (nur eigene Items des angemeldeten Users)
+- `DELETE /api/stores/{store_id}/items` - Alle Items eines Geschäfts aus der gemeinsamen Liste löschen
 - `GET /api/stores/{store_id}/departments` - Abteilungen eines Geschäfts (sortiert nach sort_order)
 - `POST /api/departments` - Neue Abteilung erstellen
   - Body: `{"name": "Abteilungsname", "sort_order": 0}` (sort_order optional, default: 0)
@@ -401,10 +405,11 @@ Die Anwendung verwendet **JWT (JSON Web Tokens)** für sichere Authentifizierung
 - `PUT /api/products/{product_id}` - Produkt aktualisieren
 - `DELETE /api/products/{product_id}` - Produkt löschen
 
-**Shopping List (alle authentifiziert, benutzerspezifisch):**
-- `GET /api/items` - Alle Artikel des aktuellen Benutzers abrufen
+**Shopping List (alle authentifiziert, gemeinsame Liste):**
+- `GET /api/items` - Alle Artikel der gemeinsamen Einkaufsliste abrufen
   - Response: `ItemWithDepartment` - Enthält `department_id`, `department_name` und `department_sort_order` für Gruppierung und Sortierung
-- `POST /api/items` - Neuen Artikel erstellen oder Menge aktualisieren
+  - **Gemeinsame Liste**: Alle authentifizierten Benutzer sehen dieselben Items
+- `POST /api/items` - Neuen Artikel zur gemeinsamen Liste hinzufügen oder Menge aktualisieren
   - Body: `{"name": "Artikelname", "menge": "500 g", "store_id": 1}` (menge und store_id sind optional)
   - Response: `ItemWithDepartment` - Enthält Department-Informationen inkl. sort_order für sofortiges Rendering
   - Beispiele:
@@ -415,14 +420,15 @@ Die Anwendung verwendet **JWT (JSON Web Tokens)** für sichere Authentifizierung
     - Fuzzy-Matching gegen alle Produkte im Store (60% Schwellwert)
     - Automatische Zuweisung von `product_id` bei Match
     - Normalisierung deutscher Umlaute (ä→ae, ö→oe, ü→ue, ß→ss)
-  - **Smart-Merging mit Einheiten-Suche & Fuzzy Matching**: Wenn ein Artikel bereits existiert oder ähnlich ist:
-    - **Benutzerspezifisch**: Nur eigene Items werden berücksichtigt
+  - **Smart-Merging mit Einheiten-Suche & Fuzzy Matching**: Wenn ein Artikel bereits in der gemeinsamen Liste existiert oder ähnlich ist:
+    - **Gemeinsame Liste**: Alle Items in der Liste werden berücksichtigt (keine Benutzer-spezifische Filterung)
     - **Fuzzy Matching**: Ähnliche Namen werden erkannt ("Möhre" → "Möhren", "Moehre" → "Möhren")
     - **Kommagetrennte Eingaben**: Mehrere Mengen werden separat verarbeitet ("2, 500 g" → ["2", "500 g"])
     - Gleiche Einheit → Mengen werden summiert (z.B. "500 g" + "300 g" = "800 g")
     - Verschiedene Einheiten → Als kommagetrennte Liste gespeichert (z.B. "500 g" + "2 Packungen" = "500 g, 2 Packungen")
     - Einheit in Liste vorhanden → Nur diese Einheit wird summiert (z.B. "500 g, 2 Packungen" + "300 g" = "800 g, 2 Packungen")
     - Keine Einheit → Zahlen werden summiert (z.B. "6" + "12" = "18")
+  - **Keine Benutzer-Zuordnung**: Items werden mit `user_id=None` erstellt (gehören zur gemeinsamen Liste)
 - `GET /api/stores/{store_id}/products/search?q={query}` - Fuzzy-Suche nach Produkten in einem Store
   - Query-Parameter: `q` (Produktname)
   - Response: Bestes Match (≥60% Ähnlichkeit) oder `null`
@@ -434,8 +440,8 @@ Die Anwendung verwendet **JWT (JSON Web Tokens)** für sichere Authentifizierung
     - Ordnet Produkt der angegebenen Abteilung zu
     - Aktualisiert Item mit `product_id` Referenz
     - Nutzt vorhandenes Produkt, falls gleichnamiges bereits existiert
-  - Authentifizierung: Nur eigene Items können konvertiert werden
-- `DELETE /api/items/{id}` - Eigenen Artikel löschen (nur eigene Items)
+  - Authentifizierung erforderlich: Alle authentifizierten Benutzer können Items aus der gemeinsamen Liste konvertieren
+- `DELETE /api/items/{id}` - Artikel aus der gemeinsamen Liste löschen (alle authentifizierten Benutzer)
 
 ## Code-Qualität
 
@@ -510,7 +516,10 @@ pytest --cov=server --cov-report=html
     - Alternative Schreibweisen ("Moehre" → "Möhren")
     - Singular/Plural ("Kartoffel" → "Kartoffeln")
     - Keine False Positives bei unterschiedlichen Produkten
-  - **Geteilte Einkaufsliste**: Alle genehmigten Benutzer sehen dieselbe Liste
+  - **Geteilte Einkaufsliste**: Alle authentifizierten Benutzer teilen sich eine gemeinsame Liste
+    - Items haben keine Benutzer-Zuordnung mehr (`user_id=None`)
+    - Jeder authentifizierte Benutzer kann alle Items sehen, hinzufügen, bearbeiten und löschen
+    - Ideal für Haushalts-Einkaufslisten
 - ✅ **Store Management & CRUD** (30 Tests):
   - **Store CRUD** (12 Tests):
     - Stores erstellen, abrufen, aktualisieren, löschen
@@ -682,11 +691,12 @@ Modulare Organisation von API-Endpunkten:
 - **products.py** (220 Zeilen) - Product Endpoints
   - Product CRUD operations
   - Fuzzy search functionality
-- **items.py** (312 Zeilen) - Shopping List Endpoints
-  - Item CRUD operations
+- **items.py** (342 Zeilen) - Shopping List Endpoints
+  - Item CRUD operations (shared list - no user ownership)
   - Smart quantity merging
   - Fuzzy product matching
   - Convert item to product
+  - All authenticated users can manage the same shared list
 - **pages.py** (55 Zeilen) - Static Page Serving
   - HTML page routes
   - Favicon serving
