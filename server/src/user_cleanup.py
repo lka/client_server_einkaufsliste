@@ -1,7 +1,7 @@
 """User cleanup utilities for removing expired unapproved users."""
 
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlmodel import Session, select
 from .user_models import User
 
@@ -19,7 +19,7 @@ def cleanup_expired_users(session: Session) -> int:
     expiry_hours = int(os.getenv("UNAPPROVED_USER_EXPIRY_HOURS", "48"))
 
     # Calculate cutoff time
-    cutoff_time = datetime.utcnow() - timedelta(hours=expiry_hours)
+    cutoff_time = datetime.now(timezone.utc) - timedelta(hours=expiry_hours)
 
     # Find expired unapproved users
     statement = select(User).where(

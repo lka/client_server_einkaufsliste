@@ -79,14 +79,24 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
 │   ├── src/
 │   │   ├── __init__.py       # Package initialization
 │   │   ├── app.py            # Simple HTTP server (stdlib)
-│   │   ├── main.py           # FastAPI application
+│   │   ├── main.py           # FastAPI application (92 Zeilen - Kern-Funktionalität)
 │   │   ├── models.py         # SQLModel data models (Item, Store, Department, Product)
 │   │   ├── user_models.py    # User authentication models
 │   │   ├── auth.py           # JWT authentication utilities
 │   │   ├── admin_setup.py    # Admin user setup utilities
 │   │   ├── user_cleanup.py   # User cleanup utilities
 │   │   ├── db.py             # Database utilities
-│   │   └── seed_data.py      # Database seed data (stores, departments, products)
+│   │   ├── seed_data.py      # Database seed data (stores, departments, products)
+│   │   ├── schemas.py        # Request/Response models (Pydantic schemas)
+│   │   ├── utils.py          # Helper functions (quantity parsing, fuzzy matching)
+│   │   └── routers/          # API routers (modular endpoint organization)
+│   │       ├── __init__.py   # Router package initialization
+│   │       ├── auth.py       # Authentication endpoints (register, login, /me, refresh)
+│   │       ├── users.py      # User management endpoints (list, approve)
+│   │       ├── stores.py     # Store & department endpoints (CRUD, sorting)
+│   │       ├── products.py   # Product endpoints (CRUD, fuzzy search)
+│   │       ├── items.py      # Shopping list item endpoints (CRUD, smart merging)
+│   │       └── pages.py      # Static page serving endpoints (HTML pages)
 │   └── tests/
 │       ├── conftest.py              # Pytest fixtures
 │       ├── test_api.py              # API integration tests (13 tests)
@@ -627,6 +637,69 @@ Beide Jobs laufen parallel für maximale Geschwindigkeit. Die CI-Konfiguration b
 - ES2020 Module (Native Browser-Module)
 - Jest (Testing Framework)
 - Vanilla JS/DOM (kein Framework)
+
+### Server-Architektur
+
+Der Server folgt einer **modularen Router-basierten Architektur** für bessere Wartbarkeit:
+
+#### **Kern-Module** (`src/`)
+- **main.py** (92 Zeilen) - Application Factory & Router-Registration
+- **models.py** - SQLModel ORM Modelle (Item, Store, Department, Product)
+- **user_models.py** - User & Auth Modelle
+- **db.py** - Datenbank-Engine & Session-Management
+- **auth.py** - JWT-Token-Utilities (create, verify, get_current_user)
+- **schemas.py** - Request/Response Pydantic Models
+- **utils.py** - Helper-Funktionen (quantity parsing, fuzzy matching, normalization)
+
+#### **API Routers** (`src/routers/`)
+Modulare Organisation von API-Endpunkten:
+- **auth.py** (197 Zeilen) - Authentication Endpoints
+  - `POST /api/auth/register` - User registration
+  - `POST /api/auth/login` - User login
+  - `GET /api/auth/me` - Current user info
+  - `POST /api/auth/refresh` - Token refresh
+  - `DELETE /api/auth/me` - Account deletion
+- **users.py** (116 Zeilen) - User Management Endpoints
+  - `GET /api/users` - List all users
+  - `GET /api/users/pending` - List pending approvals
+  - `POST /api/users/{id}/approve` - Approve user
+- **stores.py** (291 Zeilen) - Store & Department Endpoints
+  - Store CRUD operations
+  - Department CRUD operations
+  - Sorting & cascading deletes
+- **products.py** (220 Zeilen) - Product Endpoints
+  - Product CRUD operations
+  - Fuzzy search functionality
+- **items.py** (312 Zeilen) - Shopping List Endpoints
+  - Item CRUD operations
+  - Smart quantity merging
+  - Fuzzy product matching
+  - Convert item to product
+- **pages.py** (55 Zeilen) - Static Page Serving
+  - HTML page routes
+  - Favicon serving
+
+#### Architektur-Vorteile:
+
+**Modularität:**
+- Jeder Router ist eigenständig und fokussiert
+- Reduzierung von [main.py](server/src/main.py) um **94%** (1475 → 92 Zeilen)
+- Einfache Navigation durch klare Ordnerstruktur
+
+**Wartbarkeit:**
+- Isolierte Funktionalitäten pro Router
+- Klare Verantwortlichkeiten (Single Responsibility Principle)
+- Einfaches Hinzufügen neuer Endpunkte
+
+**Dependency Flow:**
+```
+main.py → routers/* → schemas, utils, models → db, auth
+```
+
+**Testbarkeit:**
+- Routers können isoliert getestet werden
+- Mock-freundliche Dependency-Injection
+- 63 Tests mit 85% Coverage
 
 ### Client-Architektur
 
