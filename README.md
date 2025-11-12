@@ -94,8 +94,8 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
   - **Admin-Funktionen**:
     - Benutzer freischalten (✓ Freischalten Button)
     - Benutzer löschen (🗑️ Löschen Button, nur für Admins sichtbar)
-    - Cascading Delete: Löscht automatisch alle Items des Benutzers
     - Schutz vor Selbst-Löschung
+    - **Hinweis**: Items werden nicht gelöscht (gemeinsame Einkaufsliste)
   - **Auto-Cleanup**: Nicht freigeschaltete Benutzer werden nach konfigurierbarer Zeit automatisch gelöscht (Standard: 48 Stunden)
   - **Selbstverwaltung**: Jeder Benutzer (außer Administratoren) kann den eigenen Account auf der User-Management-Seite löschen
     - "Eigenen Account löschen"-Sektion am Ende der User-Management-Seite
@@ -409,8 +409,8 @@ Die Anwendung verwendet **JWT (JSON Web Tokens)** für sichere Authentifizierung
 - `GET /api/users/pending` - Nicht freigeschaltete Benutzer abrufen
 - `POST /api/users/{user_id}/approve` - Benutzer freischalten
 - `DELETE /api/users/{user_id}` - Benutzer löschen (nur für Administratoren)
-  - Cascading Delete: Löscht automatisch alle zugehörigen Items
   - Verhindert Selbst-Löschung (Admin muss `DELETE /api/auth/me` verwenden)
+  - **Hinweis**: Items werden NICHT gelöscht, da die Einkaufsliste eine gemeinsame Liste ist (Items haben `user_id=None`)
 
 **Store Management (alle authentifiziert):**
 - `GET /api/stores` - Alle Geschäfte abrufen (sortiert nach sort_order, dann ID)
