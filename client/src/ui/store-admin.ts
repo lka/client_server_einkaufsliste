@@ -15,6 +15,8 @@ import {
   updateDepartment,
 } from '../data/api.js';
 import type { Store } from '../data/api.js';
+import { Modal } from './components/modal.js';
+import { createButton } from './components/button.js';
 
 /**
  * Initialize the store admin UI.
@@ -234,16 +236,47 @@ function attachDynamicListeners(): void {
       const target = e.currentTarget as HTMLElement;
       const storeId = parseInt(target.dataset.storeId || '0', 10);
 
-      if (!confirm('Möchten Sie dieses Geschäft wirklich löschen? Alle Abteilungen und Produkte werden ebenfalls gelöscht.')) {
-        return;
-      }
+      // Use Modal component for confirmation
+      const modalContent = document.createElement('div');
+      modalContent.innerHTML = `<p>Möchten Sie dieses Geschäft wirklich löschen?<br><strong>Alle Abteilungen und Produkte werden ebenfalls gelöscht.</strong></p>`;
 
-      const success = await deleteStore(storeId);
-      if (success) {
-        await loadStores();
-      } else {
-        alert('Fehler beim Löschen des Geschäfts.');
-      }
+      const modal = new Modal({
+        title: 'Geschäft löschen',
+        content: modalContent,
+        size: 'small',
+      });
+
+      const buttonContainer = document.createElement('div');
+      buttonContainer.style.display = 'flex';
+      buttonContainer.style.gap = '10px';
+      buttonContainer.style.justifyContent = 'flex-end';
+      buttonContainer.style.marginTop = '20px';
+
+      const cancelBtn = createButton({
+        label: 'Abbrechen',
+        variant: 'secondary',
+        onClick: () => modal.close(),
+      });
+
+      const deleteBtn = createButton({
+        label: 'Löschen',
+        variant: 'danger',
+        onClick: async () => {
+          const success = await deleteStore(storeId);
+          if (success) {
+            modal.close();
+            await loadStores();
+          } else {
+            alert('Fehler beim Löschen des Geschäfts.');
+          }
+        },
+      });
+
+      buttonContainer.appendChild(cancelBtn);
+      buttonContainer.appendChild(deleteBtn);
+      modalContent.appendChild(buttonContainer);
+
+      modal.open();
     });
   });
 
@@ -280,16 +313,47 @@ function attachDynamicListeners(): void {
       const target = e.currentTarget as HTMLElement;
       const departmentId = parseInt(target.dataset.departmentId || '0', 10);
 
-      if (!confirm('Möchten Sie diese Abteilung wirklich löschen? Alle Produkte in dieser Abteilung werden ebenfalls gelöscht.')) {
-        return;
-      }
+      // Use Modal component for confirmation
+      const modalContent = document.createElement('div');
+      modalContent.innerHTML = `<p>Möchten Sie diese Abteilung wirklich löschen?<br><strong>Alle Produkte in dieser Abteilung werden ebenfalls gelöscht.</strong></p>`;
 
-      const success = await deleteDepartment(departmentId);
-      if (success) {
-        await loadStores();
-      } else {
-        alert('Fehler beim Löschen der Abteilung.');
-      }
+      const modal = new Modal({
+        title: 'Abteilung löschen',
+        content: modalContent,
+        size: 'small',
+      });
+
+      const buttonContainer = document.createElement('div');
+      buttonContainer.style.display = 'flex';
+      buttonContainer.style.gap = '10px';
+      buttonContainer.style.justifyContent = 'flex-end';
+      buttonContainer.style.marginTop = '20px';
+
+      const cancelBtn = createButton({
+        label: 'Abbrechen',
+        variant: 'secondary',
+        onClick: () => modal.close(),
+      });
+
+      const deleteBtn = createButton({
+        label: 'Löschen',
+        variant: 'danger',
+        onClick: async () => {
+          const success = await deleteDepartment(departmentId);
+          if (success) {
+            modal.close();
+            await loadStores();
+          } else {
+            alert('Fehler beim Löschen der Abteilung.');
+          }
+        },
+      });
+
+      buttonContainer.appendChild(cancelBtn);
+      buttonContainer.appendChild(deleteBtn);
+      modalContent.appendChild(buttonContainer);
+
+      modal.open();
     });
   });
 

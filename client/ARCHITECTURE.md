@@ -451,13 +451,19 @@ The shopping list client is a TypeScript application built with a **four-layer a
   - Disables button during operations to prevent double-clicks
   - Re-enables button only if operation fails
 - **Modal Dialogs**:
-  - Department selection dialog with backdrop
-  - List of department buttons for selection
-  - Cancel option and backdrop click to close
+  - **Uses Modal Component**: Department selection dialog with Modal component
+  - **Uses Button Component**: Department buttons with consistent styling
+  - Keyboard support (Escape key), backdrop click to close
+  - Auto-close on selection
+- **Component Integration**:
+  - `Modal` from component library for department selection
+  - `createButton` for department option buttons
+  - Consistent styling and behavior across dialogs
 - **Dependencies**:
   - `../state/shopping-list-state.js`: State management
   - `../data/dom.js`: renderItems (called by subscription)
   - `../data/api.js`: fetchDepartments, convertItemToProduct
+  - `./components/modal.js`, `./components/button.js`: UI components
 
 #### user-menu.ts
 - **Responsibility**: User menu feature UI
@@ -476,6 +482,47 @@ The shopping list client is a TypeScript application built with a **four-layer a
   - `../state/user-state.js`: User state management
   - `../state/shopping-list-state.js`: Clear items on logout
   - `../data/auth.js`: logout (token management)
+
+#### product-admin.ts
+- **Responsibility**: Product administration UI for creating, editing, and deleting products
+- **Component Integration**:
+  - **Modal Component**: Delete confirmations with styled danger/cancel buttons
+  - **Button Component**: Consistent button styling for all actions
+  - Modal-based confirmations replace browser `confirm()` dialogs
+- **Features**:
+  - Store selection dropdown
+  - Product creation form with department assignment
+  - Product editing with pre-filled form
+  - Product deletion with confirmation modal
+  - Products grouped by department
+  - Fresh product indicator
+- **Dependencies**:
+  - `../data/api.js`: Product CRUD operations
+  - `./components/modal.js`, `./components/button.js`: UI components
+
+#### store-admin.ts
+- **Responsibility**: Store and department administration UI
+- **Component Integration**:
+  - **Modal Component**: Delete confirmations for stores and departments
+  - **Button Component**: Danger/cancel buttons with consistent styling
+  - All confirmations use Modal component instead of browser dialogs
+- **Features**:
+  - Store creation and deletion
+  - Department creation and deletion
+  - Department reordering (up/down arrows)
+  - Inline edit for store and department names
+- **Dependencies**:
+  - `../data/api.js`: Store and department CRUD operations
+  - `./components/modal.js`, `./components/button.js`: UI components
+
+#### user-admin.ts
+- **Responsibility**: User administration UI for managing user accounts
+- **Features**:
+  - List all users with roles
+  - Edit user roles
+  - Reset user passwords
+- **Dependencies**:
+  - `../data/api.js`: User management operations
 
 **Testing**:
 - `shopping-list-ui.test.ts`: 14 tests covering all UI interactions (100% coverage)
@@ -891,10 +938,12 @@ src/pages/
 1. ~~**State Management**: Add centralized state (e.g., observables)~~ ✅ **IMPLEMENTED** - Observer pattern with shopping-list-state, user-state, and store-state
 2. ~~**Store State**: Extend state management to stores, departments, and products~~ ✅ **IMPLEMENTED** - Full CRUD operations in store-state
 3. ~~**Component Library**: Reusable UI components~~ ✅ **IMPLEMENTED** - Button, Modal, Card, Input, Loading components
-4. **Offline Support**: Service worker for PWA
-5. **Real-time Updates**: WebSocket integration
-6. **More UI Modules**: Search, filters, categories
-7. **Additional Components**: Extend component library (Dropdown, Tabs, Toast notifications)
+4. ~~**Component Integration**: Use components across application~~ ✅ **IMPLEMENTED** - Modal and Button components used in product-admin, store-admin, and shopping-list-ui
+5. **Offline Support**: Service worker for PWA
+6. **Real-time Updates**: WebSocket integration
+7. **More UI Modules**: Search, filters, categories
+8. **Additional Components**: Extend component library (Dropdown, Tabs, Toast notifications)
+9. **Replace remaining alerts**: Convert remaining `alert()` calls to Toast notifications
 
 ### Architecture Evolution
 - Previous: 3-layer architecture (Data → UI → Pages)

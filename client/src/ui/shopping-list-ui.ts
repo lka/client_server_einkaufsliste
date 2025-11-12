@@ -11,6 +11,8 @@ import {
   convertItemToProduct,
   type Department,
 } from '../data/api.js';
+import { Modal } from './components/modal.js';
+import { createButton } from './components/button.js';
 
 // Current selected store ID (null = all stores)
 let selectedStoreId: number | null = null;
@@ -558,114 +560,62 @@ function showDepartmentSelectionDialog(
   departments: Department[]
 ): Promise<number | null> {
   return new Promise((resolve) => {
-    // Create dialog backdrop
-    const backdrop = document.createElement('div');
-    backdrop.className = 'dialog-backdrop';
-    backdrop.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-    `;
-
-    // Create dialog
-    const dialog = document.createElement('div');
-    dialog.className = 'department-dialog';
-    dialog.style.cssText = `
-      background: white;
-      padding: 2rem;
-      border-radius: 8px;
-      max-width: 400px;
-      width: 90%;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    `;
-
-    const title = document.createElement('h3');
-    title.textContent = 'Abteilung auswählen';
-    title.style.cssText = 'margin-top: 0; margin-bottom: 1rem;';
-    dialog.appendChild(title);
+    // Create modal content
+    const modalContent = document.createElement('div');
 
     const description = document.createElement('p');
     description.textContent =
       'Wähle eine Abteilung, um dieses Produkt dem Katalog hinzuzufügen:';
     description.style.cssText = 'margin-bottom: 1rem; color: #666;';
-    dialog.appendChild(description);
+    modalContent.appendChild(description);
 
     // Create department list
     const list = document.createElement('div');
     list.style.cssText = 'margin-bottom: 1.5rem; max-height: 300px; overflow-y: auto;';
 
     departments.forEach((dept) => {
-      const btn = document.createElement('button');
-      btn.textContent = dept.name;
-      btn.className = 'department-option-btn';
+      const btn = createButton({
+        label: dept.name,
+        variant: 'secondary',
+        onClick: () => {
+          modal.close();
+          resolve(dept.id);
+        },
+      });
       btn.style.cssText = `
         display: block;
         width: 100%;
-        padding: 0.75rem;
         margin-bottom: 0.5rem;
-        border: 1px solid #ddd;
-        background: white;
         text-align: left;
-        cursor: pointer;
-        border-radius: 4px;
-        transition: all 0.2s;
       `;
-
-      btn.addEventListener('mouseenter', () => {
-        btn.style.background = '#f0f0f0';
-        btn.style.borderColor = '#999';
-      });
-
-      btn.addEventListener('mouseleave', () => {
-        btn.style.background = 'white';
-        btn.style.borderColor = '#ddd';
-      });
-
-      btn.addEventListener('click', () => {
-        document.body.removeChild(backdrop);
-        resolve(dept.id);
-      });
-
       list.appendChild(btn);
     });
 
-    dialog.appendChild(list);
+    modalContent.appendChild(list);
 
-    // Cancel button
-    const cancelBtn = document.createElement('button');
-    cancelBtn.textContent = 'Abbrechen';
-    cancelBtn.style.cssText = `
-      padding: 0.5rem 1rem;
-      background: #999;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      width: 100%;
-    `;
-    cancelBtn.addEventListener('click', () => {
-      document.body.removeChild(backdrop);
-      resolve(null);
-    });
-    dialog.appendChild(cancelBtn);
-
-    backdrop.appendChild(dialog);
-    document.body.appendChild(backdrop);
-
-    // Close on backdrop click
-    backdrop.addEventListener('click', (e) => {
-      if (e.target === backdrop) {
-        document.body.removeChild(backdrop);
+    // Create cancel button
+    const cancelBtn = createButton({
+      label: 'Abbrechen',
+      variant: 'secondary',
+      onClick: () => {
+        modal.close();
         resolve(null);
-      }
+      },
     });
+    cancelBtn.style.width = '100%';
+    modalContent.appendChild(cancelBtn);
+
+    // Create and open modal
+    const modal = new Modal({
+      title: 'Abteilung auswählen',
+      content: modalContent,
+      size: 'small',
+      closeOnBackdropClick: true,
+      closeOnEscape: true,
+      onClose: () => resolve(null),
+    });
+
+    modal.open();
   });
 }
 

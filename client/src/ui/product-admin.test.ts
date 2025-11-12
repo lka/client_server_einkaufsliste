@@ -8,10 +8,52 @@ import * as api from '../data/api';
 // Mock the API module
 jest.mock('../data/api');
 
+// Mock the components
+let mockModalOnClick: (() => void) | null = null;
+let mockConfirmOnClick: (() => void) | null = null;
+
+jest.mock('./components/modal.js', () => ({
+  Modal: jest.fn().mockImplementation((options) => {
+    // Extract buttons from content to simulate clicking them
+    setTimeout(() => {
+      if (options.content && typeof options.content.querySelectorAll === 'function') {
+        const buttons = options.content.querySelectorAll('button');
+        buttons.forEach((btn: HTMLButtonElement) => {
+          if (btn.textContent?.includes('Löschen')) {
+            mockConfirmOnClick = () => btn.click();
+          } else if (btn.textContent?.includes('Abbrechen')) {
+            mockModalOnClick = () => btn.click();
+          }
+        });
+      }
+    }, 0);
+
+    return {
+      open: jest.fn(),
+      close: jest.fn(),
+      setContent: jest.fn(),
+    };
+  }),
+}));
+
+jest.mock('./components/button.js', () => ({
+  createButton: jest.fn((options) => {
+    const btn = document.createElement('button');
+    btn.textContent = options.label;
+    if (options.onClick) {
+      btn.addEventListener('click', options.onClick);
+    }
+    return btn;
+  }),
+}));
+
 describe('Product Admin', () => {
   let container: HTMLElement;
 
   beforeEach(() => {
+    mockModalOnClick = null;
+    mockConfirmOnClick = null;
+
     // Setup DOM
     document.body.innerHTML = '<div id="product-admin-container"></div>';
     container = document.getElementById('product-admin-container')!;
@@ -251,49 +293,56 @@ describe('Product Admin', () => {
     });
 
     it('should delete product when confirmed', async () => {
-      const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
       (api.deleteProduct as jest.MockedFunction<typeof api.deleteProduct>).mockResolvedValue(true);
       (api.fetchStoreProducts as jest.MockedFunction<typeof api.fetchStoreProducts>).mockResolvedValue([]);
 
       const deleteBtn = container.querySelector('.btn-delete') as HTMLButtonElement;
       deleteBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise(resolve => setTimeout(resolve, 100));
 
-      expect(confirmSpy).toHaveBeenCalled();
+      // Click the confirm button in the modal
+      if (mockConfirmOnClick) {
+        mockConfirmOnClick();
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
       expect(api.deleteProduct).toHaveBeenCalledWith(1);
       expect(api.fetchStoreProducts).toHaveBeenCalledWith(1);
-
-      confirmSpy.mockRestore();
     });
 
     it('should not delete product when cancelled', async () => {
-      const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(false);
-
       const deleteBtn = container.querySelector('.btn-delete') as HTMLButtonElement;
       deleteBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise(resolve => setTimeout(resolve, 100));
 
-      expect(confirmSpy).toHaveBeenCalled();
+      // Click the cancel button in the modal
+      if (mockModalOnClick) {
+        mockModalOnClick();
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
       expect(api.deleteProduct).not.toHaveBeenCalled();
-
-      confirmSpy.mockRestore();
     });
 
     it('should show alert when deletion fails', async () => {
-      const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
       const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
       (api.deleteProduct as jest.MockedFunction<typeof api.deleteProduct>).mockResolvedValue(false);
 
       const deleteBtn = container.querySelector('.btn-delete') as HTMLButtonElement;
       deleteBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Click the confirm button in the modal
+      if (mockConfirmOnClick) {
+        mockConfirmOnClick();
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
 
       expect(alertSpy).toHaveBeenCalledWith('Fehler beim Löschen des Produkts');
 
-      confirmSpy.mockRestore();
       alertSpy.mockRestore();
     });
   });

@@ -8,10 +8,51 @@ import * as api from '../data/api';
 // Mock the API module
 jest.mock('../data/api');
 
+// Mock the components
+let mockModalOnClick: (() => void) | null = null;
+let mockConfirmOnClick: (() => void) | null = null;
+
+jest.mock('./components/modal.js', () => ({
+  Modal: jest.fn().mockImplementation((options: any) => {
+    // Extract buttons from content to simulate clicking them
+    setTimeout(() => {
+      if (options.content && typeof options.content.querySelectorAll === 'function') {
+        const buttons = options.content.querySelectorAll('button');
+        buttons.forEach((btn: HTMLButtonElement) => {
+          if (btn.textContent?.includes('Löschen')) {
+            mockConfirmOnClick = () => btn.click();
+          } else if (btn.textContent?.includes('Abbrechen')) {
+            mockModalOnClick = () => btn.click();
+          }
+        });
+      }
+    }, 0);
+
+    return {
+      open: jest.fn(),
+      close: jest.fn(),
+      setContent: jest.fn(),
+    };
+  }),
+}));
+
+jest.mock('./components/button.js', () => ({
+  createButton: jest.fn((options) => {
+    const btn = document.createElement('button');
+    btn.textContent = options.label;
+    if (options.onClick) {
+      btn.addEventListener('click', options.onClick);
+    }
+    return btn;
+  }),
+}));
+
 describe('Store Admin', () => {
   let container: HTMLElement;
 
   beforeEach(() => {
+    mockModalOnClick = null;
+    mockConfirmOnClick = null;
     // Setup DOM with all required elements
     document.body.innerHTML = `
       <div id="storesList"></div>
@@ -153,9 +194,14 @@ describe('Store Admin', () => {
       const deleteBtn = container.querySelector('.delete-store-btn') as HTMLButtonElement;
       deleteBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise(resolve => setTimeout(resolve, 100));
 
-      expect(global.confirm).toHaveBeenCalled();
+      // Click the confirm button in the modal
+      if (mockConfirmOnClick) {
+        mockConfirmOnClick();
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
       expect(api.deleteStore).toHaveBeenCalledWith(1);
     });
 
@@ -165,20 +211,29 @@ describe('Store Admin', () => {
       const deleteBtn = container.querySelector('.delete-store-btn') as HTMLButtonElement;
       deleteBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Click the confirm button in the modal
+      if (mockConfirmOnClick) {
+        mockConfirmOnClick();
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
 
       expect(global.alert).toHaveBeenCalledWith('Fehler beim Löschen des Geschäfts.');
     });
 
     it('should not delete store when user cancels confirmation', async () => {
-      (global.confirm as jest.Mock).mockReturnValueOnce(false);
-
       const deleteBtn = container.querySelector('.delete-store-btn') as HTMLButtonElement;
       deleteBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise(resolve => setTimeout(resolve, 100));
 
-      expect(global.confirm).toHaveBeenCalled();
+      // Click the cancel button in the modal
+      if (mockModalOnClick) {
+        mockModalOnClick();
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
       expect(api.deleteStore).not.toHaveBeenCalled();
     });
   });
@@ -248,9 +303,14 @@ describe('Store Admin', () => {
       const deleteBtn = container.querySelector('.delete-department-btn') as HTMLButtonElement;
       deleteBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise(resolve => setTimeout(resolve, 100));
 
-      expect(global.confirm).toHaveBeenCalled();
+      // Click the confirm button in the modal
+      if (mockConfirmOnClick) {
+        mockConfirmOnClick();
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
       expect(api.deleteDepartment).toHaveBeenCalledWith(1);
     });
 
@@ -260,20 +320,29 @@ describe('Store Admin', () => {
       const deleteBtn = container.querySelector('.delete-department-btn') as HTMLButtonElement;
       deleteBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Click the confirm button in the modal
+      if (mockConfirmOnClick) {
+        mockConfirmOnClick();
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
 
       expect(global.alert).toHaveBeenCalledWith('Fehler beim Löschen der Abteilung.');
     });
 
     it('should not delete department when user cancels confirmation', async () => {
-      (global.confirm as jest.Mock).mockReturnValueOnce(false);
-
       const deleteBtn = container.querySelector('.delete-department-btn') as HTMLButtonElement;
       deleteBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise(resolve => setTimeout(resolve, 100));
 
-      expect(global.confirm).toHaveBeenCalled();
+      // Click the cancel button in the modal
+      if (mockModalOnClick) {
+        mockModalOnClick();
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
       expect(api.deleteDepartment).not.toHaveBeenCalled();
     });
   });

@@ -11,6 +11,8 @@ import {
   updateProduct,
   deleteProduct,
 } from '../data/api.js';
+import { createButton } from './components/button.js';
+import { Modal } from './components/modal.js';
 
 let stores: Store[] = [];
 let selectedStoreId: number | null = null;
@@ -344,22 +346,53 @@ async function handleDeleteProduct(productId: number): Promise<void> {
   const product = getProductById(productId);
   if (!product) return;
 
-  if (!confirm(`Möchten Sie das Produkt "${product.name}" wirklich löschen?`)) {
-    return;
-  }
+  // Use Modal component for confirmation
+  const modalContent = document.createElement('div');
+  modalContent.innerHTML = `<p>Möchten Sie das Produkt "<strong>${product.name}</strong>" wirklich löschen?</p>`;
 
-  try {
-    const success = await deleteProduct(productId);
-    if (success) {
-      if (selectedStoreId) {
-        await loadProducts(selectedStoreId);
-        renderUI();
+  const modal = new Modal({
+    title: 'Produkt löschen',
+    content: modalContent,
+    size: 'small',
+  });
+
+  const buttonContainer = document.createElement('div');
+  buttonContainer.style.display = 'flex';
+  buttonContainer.style.gap = '10px';
+  buttonContainer.style.justifyContent = 'flex-end';
+  buttonContainer.style.marginTop = '20px';
+
+  const cancelBtn = createButton({
+    label: 'Abbrechen',
+    variant: 'secondary',
+    onClick: () => modal.close(),
+  });
+
+  const deleteBtn = createButton({
+    label: 'Löschen',
+    variant: 'danger',
+    onClick: async () => {
+      try {
+        const success = await deleteProduct(productId);
+        if (success) {
+          modal.close();
+          if (selectedStoreId) {
+            await loadProducts(selectedStoreId);
+            renderUI();
+          }
+        } else {
+          alert('Fehler beim Löschen des Produkts');
+        }
+      } catch (error) {
+        console.error('Error deleting product:', error);
+        alert('Fehler beim Löschen des Produkts');
       }
-    } else {
-      alert('Fehler beim Löschen des Produkts');
-    }
-  } catch (error) {
-    console.error('Error deleting product:', error);
-    alert('Fehler beim Löschen des Produkts');
-  }
+    },
+  });
+
+  buttonContainer.appendChild(cancelBtn);
+  buttonContainer.appendChild(deleteBtn);
+  modalContent.appendChild(buttonContainer);
+
+  modal.open();
 }
