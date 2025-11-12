@@ -95,16 +95,21 @@ def create_item(item: Item, current_user: str = Depends(get_current_user)):
     Uses fuzzy matching to find similar item names (e.g., "Möhre" matches "Möhren").
     Automatically matches items to products in the store's catalog using fuzzy matching.
 
-    If an item with the same or similar name already exists in the shared list:
+    If an item with the same or similar name AND same shopping_date already exists:
     - If the new unit matches an existing unit in the list, they are summed
     - If the new unit is different, it is appended to the comma-separated list
 
-    Examples:
+    Items with different shopping dates are kept separate, even if they
+    have the same name. This allows tracking the same item for different
+    shopping trips.
+
+    Examples with same shopping_date:
     - "Möhren 500 g" + "300 g" = "Möhren 800 g"
     - "Möhre 300 g" → merges with existing "Möhren" (fuzzy match)
     - "Zucker 500 g" + "2 Packungen" = "Zucker 500 g, 2 Packungen"
-    - "Zucker 500 g, 2 Packungen" + "300 g" = "Zucker 800 g, 2 Packungen"
-    - "Zucker 500 g, 2 Packungen" + "3 Packungen" = "Zucker 500 g, 5 Packungen"
+
+    Examples with different shopping_date:
+    - "Möhren 500 g" (2024-01-15) + "Möhren 300 g" (2024-01-17) = Two separate items
 
     Note: Items are created with user_id=None as they belong to the shared list,
     not to individual users.
@@ -123,16 +128,26 @@ def create_item(item: Item, current_user: str = Depends(get_current_user)):
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
-        # First, check for exact match in shared list
-        existing_item = session.exec(select(Item).where(Item.name == item.name)).first()
+        # First, check for exact match in shared list with same shopping_date
+        existing_item = session.exec(
+            select(Item).where(
+                Item.name == item.name, Item.shopping_date == item.shopping_date
+            )
+        ).first()
 
-        # If no exact match, try fuzzy matching in shared list
+        # If no exact match, try fuzzy matching in shared list with same shopping_date
         if not existing_item:
-            existing_item = find_similar_item(session, item.name, None, threshold=0.8)
+            existing_item = find_similar_item(
+                session,
+                item.name,
+                None,
+                threshold=0.8,
+                shopping_date=item.shopping_date,
+            )
 
         result_item = None
         if existing_item:
-            # Merge quantities into existing item
+            # Merge quantities into existing item (only if shopping_date matches)
             existing_item.menge = merge_quantities(existing_item.menge, item.menge)
             session.add(existing_item)
             session.commit()

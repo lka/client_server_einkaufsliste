@@ -50,7 +50,11 @@ def normalize_name(name: str) -> str:
 
 
 def find_similar_item(
-    session, item_name: str, user_id: int, threshold: float = 0.8
+    session,
+    item_name: str,
+    user_id: int,
+    threshold: float = 0.8,
+    shopping_date: str | None = None,
 ) -> Item | None:
     """Find an item with a similar name using fuzzy matching for a specific user.
 
@@ -59,6 +63,8 @@ def find_similar_item(
         item_name: Name to search for
         user_id: User ID to filter items
         threshold: Similarity threshold (0.0 to 1.0, default 0.8)
+        shopping_date: Optional shopping date to match (items with
+            different dates won't be merged)
 
     Returns:
         Item with most similar name above threshold, or None
@@ -68,8 +74,15 @@ def find_similar_item(
         - "Moehre" matches "Möhren"
         - "Kartoffel" matches "Kartoffeln"
     """
-    # Get all items for this user
-    all_items = session.exec(select(Item).where(Item.user_id == user_id)).all()
+    # Get all items for this user with same shopping_date
+    query = select(Item).where(Item.user_id == user_id)
+    if shopping_date is not None:
+        query = query.where(Item.shopping_date == shopping_date)
+    else:
+        # Only match items without shopping_date
+        query = query.where(Item.shopping_date.is_(None))
+
+    all_items = session.exec(query).all()
 
     if not all_items:
         return None

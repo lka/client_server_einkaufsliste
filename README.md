@@ -62,16 +62,22 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - "Möhre" wird zu "Möhren" hinzugefügt (Singular/Plural)
     - "Moehre" wird zu "Möhren" hinzugefügt (alternative Schreibweise)
     - "Kartoffel" wird zu "Kartoffeln" hinzugefügt
-  - Beispiele:
+  - **Datums-basiertes Merging**: Mengen werden NUR summiert, wenn das Einkaufsdatum identisch ist
+    - Items mit unterschiedlichen Einkaufsdaten werden separat geführt
+    - Ermöglicht Planung für mehrere Einkaufstouren
+  - Beispiele (gleiches Datum):
     - "Möhren 500 g" + "Möhren 300 g" = "Möhren 800 g"
     - "Zucker 500 g, 2 Packungen" + "Zucker 300 g" = "Zucker 800 g, 2 Packungen"
     - "Reis 500 g" + "2, 300 g" = "Reis 800 g, 2"
+  - Beispiele (unterschiedliche Daten):
+    - "Möhren 500 g" [15.01.2025] + "Möhren 300 g" [17.01.2025] = Zwei separate Items
 - ✅ **Einkaufsdatum**: Optionale Datumsangabe für geplanten Einkauf
   - **DatePicker-Komponente**: Benutzerfreundlicher Kalender mit deutscher Lokalisierung
   - **Automatische Vorauswahl**: Standard ist der nächste Mittwoch
   - **Visuelles Design**: Aktueller Tag ist deutlich hervorgehoben (rot hinterlegt)
   - **Flexibel**: Datum kann geändert oder gelöscht werden
   - **Anzeige**: Datum wird in der Liste neben jedem Item angezeigt [DD.MM.YYYY]
+  - **Intelligentes Merging**: Items werden nur bei gleichem Datum zusammengeführt
 - ✅ **Reaktive UI**: Automatische UI-Updates durch State-Management mit Observer Pattern
 - ✅ **Component Library**: Wiederverwendbare UI-Komponenten mit konsistentem Design (9 Komponenten)
   - **Button**: Konfigurierbare Buttons (primary, secondary, danger) mit verschiedenen Größen
