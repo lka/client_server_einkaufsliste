@@ -14,6 +14,7 @@ import { injectLoadingStyles } from './loading.js';
 import { injectDropdownStyles } from './dropdown.js';
 import { injectTabsStyles } from './tabs.js';
 import { injectToastStyles } from './toast.js';
+import { injectDatePickerStyles } from './datepicker.js';
 
 // Button
 export {
@@ -96,6 +97,14 @@ export {
 } from './toast.js';
 export { injectToastStyles } from './toast.js';
 
+// DatePicker
+export {
+  createDatePicker,
+  type DatePickerOptions,
+  type DatePickerInstance,
+} from './datepicker.js';
+export { injectDatePickerStyles } from './datepicker.js';
+
 /**
  * Initialize all component styles.
  *
@@ -113,4 +122,5 @@ export function initializeComponents(): void {
   injectDropdownStyles();
   injectTabsStyles();
   injectToastStyles();
+  injectDatePickerStyles();
 }
