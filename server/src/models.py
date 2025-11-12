@@ -89,6 +89,7 @@ class Item(SQLModel, table=True):
         product_id: Optional foreign key to product (None for free-text items)
         name: Item name (can override product name for display)
         menge: Optional quantity (e.g., "500 g", "2 Stück")
+        shopping_date: Optional date when shopping is planned (ISO format: YYYY-MM-DD)
     """
 
     id: Optional[str] = Field(default=None, primary_key=True)
@@ -99,6 +100,7 @@ class Item(SQLModel, table=True):
     )
     name: str
     menge: Optional[str] = None
+    shopping_date: Optional[str] = Field(default=None, index=True)
 
     # Relationships
     user: Optional["User"] = Relationship(back_populates="items")

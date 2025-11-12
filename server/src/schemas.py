@@ -56,6 +56,7 @@ class ItemWithDepartment(BaseModel):
     product_id: int | None
     name: str
     menge: str | None
+    shopping_date: str | None = None
     department_id: int | None = None
     department_name: str | None = None
     department_sort_order: int | None = None

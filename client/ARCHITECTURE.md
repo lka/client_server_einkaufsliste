@@ -76,7 +76,7 @@ The shopping list client is a TypeScript application built with a **four-layer a
 - **Responsibility**: Shopping list API operations
 - **Functions**:
   - `fetchItems()`: Get all shopping list items
-  - `addItem(name)`: Add a new item
+  - `addItem(name, menge?, storeId?, shoppingDate?)`: Add a new item with optional shopping date
   - `deleteItem(id)`: Remove an item
   - `deleteStoreItems(storeId)`: Delete all items for a store
   - `convertItemToProduct(itemId, departmentId)`: Convert item to product with department assignment
@@ -84,7 +84,7 @@ The shopping list client is a TypeScript application built with a **four-layer a
   - `fetchDepartments(storeId)`: Get departments for a store
   - `ensureFreshToken()`: Refresh JWT before API calls
 - **Dependencies**: auth.ts (for token management)
-- **Interfaces**: `Item`, `Store`, `Department`, `Product`
+- **Interfaces**: `Item` (with shopping_date?: string), `Store`, `Department`, `Product`
 
 #### auth.ts
 - **Responsibility**: Authentication and user management
@@ -113,6 +113,7 @@ The shopping list client is a TypeScript application built with a **four-layer a
   - `createItemElement(item, isInSonstiges)`: Create DOM element for item (no individual event handlers)
     - Shows edit button (✏️) for items in "Sonstiges" section
     - Shows delete button (🗑️) for all items
+    - Displays shopping date in German format [DD.MM.YYYY] if available
   - `loadTemplate(path)`: Load HTML template with caching
   - `loadAppTemplate()`: Load main app template
   - `clearTemplateCache()`: Internal function for testing
@@ -160,7 +161,7 @@ The shopping list client is a TypeScript application built with a **four-layer a
   - `isLoading()`: Check if operation in progress
   - `subscribe(listener)`: Subscribe to state changes (returns unsubscribe function)
   - `loadItems()`: Load items from API and update state
-  - `addItem(name)`: Add item via API and update state
+  - `addItem(name, menge?, storeId?, shoppingDate?)`: Add item with optional shopping date via API and update state
   - `deleteItem(id)`: Delete item via API and update state
   - `clear()`: Clear local state
 - **Pattern**: Observer pattern for reactive UI updates
@@ -490,9 +491,49 @@ The shopping list client is a TypeScript application built with a **four-layer a
   });
   ```
 
+##### datepicker.ts
+- **Exports**:
+  - `createDatePicker(options)`: Create date picker component
+  - `injectDatePickerStyles()`: Inject date picker CSS
+  - `DatePickerInstance` interface: `{ container, input, getValue, setValue, setDisabled, destroy }`
+- **Features**:
+  - Full calendar interface with month/year navigation
+  - German localization (months and weekdays)
+  - Date formats: dd.MM.yyyy, yyyy-MM-dd, MM/dd/yyyy
+  - Min/max date restrictions
+  - Today button for quick selection
+  - Clear button to reset selection
+  - Click-outside-to-close behavior
+  - Escape key support
+  - Highlighted current day (red background with shadow)
+  - ARIA attributes for accessibility
+  - Responsive design
+- **Usage**:
+  ```typescript
+  import { createDatePicker } from './ui/components/datepicker.js';
+
+  const datePicker = createDatePicker({
+    placeholder: 'Select date',
+    format: 'dd.MM.yyyy',
+    value: new Date(), // Optional pre-selected date
+    minDate: new Date(), // Optional minimum date
+    maxDate: new Date(Date.now() + 30*24*60*60*1000), // Optional max date
+    onChange: (date) => console.log('Selected:', date)
+  });
+
+  // Get selected date
+  const selectedDate = datePicker.getValue();
+
+  // Set date programmatically
+  datePicker.setValue(new Date());
+
+  // Clear selection
+  datePicker.setValue(null);
+  ```
+
 ##### index.ts
 - **Purpose**: Central export point for all components
-- **Exports**: All components and their types (8 components total)
+- **Exports**: All components and their types (9 components total)
 - **Functions**:
   - `initializeComponents()`: Inject all component styles at once (idempotent)
 - **Usage**:
@@ -533,8 +574,14 @@ The shopping list client is a TypeScript application built with a **four-layer a
   - Subscribes to `shoppingListState` for automatic UI updates
   - UI re-renders automatically when state changes
   - No manual refresh calls needed
+- **DatePicker Integration**:
+  - Creates DatePicker component for shopping date selection
+  - Default value: Next Wednesday (automatically calculated)
+  - Format: German date format (dd.MM.yyyy)
+  - Date is sent in ISO format (YYYY-MM-DD) to the server
+  - DatePicker clears after adding item
 - **Event Handlers**:
-  - Add button click → `shoppingListState.addItem()`
+  - Add button click → `shoppingListState.addItem(name, menge, storeId, shoppingDate)`
   - Enter key for adding items
   - Delete button click (event delegation) → `shoppingListState.deleteItem()`
   - Edit button click (event delegation) → `handleEditItem()` → Department selection dialog
@@ -555,13 +602,14 @@ The shopping list client is a TypeScript application built with a **four-layer a
 - **Component Integration**:
   - `Modal` from component library for department selection
   - `createButton` for department option buttons
+  - `createDatePicker` for shopping date selection
   - `showError` and `showSuccess` for notifications
   - Consistent styling and behavior across dialogs
 - **Dependencies**:
   - `../state/shopping-list-state.js`: State management
   - `../data/dom.js`: renderItems (called by subscription)
   - `../data/api.js`: fetchDepartments, convertItemToProduct
-  - `./components/modal.js`, `./components/button.js`, `./components/toast.js`: UI components
+  - `./components/modal.js`, `./components/button.js`, `./components/toast.js`, `./components/datepicker.js`: UI components
 
 #### user-menu.ts
 - **Responsibility**: User menu feature UI
@@ -993,9 +1041,10 @@ src/pages/
   - login.ts: 100% coverage
 
 ### Component Library
-- **8 components**: Button, Modal, Card, Input, Loading, Dropdown, Tabs, Toast
-- **New Components (Dropdown, Tabs, Toast)**: Fully implemented with TypeScript types and style injection
+- **9 components**: Button, Modal, Card, Input, Loading, Dropdown, Tabs, Toast, DatePicker
+- **New Components (Dropdown, Tabs, Toast, DatePicker)**: Fully implemented with TypeScript types and style injection
 - **Toast Integration**: All alert() calls replaced with Toast notifications across product-admin, store-admin, and shopping-list-ui
+- **DatePicker Integration**: Full calendar component with German localization used for shopping date selection
 - **Test Coverage**: All tests updated to expect Toast notifications instead of alert() calls (17 test files updated)
 
 ---

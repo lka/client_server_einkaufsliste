@@ -14,9 +14,13 @@ import {
 import { Modal } from './components/modal.js';
 import { createButton } from './components/button.js';
 import { showError, showSuccess } from './components/toast.js';
+import { createDatePicker, type DatePickerInstance } from './components/datepicker.js';
 
 // Current selected store ID (null = all stores)
 let selectedStoreId: number | null = null;
+
+// DatePicker instance for shopping date selection
+let shoppingDatePicker: DatePickerInstance | null = null;
 
 /**
  * Handle edit button click - show department selection dialog
@@ -682,10 +686,28 @@ export function initShoppingListUI(): void {
   const storeFilter = document.getElementById('storeFilter') as HTMLSelectElement;
   const clearStoreBtn = document.getElementById('clearStoreBtn') as HTMLButtonElement;
   const itemsList = document.getElementById('items');
+  const shoppingDatePickerContainer = document.getElementById('shoppingDatePicker');
 
   if (!input || !mengeInput || !addBtn) {
     console.error('Required shopping list elements not found');
     return;
+  }
+
+  // Initialize DatePicker for shopping date selection
+  if (shoppingDatePickerContainer) {
+    // Calculate next Wednesday
+    const today = new Date();
+    const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    const daysUntilWednesday = currentDay === 3 ? 7 : (3 - currentDay + 7) % 7; // 3 = Wednesday
+    const nextWednesday = new Date(today);
+    nextWednesday.setDate(today.getDate() + (daysUntilWednesday === 0 ? 7 : daysUntilWednesday));
+
+    shoppingDatePicker = createDatePicker({
+      placeholder: 'Einkaufsdatum (optional)',
+      format: 'dd.MM.yyyy',
+      value: nextWednesday,
+    });
+    shoppingDatePickerContainer.appendChild(shoppingDatePicker.container);
   }
 
   // Subscribe to state changes for automatic UI updates
@@ -718,10 +740,25 @@ export function initShoppingListUI(): void {
     }
 
     const menge = mengeInput.value.trim() || undefined;
-    const item = await shoppingListState.addItem(val, menge, selectedStoreId || undefined);
+
+    // Get shopping date from DatePicker (format: ISO YYYY-MM-DD)
+    let shoppingDate: string | undefined = undefined;
+    if (shoppingDatePicker) {
+      const dateValue = shoppingDatePicker.getValue();
+      if (dateValue) {
+        // Convert to ISO format (YYYY-MM-DD)
+        shoppingDate = dateValue.toISOString().split('T')[0];
+      }
+    }
+
+    const item = await shoppingListState.addItem(val, menge, selectedStoreId || undefined, shoppingDate);
     if (item) {
       input.value = '';
       mengeInput.value = '';
+      // Clear date picker
+      if (shoppingDatePicker) {
+        shoppingDatePicker.setValue(null);
+      }
       // UI updates automatically via state subscription
     }
   });

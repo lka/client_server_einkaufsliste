@@ -589,14 +589,31 @@ export function injectDatePickerStyles(): void {
     }
 
     .datepicker-day-today {
-      font-weight: 600;
-      color: #3b82f6;
+      font-weight: 700 !important;
+      color: #ffffff !important;
+      background-color: #ef4444 !important;
+      border: 2px solid #dc2626 !important;
+      border-radius: 0.375rem !important;
+      box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3) !important;
+    }
+
+    .datepicker-day-today:hover:not(.datepicker-day-disabled) {
+      background-color: #dc2626 !important;
+      box-shadow: 0 2px 6px rgba(220, 38, 38, 0.4) !important;
     }
 
     .datepicker-day-selected {
       background-color: #3b82f6 !important;
       color: #ffffff !important;
       font-weight: 600;
+      border: 2px solid #2563eb !important;
+    }
+
+    /* Wenn der heutige Tag ausgewählt ist, zeige beides */
+    .datepicker-day-today.datepicker-day-selected {
+      background: linear-gradient(135deg, #ef4444 0%, #3b82f6 100%) !important;
+      border: 2px solid #dc2626 !important;
+      box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4) !important;
     }
 
     .datepicker-day-disabled {

@@ -8,6 +8,7 @@ export interface Item {
   id: string;
   name: string;
   menge?: string;
+  shopping_date?: string;
   user_id?: number;
   store_id?: number;
   product_id?: number;
@@ -126,7 +127,12 @@ export async function fetchItems(): Promise<Item[]> {
 /**
  * Add a new item to the shopping list.
  */
-export async function addItem(name: string, menge?: string, storeId?: number): Promise<Item | null> {
+export async function addItem(
+  name: string,
+  menge?: string,
+  storeId?: number,
+  shoppingDate?: string
+): Promise<Item | null> {
   // Refresh token before making the request
   const tokenRefreshed = await ensureFreshToken();
   if (!tokenRefreshed) {
@@ -134,9 +140,10 @@ export async function addItem(name: string, menge?: string, storeId?: number): P
   }
 
   try {
-    const body: { name: string; menge?: string; store_id?: number } = { name };
+    const body: { name: string; menge?: string; store_id?: number; shopping_date?: string } = { name };
     if (menge) body.menge = menge;
     if (storeId) body.store_id = storeId;
+    if (shoppingDate) body.shopping_date = shoppingDate;
 
     const res = await fetch(API_BASE, {
       method: 'POST',

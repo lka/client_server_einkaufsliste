@@ -150,7 +150,7 @@ describe('Shopping List UI', () => {
 
       await new Promise(resolve => setTimeout(resolve, 0));
 
-      expect(shoppingListState.addItem).toHaveBeenCalledWith('New Item', undefined, undefined);
+      expect(shoppingListState.addItem).toHaveBeenCalledWith('New Item', undefined, undefined, undefined);
       expect(mockInput.value).toBe('');
       expect(mockMengeInput.value).toBe('');
     });
@@ -183,7 +183,7 @@ describe('Shopping List UI', () => {
 
       await new Promise(resolve => setTimeout(resolve, 0));
 
-      expect(shoppingListState.addItem).toHaveBeenCalledWith('Möhren', '500 g', undefined);
+      expect(shoppingListState.addItem).toHaveBeenCalledWith('Möhren', '500 g', undefined, undefined);
       expect(mockInput.value).toBe('');
       expect(mockMengeInput.value).toBe('');
     });
@@ -200,7 +200,7 @@ describe('Shopping List UI', () => {
 
       await new Promise(resolve => setTimeout(resolve, 0));
 
-      expect(shoppingListState.addItem).toHaveBeenCalledWith('Failed Item', undefined, undefined);
+      expect(shoppingListState.addItem).toHaveBeenCalledWith('Failed Item', undefined, undefined, undefined);
       expect(mockInput.value).toBe('Failed Item'); // Not cleared on failure
     });
 
@@ -218,7 +218,7 @@ describe('Shopping List UI', () => {
 
       await new Promise(resolve => setTimeout(resolve, 0));
 
-      expect(shoppingListState.addItem).toHaveBeenCalledWith('New Item', undefined, undefined);
+      expect(shoppingListState.addItem).toHaveBeenCalledWith('New Item', undefined, undefined, undefined);
     });
 
     it('should handle Enter key press on mengeInput', async () => {
@@ -236,7 +236,7 @@ describe('Shopping List UI', () => {
 
       await new Promise(resolve => setTimeout(resolve, 0));
 
-      expect(shoppingListState.addItem).toHaveBeenCalledWith('Möhren', '500 g', undefined);
+      expect(shoppingListState.addItem).toHaveBeenCalledWith('Möhren', '500 g', undefined, undefined);
     });
 
     it('should handle delete button click via event delegation', async () => {
@@ -502,7 +502,7 @@ describe('Shopping List UI', () => {
       await new Promise((resolve) => setTimeout(resolve, 0));
 
       // Check that addItem was called with store_id = 1 (first store)
-      expect(shoppingListState.addItem).toHaveBeenCalledWith('New Item', undefined, 1);
+      expect(shoppingListState.addItem).toHaveBeenCalledWith('New Item', undefined, 1, undefined);
     });
 
     it('should not call deleteItem again if button is already disabled', async () => {

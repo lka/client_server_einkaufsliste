@@ -166,7 +166,7 @@ describe('Shopping List State', () => {
 
       const result = await shoppingListState.addItem('Möhren', '500 g');
 
-      expect(api.addItem).toHaveBeenCalledWith('Möhren', '500 g', undefined);
+      expect(api.addItem).toHaveBeenCalledWith('Möhren', '500 g', undefined, undefined);
       expect(result).toEqual(newItem);
       expect(shoppingListState.getItems()).toContain(newItem);
       expect(listener).toHaveBeenCalledWith([newItem]);

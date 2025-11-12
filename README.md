@@ -66,8 +66,14 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - "Möhren 500 g" + "Möhren 300 g" = "Möhren 800 g"
     - "Zucker 500 g, 2 Packungen" + "Zucker 300 g" = "Zucker 800 g, 2 Packungen"
     - "Reis 500 g" + "2, 300 g" = "Reis 800 g, 2"
+- ✅ **Einkaufsdatum**: Optionale Datumsangabe für geplanten Einkauf
+  - **DatePicker-Komponente**: Benutzerfreundlicher Kalender mit deutscher Lokalisierung
+  - **Automatische Vorauswahl**: Standard ist der nächste Mittwoch
+  - **Visuelles Design**: Aktueller Tag ist deutlich hervorgehoben (rot hinterlegt)
+  - **Flexibel**: Datum kann geändert oder gelöscht werden
+  - **Anzeige**: Datum wird in der Liste neben jedem Item angezeigt [DD.MM.YYYY]
 - ✅ **Reaktive UI**: Automatische UI-Updates durch State-Management mit Observer Pattern
-- ✅ **Component Library**: Wiederverwendbare UI-Komponenten mit konsistentem Design
+- ✅ **Component Library**: Wiederverwendbare UI-Komponenten mit konsistentem Design (9 Komponenten)
   - **Button**: Konfigurierbare Buttons (primary, secondary, danger) mit verschiedenen Größen
   - **Modal**: Modale Dialoge mit Backdrop und Animationen
   - **Card**: Content-Cards mit optionalen Aktionen
@@ -81,6 +87,12 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - Positionierbar (top/bottom, left/center/right)
     - Dismissible mit X-Button
     - Stacking von mehreren Toasts
+  - **DatePicker**: Voll funktionsfähiger Kalender für Datumsauswahl
+    - Deutsche Monate und Wochentage
+    - 3 Datumsformate (dd.MM.yyyy, yyyy-MM-dd, MM/dd/yyyy)
+    - Min/Max-Datum-Einschränkungen
+    - Heute/Löschen-Buttons
+    - Responsives Design
 - ✅ **Vollständige Tests**: 451 Tests (63 Server + 388 Client) mit 85%+ Code-Abdeckung
 - ✅ **TypeScript Client**: Typsicherer Client mit vier-Schichten-Architektur
 - ✅ **FastAPI Server**: Moderne Python API mit SQLModel ORM
