@@ -4,9 +4,17 @@
 
 import { initProductAdmin } from './product-admin';
 import * as api from '../data/api';
+import * as toast from './components/toast.js';
 
 // Mock the API module
 jest.mock('../data/api');
+
+// Mock the toast module
+jest.mock('./components/toast.js', () => ({
+  showError: jest.fn(),
+  showSuccess: jest.fn(),
+  injectToastStyles: jest.fn(),
+}));
 
 // Mock the components
 let mockModalOnClick: (() => void) | null = null;
@@ -164,23 +172,16 @@ describe('Product Admin', () => {
     });
 
     it('should not create product without name', async () => {
-      // Mock alert
-      const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
-
       const saveBtn = container.querySelector('#saveProductBtn') as HTMLButtonElement;
       saveBtn.click();
 
       await new Promise(resolve => setTimeout(resolve, 0));
 
-      expect(alertSpy).toHaveBeenCalledWith('Bitte Produktname eingeben');
+      expect(toast.showError).toHaveBeenCalledWith('Bitte Produktname eingeben');
       expect(api.createProduct).not.toHaveBeenCalled();
-
-      alertSpy.mockRestore();
     });
 
     it('should not create product without department', async () => {
-      const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
-
       const nameInput = container.querySelector('#productName') as HTMLInputElement;
       const saveBtn = container.querySelector('#saveProductBtn') as HTMLButtonElement;
 
@@ -189,10 +190,8 @@ describe('Product Admin', () => {
 
       await new Promise(resolve => setTimeout(resolve, 0));
 
-      expect(alertSpy).toHaveBeenCalledWith('Bitte Abteilung auswählen');
+      expect(toast.showError).toHaveBeenCalledWith('Bitte Abteilung auswählen');
       expect(api.createProduct).not.toHaveBeenCalled();
-
-      alertSpy.mockRestore();
     });
   });
 
@@ -327,7 +326,6 @@ describe('Product Admin', () => {
     });
 
     it('should show alert when deletion fails', async () => {
-      const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
       (api.deleteProduct as jest.MockedFunction<typeof api.deleteProduct>).mockResolvedValue(false);
 
       const deleteBtn = container.querySelector('.btn-delete') as HTMLButtonElement;
@@ -341,9 +339,7 @@ describe('Product Admin', () => {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
 
-      expect(alertSpy).toHaveBeenCalledWith('Fehler beim Löschen des Produkts');
-
-      alertSpy.mockRestore();
+      expect(toast.showError).toHaveBeenCalledWith('Fehler beim Löschen des Produkts');
     });
   });
 

@@ -7,11 +7,19 @@ import { initShoppingListUI, loadItems } from './shopping-list-ui.js';
 import { shoppingListState } from '../state/shopping-list-state.js';
 import { fetchStores, fetchDepartments, convertItemToProduct } from '../data/api.js';
 import { renderItems } from '../data/dom.js';
+import * as toast from './components/toast.js';
 
 // Mock the modules
 jest.mock('../data/dom.js');
 jest.mock('../state/shopping-list-state.js');
 jest.mock('../data/api.js');
+
+// Mock the toast module
+jest.mock('./components/toast.js', () => ({
+  showError: jest.fn(),
+  showSuccess: jest.fn(),
+  injectToastStyles: jest.fn(),
+}));
 
 // Mock the components
 let mockModalInstance: any = null;
@@ -554,8 +562,6 @@ describe('Shopping List UI', () => {
     });
 
     it('should show alert when edit button clicked without selected store', async () => {
-      const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
-
       initShoppingListUI();
       await new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -573,16 +579,12 @@ describe('Shopping List UI', () => {
       editButton.click();
       await new Promise((resolve) => setTimeout(resolve, 0));
 
-      expect(alertSpy).toHaveBeenCalledWith(
+      expect(toast.showError).toHaveBeenCalledWith(
         'Bitte wählen Sie ein Geschäft aus, um eine Abteilung zuzuweisen.'
       );
-
-      alertSpy.mockRestore();
     });
 
     it('should show alert when no departments available', async () => {
-      const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
-
       // Mock fetchDepartments to return empty array
       (fetchDepartments as jest.MockedFunction<typeof fetchDepartments>).mockResolvedValue([]);
 
@@ -603,11 +605,9 @@ describe('Shopping List UI', () => {
       editButton.click();
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      expect(alertSpy).toHaveBeenCalledWith(
+      expect(toast.showError).toHaveBeenCalledWith(
         'Keine Abteilungen für dieses Geschäft vorhanden.'
       );
-
-      alertSpy.mockRestore();
     });
 
     it('should show department selection dialog when edit button clicked', async () => {
@@ -697,8 +697,6 @@ describe('Shopping List UI', () => {
     });
 
     it('should show alert when conversion fails', async () => {
-      const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
-
       // Mock convertItemToProduct to return null (failure)
       (convertItemToProduct as jest.MockedFunction<typeof convertItemToProduct>).mockResolvedValue(null);
 
@@ -725,13 +723,11 @@ describe('Shopping List UI', () => {
         firstDeptButton.click();
         await new Promise((resolve) => setTimeout(resolve, 100));
 
-        expect(alertSpy).toHaveBeenCalledWith('Fehler beim Zuweisen der Abteilung.');
+        expect(toast.showError).toHaveBeenCalledWith('Fehler beim Zuweisen der Abteilung.');
       } else {
         // If no department buttons found, just verify modal opened
         expect(mockModalInstance.open).toHaveBeenCalled();
       }
-
-      alertSpy.mockRestore();
     });
 
     it('should close dialog when backdrop clicked', async () => {
@@ -792,8 +788,6 @@ describe('Shopping List UI', () => {
     });
 
     it('should show alert when clear button clicked without selected store', async () => {
-      const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
-
       initShoppingListUI();
       await new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -805,11 +799,9 @@ describe('Shopping List UI', () => {
       clearButton.click();
       await new Promise((resolve) => setTimeout(resolve, 0));
 
-      expect(alertSpy).toHaveBeenCalledWith(
+      expect(toast.showError).toHaveBeenCalledWith(
         'Bitte wählen Sie ein spezifisches Geschäft aus, um dessen Liste zu leeren.'
       );
-
-      alertSpy.mockRestore();
     });
 
     it('should show confirmation dialog when clear button clicked', async () => {
@@ -872,7 +864,6 @@ describe('Shopping List UI', () => {
 
     it('should show alert when deletion fails', async () => {
       const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
-      const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
 
       // Mock deleteStoreItems to return false (failure)
       (shoppingListState.deleteStoreItems as jest.MockedFunction<typeof shoppingListState.deleteStoreItems>).mockResolvedValue(false);
@@ -888,10 +879,9 @@ describe('Shopping List UI', () => {
       clearButton.click();
       await new Promise((resolve) => setTimeout(resolve, 50));
 
-      expect(alertSpy).toHaveBeenCalledWith('Fehler beim Löschen der Einträge.');
+      expect(toast.showError).toHaveBeenCalledWith('Fehler beim Löschen der Einträge.');
 
       confirmSpy.mockRestore();
-      alertSpy.mockRestore();
     });
 
     it('should disable and re-enable button during deletion', async () => {
@@ -938,8 +928,6 @@ describe('Shopping List UI', () => {
     });
 
     it('should show alert when print button clicked with no items', async () => {
-      const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
-
       // Mock getItems to return empty array
       (shoppingListState.getItems as jest.MockedFunction<typeof shoppingListState.getItems>).mockReturnValue([]);
 
@@ -950,9 +938,7 @@ describe('Shopping List UI', () => {
       printButton.click();
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      expect(alertSpy).toHaveBeenCalledWith('Keine Einträge zum Drucken vorhanden.');
-
-      alertSpy.mockRestore();
+      expect(toast.showError).toHaveBeenCalledWith('Keine Einträge zum Drucken vorhanden.');
     });
 
     it('should show print preview dialog when print button clicked with items', async () => {
@@ -1108,7 +1094,6 @@ describe('Shopping List UI', () => {
     });
 
     it('should show alert when popup is blocked', async () => {
-      const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
       const windowOpenSpy = jest.spyOn(window, 'open').mockReturnValue(null);
 
       // Mock getItems to return items
@@ -1133,12 +1118,11 @@ describe('Shopping List UI', () => {
       await new Promise((resolve) => setTimeout(resolve, 0));
 
       // Check that alert was shown
-      expect(alertSpy).toHaveBeenCalledWith(
+      expect(toast.showError).toHaveBeenCalledWith(
         'Popup-Blocker verhindert das Drucken. Bitte erlauben Sie Popups für diese Seite.'
       );
 
       windowOpenSpy.mockRestore();
-      alertSpy.mockRestore();
     });
   });
 });

@@ -13,6 +13,7 @@ import {
 } from '../data/api.js';
 import { createButton } from './components/button.js';
 import { Modal } from './components/modal.js';
+import { showError, showSuccess } from './components/toast.js';
 
 let stores: Store[] = [];
 let selectedStoreId: number | null = null;
@@ -276,17 +277,17 @@ async function handleSaveProduct(): Promise<void> {
   const fresh = freshCheckbox?.checked || false;
 
   if (!name) {
-    alert('Bitte Produktname eingeben');
+    showError('Bitte Produktname eingeben');
     return;
   }
 
   if (!departmentId) {
-    alert('Bitte Abteilung auswählen');
+    showError('Bitte Abteilung auswählen');
     return;
   }
 
   if (!selectedStoreId) {
-    alert('Kein Geschäft ausgewählt');
+    showError('Kein Geschäft ausgewählt');
     return;
   }
 
@@ -304,8 +305,9 @@ async function handleSaveProduct(): Promise<void> {
         editingProductId = null;
         await loadProducts(selectedStoreId);
         renderUI();
+        showSuccess('Produkt erfolgreich aktualisiert');
       } else {
-        alert('Fehler beim Aktualisieren des Produkts');
+        showError('Fehler beim Aktualisieren des Produkts');
       }
     } else {
       // Create new product
@@ -313,13 +315,14 @@ async function handleSaveProduct(): Promise<void> {
       if (result) {
         await loadProducts(selectedStoreId);
         renderUI();
+        showSuccess('Produkt erfolgreich erstellt');
       } else {
-        alert('Fehler beim Erstellen des Produkts');
+        showError('Fehler beim Erstellen des Produkts');
       }
     }
   } catch (error) {
     console.error('Error saving product:', error);
-    alert('Fehler beim Speichern des Produkts');
+    showError('Fehler beim Speichern des Produkts');
   }
 }
 
@@ -380,12 +383,13 @@ async function handleDeleteProduct(productId: number): Promise<void> {
             await loadProducts(selectedStoreId);
             renderUI();
           }
+          showSuccess('Produkt erfolgreich gelöscht');
         } else {
-          alert('Fehler beim Löschen des Produkts');
+          showError('Fehler beim Löschen des Produkts');
         }
       } catch (error) {
         console.error('Error deleting product:', error);
-        alert('Fehler beim Löschen des Produkts');
+        showError('Fehler beim Löschen des Produkts');
       }
     },
   });

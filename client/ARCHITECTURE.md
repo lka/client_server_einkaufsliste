@@ -394,9 +394,105 @@ The shopping list client is a TypeScript application built with a **four-layer a
   removeOverlay();
   ```
 
+##### dropdown.ts
+- **Exports**:
+  - `createDropdown(options)`: Create dropdown/select component
+  - `injectDropdownStyles()`: Inject dropdown CSS
+  - `DropdownInstance` interface: `{ container, select, getValue, setValue, setOptions, setDisabled }`
+- **Features**:
+  - Native select mode (simple dropdown)
+  - Searchable mode (custom dropdown with filter)
+  - Fuzzy search functionality
+  - Click-outside-to-close
+  - Disabled state support
+  - Placeholder support
+  - onChange callback
+- **Usage**:
+  ```typescript
+  import { createDropdown } from './ui/components/dropdown.js';
+
+  const dropdown = createDropdown({
+    options: [
+      { value: '1', label: 'Option 1' },
+      { value: '2', label: 'Option 2' }
+    ],
+    searchable: true,
+    placeholder: 'Select an option',
+    onChange: (value) => console.log('Selected:', value)
+  });
+  ```
+
+##### tabs.ts
+- **Exports**:
+  - `Tabs` class: Tab navigation component
+  - `injectTabsStyles()`: Inject tabs CSS
+- **Features**:
+  - Tab switching with keyboard support
+  - Fade-in animations on tab change
+  - Disabled tab support
+  - ARIA attributes for accessibility
+  - Dynamic content updates
+  - onChange callback
+- **Methods**: `getElement()`, `getActiveTab()`, `setActiveTab()`, `setTabs()`, `updateTabContent()`, `setTabDisabled()`
+- **Usage**:
+  ```typescript
+  import { Tabs } from './ui/components/tabs.js';
+
+  const tabs = new Tabs({
+    tabs: [
+      { id: 'tab1', label: 'Tab 1', content: 'Content 1' },
+      { id: 'tab2', label: 'Tab 2', content: 'Content 2' }
+    ],
+    activeTab: 'tab1',
+    onChange: (tabId) => console.log('Tab changed:', tabId)
+  });
+  document.body.appendChild(tabs.getElement());
+  ```
+
+##### toast.ts
+- **Exports**:
+  - `showSuccess(message, duration?)`: Show success toast
+  - `showError(message, duration?)`: Show error toast
+  - `showWarning(message, duration?)`: Show warning toast
+  - `showInfo(message, duration?)`: Show info toast
+  - `showToast(options)`: Show custom toast
+  - `dismissToast(id)`: Dismiss specific toast
+  - `dismissAllToasts()`: Dismiss all toasts
+  - `injectToastStyles()`: Inject toast CSS
+- **Features**:
+  - 4 toast types: success, error, warning, info
+  - 6 position options (top/bottom × left/center/right)
+  - Auto-dismiss with configurable duration
+  - Manual dismiss with X button
+  - Toast stacking (multiple toasts)
+  - Icons for each type (✓, ✕, ⚠, ℹ)
+  - ARIA live regions for accessibility
+  - Responsive mobile design
+  - **Replaces all alert() calls** throughout the application
+- **Usage**:
+  ```typescript
+  import { showSuccess, showError } from './ui/components/toast.js';
+
+  // Simple usage
+  showSuccess('Product saved successfully!');
+  showError('Failed to delete item', 5000); // 5 second duration
+
+  // Advanced usage
+  import { showToast } from './ui/components/toast.js';
+
+  const toastId = showToast({
+    message: 'Custom notification',
+    type: 'warning',
+    duration: 4000,
+    position: 'bottom-right',
+    dismissible: true,
+    onClose: () => console.log('Toast closed')
+  });
+  ```
+
 ##### index.ts
 - **Purpose**: Central export point for all components
-- **Exports**: All components and their types
+- **Exports**: All components and their types (8 components total)
 - **Functions**:
   - `initializeComponents()`: Inject all component styles at once (idempotent)
 - **Usage**:
@@ -453,17 +549,19 @@ The shopping list client is a TypeScript application built with a **four-layer a
 - **Modal Dialogs**:
   - **Uses Modal Component**: Department selection dialog with Modal component
   - **Uses Button Component**: Department buttons with consistent styling
+  - **Uses Toast Component**: Replaces all alert() calls with toast notifications
   - Keyboard support (Escape key), backdrop click to close
   - Auto-close on selection
 - **Component Integration**:
   - `Modal` from component library for department selection
   - `createButton` for department option buttons
+  - `showError` and `showSuccess` for notifications
   - Consistent styling and behavior across dialogs
 - **Dependencies**:
   - `../state/shopping-list-state.js`: State management
   - `../data/dom.js`: renderItems (called by subscription)
   - `../data/api.js`: fetchDepartments, convertItemToProduct
-  - `./components/modal.js`, `./components/button.js`: UI components
+  - `./components/modal.js`, `./components/button.js`, `./components/toast.js`: UI components
 
 #### user-menu.ts
 - **Responsibility**: User menu feature UI
@@ -488,6 +586,7 @@ The shopping list client is a TypeScript application built with a **four-layer a
 - **Component Integration**:
   - **Modal Component**: Delete confirmations with styled danger/cancel buttons
   - **Button Component**: Consistent button styling for all actions
+  - **Toast Component**: Replaces all alert() calls with toast notifications
   - Modal-based confirmations replace browser `confirm()` dialogs
 - **Features**:
   - Store selection dropdown
@@ -496,24 +595,27 @@ The shopping list client is a TypeScript application built with a **four-layer a
   - Product deletion with confirmation modal
   - Products grouped by department
   - Fresh product indicator
+  - Success/error toast notifications for all operations
 - **Dependencies**:
   - `../data/api.js`: Product CRUD operations
-  - `./components/modal.js`, `./components/button.js`: UI components
+  - `./components/modal.js`, `./components/button.js`, `./components/toast.js`: UI components
 
 #### store-admin.ts
 - **Responsibility**: Store and department administration UI
 - **Component Integration**:
   - **Modal Component**: Delete confirmations for stores and departments
   - **Button Component**: Danger/cancel buttons with consistent styling
+  - **Toast Component**: Replaces all alert() calls with toast notifications
   - All confirmations use Modal component instead of browser dialogs
 - **Features**:
   - Store creation and deletion
   - Department creation and deletion
   - Department reordering (up/down arrows)
   - Inline edit for store and department names
+  - Success/error toast notifications for all operations
 - **Dependencies**:
   - `../data/api.js`: Store and department CRUD operations
-  - `./components/modal.js`, `./components/button.js`: UI components
+  - `./components/modal.js`, `./components/button.js`, `./components/toast.js`: UI components
 
 #### user-admin.ts
 - **Responsibility**: User administration UI for managing user accounts
@@ -869,7 +971,7 @@ src/pages/
 
 ### Current Coverage
 - **451 tests total** (19 test suites)
-- **98.5%+ overall code coverage**
+- **85%+ overall code coverage**
 - All critical paths tested
 
 ### Test Breakdown by Layer
@@ -882,11 +984,19 @@ src/pages/
   - user-state.ts: 100% coverage (24 tests)
   - store-state.ts: 100% coverage (34 tests including CRUD operations)
 - **UI Layer**: 47 tests (98%+ coverage)
-  - shopping-list-ui.ts: 97% coverage (14 tests)
+  - shopping-list-ui.ts: 97% coverage (35 tests including edit/clear/print features)
   - user-menu.ts: 100% coverage (16 tests)
   - button.ts: 100% coverage (17 tests)
+  - product-admin.ts: Tests updated for Toast notifications
+  - store-admin.ts: Tests updated for Toast notifications
 - **Pages Layer**: 20 tests (100% coverage)
   - login.ts: 100% coverage
+
+### Component Library
+- **8 components**: Button, Modal, Card, Input, Loading, Dropdown, Tabs, Toast
+- **New Components (Dropdown, Tabs, Toast)**: Fully implemented with TypeScript types and style injection
+- **Toast Integration**: All alert() calls replaced with Toast notifications across product-admin, store-admin, and shopping-list-ui
+- **Test Coverage**: All tests updated to expect Toast notifications instead of alert() calls (17 test files updated)
 
 ---
 
@@ -937,13 +1047,13 @@ src/pages/
 ### Potential Improvements
 1. ~~**State Management**: Add centralized state (e.g., observables)~~ ✅ **IMPLEMENTED** - Observer pattern with shopping-list-state, user-state, and store-state
 2. ~~**Store State**: Extend state management to stores, departments, and products~~ ✅ **IMPLEMENTED** - Full CRUD operations in store-state
-3. ~~**Component Library**: Reusable UI components~~ ✅ **IMPLEMENTED** - Button, Modal, Card, Input, Loading components
-4. ~~**Component Integration**: Use components across application~~ ✅ **IMPLEMENTED** - Modal and Button components used in product-admin, store-admin, and shopping-list-ui
-5. **Offline Support**: Service worker for PWA
-6. **Real-time Updates**: WebSocket integration
-7. **More UI Modules**: Search, filters, categories
-8. **Additional Components**: Extend component library (Dropdown, Tabs, Toast notifications)
-9. **Replace remaining alerts**: Convert remaining `alert()` calls to Toast notifications
+3. ~~**Component Library**: Reusable UI components~~ ✅ **IMPLEMENTED** - 8 components: Button, Modal, Card, Input, Loading, Dropdown, Tabs, Toast
+4. ~~**Component Integration**: Use components across application~~ ✅ **IMPLEMENTED** - Modal, Button, and Toast components used throughout the application
+5. ~~**Additional Components**: Extend component library~~ ✅ **IMPLEMENTED** - Dropdown (native & searchable), Tabs, Toast notifications
+6. ~~**Replace alert() calls**: Convert to Toast notifications~~ ✅ **IMPLEMENTED** - All alert() calls replaced with Toast in product-admin, store-admin, and shopping-list-ui
+7. **Offline Support**: Service worker for PWA
+8. **Real-time Updates**: WebSocket integration
+9. **More UI Modules**: Search, filters, categories
 
 ### Architecture Evolution
 - Previous: 3-layer architecture (Data → UI → Pages)

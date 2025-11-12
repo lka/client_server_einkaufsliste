@@ -13,6 +13,7 @@ import {
 } from '../data/api.js';
 import { Modal } from './components/modal.js';
 import { createButton } from './components/button.js';
+import { showError, showSuccess } from './components/toast.js';
 
 // Current selected store ID (null = all stores)
 let selectedStoreId: number | null = null;
@@ -22,7 +23,7 @@ let selectedStoreId: number | null = null;
  */
 async function handleEditItem(itemId: string): Promise<void> {
   if (!selectedStoreId) {
-    alert('Bitte wählen Sie ein Geschäft aus, um eine Abteilung zuzuweisen.');
+    showError('Bitte wählen Sie ein Geschäft aus, um eine Abteilung zuzuweisen.');
     return;
   }
 
@@ -30,7 +31,7 @@ async function handleEditItem(itemId: string): Promise<void> {
   const departments = await fetchDepartments(selectedStoreId);
 
   if (!departments || departments.length === 0) {
-    alert('Keine Abteilungen für dieses Geschäft vorhanden.');
+    showError('Keine Abteilungen für dieses Geschäft vorhanden.');
     return;
   }
 
@@ -45,8 +46,9 @@ async function handleEditItem(itemId: string): Promise<void> {
       // Reload items to reflect changes
       await shoppingListState.loadItems();
       // UI updates automatically via state subscription
+      showSuccess('Produkt erfolgreich zugewiesen');
     } else {
-      alert('Fehler beim Zuweisen der Abteilung.');
+      showError('Fehler beim Zuweisen der Abteilung.');
     }
   }
 }
@@ -60,7 +62,7 @@ function showPrintPreview(): Promise<boolean> {
     const filteredItems = filterItemsByStore(items);
 
     if (filteredItems.length === 0) {
-      alert('Keine Einträge zum Drucken vorhanden.');
+      showError('Keine Einträge zum Drucken vorhanden.');
       resolve(false);
       return;
     }
@@ -405,7 +407,7 @@ function showPrintPreview(): Promise<boolean> {
 function printPreviewContent(frontContent: string, backContent: string, storeName: string, hideDepartments: boolean = false): void {
   const printWindow = window.open('', '_blank');
   if (!printWindow) {
-    alert('Popup-Blocker verhindert das Drucken. Bitte erlauben Sie Popups für diese Seite.');
+    showError('Popup-Blocker verhindert das Drucken. Bitte erlauben Sie Popups für diese Seite.');
     return;
   }
 
@@ -750,7 +752,7 @@ export function initShoppingListUI(): void {
     clearStoreBtn.addEventListener('click', async () => {
       // Only allow clearing if a specific store is selected
       if (selectedStoreId === null) {
-        alert('Bitte wählen Sie ein spezifisches Geschäft aus, um dessen Liste zu leeren.');
+        showError('Bitte wählen Sie ein spezifisches Geschäft aus, um dessen Liste zu leeren.');
         return;
       }
 
@@ -776,7 +778,7 @@ export function initShoppingListUI(): void {
       clearStoreBtn.disabled = false;
 
       if (!success) {
-        alert('Fehler beim Löschen der Einträge.');
+        showError('Fehler beim Löschen der Einträge.');
       }
       // UI updates automatically via state subscription on success
     });

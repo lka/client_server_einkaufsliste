@@ -17,6 +17,7 @@ import {
 import type { Store } from '../data/api.js';
 import { Modal } from './components/modal.js';
 import { createButton } from './components/button.js';
+import { showError, showSuccess } from './components/toast.js';
 
 /**
  * Initialize the store admin UI.
@@ -146,7 +147,7 @@ function attachStoreAdminListeners(): void {
       const location = locationInput.value.trim();
 
       if (!name) {
-        alert('Bitte geben Sie einen Geschäftsnamen ein.');
+        showError('Bitte geben Sie einen Geschäftsnamen ein.');
         return;
       }
 
@@ -155,8 +156,9 @@ function attachStoreAdminListeners(): void {
         nameInput.value = '';
         locationInput.value = '';
         await loadStores();
+        showSuccess('Geschäft erfolgreich erstellt');
       } else {
-        alert('Fehler beim Erstellen des Geschäfts. Existiert es bereits?');
+        showError('Fehler beim Erstellen des Geschäfts. Existiert es bereits?');
       }
     });
   }
@@ -224,7 +226,7 @@ function attachDynamicListeners(): void {
       if (success1 && success2) {
         await loadStores();
       } else {
-        alert('Fehler beim Ändern der Reihenfolge.');
+        showError('Fehler beim Ändern der Reihenfolge.');
       }
     });
   });
@@ -266,8 +268,9 @@ function attachDynamicListeners(): void {
           if (success) {
             modal.close();
             await loadStores();
+            showSuccess('Geschäft erfolgreich gelöscht');
           } else {
-            alert('Fehler beim Löschen des Geschäfts.');
+            showError('Fehler beim Löschen des Geschäfts.');
           }
         },
       });
@@ -292,7 +295,7 @@ function attachDynamicListeners(): void {
 
       const name = input.value.trim();
       if (!name) {
-        alert('Bitte geben Sie einen Abteilungsnamen ein.');
+        showError('Bitte geben Sie einen Abteilungsnamen ein.');
         return;
       }
 
@@ -300,8 +303,9 @@ function attachDynamicListeners(): void {
       if (newDepartment) {
         input.value = '';
         await loadStores();
+        showSuccess('Abteilung erfolgreich erstellt');
       } else {
-        alert('Fehler beim Erstellen der Abteilung.');
+        showError('Fehler beim Erstellen der Abteilung.');
       }
     });
   });
@@ -343,8 +347,9 @@ function attachDynamicListeners(): void {
           if (success) {
             modal.close();
             await loadStores();
+            showSuccess('Abteilung erfolgreich gelöscht');
           } else {
-            alert('Fehler beim Löschen der Abteilung.');
+            showError('Fehler beim Löschen der Abteilung.');
           }
         },
       });
@@ -408,7 +413,7 @@ function attachDynamicListeners(): void {
       if (success1 && success2) {
         await loadStores();
       } else {
-        alert('Fehler beim Ändern der Reihenfolge.');
+        showError('Fehler beim Ändern der Reihenfolge.');
       }
     });
   });

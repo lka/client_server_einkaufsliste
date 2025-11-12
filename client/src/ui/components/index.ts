@@ -11,6 +11,9 @@ import { injectModalStyles } from './modal.js';
 import { injectCardStyles } from './card.js';
 import { injectInputStyles } from './input.js';
 import { injectLoadingStyles } from './loading.js';
+import { injectDropdownStyles } from './dropdown.js';
+import { injectTabsStyles } from './tabs.js';
+import { injectToastStyles } from './toast.js';
 
 // Button
 export {
@@ -61,6 +64,38 @@ export {
 } from './loading.js';
 export { injectLoadingStyles } from './loading.js';
 
+// Dropdown
+export {
+  createDropdown,
+  type DropdownOptions,
+  type DropdownOption,
+  type DropdownInstance,
+} from './dropdown.js';
+export { injectDropdownStyles } from './dropdown.js';
+
+// Tabs
+export {
+  Tabs,
+  type TabsOptions,
+  type TabItem,
+} from './tabs.js';
+export { injectTabsStyles } from './tabs.js';
+
+// Toast
+export {
+  showSuccess,
+  showError,
+  showWarning,
+  showInfo,
+  showToast,
+  dismissToast,
+  dismissAllToasts,
+  type ToastOptions,
+  type ToastType,
+  type ToastPosition,
+} from './toast.js';
+export { injectToastStyles } from './toast.js';
+
 /**
  * Initialize all component styles.
  *
@@ -75,4 +110,7 @@ export function initializeComponents(): void {
   injectCardStyles();
   injectInputStyles();
   injectLoadingStyles();
+  injectDropdownStyles();
+  injectTabsStyles();
+  injectToastStyles();
 }

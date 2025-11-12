@@ -67,7 +67,21 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - "Zucker 500 g, 2 Packungen" + "Zucker 300 g" = "Zucker 800 g, 2 Packungen"
     - "Reis 500 g" + "2, 300 g" = "Reis 800 g, 2"
 - ✅ **Reaktive UI**: Automatische UI-Updates durch State-Management mit Observer Pattern
-- ✅ **Vollständige Tests**: 442 Tests (53 Server + 389 Client) mit 97%+ Code-Abdeckung
+- ✅ **Component Library**: Wiederverwendbare UI-Komponenten mit konsistentem Design
+  - **Button**: Konfigurierbare Buttons (primary, secondary, danger) mit verschiedenen Größen
+  - **Modal**: Modale Dialoge mit Backdrop und Animationen
+  - **Card**: Content-Cards mit optionalen Aktionen
+  - **Input**: Formular-Inputs mit Validierung und Fehleranzeige
+  - **Loading**: Spinner, Overlay und Skeleton-Loader
+  - **Dropdown**: Native und durchsuchbare Dropdown-Menüs mit Fuzzy-Search
+  - **Tabs**: Tab-Navigation für organisierte Content-Bereiche
+  - **Toast**: Nicht-blockierende Benachrichtigungen (success, error, warning, info)
+    - Ersetzt alle `alert()` Aufrufe für bessere UX
+    - Auto-Dismiss mit konfigurierbarer Dauer
+    - Positionierbar (top/bottom, left/center/right)
+    - Dismissible mit X-Button
+    - Stacking von mehreren Toasts
+- ✅ **Vollständige Tests**: 451 Tests (63 Server + 388 Client) mit 85%+ Code-Abdeckung
 - ✅ **TypeScript Client**: Typsicherer Client mit vier-Schichten-Architektur
 - ✅ **FastAPI Server**: Moderne Python API mit SQLModel ORM
 - ✅ **Benutzer-Verwaltung**: Freischaltungs-System für neue Benutzer
@@ -128,13 +142,23 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
 │   │   │   ├── auth.ts           # Authentication utilities
 │   │   │   ├── dom.ts            # DOM utilities
 │   │   │   └── dom.test.ts       # DOM tests
+│   │   ├── ui/                   # UI layer (feature-specific UI modules)
+│   │   │   ├── components/       # Reusable UI component library
+│   │   │   │   ├── button.ts     # Button component
+│   │   │   │   ├── modal.ts      # Modal dialog component
+│   │   │   │   ├── card.ts       # Card component
+│   │   │   │   ├── input.ts      # Input component with validation
+│   │   │   │   ├── loading.ts    # Loading spinner and skeleton components
+│   │   │   │   ├── dropdown.ts   # Dropdown/select component (native & searchable)
+│   │   │   │   ├── tabs.ts       # Tab navigation component
+│   │   │   │   ├── toast.ts      # Toast notification system
+│   │   │   │   └── index.ts      # Component library exports & initialization
 │   │   ├── state/                # State layer (state management)
 │   │   │   ├── shopping-list-state.ts      # Shopping list state manager
 │   │   │   ├── shopping-list-state.test.ts # State tests
 │   │   │   ├── store-state.ts              # Store/product state manager
 │   │   │   ├── user-state.ts               # User state manager
 │   │   │   └── user-state.test.ts          # State tests
-│   │   ├── ui/                   # UI layer (feature-specific UI modules)
 │   │   │   ├── shopping-list-ui.ts   # Shopping list UI module
 │   │   │   ├── store-browser.ts      # Store/product browser UI module
 │   │   │   ├── store-admin.ts        # Store administration UI (CRUD)

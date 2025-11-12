@@ -4,9 +4,17 @@
 
 import { initStoreAdmin } from './store-admin';
 import * as api from '../data/api';
+import * as toast from './components/toast.js';
 
 // Mock the API module
 jest.mock('../data/api');
+
+// Mock the toast module
+jest.mock('./components/toast.js', () => ({
+  showError: jest.fn(),
+  showSuccess: jest.fn(),
+  injectToastStyles: jest.fn(),
+}));
 
 // Mock the components
 let mockModalOnClick: (() => void) | null = null;
@@ -66,8 +74,6 @@ describe('Store Admin', () => {
     // Reset mocks
     jest.clearAllMocks();
 
-    // Mock window.alert
-    global.alert = jest.fn();
     // Mock window.confirm
     global.confirm = jest.fn(() => true);
   });
@@ -165,7 +171,7 @@ describe('Store Admin', () => {
 
       await new Promise(resolve => setTimeout(resolve, 0));
 
-      expect(global.alert).toHaveBeenCalledWith('Bitte geben Sie einen Geschäftsnamen ein.');
+      expect(toast.showError).toHaveBeenCalledWith('Bitte geben Sie einen Geschäftsnamen ein.');
       expect(api.createStore).not.toHaveBeenCalled();
     });
 
@@ -183,7 +189,7 @@ describe('Store Admin', () => {
       await new Promise(resolve => setTimeout(resolve, 0));
 
       expect(api.createStore).toHaveBeenCalledWith('New Store', 'Location');
-      expect(global.alert).toHaveBeenCalledWith('Fehler beim Erstellen des Geschäfts. Existiert es bereits?');
+      expect(toast.showError).toHaveBeenCalledWith('Fehler beim Erstellen des Geschäfts. Existiert es bereits?');
     });
 
     it('should delete a store', async () => {
@@ -219,7 +225,7 @@ describe('Store Admin', () => {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
 
-      expect(global.alert).toHaveBeenCalledWith('Fehler beim Löschen des Geschäfts.');
+      expect(toast.showError).toHaveBeenCalledWith('Fehler beim Löschen des Geschäfts.');
     });
 
     it('should not delete store when user cancels confirmation', async () => {
@@ -276,7 +282,7 @@ describe('Store Admin', () => {
 
       await new Promise(resolve => setTimeout(resolve, 0));
 
-      expect(global.alert).toHaveBeenCalledWith('Bitte geben Sie einen Abteilungsnamen ein.');
+      expect(toast.showError).toHaveBeenCalledWith('Bitte geben Sie einen Abteilungsnamen ein.');
       expect(api.createDepartment).not.toHaveBeenCalled();
     });
 
@@ -292,7 +298,7 @@ describe('Store Admin', () => {
       await new Promise(resolve => setTimeout(resolve, 0));
 
       expect(api.createDepartment).toHaveBeenCalledWith(1, 'New Dept');
-      expect(global.alert).toHaveBeenCalledWith('Fehler beim Erstellen der Abteilung.');
+      expect(toast.showError).toHaveBeenCalledWith('Fehler beim Erstellen der Abteilung.');
     });
 
     it('should delete a department', async () => {
@@ -328,7 +334,7 @@ describe('Store Admin', () => {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
 
-      expect(global.alert).toHaveBeenCalledWith('Fehler beim Löschen der Abteilung.');
+      expect(toast.showError).toHaveBeenCalledWith('Fehler beim Löschen der Abteilung.');
     });
 
     it('should not delete department when user cancels confirmation', async () => {
@@ -435,7 +441,7 @@ describe('Store Admin', () => {
 
       await new Promise(resolve => setTimeout(resolve, 0));
 
-      expect(global.alert).toHaveBeenCalledWith('Fehler beim Ändern der Reihenfolge.');
+      expect(toast.showError).toHaveBeenCalledWith('Fehler beim Ändern der Reihenfolge.');
     });
 
     it('should not reorder if only one department exists', async () => {
