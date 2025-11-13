@@ -53,6 +53,15 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - CRUD-Operationen: Erstellen, Bearbeiten, Löschen von Templates
     - Template-Items werden inline angezeigt: "Artikel (Menge)"
     - "Speichern"-Button nur aktiv wenn mindestens ein Artikel vorhanden ist
+  - **Datenbank-Backup & Restore**: Vollständige Datensicherung und Wiederherstellung
+    - **JSON-basiertes Backup**: Strukturunabhängig, funktioniert über Software-Updates hinweg
+    - **Vollständige Datensicherung**: Alle Datenbank-Inhalte (Benutzer, Geschäfte, Produkte, Templates, Einkaufsliste)
+    - **Einfacher Download**: Backup wird als JSON-Datei heruntergeladen
+    - **Validierte Wiederherstellung**: Automatische Format-Validierung vor Restore
+    - **Dedizierte Verwaltungsseite**: Unter `/backup` mit Information und Best Practices
+    - **Versionsinformationen**: Backup enthält Version und Zeitstempel
+    - **Sichere Operation**: Warnung vor Datenverlust, Bestätigungsdialog erforderlich
+    - Navigation über Benutzermenü: "💾 Datenbank-Backup"
 - ✅ **Store-Verwaltung**: Dedizierte Admin-Seite für Geschäfte und Abteilungen
   - **CRUD-Operationen**: Erstellen, Bearbeiten und Löschen von Stores und Departments
   - **Geschäfts-Sortierung**: Reihenfolge der Geschäfte mit ↑↓ Buttons ändern
@@ -530,6 +539,19 @@ Die Anwendung verwendet **JWT (JSON Web Tokens)** für sichere Authentifizierung
   - Items-Update ersetzt alle vorhandenen Items (nicht inkrementell)
 - `DELETE /api/templates/{id}` - Template löschen
   - Cascading Delete: Löscht automatisch alle zugehörigen TemplateItems
+
+**Database Backup & Restore (alle authentifiziert):**
+- `GET /api/backup` - Vollständiges Datenbank-Backup erstellen
+  - Response: JSON mit allen Datenbank-Tabellen (users, stores, departments, products, items, templates)
+  - Enthält Version und Zeitstempel für Kompatibilität
+  - Strukturunabhängig - funktioniert über Software-Updates hinweg
+- `POST /api/backup/restore?clear_existing=true` - Datenbank aus Backup wiederherstellen
+  - Body: Backup-JSON (gleiche Struktur wie GET Response)
+  - Query Parameter: `clear_existing` (default: true) - Vorhandene Daten vor Restore löschen
+  - Validiert Backup-Format und Version vor Wiederherstellung
+  - Transaktional - bei Fehler wird Rollback durchgeführt
+  - Response: Anzahl wiederhergestellter Einträge pro Tabelle
+  - **WARNUNG**: Löscht alle vorhandenen Daten wenn `clear_existing=true`
 
 ## Code-Qualität
 

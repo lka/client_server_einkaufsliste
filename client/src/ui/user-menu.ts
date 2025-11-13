@@ -37,6 +37,7 @@ export function initUserMenu(): void {
   const manageProductsBtn = document.getElementById('manageProductsBtn');
   const manageTemplatesBtn = document.getElementById('manageTemplatesBtn');
   const manageUsersBtn = document.getElementById('manageUsersBtn');
+  const manageBackupBtn = document.getElementById('manageBackupBtn');
   const logoutBtn = document.getElementById('logoutBtn');
 
   if (!menuBtn || !menuDropdown) {
@@ -92,6 +93,13 @@ export function initUserMenu(): void {
   if (manageUsersBtn) {
     manageUsersBtn.addEventListener('click', () => {
       window.location.href = '/users';
+    });
+  }
+
+  // Manage backup button handler
+  if (manageBackupBtn) {
+    manageBackupBtn.addEventListener('click', () => {
+      window.location.href = '/backup';
     });
   }
 

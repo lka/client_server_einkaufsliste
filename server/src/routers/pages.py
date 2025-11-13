@@ -46,6 +46,13 @@ def serve_templates_page():
     return FileResponse(templates_file)
 
 
+@router.get("/backup")
+def serve_backup_page():
+    """Serve the database backup management page."""
+    backup_file = os.path.join(CLIENT_DIR, "index-backup.html")
+    return FileResponse(backup_file)
+
+
 @router.get("/favicon.{ext}")
 def serve_favicon(ext: str):
     """Serve the favicon file (svg or ico)."""

@@ -12,7 +12,7 @@ from fastapi import FastAPI
 from starlette.staticfiles import StaticFiles
 
 from .db import get_engine, create_db_and_tables
-from .routers import auth, users, stores, products, items, pages, templates
+from .routers import auth, users, stores, products, items, pages, templates, backup
 from .routers.stores import departments_router
 
 
@@ -74,6 +74,7 @@ app.include_router(departments_router)
 app.include_router(products.router)
 app.include_router(items.router)
 app.include_router(templates.router)
+app.include_router(backup.router)
 app.include_router(pages.router)
 
 # Mount client static files (index.html at root)

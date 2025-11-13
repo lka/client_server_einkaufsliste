@@ -1,0 +1,70 @@
+<header>
+  <h1>Datenbank-Verwaltung</h1>
+  <div class="header-actions">
+    <button id="backToAppBtn" class="back-btn" aria-label="Zurück zur Einkaufsliste">← Zurück</button>
+    <div class="user-menu">
+      <button id="menuBtn" class="menu-btn" aria-label="Benutzermenü">⋮</button>
+      <div id="menuDropdown" class="menu-dropdown">
+        <button id="manageStoresBtn" class="menu-item">🏪 Geschäfte verwalten</button>
+        <button id="manageProductsBtn" class="menu-item">📦 Produkte verwalten</button>
+        <button id="manageTemplatesBtn" class="menu-item">📋 Templates verwalten</button>
+        <button id="manageUsersBtn" class="menu-item">👥 Benutzer verwalten</button>
+        <button id="manageBackupBtn" class="menu-item">💾 Datenbank-Backup</button>
+        <button id="logoutBtn" class="menu-item">🚪 Abmelden</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="backup-container">
+    <!-- Info Section -->
+    <section class="backup-info-section">
+      <h2>ℹ️ Information</h2>
+      <div class="info-box">
+        <p><strong>Backup-Funktion:</strong></p>
+        <ul>
+          <li>Erstellt eine JSON-Datei mit allen Datenbank-Inhalten</li>
+          <li>Strukturunabhängig - funktioniert auch nach Software-Updates</li>
+          <li>Enthält: Benutzer, Geschäfte, Abteilungen, Produkte, Einkaufsliste, Templates</li>
+        </ul>
+        <p><strong>Restore-Funktion:</strong></p>
+        <ul>
+          <li>Stellt Daten aus einer Backup-Datei wieder her</li>
+          <li><span style="color: red; font-weight: bold;">⚠️ WARNUNG:</span> Löscht alle vorhandenen Daten!</li>
+          <li>Validiert das Backup-Format vor der Wiederherstellung</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Backup Actions -->
+    <section class="backup-actions-section">
+      <h2>Aktionen</h2>
+      <div id="backupActions" class="backup-actions">
+        <!-- Buttons will be created dynamically -->
+      </div>
+
+      <!-- Hidden file input for restore -->
+      <input type="file" id="restoreFileInput" accept=".json" style="display: none;" />
+
+      <!-- Backup info display -->
+      <div id="backupInfo" class="backup-info-display">
+        <!-- Will be populated after creating a backup -->
+      </div>
+    </section>
+
+    <!-- Best Practices Section -->
+    <section class="best-practices-section">
+      <h2>💡 Empfehlungen</h2>
+      <div class="info-box">
+        <ul>
+          <li><strong>Regelmäßige Backups:</strong> Erstellen Sie vor größeren Änderungen ein Backup</li>
+          <li><strong>Sichere Aufbewahrung:</strong> Speichern Sie Backups an einem sicheren Ort (z.B. Cloud, USB-Stick)</li>
+          <li><strong>Vor Updates:</strong> Erstellen Sie immer ein Backup vor Software-Updates</li>
+          <li><strong>Test-Restore:</strong> Testen Sie gelegentlich die Wiederherstellung in einer Testumgebung</li>
+          <li><strong>Mehrere Versionen:</strong> Behalten Sie mehrere Backup-Versionen (z.B. täglich, wöchentlich)</li>
+        </ul>
+      </div>
+    </section>
+  </div>
+</main>
