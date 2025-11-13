@@ -78,7 +78,7 @@ The shopping list client is a TypeScript application built with a **four-layer a
   - `fetchItems()`: Get all shopping list items
   - `addItem(name, menge?, storeId?, shoppingDate?)`: Add a new item with optional shopping date
   - `deleteItem(id)`: Remove an item
-  - `deleteStoreItems(storeId)`: Delete all items for a store
+  - `deleteItemsBeforeDate(beforeDate, storeId?)`: Delete items before a specific date, optionally filtered by store
   - `convertItemToProduct(itemId, departmentId)`: Convert item to product with department assignment
   - `fetchStores()`: Get all stores
   - `fetchDepartments(storeId)`: Get departments for a store
@@ -570,6 +570,7 @@ The shopping list client is a TypeScript application built with a **four-layer a
   - `loadItems()`: Trigger state to load items
   - `handleEditItem(itemId)`: Handle edit button click for "Sonstiges" items
   - `showDepartmentSelectionDialog(departments)`: Show modal dialog for department selection
+  - `showDeleteByDateDialog()`: Show modal dialog for deleting items before a selected date
 - **State Integration**:
   - Subscribes to `shoppingListState` for automatic UI updates
   - UI re-renders automatically when state changes
@@ -580,12 +581,13 @@ The shopping list client is a TypeScript application built with a **four-layer a
   - Format: German date format (dd.MM.yyyy)
   - Date is sent in ISO format (YYYY-MM-DD) to the server
   - DatePicker clears after adding item
+  - Also used in delete-by-date modal for date selection
 - **Event Handlers**:
   - Add button click → `shoppingListState.addItem(name, menge, storeId, shoppingDate)`
   - Enter key for adding items
   - Delete button click (event delegation) → `shoppingListState.deleteItem()`
   - Edit button click (event delegation) → `handleEditItem()` → Department selection dialog
-  - Clear store button → `shoppingListState.deleteStoreItems()`
+  - Delete by date button → `showDeleteByDateDialog()` → DatePicker modal → `deleteItemsBeforeDate()`
 - **Event Delegation Pattern**:
   - Single click listener attached to `<ul id="items">` parent
   - Checks `target.classList.contains('removeBtn')` to identify delete buttons
@@ -1018,7 +1020,7 @@ src/pages/
 - Test authentication flow
 
 ### Current Coverage
-- **451 tests total** (19 test suites)
+- **445 tests total** (19 test suites)
 - **85%+ overall code coverage**
 - All critical paths tested
 
@@ -1031,12 +1033,13 @@ src/pages/
   - shopping-list-state.ts: 100% coverage (35 tests)
   - user-state.ts: 100% coverage (24 tests)
   - store-state.ts: 100% coverage (34 tests including CRUD operations)
-- **UI Layer**: 47 tests (98%+ coverage)
-  - shopping-list-ui.ts: 97% coverage (35 tests including edit/clear/print features)
+- **UI Layer**: 87 tests (98%+ coverage)
+  - shopping-list-ui.ts: 97% coverage (29 tests including edit/delete-by-date/print features)
   - user-menu.ts: 100% coverage (16 tests)
   - button.ts: 100% coverage (17 tests)
-  - product-admin.ts: Tests updated for Toast notifications
-  - store-admin.ts: Tests updated for Toast notifications
+  - store-admin.ts: 100% coverage (27 tests)
+  - product-admin.ts: 100% coverage (15 tests)
+  - Tests updated for Toast notifications
 - **Pages Layer**: 20 tests (100% coverage)
   - login.ts: 100% coverage
 

@@ -3,7 +3,7 @@
  * Manages shopping list items state and provides observers for UI updates.
  */
 
-import { Item, fetchItems as apiFetchItems, addItem as apiAddItem, deleteItem as apiDeleteItem, deleteStoreItems as apiDeleteStoreItems } from '../data/api.js';
+import { Item, fetchItems as apiFetchItems, addItem as apiAddItem, deleteItem as apiDeleteItem } from '../data/api.js';
 
 type StateChangeListener = (items: Item[]) => void;
 
@@ -120,27 +120,6 @@ class ShoppingListState {
       return false;
     } catch (error) {
       console.error('Error deleting item in state:', error);
-      return false;
-    } finally {
-      this.loading = false;
-    }
-  }
-
-  /**
-   * Delete all items for a specific store via API and update state.
-   */
-  async deleteStoreItems(storeId: number): Promise<boolean> {
-    this.loading = true;
-    try {
-      const success = await apiDeleteStoreItems(storeId);
-      if (success) {
-        this.items = this.items.filter(item => item.store_id !== storeId);
-        this.notifyListeners();
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error('Error deleting store items in state:', error);
       return false;
     } finally {
       this.loading = false;

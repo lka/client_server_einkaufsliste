@@ -16,7 +16,7 @@ fuzzy matching, and similar item names are merged (e.g., "Möhre" merges with "M
 import uuid
 from typing import List
 from difflib import SequenceMatcher
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlmodel import select
 
 from ..models import Item, Product, Department
@@ -247,6 +247,50 @@ def delete_item(item_id: str, current_user: str = Depends(get_current_user)):
         return None
 
 
+@router.delete("/by-date/{before_date}")
+def delete_items_before_date(
+    before_date: str,
+    store_id: int | None = Query(None),
+    current_user: str = Depends(get_current_user),
+):
+    """Delete items with shopping_date before the specified date.
+
+    All authenticated users can delete items from the shared shopping list.
+
+    Args:
+        before_date (str): ISO date string (YYYY-MM-DD).
+            All items with shopping_date < before_date will be deleted.
+        store_id (int | None): Optional store ID to filter items.
+            If provided, only items from this store will be deleted.
+        current_user: Current authenticated username from JWT
+
+    Returns:
+        Number of deleted items
+    """
+    with get_session() as session:
+        # Verify user is authenticated
+        user = session.exec(select(User).where(User.username == current_user)).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Build query for items before the specified date
+        conditions = [Item.shopping_date.is_not(None), Item.shopping_date < before_date]
+
+        # Add store filter if provided
+        if store_id is not None:
+            conditions.append(Item.store_id == store_id)
+
+        query = select(Item).where(*conditions)
+        items_to_delete = session.exec(query).all()
+
+        count = len(items_to_delete)
+        for item in items_to_delete:
+            session.delete(item)
+
+        session.commit()
+        return {"deleted_count": count}
+
+
 @router.post("/{item_id}/convert-to-product", response_model=ItemWithDepartment)
 def convert_item_to_product(
     item_id: str,
@@ -334,37 +378,3 @@ def convert_item_to_product(
             department_name=dept.name if dept else None,
             department_sort_order=dept.sort_order if dept else None,
         )
-
-
-# Store-specific item endpoints
-stores_items_router = APIRouter(prefix="/api/stores", tags=["items"])
-
-
-@stores_items_router.delete("/{store_id}/items", status_code=204)
-def delete_store_items(store_id: int, current_user: str = Depends(get_current_user)):
-    """Delete all items for a specific store (requires authentication).
-
-    Deletes all items from the shared shopping list for the specified store.
-    All authenticated users can delete items from the shared list.
-
-    Args:
-        store_id: Store ID to delete items for
-        current_user: Current authenticated username from JWT
-
-    Returns:
-        None (204 No Content)
-    """
-    with get_session() as session:
-        # Verify user is authenticated
-        user = session.exec(select(User).where(User.username == current_user)).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-
-        # Delete all items for this store (from shared list)
-        items = session.exec(select(Item).where(Item.store_id == store_id)).all()
-
-        for item in items:
-            session.delete(item)
-
-        session.commit()
-        return None

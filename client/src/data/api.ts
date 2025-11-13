@@ -195,31 +195,41 @@ export async function deleteItem(id: string): Promise<boolean> {
 }
 
 /**
- * Delete all items for a specific store.
+ * Delete all items with shopping_date before the specified date.
+ * @param beforeDate - ISO date string (YYYY-MM-DD)
+ * @param storeId - Optional store ID to filter items
  */
-export async function deleteStoreItems(storeId: number): Promise<boolean> {
+export async function deleteItemsBeforeDate(beforeDate: string, storeId?: number): Promise<number> {
   const tokenRefreshed = await ensureFreshToken();
   if (!tokenRefreshed) {
     console.error('Token refresh failed');
-    return false;
+    return 0;
   }
 
   try {
-    const res = await fetch(`/api/stores/${storeId}/items`, {
+    // Build URL with optional store_id query parameter
+    const url = new URL(`${API_BASE}/by-date/${beforeDate}`);
+    if (storeId !== undefined) {
+      url.searchParams.append('store_id', storeId.toString());
+    }
+
+    const res = await fetch(url.toString(), {
       method: 'DELETE',
       headers: getAuthHeaders(),
     });
     if (res.status === 401) {
       handleUnauthorized();
-      return false;
+      return 0;
     }
     if (!res.ok) {
-      console.error('Failed to delete store items:', res.status, res.statusText);
+      console.error('Failed to delete items before date:', res.statusText);
+      return 0;
     }
-    return res.ok;
+    const result = await res.json();
+    return result.deleted_count || 0;
   } catch (error) {
-    console.error('Error deleting store items:', error);
-    return false;
+    console.error('Error deleting items before date:', error);
+    return 0;
   }
 }
 

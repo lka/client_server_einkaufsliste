@@ -390,62 +390,6 @@ def test_comma_separated_input():
     client.delete(f"/api/items/{first_id}", headers=headers)
 
 
-def test_delete_store_items():
-    """Test deleting all items for a specific store."""
-    # Get authentication token
-    token = get_auth_token()
-    headers = {"Authorization": f"Bearer {token}"}
-
-    # Get a store ID (should have seeded stores)
-    r = client.get("/api/stores", headers=headers)
-    assert r.status_code == 200
-    stores = r.json()
-    assert len(stores) > 0
-    store_id = stores[0]["id"]
-
-    # Create multiple items for this store (use unique names to avoid merging)
-    r1 = client.post(
-        "/api/items",
-        json={"name": "TestItemApple", "store_id": store_id},
-        headers=headers,
-    )
-    assert r1.status_code == 201
-
-    r2 = client.post(
-        "/api/items",
-        json={"name": "TestItemBanana", "store_id": store_id},
-        headers=headers,
-    )
-    assert r2.status_code == 201
-
-    # Create item for different store (if exists) or without store
-    r3 = client.post("/api/items", json={"name": "TestItemCherry"}, headers=headers)
-    assert r3.status_code == 201
-    item3_id = r3.json()["id"]
-
-    # Verify all 3 distinct items exist
-    r = client.get("/api/items", headers=headers)
-    items = r.json()
-    test_items = [it for it in items if "TestItem" in it["name"]]
-    assert len(test_items) == 3
-
-    # Delete all items for the store
-    r = client.delete(f"/api/stores/{store_id}/items", headers=headers)
-    assert r.status_code == 204
-
-    # Verify items for this store are deleted
-    r = client.get("/api/items", headers=headers)
-    items = r.json()
-    test_items = [it for it in items if "TestItem" in it["name"]]
-    # Should only have item3 (Cherry) remaining
-    assert len(test_items) == 1
-    assert test_items[0]["id"] == item3_id
-    assert test_items[0]["name"] == "TestItemCherry"
-
-    # Cleanup
-    client.delete(f"/api/items/{item3_id}", headers=headers)
-
-
 def test_convert_item_to_product():
     """Test converting an item to a product with department assignment."""
     token = get_auth_token()
@@ -558,3 +502,108 @@ def test_convert_item_to_product_existing_product():
     # Cleanup
     client.delete(f"/api/items/{item_id}", headers=headers)
     client.delete(f"/api/products/{existing_product_id}", headers=headers)
+
+
+def test_delete_items_before_date():
+    """Test deleting items before a specific date."""
+    # Get authentication token
+    token = get_auth_token()
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Create items with different shopping dates
+    item1 = {"name": "Old Item", "shopping_date": "2025-11-15"}
+    r1 = client.post("/api/items", json=item1, headers=headers)
+    assert r1.status_code == 201
+    item1_id = r1.json()["id"]
+
+    item2 = {"name": "Recent Item", "shopping_date": "2025-11-19"}
+    r2 = client.post("/api/items", json=item2, headers=headers)
+    assert r2.status_code == 201
+    item2_id = r2.json()["id"]
+
+    item3 = {"name": "Future Item", "shopping_date": "2025-11-25"}
+    r3 = client.post("/api/items", json=item3, headers=headers)
+    assert r3.status_code == 201
+    item3_id = r3.json()["id"]
+
+    item4 = {"name": "No Date Item"}
+    r4 = client.post("/api/items", json=item4, headers=headers)
+    assert r4.status_code == 201
+    item4_id = r4.json()["id"]
+
+    # Delete items before 2025-11-20
+    r = client.delete("/api/items/by-date/2025-11-20", headers=headers)
+    assert r.status_code == 200
+    result = r.json()
+    assert result["deleted_count"] == 2  # Should delete item1 and item2
+
+    # Verify correct items were deleted
+    r = client.get("/api/items", headers=headers)
+    remaining_items = r.json()
+    remaining_ids = [item["id"] for item in remaining_items]
+
+    assert item1_id not in remaining_ids  # Old item should be deleted
+    assert item2_id not in remaining_ids  # Recent item should be deleted
+    assert item3_id in remaining_ids  # Future item should remain
+    assert item4_id in remaining_ids  # No date item should remain
+
+    # Cleanup
+    client.delete(f"/api/items/{item3_id}", headers=headers)
+    client.delete(f"/api/items/{item4_id}", headers=headers)
+
+
+def test_delete_items_before_date_with_store_filter():
+    """Test deleting items before a specific date filtered by store."""
+    # Get authentication token
+    token = get_auth_token()
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Create two test stores
+    store1_data = {"name": "Test Store 1", "address": "Test Address 1"}
+    r_store1 = client.post("/api/stores", json=store1_data, headers=headers)
+    assert r_store1.status_code == 201
+    store1_id = r_store1.json()["id"]
+
+    store2_data = {"name": "Test Store 2", "address": "Test Address 2"}
+    r_store2 = client.post("/api/stores", json=store2_data, headers=headers)
+    assert r_store2.status_code == 201
+    store2_id = r_store2.json()["id"]
+
+    # Create items for store 1
+    item1 = {"name": "Bananen", "shopping_date": "2025-12-15", "store_id": store1_id}
+    r1 = client.post("/api/items", json=item1, headers=headers)
+    assert r1.status_code == 201
+    item1_id = r1.json()["id"]
+
+    item2 = {"name": "Milch", "shopping_date": "2025-12-19", "store_id": store1_id}
+    r2 = client.post("/api/items", json=item2, headers=headers)
+    assert r2.status_code == 201
+    item2_id = r2.json()["id"]
+
+    # Create item for store 2 with completely different name
+    item3 = {"name": "Zahnpasta", "shopping_date": "2025-12-15", "store_id": store2_id}
+    r3 = client.post("/api/items", json=item3, headers=headers)
+    assert r3.status_code == 201
+    item3_id = r3.json()["id"]
+
+    # Delete items for store 1 before 2025-12-20
+    r = client.delete(
+        f"/api/items/by-date/2025-12-20?store_id={store1_id}", headers=headers
+    )
+    assert r.status_code == 200
+    result = r.json()
+    assert result["deleted_count"] == 2  # Should delete item1 and item2 from store 1
+
+    # Verify correct items were deleted
+    r = client.get("/api/items", headers=headers)
+    remaining_items = r.json()
+    remaining_ids = [item["id"] for item in remaining_items]
+
+    assert item1_id not in remaining_ids  # Store1 old item should be deleted
+    assert item2_id not in remaining_ids  # Store1 recent item should be deleted
+    assert item3_id in remaining_ids  # Store2 item should remain (different store)
+
+    # Cleanup
+    client.delete(f"/api/items/{item3_id}", headers=headers)
+    client.delete(f"/api/stores/{store1_id}", headers=headers)
+    client.delete(f"/api/stores/{store2_id}", headers=headers)

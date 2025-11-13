@@ -15,7 +15,10 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
   - **Automatische Produkt-Zuordnung**: Neue Items werden automatisch mit Produkten im Katalog gematcht (Fuzzy-Matching mit 60% Schwellwert)
   - **Abteilungs-Gruppierung**: Shopping-Liste zeigt Items gruppiert nach Abteilungen in Spalten-Layout
   - **Erstes Geschäft als Standard**: Automatische Auswahl des ersten Geschäfts beim Laden
-  - **Liste leeren**: Alle Items eines Geschäfts mit einem Klick löschen (mit Sicherheitsabfrage)
+  - **Items vor Datum löschen**: Alle Items mit Einkaufsdatum vor einem gewählten Datum löschen
+    - DatePicker zur Datumsauswahl
+    - Optional gefiltert nach ausgewähltem Geschäft
+    - Mit Sicherheitsabfrage und Vorschau der betroffenen Items
   - **Produktkatalog erweitern**: Items aus "Sonstiges" per ✏️-Icon einer Abteilung zuweisen
     - Erstellt automatisch ein Produkt im Katalog (ohne Mengenangaben)
     - Item erscheint danach in der gewählten Abteilung statt in "Sonstiges"
@@ -99,7 +102,7 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - Min/Max-Datum-Einschränkungen
     - Heute/Löschen-Buttons
     - Responsives Design
-- ✅ **Vollständige Tests**: 451 Tests (63 Server + 388 Client) mit 85%+ Code-Abdeckung
+- ✅ **Vollständige Tests**: 509 Tests (64 Server + 445 Client) mit 85%+ Code-Abdeckung
 - ✅ **TypeScript Client**: Typsicherer Client mit vier-Schichten-Architektur
 - ✅ **FastAPI Server**: Moderne Python API mit SQLModel ORM
 - ✅ **Benutzer-Verwaltung**: Freischaltungs-System für neue Benutzer
@@ -332,9 +335,12 @@ Nach dem Login können Sie die Einkaufsliste verwenden:
    - Wählen Sie eine Abteilung aus dem Dialog
    - Das Produkt wird automatisch dem Katalog hinzugefügt (ohne Mengenangaben)
    - Das Item erscheint danach in der gewählten Abteilung
-7. **Liste leeren**: Klicken Sie auf "🗑️ Liste leeren" um alle Items des ausgewählten Geschäfts zu löschen
-   - Funktioniert nur bei ausgewähltem Geschäft (nicht bei "Alle Geschäfte")
-   - Sicherheitsabfrage vor dem Löschen
+7. **Items vor Datum löschen**: Klicken Sie auf "🗓️ Vor Datum löschen" um alte Einträge zu entfernen
+   - Wählen Sie ein Datum im DatePicker
+   - Alle Items mit Einkaufsdatum vor dem gewählten Datum werden gelöscht
+   - Bei ausgewähltem Geschäft: Nur Items dieses Geschäfts werden gelöscht
+   - Bei "Alle Geschäfte": Alle Items (geschäftsübergreifend) werden gelöscht
+   - Sicherheitsabfrage mit Angabe der Anzahl betroffener Items
 
 ### 8. Store- und Produkt-Verwaltung nutzen
 
@@ -438,7 +444,6 @@ Die Anwendung verwendet **JWT (JSON Web Tokens)** für sichere Authentifizierung
   - Body: `{"name": "Neuer Name", "location": "Neuer Standort", "sort_order": 5}` (alle Felder optional, partial update)
   - Beispiel nur sort_order: `{"sort_order": 2}` (für Reordering)
 - `DELETE /api/stores/{store_id}` - Geschäft löschen (cascading: löscht auch Departments und Products)
-- `DELETE /api/stores/{store_id}/items` - Alle Items eines Geschäfts aus der gemeinsamen Liste löschen
 - `GET /api/stores/{store_id}/departments` - Abteilungen eines Geschäfts (sortiert nach sort_order)
 - `POST /api/departments` - Neue Abteilung erstellen
   - Body: `{"name": "Abteilungsname", "sort_order": 0}` (sort_order optional, default: 0)
@@ -490,6 +495,12 @@ Die Anwendung verwendet **JWT (JSON Web Tokens)** für sichere Authentifizierung
     - Nutzt vorhandenes Produkt, falls gleichnamiges bereits existiert
   - Authentifizierung erforderlich: Alle authentifizierten Benutzer können Items aus der gemeinsamen Liste konvertieren
 - `DELETE /api/items/{id}` - Artikel aus der gemeinsamen Liste löschen (alle authentifizierten Benutzer)
+- `DELETE /api/items/by-date/{before_date}?store_id={store_id}` - Items vor einem Datum löschen
+  - Path-Parameter: `before_date` (ISO-Format YYYY-MM-DD)
+  - Query-Parameter: `store_id` (optional, filtert nach Geschäft)
+  - Response: `{"deleted_count": number}` - Anzahl der gelöschten Items
+  - Löscht alle Items mit `shopping_date < before_date`
+  - Authentifizierung erforderlich: Alle authentifizierten Benutzer können Items löschen
 
 ## Code-Qualität
 
@@ -541,16 +552,18 @@ pytest --cov=server --cov-report=html
 ```
 
 **Aktuelle Test-Abdeckung:**
-- ✅ **63 Tests insgesamt** (+10 neue Tests für User-Management)
+- ✅ **64 Tests insgesamt**
   - **85% Code-Coverage** für Server-Code
 - ✅ **Authentifizierung** (10 Tests):
   - Registrierung, Login, Token-Validierung, Token-Refresh, Account-Löschung
   - Genehmigungsprüfung beim Login
-- ✅ **Shopping-List CRUD** (13 Tests):
+- ✅ **Shopping-List CRUD** (14 Tests):
   - **Item zu Produkt konvertieren**: Items aus "Sonstiges" in Produktkatalog aufnehmen (2 Tests)
     - Neues Produkt erstellen und Abteilung zuweisen
     - Vorhandenes Produkt wiederverwenden
-  - **Store-Items löschen**: Alle Items eines Geschäfts löschen (benutzerspezifisch)
+  - **Items vor Datum löschen**: Items basierend auf Einkaufsdatum löschen (2 Tests)
+    - Allgemeine Löschung ohne Store-Filter
+    - Gefilterte Löschung nach Store
   - CRUD-Operationen mit JWT-Authentifizierung
   - **Mengenangaben**: Items mit und ohne optionale Menge
   - **Smart-Merging mit Einheiten-Suche**:
@@ -615,7 +628,7 @@ npm test -- --watch
 ```
 
 **Aktuelle Test-Abdeckung:**
-- ✅ **396 Tests insgesamt** (16 Test-Suites)
+- ✅ **445 Tests insgesamt** (19 Test-Suites)
   - **85.46% Code-Coverage** für Client-Code
   - Neue Module `user-admin.ts` und `script-users.ts` noch ohne Tests (0%)
 - ✅ Data Layer: API Client (94), Authentication (36), DOM (18) = 148 Tests
@@ -636,13 +649,13 @@ npm test -- --watch
   - Tests für Mengenangaben im State
   - Test für Fuzzy-Matching-Update (verhindert Duplikate)
   - Tests für Store/Department/Product State Management
-- ✅ UI Layer: Shopping List UI (35), User Menu (16), Store Admin (27), Product Admin (15) = 93 Tests
+- ✅ UI Layer: Shopping List UI (29), User Menu (16), Store Admin (27), Product Admin (15) = 87 Tests
   - Tests für Mengenfeld-Eingabe
   - Tests für CRUD-Operationen
-  - **Shopping List UI Tests (35)**: +14 neue Tests für:
+  - **Shopping List UI Tests (29)**:
     - Edit-Button Funktionalität (8 Tests): Dialog-Anzeige, Department-Auswahl, Fehlerbehandlung
-    - Clear-Store-Button (6 Tests): Confirmation-Dialog, Löschung, Button-Disable-Logik
-    - **94.87% Coverage** (vorher 48%)
+    - Item-Deletion und DatePicker Integration
+    - DatePicker Modal-Funktionalität für Date-Based Deletion
   - **Store Admin Tests**: Store-Reordering (↑↓ Buttons), Department-Reordering
   - Product Admin Tests: Store-Auswahl, Department-Verwaltung, Form-Validierung
 - ✅ Pages Layer: Login Controller (20) = 20 Tests
@@ -653,9 +666,9 @@ npm test -- --watch
 - ✅ Error Handling, Edge Cases, User Interactions
 
 **Gesamt-Teststatistik:**
-- 📊 **Server**: 63 Tests, 85% Coverage
-- 📊 **Client**: 396 Tests, 85.46% Coverage
-- 📊 **Gesamt**: 459 Tests ✅
+- 📊 **Server**: 64 Tests, 85% Coverage
+- 📊 **Client**: 445 Tests, 85.46% Coverage
+- 📊 **Gesamt**: 509 Tests ✅
 
 ### Continuous Integration (CI)
 
@@ -664,11 +677,11 @@ Das Projekt nutzt GitHub Actions für automatisierte Tests bei jedem Push/Pull R
 **Server Tests (Python):**
 - Black Code-Formatierung prüfen
 - Flake8 Linting
-- Pytest Tests (63 Tests mit 85% Coverage)
+- Pytest Tests (64 Tests mit 85% Coverage)
 
 **Client Tests (TypeScript):**
 - TypeScript Build
-- Jest Tests (396 Tests mit 85.46% Coverage)
+- Jest Tests (445 Tests mit 85.46% Coverage)
 
 Beide Jobs laufen parallel für maximale Geschwindigkeit. Die CI-Konfiguration befindet sich in `.github/workflows/ci.yml`.
 
@@ -739,11 +752,12 @@ Modulare Organisation von API-Endpunkten:
 - **products.py** (220 Zeilen) - Product Endpoints
   - Product CRUD operations
   - Fuzzy search functionality
-- **items.py** (342 Zeilen) - Shopping List Endpoints
+- **items.py** (385 Zeilen) - Shopping List Endpoints
   - Item CRUD operations (shared list - no user ownership)
-  - Smart quantity merging
+  - Smart quantity merging with date-based filtering
   - Fuzzy product matching
   - Convert item to product
+  - Delete items by date (with optional store filter)
   - All authenticated users can manage the same shared list
 - **pages.py** (55 Zeilen) - Static Page Serving
   - HTML page routes

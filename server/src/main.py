@@ -14,7 +14,6 @@ from starlette.staticfiles import StaticFiles
 from .db import get_engine, create_db_and_tables
 from .routers import auth, users, stores, products, items, pages
 from .routers.stores import departments_router
-from .routers.items import stores_items_router
 
 
 readenv.loads  # Load .env file
@@ -74,7 +73,6 @@ app.include_router(stores.router)
 app.include_router(departments_router)
 app.include_router(products.router)
 app.include_router(items.router)
-app.include_router(stores_items_router)
 app.include_router(pages.router)
 
 # Mount client static files (index.html at root)

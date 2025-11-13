@@ -133,9 +133,9 @@ main{
   font-size:1rem;
   background:white;
 }
-.clear-store-btn{
+.clear-by-date-btn{
   padding:.5rem 1rem;
-  background:#f44336;
+  background:#ff9800;
   color:white;
   border:none;
   border-radius:6px;
@@ -144,10 +144,10 @@ main{
   transition:background .2s;
   white-space:nowrap;
 }
-.clear-store-btn:hover{
-  background:#d32f2f;
+.clear-by-date-btn:hover{
+  background:#f57c00;
 }
-.clear-store-btn:disabled{
+.clear-by-date-btn:disabled{
   background:#ccc;
   cursor:not-allowed;
   opacity:.5;
