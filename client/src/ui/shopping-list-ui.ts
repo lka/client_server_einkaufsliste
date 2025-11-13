@@ -10,6 +10,7 @@ import {
   fetchDepartments,
   convertItemToProduct,
   deleteItemsBeforeDate,
+  fetchTemplates,
   type Department,
 } from '../data/api.js';
 import { Modal } from './components/modal.js';
@@ -999,12 +1000,54 @@ export function initShoppingListUI(): void {
       }
     }
 
-    const item = await shoppingListState.addItem(val, menge, selectedStoreId || undefined, shoppingDate);
-    if (item) {
-      input.value = '';
-      mengeInput.value = '';
-      // Keep the date picker value for next item
-      // UI updates automatically via state subscription
+    // Check if input matches a template name
+    const templates = await fetchTemplates();
+    const matchedTemplate = templates.find(
+      (t) => t.name.toLowerCase() === val.toLowerCase()
+    );
+
+    if (matchedTemplate) {
+      // Template found - insert all template items
+      if (!selectedStoreId) {
+        showError('Bitte wählen Sie zuerst ein Geschäft aus, um ein Template zu verwenden.');
+        return;
+      }
+
+      if (!shoppingDate) {
+        showError('Bitte wählen Sie ein Datum aus, um ein Template zu verwenden.');
+        return;
+      }
+
+      // Add all template items
+      let successCount = 0;
+      for (const templateItem of matchedTemplate.items) {
+        const item = await shoppingListState.addItem(
+          templateItem.name,
+          templateItem.menge,
+          selectedStoreId,
+          shoppingDate
+        );
+        if (item) {
+          successCount++;
+        }
+      }
+
+      if (successCount > 0) {
+        showSuccess(`${successCount} Artikel aus Template "${matchedTemplate.name}" hinzugefügt!`);
+        input.value = '';
+        mengeInput.value = '';
+        // Keep the date picker value for next item
+        // UI updates automatically via state subscription
+      }
+    } else {
+      // Normal item - add as usual
+      const item = await shoppingListState.addItem(val, menge, selectedStoreId || undefined, shoppingDate);
+      if (item) {
+        input.value = '';
+        mengeInput.value = '';
+        // Keep the date picker value for next item
+        // UI updates automatically via state subscription
+      }
     }
   });
 

@@ -45,6 +45,14 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - Jeder kann Items hinzufügen, bearbeiten und löschen
     - Items werden mit `user_id=None` erstellt (gehören nicht zu einem spezifischen Benutzer)
     - Ideal für Haushalts-Einkaufslisten, bei denen alle Familienmitglieder die gleiche Liste sehen und bearbeiten
+  - **Shopping-Templates**: Wiederverwendbare Einkaufslisten-Vorlagen
+    - Templates mit Name, Beschreibung und Artikeln (inkl. Mengenangaben) erstellen
+    - Dedizierte Verwaltungsseite unter `/templates`
+    - Template-Name in Shopping-List eingeben → alle Artikel werden automatisch hinzugefügt
+    - Artikel erben ausgewähltes Geschäft und Datum
+    - CRUD-Operationen: Erstellen, Bearbeiten, Löschen von Templates
+    - Template-Items werden inline angezeigt: "Artikel (Menge)"
+    - "Speichern"-Button nur aktiv wenn mindestens ein Artikel vorhanden ist
 - ✅ **Store-Verwaltung**: Dedizierte Admin-Seite für Geschäfte und Abteilungen
   - **CRUD-Operationen**: Erstellen, Bearbeiten und Löschen von Stores und Departments
   - **Geschäfts-Sortierung**: Reihenfolge der Geschäfte mit ↑↓ Buttons ändern
@@ -508,6 +516,20 @@ Die Anwendung verwendet **JWT (JSON Web Tokens)** für sichere Authentifizierung
   - Response: `{"deleted_count": number}` - Anzahl der gelöschten Items
   - Löscht alle Items mit `shopping_date < before_date`
   - Authentifizierung erforderlich: Alle authentifizierten Benutzer können Items löschen
+
+**Template Management (alle authentifiziert):**
+- `GET /api/templates` - Alle Templates abrufen (sortiert nach Name)
+- `GET /api/templates/{id}` - Einzelnes Template mit allen Items abrufen
+- `POST /api/templates` - Neues Template erstellen
+  - Body: `{"name": "Template-Name", "description": "Optional", "items": [{"name": "Artikel", "menge": "2 L"}]}`
+  - Response: Erstelltes Template mit generierter ID
+  - Validierung: Template-Name muss eindeutig sein
+- `PUT /api/templates/{id}` - Template aktualisieren (Partial Update)
+  - Body: `{"name": "Neuer Name", "description": "Neue Beschreibung", "items": [...]}`
+  - Alle Felder optional - nur bereitgestellte Felder werden aktualisiert
+  - Items-Update ersetzt alle vorhandenen Items (nicht inkrementell)
+- `DELETE /api/templates/{id}` - Template löschen
+  - Cascading Delete: Löscht automatisch alle zugehörigen TemplateItems
 
 ## Code-Qualität
 

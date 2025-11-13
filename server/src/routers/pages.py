@@ -39,6 +39,13 @@ def serve_users_page():
     return FileResponse(users_file)
 
 
+@router.get("/templates")
+def serve_templates_page():
+    """Serve the templates management page."""
+    templates_file = os.path.join(CLIENT_DIR, "index-templates.html")
+    return FileResponse(templates_file)
+
+
 @router.get("/favicon.{ext}")
 def serve_favicon(ext: str):
     """Serve the favicon file (svg or ico)."""

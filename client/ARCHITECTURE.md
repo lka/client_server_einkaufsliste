@@ -82,9 +82,14 @@ The shopping list client is a TypeScript application built with a **four-layer a
   - `convertItemToProduct(itemId, departmentId)`: Convert item to product with department assignment
   - `fetchStores()`: Get all stores
   - `fetchDepartments(storeId)`: Get departments for a store
+  - `fetchTemplates()`: Get all shopping templates
+  - `fetchTemplate(id)`: Get a specific template with items
+  - `createTemplate(name, description?, items)`: Create a new template
+  - `updateTemplate(id, name?, description?, items?)`: Update a template (partial update)
+  - `deleteTemplate(id)`: Delete a template
   - `ensureFreshToken()`: Refresh JWT before API calls
 - **Dependencies**: auth.ts (for token management)
-- **Interfaces**: `Item` (with shopping_date?: string), `Store`, `Department`, `Product`
+- **Interfaces**: `Item` (with shopping_date?: string), `Store`, `Department`, `Product`, `Template`, `TemplateItem`
 
 #### auth.ts
 - **Responsibility**: Authentication and user management
@@ -619,11 +624,51 @@ The shopping list client is a TypeScript application built with a **four-layer a
   - `createDatePicker` for shopping date selection
   - `showError` and `showSuccess` for notifications
   - Consistent styling and behavior across dialogs
+- **Template Recognition**:
+  - Checks if input matches a template name (case-insensitive)
+  - If template found: Inserts all template items with quantities
+  - Requires store and date selection before template expansion
+  - Shows success toast with count of added items
 - **Dependencies**:
   - `../state/shopping-list-state.js`: State management
   - `../data/dom.js`: renderItems (called by subscription)
-  - `../data/api.js`: fetchDepartments, convertItemToProduct
+  - `../data/api.js`: fetchDepartments, convertItemToProduct, fetchTemplates
   - `./components/modal.js`, `./components/button.js`, `./components/toast.js`, `./components/datepicker.js`: UI components
+
+#### template-admin.ts
+- **Responsibility**: Template administration UI for managing shopping templates
+- **Component Integration**:
+  - **Button Component**: Uses `createButton()` for Save and Cancel buttons
+  - **Toast Component**: Success/error notifications for all operations
+  - Dynamic button creation with variant styling (success, secondary)
+- **Features**:
+  - Create templates with name, description, and items
+  - Edit existing templates (pre-fill form, show cancel button)
+  - Delete templates with browser confirmation
+  - Add/remove items to/from templates with quantities
+  - Real-time button state management (disable save when no items)
+  - Template list with inline item display: "Article (Quantity)"
+  - Form validation (unique template names, minimum one item)
+- **State Management**:
+  - Local state for editing mode (`editingTemplateId`)
+  - Local state for current items (`currentItems`)
+  - Button references (`saveBtn`, `cancelBtn`)
+- **Event Handlers**:
+  - Add item button → `handleAddItem()` → adds to currentItems array
+  - Remove item button (event delegation) → `handleRemoveItem()` → removes from currentItems
+  - Save button → `handleSaveTemplate()` → create or update template
+  - Cancel button → `handleCancelEdit()` → reset form
+  - Edit template button (event delegation) → `handleEditTemplate()` → load template into form
+  - Delete template button (event delegation) → `handleDeleteTemplate()` → delete with confirmation
+  - Enter key support for item name and quantity inputs
+- **Button State Management**:
+  - `updateSaveButtonState()`: Disables save button when no items present
+  - Called after every add/remove operation
+  - Called on initial load and form reset
+- **Dependencies**:
+  - `../data/api.js`: fetchTemplates, createTemplate, updateTemplate, deleteTemplate
+  - `./components/button.js`: createButton
+  - `./components/toast.js`: showError, showSuccess
 
 #### user-menu.ts
 - **Responsibility**: User menu feature UI
@@ -764,10 +809,41 @@ The shopping list client is a TypeScript application built with a **four-layer a
   1. Initialize login page controller
 - **Dependencies**: `./pages/login.js`
 
+#### script-stores.ts
+- **Responsibility**: Store admin page entry point
+- **Flow**:
+  1. Check authentication
+  2. Initialize component library styles
+  3. Load stores template
+  4. Update user display
+  5. Initialize store admin and user menu
+- **Dependencies**: `./data/dom.js`, `./data/auth.js`, `./ui/store-admin.js`, `./ui/user-menu.js`
+
+#### script-products.ts
+- **Responsibility**: Product admin page entry point
+- **Similar flow to script-stores.ts**
+- **Dependencies**: `./ui/product-admin.js`
+
+#### script-templates.ts
+- **Responsibility**: Template admin page entry point
+- **Flow**:
+  1. Check authentication
+  2. Initialize component library styles
+  3. Load templates template
+  4. Update user display
+  5. Initialize template admin and user menu
+- **Dependencies**: `./data/dom.js`, `./data/auth.js`, `./ui/template-admin.js`, `./ui/user-menu.js`
+
+#### script-users.ts
+- **Responsibility**: User admin page entry point
+- **Similar flow to script-stores.ts**
+- **Dependencies**: `./ui/user-admin.js`
+
 **Principles**:
 - ✅ Minimal code (orchestration only)
 - ✅ No business logic
 - ✅ Clear initialization sequence
+- ✅ Consistent pattern across all entry points
 
 ---
 

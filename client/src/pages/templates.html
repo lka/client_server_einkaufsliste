@@ -1,0 +1,52 @@
+<header>
+  <h1>Templates verwalten</h1>
+  <div class="header-actions">
+    <button id="backToAppBtn" class="back-btn" aria-label="Zurück zur Einkaufsliste">← Zurück</button>
+    <div class="user-menu">
+      <button id="menuBtn" class="menu-btn" aria-label="Benutzermenü">⋮</button>
+      <div id="menuDropdown" class="menu-dropdown">
+        <button id="manageStoresBtn" class="menu-item">🏪 Geschäfte verwalten</button>
+        <button id="manageProductsBtn" class="menu-item">📦 Produkte verwalten</button>
+        <button id="manageUsersBtn" class="menu-item">👥 Benutzer verwalten</button>
+        <button id="logoutBtn" class="menu-item">🚪 Abmelden</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="templates-admin-container">
+    <!-- Add/Edit Template Section -->
+    <section class="template-form-section">
+      <h2 id="formTitle">Neues Template erstellen</h2>
+      <div class="template-form">
+        <input id="templateNameInput" type="text" placeholder="Template-Name (z.B. Wochenend-Einkauf)" />
+        <textarea id="templateDescriptionInput" placeholder="Beschreibung (optional)" rows="2"></textarea>
+
+        <h3>Artikel</h3>
+        <div class="template-items-container">
+          <div id="templateItemsList" class="template-items-list">
+            <!-- Template items will be rendered here -->
+          </div>
+          <div class="add-item-row">
+            <input id="itemNameInput" type="text" placeholder="Artikel (z.B. Milch)" />
+            <input id="itemMengeInput" type="text" placeholder="Menge (z.B. 2 L)" />
+            <button id="addItemBtn">+ Artikel hinzufügen</button>
+          </div>
+        </div>
+
+        <div class="form-actions" id="formActions">
+          <!-- Buttons will be created dynamically -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Templates List Section -->
+    <section class="templates-list-section">
+      <h2>Vorhandene Templates</h2>
+      <div id="templatesList" class="templates-list">
+        <!-- Templates will be rendered here -->
+      </div>
+    </section>
+  </div>
+</main>

@@ -49,9 +49,23 @@ export interface User {
   created_at: string;
 }
 
+export interface TemplateItem {
+  id?: number;
+  name: string;
+  menge?: string;
+}
+
+export interface Template {
+  id?: number;
+  name: string;
+  description?: string;
+  items: TemplateItem[];
+}
+
 export const API_BASE = '/api/items';
 export const API_STORES = '/api/stores';
 export const API_USERS = '/api/users';
+export const API_TEMPLATES = '/api/templates';
 
 /**
  * Get authorization headers with JWT token.
@@ -804,6 +818,178 @@ export async function deleteUser(userId: number): Promise<boolean> {
     return true;
   } catch (error) {
     console.error('Error deleting user:', error);
+    return false;
+  }
+}
+
+// ==================== Template API ====================
+
+/**
+ * Fetch all shopping templates.
+ */
+export async function fetchTemplates(): Promise<Template[]> {
+  const tokenRefreshed = await ensureFreshToken();
+  if (!tokenRefreshed) {
+    console.error('Token refresh failed');
+    return [];
+  }
+
+  try {
+    const res = await fetch(API_TEMPLATES, {
+      headers: getAuthHeaders(),
+    });
+    if (res.status === 401) {
+      handleUnauthorized();
+      return [];
+    }
+    if (!res.ok) {
+      console.error('Failed to fetch templates:', res.statusText);
+      return [];
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Error fetching templates:', error);
+    return [];
+  }
+}
+
+/**
+ * Fetch a specific template by ID.
+ */
+export async function fetchTemplate(templateId: number): Promise<Template | null> {
+  const tokenRefreshed = await ensureFreshToken();
+  if (!tokenRefreshed) {
+    console.error('Token refresh failed');
+    return null;
+  }
+
+  try {
+    const res = await fetch(`${API_TEMPLATES}/${templateId}`, {
+      headers: getAuthHeaders(),
+    });
+    if (res.status === 401) {
+      handleUnauthorized();
+      return null;
+    }
+    if (!res.ok) {
+      console.error('Failed to fetch template:', res.statusText);
+      return null;
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Error fetching template:', error);
+    return null;
+  }
+}
+
+/**
+ * Create a new shopping template.
+ */
+export async function createTemplate(
+  name: string,
+  description: string | undefined,
+  items: TemplateItem[]
+): Promise<Template | null> {
+  const tokenRefreshed = await ensureFreshToken();
+  if (!tokenRefreshed) {
+    console.error('Token refresh failed');
+    return null;
+  }
+
+  try {
+    const res = await fetch(API_TEMPLATES, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ name, description, items }),
+    });
+    if (res.status === 401) {
+      handleUnauthorized();
+      return null;
+    }
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({ detail: res.statusText }));
+      console.error('Failed to create template:', errorData.detail || res.statusText);
+      alert(`Fehler beim Erstellen: ${errorData.detail || res.statusText}`);
+      return null;
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Error creating template:', error);
+    return null;
+  }
+}
+
+/**
+ * Update an existing template.
+ */
+export async function updateTemplate(
+  templateId: number,
+  name?: string,
+  description?: string,
+  items?: TemplateItem[]
+): Promise<Template | null> {
+  const tokenRefreshed = await ensureFreshToken();
+  if (!tokenRefreshed) {
+    console.error('Token refresh failed');
+    return null;
+  }
+
+  const body: any = {};
+  if (name !== undefined) body.name = name;
+  if (description !== undefined) body.description = description;
+  if (items !== undefined) body.items = items;
+
+  try {
+    const res = await fetch(`${API_TEMPLATES}/${templateId}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(body),
+    });
+    if (res.status === 401) {
+      handleUnauthorized();
+      return null;
+    }
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({ detail: res.statusText }));
+      console.error('Failed to update template:', errorData.detail || res.statusText);
+      alert(`Fehler beim Aktualisieren: ${errorData.detail || res.statusText}`);
+      return null;
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Error updating template:', error);
+    return null;
+  }
+}
+
+/**
+ * Delete a template.
+ */
+export async function deleteTemplate(templateId: number): Promise<boolean> {
+  const tokenRefreshed = await ensureFreshToken();
+  if (!tokenRefreshed) {
+    console.error('Token refresh failed');
+    return false;
+  }
+
+  try {
+    const res = await fetch(`${API_TEMPLATES}/${templateId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    if (res.status === 401) {
+      handleUnauthorized();
+      return false;
+    }
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({ detail: res.statusText }));
+      console.error('Failed to delete template:', errorData.detail || res.statusText);
+      alert(`Fehler beim Löschen: ${errorData.detail || res.statusText}`);
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error('Error deleting template:', error);
     return false;
   }
 }

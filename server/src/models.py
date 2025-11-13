@@ -106,3 +106,42 @@ class Item(SQLModel, table=True):
     user: Optional["User"] = Relationship(back_populates="items")
     store: Optional[Store] = Relationship(back_populates="items")
     product: Optional[Product] = Relationship(back_populates="items")
+
+
+class ShoppingTemplate(SQLModel, table=True):
+    """Shopping template for recurring shopping lists.
+
+    Attributes:
+        id: Primary key (auto-generated integer)
+        name: Template name (e.g., "Wochenend-Einkauf", "Backzutaten")
+        description: Optional description of the template
+    """
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field(index=True, unique=True)
+    description: Optional[str] = None
+
+    # Relationships
+    template_items: list["TemplateItem"] = Relationship(
+        back_populates="template",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+    )
+
+
+class TemplateItem(SQLModel, table=True):
+    """Item within a shopping template.
+
+    Attributes:
+        id: Primary key (auto-generated integer)
+        template_id: Foreign key to shopping template
+        name: Item name
+        menge: Optional quantity specification
+    """
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    template_id: int = Field(foreign_key="shoppingtemplate.id", index=True)
+    name: str
+    menge: Optional[str] = None
+
+    # Relationships
+    template: ShoppingTemplate = Relationship(back_populates="template_items")

@@ -5,7 +5,7 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { initShoppingListUI, loadItems } from './shopping-list-ui.js';
 import { shoppingListState } from '../state/shopping-list-state.js';
-import { fetchStores, fetchDepartments, convertItemToProduct } from '../data/api.js';
+import { fetchStores, fetchDepartments, convertItemToProduct, fetchTemplates } from '../data/api.js';
 import { renderItems } from '../data/dom.js';
 import * as toast from './components/toast.js';
 
@@ -103,6 +103,9 @@ describe('Shopping List UI', () => {
 
     // Mock fetchStores to return empty by default
     (fetchStores as jest.MockedFunction<typeof fetchStores>).mockResolvedValue([]);
+
+    // Mock fetchTemplates to return empty by default
+    (fetchTemplates as jest.MockedFunction<typeof fetchTemplates>).mockResolvedValue([]);
 
     // Mock renderItems
     (renderItems as jest.MockedFunction<typeof renderItems>).mockReturnValue(undefined as any);
