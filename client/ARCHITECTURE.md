@@ -571,6 +571,8 @@ The shopping list client is a TypeScript application built with a **four-layer a
   - `handleEditItem(itemId)`: Handle edit button click for "Sonstiges" items
   - `showDepartmentSelectionDialog(departments)`: Show modal dialog for department selection
   - `showDeleteByDateDialog()`: Show modal dialog for deleting items before a selected date
+  - `showPrintPreview()`: Show print preview with date-based filtering
+  - `printPreviewContent(frontContent, backContent, storeName, hideDepartments, selectedDate?)`: Generate and print final content with date replacement
 - **State Integration**:
   - Subscribes to `shoppingListState` for automatic UI updates
   - UI re-renders automatically when state changes
@@ -579,15 +581,25 @@ The shopping list client is a TypeScript application built with a **four-layer a
   - Creates DatePicker component for shopping date selection
   - Default value: Next Wednesday (automatically calculated)
   - Format: German date format (dd.MM.yyyy)
-  - Date is sent in ISO format (YYYY-MM-DD) to the server
-  - DatePicker clears after adding item
+  - Date is sent in ISO format (YYYY-MM-DD) to the server using local time (not UTC)
+  - DatePicker persists after adding item (no clearing) for batch entry convenience
   - Also used in delete-by-date modal for date selection
+  - Timezone handling: Manual ISO formatting to avoid UTC conversion issues
 - **Event Handlers**:
   - Add button click → `shoppingListState.addItem(name, menge, storeId, shoppingDate)`
   - Enter key for adding items
   - Delete button click (event delegation) → `shoppingListState.deleteItem()`
   - Edit button click (event delegation) → `handleEditItem()` → Department selection dialog
   - Delete by date button → `showDeleteByDateDialog()` → DatePicker modal → `deleteItemsBeforeDate()`
+  - Print button → `showPrintPreview()` → Date-filtered print preview modal
+- **Print Preview Features**:
+  - Date dropdown in preview: Shows all available shopping dates from items
+  - Default selection: Smallest (earliest) date
+  - Dynamic re-rendering: Preview updates when date selection changes
+  - Filter by date: Only items matching selected shopping_date are shown
+  - "Alle Daten" option: Shows all items when no specific date selected
+  - Static date in print: Dropdown is replaced with formatted date text (DD.MM.YYYY) in final print output
+  - HTML processing: Uses regex to replace `<select>` with `<span>` before printing
 - **Event Delegation Pattern**:
   - Single click listener attached to `<ul id="items">` parent
   - Checks `target.classList.contains('removeBtn')` to identify delete buttons

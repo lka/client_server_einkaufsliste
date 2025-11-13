@@ -72,6 +72,16 @@ function showPrintPreview(): Promise<boolean> {
       return;
     }
 
+    // Extract unique shopping dates from items
+    const uniqueDates = Array.from(new Set(
+      filteredItems
+        .filter(item => item.shopping_date)
+        .map(item => item.shopping_date)
+    )).sort(); // Sort dates in ascending order
+
+    // Default to smallest (earliest) date
+    let selectedDate = uniqueDates.length > 0 ? uniqueDates[0] : null;
+
     // Get store name
     const storeFilter = document.getElementById('storeFilter') as HTMLSelectElement;
     const storeName = selectedStoreId
@@ -148,79 +158,6 @@ function showPrintPreview(): Promise<boolean> {
       font-size: 0.85rem;
     `;
 
-    // Header info
-    const header = document.createElement('div');
-    header.style.cssText = 'margin-bottom: 1.5rem; border-bottom: 2px solid #333; padding-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;';
-
-    const headerTitle = document.createElement('h2');
-    headerTitle.textContent = storeName;
-    headerTitle.style.cssText = 'margin: 0; font-size: 1.2rem;';
-
-    const dateInfo = document.createElement('span');
-    dateInfo.textContent = new Date().toLocaleDateString('de-DE');
-    dateInfo.style.cssText = 'color: #666; font-size: 0.8rem;';
-
-    header.appendChild(headerTitle);
-    header.appendChild(dateInfo);
-    previewContent.appendChild(header);
-
-    // Group items by department/store
-    const groupedItems = new Map<string, any[]>();
-    filteredItems.forEach(item => {
-      const key = item.department_name || 'Sonstiges';
-      if (!groupedItems.has(key)) {
-        groupedItems.set(key, []);
-      }
-      groupedItems.get(key)!.push(item);
-    });
-
-    // Calculate if content fits on one page (estimate ~35 items per page including headers)
-    const totalItems = filteredItems.length;
-    const departmentCount = groupedItems.size;
-    const estimatedLines = totalItems + (departmentCount * 2); // items + department headers
-    const fitsOnOnePage = estimatedLines <= 35;
-
-    // Render grouped items on first page
-    const itemsArray = Array.from(groupedItems.entries());
-    const midPoint = fitsOnOnePage ? itemsArray.length : Math.ceil(itemsArray.length / 2);
-
-    // Create 2-column container for first page items
-    const twoColumnContainer = document.createElement('div');
-    twoColumnContainer.className = 'two-column-layout';
-    twoColumnContainer.style.cssText = `
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.5rem;
-      column-gap: 1rem;
-    `;
-
-    // First page items
-    itemsArray.slice(0, midPoint).forEach(([departmentName, items]) => {
-      const section = document.createElement('div');
-      section.style.cssText = 'margin-bottom: 0.5rem; break-inside: avoid;';
-
-      const deptTitle = document.createElement('h4');
-      deptTitle.textContent = departmentName;
-      deptTitle.style.cssText = 'margin: 0.6rem 0 0.2rem 0; color: #333; font-size: 0.9rem; font-weight: bold;';
-      deptTitle.className = 'department-title';
-      section.appendChild(deptTitle);
-
-      const itemList = document.createElement('ul');
-      itemList.style.cssText = 'margin: 0; padding-left: 0; list-style: none;';
-
-      items.forEach(item => {
-        const li = document.createElement('li');
-        li.style.cssText = 'margin-bottom: 0.1rem; line-height: 1.15; font-size: 0.85rem;';
-        li.textContent = item.menge ? `${item.name} (${item.menge})` : item.name;
-        itemList.appendChild(li);
-      });
-
-      section.appendChild(itemList);
-      twoColumnContainer.appendChild(section);
-    });
-
-    previewContent.appendChild(twoColumnContainer);
-
     // Right A5 page (Back - Notes or continuation of list)
     const backPage = document.createElement('div');
     backPage.className = 'a5-preview-page back-page';
@@ -235,50 +172,96 @@ function showPrintPreview(): Promise<boolean> {
       font-size: 0.85rem;
     `;
 
-    if (fitsOnOnePage) {
-      // Show notes section if content fits on one page
-      const notesTitle = document.createElement('h2');
-      notesTitle.textContent = 'Notizen';
-      notesTitle.style.cssText = 'margin: 0 0 1rem 0; font-size: 1.2rem;';
-      backPage.appendChild(notesTitle);
-
-      const notesLines = document.createElement('div');
-      notesLines.style.cssText = 'margin-top: 1rem;';
-      for (let i = 0; i < 20; i++) {
-        const line = document.createElement('div');
-        line.style.cssText = 'border-bottom: 1px solid #ddd; height: 1.2rem; margin-bottom: 0.3rem;';
-        notesLines.appendChild(line);
+    // Function to filter items by selected date
+    const filterItemsByDate = (itemsToFilter: any[], date: string | null): any[] => {
+      if (!date) {
+        return itemsToFilter;
       }
-      backPage.appendChild(notesLines);
-    } else {
-      // Continue list on back page - header with date
-      const backHeader = document.createElement('div');
-      backHeader.style.cssText = 'margin-bottom: 1.5rem; border-bottom: 2px solid #333; padding-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;';
+      return itemsToFilter.filter(item => item.shopping_date === date);
+    };
 
-      const continueTitle = document.createElement('h2');
-      continueTitle.textContent = `${storeName} (Fortsetzung)`;
-      continueTitle.style.cssText = 'margin: 0; font-size: 1.2rem;';
+    // Function to render print preview content
+    const renderPrintContent = (itemsToRender: any[]) => {
+      // Clear existing content
+      previewContent.innerHTML = '';
+      backPage.innerHTML = '';
 
-      const backDateInfo = document.createElement('span');
-      backDateInfo.textContent = new Date().toLocaleDateString('de-DE');
-      backDateInfo.style.cssText = 'color: #666; font-size: 0.8rem;';
+      // Header info
+      const header = document.createElement('div');
+      header.style.cssText = 'margin-bottom: 1.5rem; border-bottom: 2px solid #333; padding-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;';
 
-      backHeader.appendChild(continueTitle);
-      backHeader.appendChild(backDateInfo);
-      backPage.appendChild(backHeader);
+      const headerTitle = document.createElement('h2');
+      headerTitle.textContent = storeName;
+      headerTitle.style.cssText = 'margin: 0; font-size: 1.2rem;';
 
-      // Create 2-column container for back page items
-      const backTwoColumnContainer = document.createElement('div');
-      backTwoColumnContainer.className = 'two-column-layout';
-      backTwoColumnContainer.style.cssText = `
+      // Date dropdown instead of fixed date
+      const dateDropdown = document.createElement('select');
+      dateDropdown.style.cssText = 'color: #666; font-size: 0.8rem; padding: 0.25rem 0.5rem; border: 1px solid #ccc; border-radius: 4px; cursor: pointer;';
+
+      // Add "Alle Daten" option
+      const allDatesOption = document.createElement('option');
+      allDatesOption.value = '';
+      allDatesOption.textContent = 'Alle Daten';
+      dateDropdown.appendChild(allDatesOption);
+
+      // Add date options
+      uniqueDates.forEach(date => {
+        const option = document.createElement('option');
+        option.value = date;
+        // Format date as DD.MM.YYYY for display
+        const dateObj = new Date(date + 'T00:00:00');
+        option.textContent = dateObj.toLocaleDateString('de-DE');
+        dateDropdown.appendChild(option);
+      });
+
+      // Set default to smallest date
+      if (selectedDate) {
+        dateDropdown.value = selectedDate;
+      }
+
+      // Handle date selection change
+      dateDropdown.addEventListener('change', () => {
+        selectedDate = dateDropdown.value || null;
+        const dateFilteredItems = filterItemsByDate(filteredItems, selectedDate);
+        renderPrintContent(dateFilteredItems);
+      });
+
+      header.appendChild(headerTitle);
+      header.appendChild(dateDropdown);
+      previewContent.appendChild(header);
+
+      // Group items by department/store
+      const groupedItems = new Map<string, any[]>();
+      itemsToRender.forEach(item => {
+        const key = item.department_name || 'Sonstiges';
+        if (!groupedItems.has(key)) {
+          groupedItems.set(key, []);
+        }
+        groupedItems.get(key)!.push(item);
+      });
+
+      // Calculate if content fits on one page (estimate ~35 items per page including headers)
+      const totalItems = itemsToRender.length;
+      const departmentCount = groupedItems.size;
+      const estimatedLines = totalItems + (departmentCount * 2); // items + department headers
+      const fitsOnOnePage = estimatedLines <= 35;
+
+      // Render grouped items on first page
+      const itemsArray = Array.from(groupedItems.entries());
+      const midPoint = fitsOnOnePage ? itemsArray.length : Math.ceil(itemsArray.length / 2);
+
+      // Create 2-column container for first page items
+      const twoColumnContainer = document.createElement('div');
+      twoColumnContainer.className = 'two-column-layout';
+      twoColumnContainer.style.cssText = `
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 0.5rem;
         column-gap: 1rem;
       `;
 
-      // Render remaining items
-      itemsArray.slice(midPoint).forEach(([departmentName, items]) => {
+      // First page items
+      itemsArray.slice(0, midPoint).forEach(([departmentName, items]) => {
         const section = document.createElement('div');
         section.style.cssText = 'margin-bottom: 0.5rem; break-inside: avoid;';
 
@@ -299,11 +282,88 @@ function showPrintPreview(): Promise<boolean> {
         });
 
         section.appendChild(itemList);
-        backTwoColumnContainer.appendChild(section);
+        twoColumnContainer.appendChild(section);
       });
 
-      backPage.appendChild(backTwoColumnContainer);
-    }
+      previewContent.appendChild(twoColumnContainer);
+
+      // Render back page
+      if (fitsOnOnePage) {
+        // Show notes section if content fits on one page
+        const notesTitle = document.createElement('h2');
+        notesTitle.textContent = 'Notizen';
+        notesTitle.style.cssText = 'margin: 0 0 1rem 0; font-size: 1.2rem;';
+        backPage.appendChild(notesTitle);
+
+        const notesLines = document.createElement('div');
+        notesLines.style.cssText = 'margin-top: 1rem;';
+        for (let i = 0; i < 20; i++) {
+          const line = document.createElement('div');
+          line.style.cssText = 'border-bottom: 1px solid #ddd; height: 1.2rem; margin-bottom: 0.3rem;';
+          notesLines.appendChild(line);
+        }
+        backPage.appendChild(notesLines);
+      } else {
+        // Continue list on back page - header with same date dropdown
+        const backHeader = document.createElement('div');
+        backHeader.style.cssText = 'margin-bottom: 1.5rem; border-bottom: 2px solid #333; padding-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;';
+
+        const continueTitle = document.createElement('h2');
+        continueTitle.textContent = `${storeName} (Fortsetzung)`;
+        continueTitle.style.cssText = 'margin: 0; font-size: 1.2rem;';
+
+        const backDateInfo = document.createElement('span');
+        backDateInfo.textContent = selectedDate
+          ? new Date(selectedDate + 'T00:00:00').toLocaleDateString('de-DE')
+          : 'Alle Daten';
+        backDateInfo.style.cssText = 'color: #666; font-size: 0.8rem;';
+
+        backHeader.appendChild(continueTitle);
+        backHeader.appendChild(backDateInfo);
+        backPage.appendChild(backHeader);
+
+        // Create 2-column container for back page items
+        const backTwoColumnContainer = document.createElement('div');
+        backTwoColumnContainer.className = 'two-column-layout';
+        backTwoColumnContainer.style.cssText = `
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 0.5rem;
+          column-gap: 1rem;
+        `;
+
+        // Render remaining items
+        itemsArray.slice(midPoint).forEach(([departmentName, items]) => {
+          const section = document.createElement('div');
+          section.style.cssText = 'margin-bottom: 0.5rem; break-inside: avoid;';
+
+          const deptTitle = document.createElement('h4');
+          deptTitle.textContent = departmentName;
+          deptTitle.style.cssText = 'margin: 0.6rem 0 0.2rem 0; color: #333; font-size: 0.9rem; font-weight: bold;';
+          deptTitle.className = 'department-title';
+          section.appendChild(deptTitle);
+
+          const itemList = document.createElement('ul');
+          itemList.style.cssText = 'margin: 0; padding-left: 0; list-style: none;';
+
+          items.forEach(item => {
+            const li = document.createElement('li');
+            li.style.cssText = 'margin-bottom: 0.1rem; line-height: 1.15; font-size: 0.85rem;';
+            li.textContent = item.menge ? `${item.name} (${item.menge})` : item.name;
+            itemList.appendChild(li);
+          });
+
+          section.appendChild(itemList);
+          backTwoColumnContainer.appendChild(section);
+        });
+
+        backPage.appendChild(backTwoColumnContainer);
+      }
+    };
+
+    // Initial render with filtered items (by default, use smallest date)
+    const initialFilteredItems = filterItemsByDate(filteredItems, selectedDate);
+    renderPrintContent(initialFilteredItems);
 
     // Add both pages to container
     a4Container.appendChild(previewContent);
@@ -336,8 +396,18 @@ function showPrintPreview(): Promise<boolean> {
 
     // Update preview when checkbox changes
     hideDeptCheckbox.addEventListener('change', () => {
-      const deptTitles = previewContent.querySelectorAll('.department-title');
-      deptTitles.forEach(title => {
+      const frontDeptTitles = previewContent.querySelectorAll('.department-title');
+      const backDeptTitles = backPage.querySelectorAll('.department-title');
+
+      frontDeptTitles.forEach(title => {
+        if (hideDeptCheckbox.checked) {
+          (title as HTMLElement).style.display = 'none';
+        } else {
+          (title as HTMLElement).style.display = '';
+        }
+      });
+
+      backDeptTitles.forEach(title => {
         if (hideDeptCheckbox.checked) {
           (title as HTMLElement).style.display = 'none';
         } else {
@@ -368,7 +438,8 @@ function showPrintPreview(): Promise<boolean> {
       // Trigger browser print with the preview content
       const hideDepartments = hideDeptCheckbox.checked;
       const backPageContent = backPage.innerHTML;
-      printPreviewContent(previewContent.innerHTML, backPageContent, storeName, hideDepartments);
+      // Pass the selected date for printing
+      printPreviewContent(previewContent.innerHTML, backPageContent, storeName, hideDepartments, selectedDate);
       resolve(true);
     });
     buttonContainer.appendChild(printBtn);
@@ -409,11 +480,37 @@ function showPrintPreview(): Promise<boolean> {
 /**
  * Print preview content using browser print dialog
  */
-function printPreviewContent(frontContent: string, backContent: string, storeName: string, hideDepartments: boolean = false): void {
+function printPreviewContent(frontContent: string, backContent: string, storeName: string, hideDepartments: boolean = false, selectedDate: string | null = null): void {
   const printWindow = window.open('', '_blank');
   if (!printWindow) {
     showError('Popup-Blocker verhindert das Drucken. Bitte erlauben Sie Popups für diese Seite.');
     return;
+  }
+
+  // Replace dropdown with static date text in the content
+  let processedFrontContent = frontContent;
+  let processedBackContent = backContent;
+
+  if (selectedDate) {
+    // Format date for display
+    const dateObj = new Date(selectedDate + 'T00:00:00');
+    const formattedDate = dateObj.toLocaleDateString('de-DE');
+
+    // Replace select dropdown with span containing the date
+    processedFrontContent = processedFrontContent.replace(
+      /<select[^>]*>[\s\S]*?<\/select>/,
+      `<span style="color: #666; font-size: 0.8rem;">${formattedDate}</span>`
+    );
+    processedBackContent = processedBackContent.replace(
+      /<span[^>]*>(\d{2}\.\d{2}\.\d{4}|Alle Daten)<\/span>/,
+      `<span style="color: #666; font-size: 0.8rem;">${formattedDate}</span>`
+    );
+  } else {
+    // If no date selected, show "Alle Daten"
+    processedFrontContent = processedFrontContent.replace(
+      /<select[^>]*>[\s\S]*?<\/select>/,
+      '<span style="color: #666; font-size: 0.8rem;">Alle Daten</span>'
+    );
   }
 
   const bodyClass = hideDepartments ? ' class="hide-departments"' : '';
@@ -533,10 +630,10 @@ function printPreviewContent(frontContent: string, backContent: string, storeNam
     <body${bodyClass}>
       <div class="print-container">
         <div class="a5-page front">
-          ${frontContent}
+          ${processedFrontContent}
         </div>
         <div class="a5-page back">
-          ${backContent}
+          ${processedBackContent}
         </div>
       </div>
     </body>
@@ -894,8 +991,11 @@ export function initShoppingListUI(): void {
     if (shoppingDatePicker) {
       const dateValue = shoppingDatePicker.getValue();
       if (dateValue) {
-        // Convert to ISO format (YYYY-MM-DD)
-        shoppingDate = dateValue.toISOString().split('T')[0];
+        // Convert to ISO format (YYYY-MM-DD) using local time, not UTC
+        const year = dateValue.getFullYear();
+        const month = String(dateValue.getMonth() + 1).padStart(2, '0');
+        const day = String(dateValue.getDate()).padStart(2, '0');
+        shoppingDate = `${year}-${month}-${day}`;
       }
     }
 
@@ -903,10 +1003,7 @@ export function initShoppingListUI(): void {
     if (item) {
       input.value = '';
       mengeInput.value = '';
-      // Clear date picker
-      if (shoppingDatePicker) {
-        shoppingDatePicker.setValue(null);
-      }
+      // Keep the date picker value for next item
       // UI updates automatically via state subscription
     }
   });

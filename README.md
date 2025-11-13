@@ -25,6 +25,11 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - Nutzt vorhandene Produkte, falls gleichnamiges Produkt bereits existiert
   - **Intelligente Druckfunktion**: Einkaufsliste als DIN A5-Heft drucken
     - Druckt auf DIN A4 Querformat → in der Mitte falten ergibt A5-Heft
+    - **Datumsbasierte Filterung**: Dropdown zur Auswahl des Einkaufsdatums in der Druckvorschau
+      - Zeigt alle verfügbaren Shopping-Daten
+      - Default: Kleinstes (frühestes) Datum
+      - "Alle Daten" Option für vollständige Liste
+      - Im Ausdruck wird das ausgewählte Datum statisch angezeigt
     - **2-spaltige Darstellung**: Items werden in 2 Spalten angeordnet für optimale Platznutzung
     - Automatische Layout-Optimierung: Bei vielen Einträgen (>35 Zeilen) wird die Liste auf Vorder- und Rückseite verteilt
     - Bei wenigen Einträgen: Rückseite zeigt Notizen-Bereich mit Linien
@@ -102,6 +107,8 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - Min/Max-Datum-Einschränkungen
     - Heute/Löschen-Buttons
     - Responsives Design
+    - **Persistentes Datum**: Bleibt nach dem Hinzufügen von Items erhalten (Standard: nächster Mittwoch)
+    - **Timezone-Fix**: Verwendet lokale Zeit statt UTC für korrekte Datumsdarstellung
 - ✅ **Vollständige Tests**: 509 Tests (64 Server + 445 Client) mit 85%+ Code-Abdeckung
 - ✅ **TypeScript Client**: Typsicherer Client mit vier-Schichten-Architektur
 - ✅ **FastAPI Server**: Moderne Python API mit SQLModel ORM
