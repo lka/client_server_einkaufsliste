@@ -10,7 +10,7 @@ client = TestClient(app)
 
 
 def create_approved_user(username: str, email: str, password: str) -> str:
-    """Helper to create an approved user and return auth token."""
+    """Create an approved user and return authentication token."""
     # Register user
     register_data = {
         "username": username,

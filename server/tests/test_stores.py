@@ -10,7 +10,7 @@ client = TestClient(app)
 
 
 def get_auth_token():
-    """Helper function to register a test user and get auth token."""
+    """Register a test user and return authentication token."""
     # Register test user
     register_data = {
         "username": "storeuser",

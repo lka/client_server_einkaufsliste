@@ -6,11 +6,15 @@ from pydantic import BaseModel
 
 # Store management schemas
 class StoreCreate(BaseModel):
+    """Schema for creating a new store."""
+
     name: str
     location: str = ""
 
 
 class StoreUpdate(BaseModel):
+    """Schema for updating an existing store."""
+
     name: Optional[str] = None
     location: Optional[str] = None
     sort_order: Optional[int] = None
@@ -18,17 +22,23 @@ class StoreUpdate(BaseModel):
 
 # Department management schemas
 class DepartmentCreate(BaseModel):
+    """Schema for creating a new department."""
+
     name: str
     sort_order: int = 0
 
 
 class DepartmentUpdate(BaseModel):
+    """Schema for updating an existing department."""
+
     name: Optional[str] = None
     sort_order: Optional[int] = None
 
 
 # Product management schemas
 class ProductCreate(BaseModel):
+    """Schema for creating a new product."""
+
     name: str
     store_id: int
     department_id: int
@@ -36,6 +46,8 @@ class ProductCreate(BaseModel):
 
 
 class ProductUpdate(BaseModel):
+    """Schema for updating an existing product."""
+
     name: str | None = None
     store_id: int | None = None
     department_id: int | None = None
@@ -44,6 +56,8 @@ class ProductUpdate(BaseModel):
 
 # Item management schemas
 class ConvertItemRequest(BaseModel):
+    """Schema for converting an item to a product."""
+
     department_id: int
 
 

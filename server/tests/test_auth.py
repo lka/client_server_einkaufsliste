@@ -10,7 +10,7 @@ client = TestClient(app)
 
 
 def approve_user(username: str):
-    """Helper to approve a user for testing."""
+    """Approve a user for testing purposes."""
     engine = get_engine()
     with Session(engine) as session:
         statement = select(User).where(User.username == username)

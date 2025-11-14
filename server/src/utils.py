@@ -33,8 +33,9 @@ def parse_quantity(menge: str | None) -> tuple[float | None, str | None]:
 
 
 def normalize_name(name: str) -> str:
-    """Normalize name for comparison by converting to lowercase
-    and normalizing umlauts.
+    """Normalize name for comparison.
+
+    Converts to lowercase and normalizes German umlauts for consistent comparison.
 
     Args:
         name: Name to normalize

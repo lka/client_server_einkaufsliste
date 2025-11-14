@@ -7,7 +7,7 @@ client = TestClient(app)
 
 
 def get_auth_token():
-    """Helper function to register a test user and get auth token."""
+    """Register a test user and return authentication token."""
     from sqlmodel import Session, select
     from server.src.db import get_engine
     from server.src.user_models import User
