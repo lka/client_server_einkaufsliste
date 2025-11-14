@@ -126,9 +126,10 @@ jobs:
       - name: Install Python dependencies
         if: steps.check.outputs.new_release == 'true'
         run: |
-          cd server
           python -m pip install --upgrade pip
-          pip install pytest pytest-cov httpx black
+          pip install black
+          # Install the project with all dependencies from pyproject.toml
+          pip install -e ".[dev]"
 
       - name: Format Python code with Black
         if: steps.check.outputs.new_release == 'true'
