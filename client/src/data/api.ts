@@ -88,11 +88,17 @@ export interface RestoreResult {
   timestamp: string;
 }
 
+export interface VersionInfo {
+  version: string;
+  api: string;
+}
+
 export const API_BASE = '/api/items';
 export const API_STORES = '/api/stores';
 export const API_USERS = '/api/users';
 export const API_TEMPLATES = '/api/templates';
 export const API_BACKUP = '/api/backup';
+export const API_VERSION = '/api/version';
 
 /**
  * Get authorization headers with JWT token.
@@ -1089,6 +1095,26 @@ export async function restoreBackup(
     return await res.json();
   } catch (error) {
     console.error('Error restoring backup:', error);
+    return null;
+  }
+}
+
+/**
+ * Get application version information.
+ * This endpoint does not require authentication.
+ */
+export async function getVersion(): Promise<VersionInfo | null> {
+  try {
+    const res = await fetch(API_VERSION, {
+      method: 'GET',
+    });
+    if (!res.ok) {
+      console.error('Failed to fetch version:', res.statusText);
+      return null;
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Error fetching version:', error);
     return null;
   }
 }

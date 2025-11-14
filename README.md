@@ -59,9 +59,32 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - **Einfacher Download**: Backup wird als JSON-Datei heruntergeladen
     - **Validierte Wiederherstellung**: Automatische Format-Validierung vor Restore
     - **Dedizierte Verwaltungsseite**: Unter `/backup` mit Information und Best Practices
-    - **Versionsinformationen**: Backup enthält Version und Zeitstempel
+    - **Versionsinformationen**: Backup enthält App-Version (aus Git Tags) und Zeitstempel
     - **Sichere Operation**: Warnung vor Datenverlust, Bestätigungsdialog erforderlich
     - Navigation über Benutzermenü: "💾 Datenbank-Backup"
+- ✅ **Semantic Versioning**: Automatische Versionsverwaltung mit Git Tags und Conventional Commits
+  - **GitHub als Single Source of Truth**: Versionsnummern werden aus Git Tags extrahiert
+  - **Conventional Commits**: Commit-Format bestimmt automatisch Version-Bumps
+    - `feat:` → MINOR bump (0.1.0 → 0.2.0)
+    - `fix:` → PATCH bump (0.1.0 → 0.1.1)
+    - `BREAKING CHANGE:` → MAJOR bump (0.1.0 → 1.0.0)
+    - `chore:`, `docs:`, etc. → kein bump
+  - **Vollautomatische Releases**: Push zu master → GitHub Actions erstellt Release automatisch
+    - Analysiert Commits seit letztem Release
+    - Berechnet neue Semantic Version
+    - Erstellt Git Tag automatisch
+    - Führt Tests aus und baut Client
+    - Generiert kategorisierten Changelog (Features, Fixes, Breaking Changes)
+    - Erstellt GitHub Release mit Release Notes
+  - **Drei Versionsquellen**: setuptools_scm (bei pip install) → Git direkt → Fallback (0.1.0)
+  - **API-Endpoint**: `/api/version` gibt aktuelle Version zurück (JSON mit `version` und `api`)
+  - **UI-Anzeige**: Version wird im Benutzermenü (⋮) am Ende des Dropdowns angezeigt
+    - Format: `v0.1.0` (monospace, grau, selectable)
+    - Tooltip zeigt API-Version
+    - Auf allen Seiten verfügbar (App, Stores, Products, Templates, Users, Backup)
+  - **Version in Backups**: Jedes Backup enthält die App-Version zur Nachverfolgbarkeit
+  - **pyproject.toml Integration**: Dynamic versioning mit setuptools_scm
+  - Siehe [VERSIONING.md](VERSIONING.md) für Details zum Release-Workflow und Conventional Commits
 - ✅ **Store-Verwaltung**: Dedizierte Admin-Seite für Geschäfte und Abteilungen
   - **CRUD-Operationen**: Erstellen, Bearbeiten und Löschen von Stores und Departments
   - **Geschäfts-Sortierung**: Reihenfolge der Geschäfte mit ↑↓ Buttons ändern
@@ -552,6 +575,13 @@ Die Anwendung verwendet **JWT (JSON Web Tokens)** für sichere Authentifizierung
   - Transaktional - bei Fehler wird Rollback durchgeführt
   - Response: Anzahl wiederhergestellter Einträge pro Tabelle
   - **WARNUNG**: Löscht alle vorhandenen Daten wenn `clear_existing=true`
+
+**Version Information (öffentlich, keine Authentifizierung):**
+- `GET /api/version` - Aktuelle Anwendungsversion abrufen
+  - Response: `{"version": "0.1.0", "api": "v1"}`
+  - `version`: Semantic Version aus Git Tags (oder Fallback)
+  - `api`: API-Version (aktuell: v1)
+  - Wird im UI im Benutzermenü angezeigt
 
 ## Code-Qualität
 

@@ -14,6 +14,7 @@ from starlette.staticfiles import StaticFiles
 from .db import get_engine, create_db_and_tables
 from .routers import auth, users, stores, products, items, pages, templates, backup
 from .routers.stores import departments_router
+from .version import get_version
 
 
 readenv.loads  # Load .env file
@@ -76,6 +77,20 @@ app.include_router(items.router)
 app.include_router(templates.router)
 app.include_router(backup.router)
 app.include_router(pages.router)
+
+
+@app.get("/api/version")
+def get_api_version():
+    """Get the current API version.
+
+    Returns:
+        dict: Version information including semantic version and build metadata
+    """
+    return {
+        "version": get_version(),
+        "api": "v1",
+    }
+
 
 # Mount client static files (index.html at root)
 # Note: static files are mounted after API route definitions so they do not

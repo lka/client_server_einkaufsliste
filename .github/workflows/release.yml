@@ -1,0 +1,152 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Trigger on semantic version tags (e.g., v1.0.0, v1.2.3)
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write  # Required for creating releases
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for git describe
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Extract version from tag
+        id: get_version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+
+      - name: Update version files
+        run: |
+          # Update server version.py
+          cat > server/src/version.py << 'EOF'
+          """Application version information.
+
+          This module provides version information for the application.
+          The version is automatically extracted from git tags during build.
+          Format: Semantic Versioning (MAJOR.MINOR.PATCH)
+          """
+
+          import subprocess
+          from pathlib import Path
+
+          # Version from git tags (updated during build)
+          __version__ = "${{ steps.get_version.outputs.VERSION }}"
+
+
+          def get_version_from_git() -> str:
+              """Get version from git tags.
+
+              Returns:
+                  Version string from git describe, or default version if git is unavailable.
+              """
+              try:
+                  repo_root = Path(__file__).parent.parent.parent
+                  result = subprocess.run(
+                      ["git", "describe", "--tags", "--always", "--dirty"],
+                      cwd=repo_root,
+                      capture_output=True,
+                      text=True,
+                      check=True,
+                      timeout=5,
+                  )
+                  version = result.stdout.strip()
+                  if version.startswith("v"):
+                      version = version[1:]
+                  return version
+              except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
+                  return __version__
+
+
+          def get_version() -> str:
+              """Get the current application version."""
+              return __version__
+          EOF
+
+          # Update client version.json
+          cat > client/src/version.json << EOF
+          {
+            "version": "${{ steps.get_version.outputs.VERSION }}",
+            "buildDate": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          }
+          EOF
+
+      - name: Install Python dependencies
+        run: |
+          cd server
+          pip install -r requirements.txt
+
+      - name: Run Python tests
+        run: |
+          cd server
+          python -m pytest tests/ -v
+
+      - name: Install Node dependencies
+        run: |
+          cd client
+          npm ci
+
+      - name: Build client
+        run: |
+          cd client
+          npm run build
+
+      - name: Run client tests
+        run: |
+          cd client
+          npm test
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get commits since last tag
+          PREVIOUS_TAG=$(git describe --abbrev=0 --tags $(git rev-list --tags --skip=1 --max-count=1) 2>/dev/null || echo "")
+          if [ -z "$PREVIOUS_TAG" ]; then
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)" --reverse)
+          else
+            CHANGELOG=$(git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s (%h)" --reverse)
+          fi
+          echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Release ${{ steps.get_version.outputs.VERSION }}
+          body: |
+            ## Changes
+            ${{ steps.changelog.outputs.CHANGELOG }}
+
+            ## Installation
+            1. Clone or download this release
+            2. Install server dependencies: `cd server && pip install -r requirements.txt`
+            3. Install client dependencies: `cd client && npm install`
+            4. Build client: `cd client && npm run build`
+            5. Start server: Use `start-server.ps1` (Windows) or run `python -m uvicorn src.main:app` from server directory
+
+            ## Database Backup
+            Before upgrading, create a backup via the Backup Management page (`/backup`) in the application.
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

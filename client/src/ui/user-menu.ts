@@ -6,6 +6,7 @@
 import { logout } from '../data/auth.js';
 import { userState } from '../state/user-state.js';
 import { shoppingListState } from '../state/shopping-list-state.js';
+import { getVersion } from '../data/api.js';
 
 /**
  * Update user display in header with current username.
@@ -111,5 +112,23 @@ export function initUserMenu(): void {
       shoppingListState.clear();
       window.location.href = '/';
     });
+  }
+
+  // Load and display version information
+  loadVersionInfo();
+}
+
+/**
+ * Load and display version information in the menu.
+ */
+async function loadVersionInfo(): Promise<void> {
+  const versionInfo = await getVersion();
+
+  // Find or create version display element
+  let versionElement = document.getElementById('versionInfo');
+
+  if (versionInfo && versionElement) {
+    versionElement.textContent = `v${versionInfo.version}`;
+    versionElement.title = `API: ${versionInfo.api}`;
   }
 }

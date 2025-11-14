@@ -106,6 +106,16 @@ header h1{margin:0;font-size:1.5rem;flex:1}
 .menu-item-danger:hover{
   background:#ffebee;
 }
+.menu-version{
+  padding:.5rem 1rem;
+  text-align:center;
+  font-size:.75rem;
+  color:var(--muted);
+  border-top:1px solid #e0e0e0;
+  font-family:monospace;
+  user-select:text;
+  cursor:default;
+}
 main{
   padding:1rem;
   max-width:900px;

@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = ["setuptools>=61.0", "setuptools_scm>=8.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "client_server_einkaufsliste"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Einkaufsliste Beispiel mit FastAPI und responsive Client"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -47,4 +47,11 @@ testpaths = ["server/tests"]
 [tool.setuptools.packages.find]
 where = ["server"]
 include = ["src*"]
+
+[tool.setuptools_scm]
+# Get version from git tags
+# Tags should be in format: v1.0.0, v1.2.3, etc.
+write_to = "server/src/_version.py"
+version_scheme = "post-release"
+local_scheme = "no-local-version"
 

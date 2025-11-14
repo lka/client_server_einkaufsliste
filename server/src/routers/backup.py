@@ -25,6 +25,7 @@ from ..models import (
     TemplateItem,
 )
 from ..auth import get_current_user
+from ..version import get_version
 
 
 def get_session() -> Generator[Session, None, None]:
@@ -126,7 +127,7 @@ def create_backup(
 
     # Convert to dictionaries (SQLModel handles this automatically)
     backup = BackupData(
-        version="1.0",
+        version=get_version(),
         timestamp=datetime.now().isoformat(),
         users=[user.model_dump() for user in users],
         stores=[store.model_dump() for store in stores],
@@ -160,16 +161,17 @@ def restore_backup(
         HTTPException: 400 if validation fails
 
     Note:
-        - Validates version compatibility
+        - Version compatibility is informational (warns but doesn't block)
         - Optionally clears existing data before restore
         - Uses transactions to ensure atomicity
         - Preserves IDs from backup for referential integrity
     """
-    # Validate version
-    if restore_data.version != "1.0":
-        raise HTTPException(
-            status_code=400,
-            detail=f"Incompatible backup version: {restore_data.version}",
+    # Log version for informational purposes
+    current_version = get_version()
+    if restore_data.version != current_version:
+        print(
+            f"Warning: Restoring backup from version {restore_data.version} "
+            f"to version {current_version}"
         )
 
     try:

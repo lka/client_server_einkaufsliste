@@ -1,0 +1,254 @@
+name: Auto Release
+
+on:
+  push:
+    branches:
+      - master
+      - main
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write  # Required for creating tags and releases
+      pull-requests: write  # Required for commenting on PRs
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for conventional commits analysis
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Calculate next version
+        id: version
+        uses: mathieudutour/github-tag-action@v6.1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          default_bump: patch
+          release_branches: master,main
+          pre_release_branches: develop,beta
+          # Conventional Commit Prefixes:
+          # feat: -> minor version bump (new feature)
+          # fix: -> patch version bump (bug fix)
+          # perf: -> patch version bump (performance improvement)
+          # BREAKING CHANGE: -> major version bump
+          # chore:, docs:, style:, refactor:, test: -> no version bump
+          dry_run: false
+          tag_prefix: v
+          append_to_pre_release_tag: ''
+
+      - name: Check if new version
+        id: check
+        run: |
+          if [ "${{ steps.version.outputs.new_version }}" != "" ]; then
+            echo "new_release=true" >> $GITHUB_OUTPUT
+            echo "New version will be: ${{ steps.version.outputs.new_version }}"
+          else
+            echo "new_release=false" >> $GITHUB_OUTPUT
+            echo "No new version - no changes requiring release"
+          fi
+
+      - name: Update version files
+        if: steps.check.outputs.new_release == 'true'
+        run: |
+          VERSION="${{ steps.version.outputs.new_version }}"
+
+          # Update server version.py
+          cat > server/src/version.py << EOF
+          """Application version information.
+
+          This module provides version information for the application.
+          The version is automatically extracted from git tags during build.
+          Format: Semantic Versioning (MAJOR.MINOR.PATCH)
+          """
+
+          import subprocess
+          from pathlib import Path
+
+          # Version from git tags (updated during build)
+          __version__ = "$VERSION"
+
+
+          def get_version_from_git() -> str:
+              """Get version from git tags.
+
+              Returns:
+                  Version string from git describe, or default version if git is unavailable.
+
+              Note:
+                  - Uses 'git describe --tags --always' to get version
+                  - Falls back to __version__ if git is not available
+                  - Format: v1.2.3 or v1.2.3-5-g1234abc (if commits after tag)
+              """
+              try:
+                  repo_root = Path(__file__).parent.parent.parent
+                  result = subprocess.run(
+                      ["git", "describe", "--tags", "--always", "--dirty"],
+                      cwd=repo_root,
+                      capture_output=True,
+                      text=True,
+                      check=True,
+                      timeout=5,
+                  )
+                  version = result.stdout.strip()
+                  if version.startswith("v"):
+                      version = version[1:]
+                  return version
+              except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
+                  return __version__
+
+
+          def get_version() -> str:
+              """Get the current application version."""
+              return __version__
+          EOF
+
+          # Update client version.json
+          cat > client/src/version.json << EOF
+          {
+            "version": "$VERSION",
+            "buildDate": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          }
+          EOF
+
+      - name: Install Python dependencies
+        if: steps.check.outputs.new_release == 'true'
+        run: |
+          cd server
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov httpx
+
+      - name: Run Python tests
+        if: steps.check.outputs.new_release == 'true'
+        run: |
+          cd server
+          python -m pytest tests/ -v
+
+      - name: Install Node dependencies
+        if: steps.check.outputs.new_release == 'true'
+        run: |
+          cd client
+          npm ci
+
+      - name: Build client
+        if: steps.check.outputs.new_release == 'true'
+        run: |
+          cd client
+          npm run build
+
+      - name: Run client tests
+        if: steps.check.outputs.new_release == 'true'
+        run: |
+          cd client
+          npm test
+
+      - name: Parse changelog
+        if: steps.check.outputs.new_release == 'true'
+        id: changelog
+        run: |
+          # Parse conventional commits into categorized changelog
+          PREVIOUS_TAG="${{ steps.version.outputs.previous_tag }}"
+
+          if [ -z "$PREVIOUS_TAG" ]; then
+            COMMITS=$(git log --pretty=format:"%s|||%h" --reverse)
+          else
+            COMMITS=$(git log ${PREVIOUS_TAG}..HEAD --pretty=format:"%s|||%h" --reverse)
+          fi
+
+          # Initialize changelog sections
+          FEATURES=""
+          FIXES=""
+          BREAKING=""
+          OTHER=""
+
+          while IFS='|||' read -r message hash; do
+            if [[ $message =~ ^feat(\(.*\))?:\ (.+)$ ]]; then
+              FEATURES="${FEATURES}\n- ${BASH_REMATCH[2]} (\`${hash}\`)"
+            elif [[ $message =~ ^fix(\(.*\))?:\ (.+)$ ]]; then
+              FIXES="${FIXES}\n- ${BASH_REMATCH[2]} (\`${hash}\`)"
+            elif [[ $message =~ BREAKING\ CHANGE ]]; then
+              BREAKING="${BREAKING}\n- ${message} (\`${hash}\`)"
+            elif [[ $message =~ ^(chore|docs|style|refactor|perf|test)(\(.*\))?:\ (.+)$ ]]; then
+              OTHER="${OTHER}\n- ${BASH_REMATCH[3]} (\`${hash}\`)"
+            else
+              OTHER="${OTHER}\n- ${message} (\`${hash}\`)"
+            fi
+          done <<< "$COMMITS"
+
+          # Build changelog
+          CHANGELOG=""
+
+          if [ -n "$BREAKING" ]; then
+            CHANGELOG="${CHANGELOG}### ⚠️ BREAKING CHANGES\n${BREAKING}\n\n"
+          fi
+
+          if [ -n "$FEATURES" ]; then
+            CHANGELOG="${CHANGELOG}### ✨ Features\n${FEATURES}\n\n"
+          fi
+
+          if [ -n "$FIXES" ]; then
+            CHANGELOG="${CHANGELOG}### 🐛 Bug Fixes\n${FIXES}\n\n"
+          fi
+
+          if [ -n "$OTHER" ]; then
+            CHANGELOG="${CHANGELOG}### 🔧 Other Changes\n${OTHER}\n\n"
+          fi
+
+          # Export changelog
+          echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        if: steps.check.outputs.new_release == 'true'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.version.outputs.new_version }}
+          name: Release v${{ steps.version.outputs.new_version }}
+          body: |
+            ## 🎉 Release v${{ steps.version.outputs.new_version }}
+
+            ${{ steps.changelog.outputs.CHANGELOG }}
+
+            ---
+
+            ## 📦 Installation
+
+            1. Clone or download this release
+            2. Install server dependencies: `cd server && pip install -r requirements.txt`
+            3. Install client dependencies: `cd client && npm install`
+            4. Build client: `cd client && npm run build`
+            5. Start server: Use `start-server.ps1` (Windows) or run `python -m uvicorn src.main:app` from server directory
+
+            ## 💾 Database Backup
+
+            **Before upgrading**, create a backup via the Backup Management page (`/backup`) in the application.
+
+            ---
+
+            **Full Changelog**: https://github.com/${{ github.repository }}/compare/${{ steps.version.outputs.previous_tag }}...v${{ steps.version.outputs.new_version }}
+          draft: false
+          prerelease: ${{ contains(steps.version.outputs.new_version, '-') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        if: steps.check.outputs.new_release == 'true'
+        run: |
+          echo "## 🚀 Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Previous Version:** ${{ steps.version.outputs.previous_tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **New Version:** v${{ steps.version.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Changelog:** ${{ steps.version.outputs.changelog }}" >> $GITHUB_STEP_SUMMARY
