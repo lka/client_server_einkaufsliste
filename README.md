@@ -73,7 +73,9 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - Analysiert Commits seit letztem Release
     - Berechnet neue Semantic Version
     - Erstellt Git Tag automatisch
+    - Aktualisiert Version-Dateien (server/src/version.py, client/src/version.json)
     - Führt Tests aus und baut Client
+    - Formatiert Python-Code mit Black (exkludiert generierte _version.py)
     - Generiert kategorisierten Changelog (Features, Fixes, Breaking Changes)
     - Erstellt GitHub Release mit Release Notes
   - **Drei Versionsquellen**: setuptools_scm (bei pip install) → Git direkt → Fallback (0.1.0)

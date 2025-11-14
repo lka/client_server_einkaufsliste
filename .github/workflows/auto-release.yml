@@ -135,7 +135,7 @@ jobs:
         if: steps.check.outputs.new_release == 'true'
         run: |
           cd server
-          python -m black .
+          python -m black . --exclude '_version\.py'
 
       - name: Run Python tests
         if: steps.check.outputs.new_release == 'true'
