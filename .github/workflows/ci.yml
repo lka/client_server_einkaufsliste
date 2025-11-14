@@ -24,7 +24,7 @@ jobs:
           pip install -e .[dev]
 
       - name: Run black (check)
-        run: black --check server
+        run: black --check server --exclude '_version\.py'
 
       - name: Run flake8
         run: flake8 server/
