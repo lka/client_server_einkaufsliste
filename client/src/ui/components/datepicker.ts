@@ -510,7 +510,7 @@ export function injectDatePickerStyles(): void {
     .datepicker-calendar {
       position: absolute;
       top: 100%;
-      left: 0;
+      right: 0;
       margin-top: 4px;
       background: #ffffff;
       border: 1px solid #d1d5db;

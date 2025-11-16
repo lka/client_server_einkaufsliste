@@ -123,6 +123,11 @@ jobs:
           }
           EOF
 
+          # Update client package.json version
+          cd client
+          npm version $VERSION --no-git-tag-version
+          cd ..
+
       - name: Install Python dependencies
         if: steps.check.outputs.new_release == 'true'
         run: |
@@ -234,10 +239,12 @@ jobs:
             ## 📦 Installation
 
             1. Clone or download this release
-            2. Install server dependencies: `cd server && pip install -r requirements.txt`
-            3. Install client dependencies: `cd client && npm install`
-            4. Build client: `cd client && npm run build`
-            5. Start server: Use `start-server.ps1` (Windows) or run `python -m uvicorn src.main:app` from server directory
+            2. Start venv: Use `python -m venv venv && venv/Scripts/activate` (Windows) 
+                           or `python -m venv venv && source venv/bin/activate` (Linux/Mac)
+            3. Install server dependencies: `pip install -e .`
+            4. Install client dependencies: `cd client && npm install`
+            5. Build client: `cd client && npm run build`
+            6. Start server: Use `start-server.ps1` (Windows) or run `python -m uvicorn src.main:app` from server directory
 
             ## 💾 Database Backup
 
