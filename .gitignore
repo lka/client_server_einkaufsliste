@@ -16,5 +16,5 @@ logs/
 server/src/_version.py
 
 # Docker
-data/
+/data/
 *.db-journal
