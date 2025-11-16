@@ -90,6 +90,19 @@ jobs:
           }
           EOF
 
+          # Update client package.json version
+          cd client
+          npm version ${{ steps.get_version.outputs.VERSION }} --no-git-tag-version
+          cd ..
+
+      - name: Commit version updates
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add server/src/version.py client/src/version.json client/package.json
+          git commit -m "chore: version-info v${{ steps.get_version.outputs.VERSION }}" || echo "No changes to commit"
+          git push origin HEAD:master || git push origin HEAD:main
+
       - name: Install Python dependencies
         run: pip install -e .[dev]
 
