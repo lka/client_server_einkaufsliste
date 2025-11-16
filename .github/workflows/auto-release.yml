@@ -223,6 +223,15 @@ jobs:
           echo -e "$CHANGELOG" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
+      - name: Commit version updates
+        if: steps.check.outputs.new_release == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add server/src/version.py client/src/version.json client/package.json
+          git commit -m "chore: version-info v${{ steps.version.outputs.new_version }}" || echo "No changes to commit"
+          git push origin HEAD:${{ github.ref_name }}
+
       - name: Create GitHub Release
         if: steps.check.outputs.new_release == 'true'
         uses: softprops/action-gh-release@v1
