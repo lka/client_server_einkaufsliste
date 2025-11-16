@@ -7,6 +7,7 @@
  */
 
 import * as websocket from '../../data/websocket.js';
+import type { User } from '../../data/api.js';
 import { showSuccess, showWarning, showError } from './toast.js';
 
 export interface ConnectionStatusOptions {
@@ -93,7 +94,7 @@ export class ConnectionStatus {
     );
 
     this.unsubscribers.push(
-      websocket.onConnectionClose((event) => {
+      websocket.onConnectionClose((event: { code: number; reason: string }) => {
         this.updateStatus();
         if (event.code !== 1000) {
           showWarning('WebSocket getrennt - Neuverbindung...');
@@ -109,7 +110,7 @@ export class ConnectionStatus {
     );
 
     this.unsubscribers.push(
-      websocket.onUserJoined((user) => {
+      websocket.onUserJoined((user: User) => {
         showInfo(`${user.username || 'Benutzer'} ist jetzt online`);
         this.updateUserCount();
       })
