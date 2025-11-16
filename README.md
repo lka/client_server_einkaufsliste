@@ -62,6 +62,20 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - **Versionsinformationen**: Backup enthält App-Version (aus Git Tags) und Zeitstempel
     - **Sichere Operation**: Warnung vor Datenverlust, Bestätigungsdialog erforderlich
     - Navigation über Benutzermenü: "💾 Datenbank-Backup"
+- ✅ **Real-time Updates mit WebSocket**: Live-Synchronisation der Einkaufsliste zwischen mehreren Clients
+  - **Automatische Synchronisation**: Änderungen werden sofort an alle verbundenen Clients übertragen
+  - **Smart Broadcasting**: Nur andere Clients werden benachrichtigt (nicht der Absender selbst)
+  - **Auto-Reconnection**: Automatische Wiederverbindung bei Verbindungsabbruch mit exponentiellem Backoff
+  - **Heartbeat-Mechanismus**: Ping/Pong alle 30 Sekunden zur Erkennung stagnierender Verbindungen
+  - **Message Queue**: Bis zu 100 Nachrichten werden während Offline-Phasen gepuffert
+  - **JWT-Authentifizierung**: Sichere WebSocket-Verbindung mit Token-basierter Authentifizierung
+  - **Connection Status Indicator**: Visueller Status (Online/Offline/Neuverbindung) im Header
+  - **Feature Flag**: Opt-In via localStorage oder URL-Parameter für einfache Aktivierung
+  - **URL-Parameter Aktivierung**: `?ws=1` oder `?enable_ws=true` aktiviert WebSocket (ideal für mobile Geräte)
+  - **Nahtlose Integration**: WebSocket-Events integrieren sich mit bestehendem Observer Pattern im State Layer
+  - **Graceful Degradation**: Bei fehlender WebSocket-Unterstützung funktioniert die App weiterhin über HTTP
+  - **Multi-User Support**: Mehrere Benutzer können gleichzeitig die gleiche Liste bearbeiten
+  - **Vollständig getestet**: 12 Tests mit Mock-WebSocket für umfassende Abdeckung
 - ✅ **Semantic Versioning**: Automatische Versionsverwaltung mit Git Tags und Conventional Commits
   - **GitHub als Single Source of Truth**: Versionsnummern werden aus Git Tags extrahiert
   - **Conventional Commits**: Commit-Format bestimmt automatisch Version-Bumps
@@ -206,12 +220,14 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
 │       └── test_user_management.py  # User management tests (10 tests)
 ├── client/
 │   ├── src/
-│   │   ├── data/                 # Data layer (API, auth, DOM utilities)
+│   │   ├── data/                 # Data layer (API, auth, DOM utilities, WebSocket)
 │   │   │   ├── api.ts            # API client functions (items, stores, departments, products)
 │   │   │   ├── api.test.ts       # API tests
 │   │   │   ├── auth.ts           # Authentication utilities
 │   │   │   ├── dom.ts            # DOM utilities
-│   │   │   └── dom.test.ts       # DOM tests
+│   │   │   ├── dom.test.ts       # DOM tests
+│   │   │   ├── websocket.ts      # WebSocket connection manager
+│   │   │   └── websocket.test.ts # WebSocket tests (12 tests)
 │   │   ├── ui/                   # UI layer (feature-specific UI modules)
 │   │   │   ├── components/       # Reusable UI component library
 │   │   │   │   ├── button.ts     # Button component

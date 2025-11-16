@@ -1,9 +1,11 @@
 /**
  * Shopping list state management.
  * Manages shopping list items state and provides observers for UI updates.
+ * Integrates with WebSocket for real-time collaborative updates.
  */
 
 import { Item, fetchItems as apiFetchItems, addItem as apiAddItem, deleteItem as apiDeleteItem } from '../data/api.js';
+import * as websocket from '../data/websocket.js';
 
 type StateChangeListener = (items: Item[]) => void;
 
@@ -15,6 +17,65 @@ class ShoppingListState {
   private items: Item[] = [];
   private listeners: Set<StateChangeListener> = new Set();
   private loading: boolean = false;
+  private wsUnsubscribers: Array<() => void> = [];
+
+  constructor() {
+    this.initializeWebSocket();
+  }
+
+  /**
+   * Initialize WebSocket event listeners for real-time updates.
+   */
+  private initializeWebSocket(): void {
+    // Only initialize if WebSocket is supported and feature flag is enabled
+    if (!websocket.isWebSocketSupported()) {
+      console.log('WebSocket not supported, using HTTP polling fallback');
+      return;
+    }
+
+    // Check feature flag from localStorage
+    const wsEnabled = localStorage.getItem('enable_ws') === 'true';
+    if (!wsEnabled) {
+      console.log('WebSocket disabled by feature flag');
+      return;
+    }
+
+    // Subscribe to WebSocket events
+    this.wsUnsubscribers.push(
+      websocket.onItemAdded((item: Item) => {
+        // Add item from other user to local state
+        const existingIndex = this.items.findIndex(i => i.id === item.id);
+        if (existingIndex === -1) {
+          this.items.push(item);
+          this.notifyListeners();
+        }
+      })
+    );
+
+    this.wsUnsubscribers.push(
+      websocket.onItemDeleted((data: any) => {
+        // Remove item deleted by other user
+        // Server sends { id: itemId } in data field
+        const itemId = typeof data === 'string' ? data : data.id;
+        const initialLength = this.items.length;
+        this.items = this.items.filter(item => item.id !== itemId);
+        if (this.items.length !== initialLength) {
+          this.notifyListeners();
+        }
+      })
+    );
+
+    this.wsUnsubscribers.push(
+      websocket.onItemUpdated((item: Item) => {
+        // Update item modified by other user
+        const existingIndex = this.items.findIndex(i => i.id === item.id);
+        if (existingIndex !== -1) {
+          this.items[existingIndex] = item;
+          this.notifyListeners();
+        }
+      })
+    );
+  }
 
   /**
    * Get current items (read-only copy).
@@ -94,6 +155,12 @@ class ShoppingListState {
         }
 
         this.notifyListeners();
+
+        // Broadcast to other users via WebSocket
+        if (websocket.isConnected()) {
+          websocket.broadcastItemAdd(returnedItem);
+        }
+
         return returnedItem;
       }
       return null;
@@ -115,6 +182,12 @@ class ShoppingListState {
       if (success) {
         this.items = this.items.filter(item => item.id !== id);
         this.notifyListeners();
+
+        // Broadcast to other users via WebSocket
+        if (websocket.isConnected()) {
+          websocket.broadcastItemDelete(id);
+        }
+
         return true;
       }
       return false;

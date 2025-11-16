@@ -15,6 +15,7 @@ import { injectDropdownStyles } from './dropdown.js';
 import { injectTabsStyles } from './tabs.js';
 import { injectToastStyles } from './toast.js';
 import { injectDatePickerStyles } from './datepicker.js';
+import { injectConnectionStatusStyles } from './connection-status.js';
 
 // Button
 export {
@@ -105,6 +106,13 @@ export {
 } from './datepicker.js';
 export { injectDatePickerStyles } from './datepicker.js';
 
+// ConnectionStatus
+export {
+  ConnectionStatus,
+  type ConnectionStatusOptions,
+} from './connection-status.js';
+export { injectConnectionStatusStyles } from './connection-status.js';
+
 /**
  * Initialize all component styles.
  *
@@ -123,4 +131,5 @@ export function initializeComponents(): void {
   injectTabsStyles();
   injectToastStyles();
   injectDatePickerStyles();
+  injectConnectionStatusStyles();
 }
