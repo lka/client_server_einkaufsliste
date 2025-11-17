@@ -112,12 +112,7 @@ export function createItemElement(item: Item, isInSonstiges: boolean = false): H
   if (item.menge) {
     span.textContent += ` (${item.menge})`;
   }
-  if (item.shopping_date) {
-    // Format date: YYYY-MM-DD -> DD.MM.YYYY
-    const date = new Date(item.shopping_date);
-    const formattedDate = date.toLocaleDateString('de-DE');
-    span.textContent += ` [${formattedDate}]`;
-  }
+  // Date display removed - filtering is done by DatePicker selection
 
   li.appendChild(span);
 
