@@ -244,11 +244,11 @@ function showPrintPreview(): Promise<boolean> {
         groupedItems.get(key)!.push(item);
       });
 
-      // Calculate if content fits on one page (estimate ~35 items per page including headers)
+      // Calculate if content fits on one page (estimate ~70 lines total for 2 columns = ~35 per column)
       const totalItems = itemsToRender.length;
       const departmentCount = groupedItems.size;
       const estimatedLines = totalItems + (departmentCount * 2); // items + department headers
-      const fitsOnOnePage = estimatedLines <= 35;
+      const fitsOnOnePage = estimatedLines <= 70; // 2 columns with ~35 lines each
 
       // Render grouped items on first page
       const itemsArray = Array.from(groupedItems.entries());
