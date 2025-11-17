@@ -53,6 +53,16 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - CRUD-Operationen: Erstellen, Bearbeiten, Löschen von Templates
     - Template-Items werden inline angezeigt: "Artikel (Menge)"
     - "Speichern"-Button nur aktiv wenn mindestens ein Artikel vorhanden ist
+  - **Intelligenter DatePicker mit Einkaufstag-Visualisierung**
+    - **Farbcodierte Einkaufstage**: Visuelle Hervorhebung aller geplanten Einkaufstage im Kalender
+      - 🟡 **Nächster Einkaufstag** → Gelb mit gelbem Rand
+      - 🟢 **Übernächster Einkaufstag** → Grün mit grünem Rand
+      - 🎨 **Weitere zukünftige Einkaufstage** → Wechselnde Farben (Lila, Orange, Pink, Teal, Amber, Violett)
+      - ⚪ **Vergangene Einkaufstage** → Graustufen zur Kennzeichnung erledigter Einkäufe
+    - **Dynamische Datumsfilterung**: Einkaufsliste zeigt nur Items für das ausgewählte Datum
+    - **Automatische Updates**: Farbhervorhebungen aktualisieren sich bei Item-Änderungen
+    - **Intelligente Sortierung**: Einkaufstage werden chronologisch sortiert und automatisch kategorisiert
+    - **Kompakte Darstellung**: Datumsangaben aus Item-Liste entfernt (Datum ist im DatePicker ausgewählt)
   - **Datenbank-Backup & Restore**: Vollständige Datensicherung und Wiederherstellung
     - **JSON-basiertes Backup**: Strukturunabhängig, funktioniert über Software-Updates hinweg
     - **Vollständige Datensicherung**: Alle Datenbank-Inhalte (Benutzer, Geschäfte, Produkte, Templates, Einkaufsliste)

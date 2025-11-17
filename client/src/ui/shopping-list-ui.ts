@@ -24,6 +24,9 @@ let selectedStoreId: number | null = null;
 // DatePicker instance for shopping date selection
 let shoppingDatePicker: DatePickerInstance | null = null;
 
+// Current selected shopping date for filtering (ISO format YYYY-MM-DD)
+let selectedShoppingDate: string | null = null;
+
 /**
  * Handle edit button click - show department selection dialog
  */
@@ -914,13 +917,53 @@ async function loadStoreFilter(): Promise<void> {
 }
 
 /**
- * Filter items by selected store.
+ * Filter items by selected store and shopping date.
+ */
+function filterItems(items: any[]): any[] {
+  let filtered = items;
+
+  // Filter by store
+  if (selectedStoreId !== null) {
+    filtered = filtered.filter(item => item.store_id === selectedStoreId);
+  }
+
+  // Filter by shopping date
+  if (selectedShoppingDate !== null) {
+    filtered = filtered.filter(item => item.shopping_date === selectedShoppingDate);
+  }
+
+  return filtered;
+}
+
+/**
+ * Filter items by selected store only (for compatibility).
+ * @deprecated Use filterItems() instead
  */
 function filterItemsByStore(items: any[]): any[] {
   if (selectedStoreId === null) {
     return items; // Show all items
   }
   return items.filter(item => item.store_id === selectedStoreId);
+}
+
+/**
+ * Extract unique shopping dates from all items for DatePicker highlighting.
+ */
+function extractShoppingDates(): Date[] {
+  const items = shoppingListState.getItems();
+  const uniqueDates = new Set<string>();
+
+  items.forEach(item => {
+    if (item.shopping_date) {
+      uniqueDates.add(item.shopping_date);
+    }
+  });
+
+  // Convert ISO date strings to Date objects
+  return Array.from(uniqueDates).map(dateStr => {
+    const date = new Date(dateStr + 'T00:00:00'); // Ensure local timezone
+    return date;
+  });
 }
 
 /**
@@ -948,18 +991,50 @@ export function initShoppingListUI(): void {
     const nextWednesday = new Date(today);
     nextWednesday.setDate(today.getDate() + (daysUntilWednesday === 0 ? 7 : daysUntilWednesday));
 
+    // Extract unique shopping dates from items
+    const shoppingDates = extractShoppingDates();
+
     shoppingDatePicker = createDatePicker({
       placeholder: 'Einkaufsdatum (optional)',
       format: 'dd.MM.yyyy',
       value: nextWednesday,
+      highlightDates: shoppingDates,
+      onChange: (date) => {
+        // Update selected shopping date for filtering
+        if (date) {
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          selectedShoppingDate = `${year}-${month}-${day}`;
+        } else {
+          selectedShoppingDate = null;
+        }
+
+        // Re-render items with new date filter
+        const items = shoppingListState.getItems();
+        const filteredItems = filterItems(items);
+        renderItems(filteredItems);
+      },
     });
     shoppingDatePickerContainer.appendChild(shoppingDatePicker.container);
+
+    // Set initial selectedShoppingDate to match the default DatePicker value
+    const year = nextWednesday.getFullYear();
+    const month = String(nextWednesday.getMonth() + 1).padStart(2, '0');
+    const day = String(nextWednesday.getDate()).padStart(2, '0');
+    selectedShoppingDate = `${year}-${month}-${day}`;
   }
 
   // Subscribe to state changes for automatic UI updates
   shoppingListState.subscribe((items) => {
-    const filteredItems = filterItemsByStore(items);
+    const filteredItems = filterItems(items);
     renderItems(filteredItems);
+
+    // Update DatePicker highlights when items change
+    if (shoppingDatePicker) {
+      const updatedShoppingDates = extractShoppingDates();
+      shoppingDatePicker.setHighlightDates(updatedShoppingDates);
+    }
   });
 
   // Load stores into filter (this will also set the default selection)

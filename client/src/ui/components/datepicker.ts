@@ -15,6 +15,7 @@ export interface DatePickerOptions {
   className?: string;
   label?: string;
   required?: boolean;
+  highlightDates?: Date[]; // Shopping dates from items to highlight
 }
 
 export interface DatePickerInstance {
@@ -23,6 +24,7 @@ export interface DatePickerInstance {
   getValue: () => Date | null;
   setValue: (date: Date | string | null) => void;
   setDisabled: (disabled: boolean) => void;
+  setHighlightDates: (dates: Date[]) => void;
   destroy: () => void;
 }
 
@@ -31,6 +33,7 @@ interface CalendarState {
   selectedDate: Date | null;
   minDate: Date | null;
   maxDate: Date | null;
+  highlightDates: Date[];
 }
 
 const MONTHS_DE = [
@@ -128,6 +131,34 @@ function createCalendarGrid(state: CalendarState): HTMLElement {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
+  // Prepare shopping dates - sort future dates ascending, past dates descending
+  const futureDates: Date[] = [];
+  const pastDates: Date[] = [];
+
+  state.highlightDates.forEach(d => {
+    const highlightDate = new Date(d);
+    highlightDate.setHours(0, 0, 0, 0);
+
+    if (highlightDate >= today) {
+      futureDates.push(highlightDate);
+    } else {
+      pastDates.push(highlightDate);
+    }
+  });
+
+  futureDates.sort((a, b) => a.getTime() - b.getTime());
+  pastDates.sort((a, b) => b.getTime() - a.getTime()); // Descending for past
+
+  // Additional colors for future shopping dates beyond the second
+  const additionalColors = [
+    '#a78bfa', // purple
+    '#fb923c', // orange
+    '#ec4899', // pink
+    '#14b8a6', // teal
+    '#f59e0b', // amber
+    '#8b5cf6', // violet
+  ];
+
   // Empty cells before first day
   for (let i = 0; i < firstDay; i++) {
     const emptyCell = document.createElement('div');
@@ -143,6 +174,31 @@ function createCalendarGrid(state: CalendarState): HTMLElement {
     dayCell.className = 'datepicker-day';
     dayCell.textContent = String(day);
     dayCell.dataset.date = date.toISOString();
+
+    // Check if this date is a shopping date
+    const futureIndex = futureDates.findIndex(d => isSameDay(d, date));
+    const pastIndex = pastDates.findIndex(d => isSameDay(d, date));
+
+    if (futureIndex !== -1) {
+      // Future shopping date
+      if (futureIndex === 0) {
+        // Next shopping day - yellow
+        dayCell.classList.add('datepicker-day-shopping-next');
+      } else if (futureIndex === 1) {
+        // Second next shopping day - green
+        dayCell.classList.add('datepicker-day-shopping-second');
+      } else {
+        // Additional future shopping days - various colors
+        const colorIndex = (futureIndex - 2) % additionalColors.length;
+        dayCell.classList.add('datepicker-day-shopping-future');
+        dayCell.style.backgroundColor = additionalColors[colorIndex];
+        dayCell.style.color = '#ffffff';
+        dayCell.style.fontWeight = '600';
+      }
+    } else if (pastIndex !== -1) {
+      // Past shopping date - grayscale
+      dayCell.classList.add('datepicker-day-shopping-past');
+    }
 
     // Add modifiers
     if (isSameDay(date, today)) {
@@ -330,7 +386,8 @@ export function createDatePicker(options: DatePickerOptions = {}): DatePickerIns
     currentMonth: new Date(),
     selectedDate: parseDate(value),
     minDate: parseDate(minDate),
-    maxDate: parseDate(maxDate)
+    maxDate: parseDate(maxDate),
+    highlightDates: options.highlightDates || []
   };
 
   // Update input value
@@ -417,6 +474,14 @@ export function createDatePicker(options: DatePickerOptions = {}): DatePickerIns
       input.disabled = isDisabled;
       if (isDisabled) {
         closeCalendar();
+      }
+    },
+    setHighlightDates: (dates: Date[]) => {
+      state.highlightDates = dates;
+      // If calendar is currently open, refresh it to show new highlights
+      if (isOpen && calendar) {
+        closeCalendar();
+        openCalendar();
       }
     },
     destroy: () => {
@@ -623,6 +688,44 @@ export function injectDatePickerStyles(): void {
 
     .datepicker-day-empty {
       cursor: default;
+    }
+
+    /* Shopping Date Highlights */
+    .datepicker-day-shopping-next {
+      background-color: #fef08a !important; /* Yellow for next shopping day */
+      color: #854d0e !important;
+      font-weight: 600 !important;
+      border: 2px solid #facc15 !important;
+    }
+
+    .datepicker-day-shopping-next:hover:not(.datepicker-day-disabled) {
+      background-color: #fde047 !important;
+    }
+
+    .datepicker-day-shopping-second {
+      background-color: #86efac !important; /* Green for second next shopping day */
+      color: #14532d !important;
+      font-weight: 600 !important;
+      border: 2px solid #22c55e !important;
+    }
+
+    .datepicker-day-shopping-second:hover:not(.datepicker-day-disabled) {
+      background-color: #4ade80 !important;
+    }
+
+    .datepicker-day-shopping-future {
+      /* Additional future shopping days - inline styles with various colors */
+      font-weight: 600 !important;
+    }
+
+    .datepicker-day-shopping-past {
+      background-color: #e5e7eb !important; /* Grayscale for past shopping dates */
+      color: #6b7280 !important;
+      font-weight: 500 !important;
+    }
+
+    .datepicker-day-shopping-past:hover:not(.datepicker-day-disabled) {
+      background-color: #d1d5db !important;
     }
 
     /* Footer */
