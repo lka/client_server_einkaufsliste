@@ -147,18 +147,23 @@ class ShoppingListState {
         const existingIndex = this.items.findIndex(item => item.id === returnedItem.id);
 
         if (existingIndex !== -1) {
-          // Update existing item
+          // Update existing item (e.g., quantity was merged)
           this.items[existingIndex] = returnedItem;
+          this.notifyListeners();
+
+          // Broadcast update to other users via WebSocket
+          if (websocket.isConnected()) {
+            websocket.broadcastItemUpdate(returnedItem);
+          }
         } else {
           // Add new item
           this.items.push(returnedItem);
-        }
+          this.notifyListeners();
 
-        this.notifyListeners();
-
-        // Broadcast to other users via WebSocket
-        if (websocket.isConnected()) {
-          websocket.broadcastItemAdd(returnedItem);
+          // Broadcast add to other users via WebSocket
+          if (websocket.isConnected()) {
+            websocket.broadcastItemAdd(returnedItem);
+          }
         }
 
         return returnedItem;
@@ -196,6 +201,27 @@ class ShoppingListState {
       return false;
     } finally {
       this.loading = false;
+    }
+  }
+
+  /**
+   * Update an item locally and broadcast to other clients.
+   * Use this when you already have the updated item from an API call.
+   */
+  updateItem(updatedItem: Item): void {
+    const existingIndex = this.items.findIndex(item => item.id === updatedItem.id);
+
+    if (existingIndex !== -1) {
+      // Update existing item
+      this.items[existingIndex] = updatedItem;
+      this.notifyListeners();
+
+      // Broadcast to other users via WebSocket
+      if (websocket.isConnected()) {
+        websocket.broadcastItemUpdate(updatedItem);
+      }
+    } else {
+      console.warn(`Item with id ${updatedItem.id} not found in state, cannot update`);
     }
   }
 

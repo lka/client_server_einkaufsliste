@@ -1223,11 +1223,34 @@ WebSocket integration enables real-time collaborative shopping lists where multi
 The WebSocket feature has been successfully implemented with the following components:
 
 - ✅ **WebSocket Module** ([client/src/data/websocket.ts](client/src/data/websocket.ts)) - Connection management, auto-reconnection, heartbeat
-- ✅ **State Integration** ([client/src/state/shopping-list-state.ts](client/src/state/shopping-list-state.ts)) - Real-time state updates
+- ✅ **State Integration** ([client/src/state/shopping-list-state.ts](client/src/state/shopping-list-state.ts)) - Real-time state updates with intelligent event dispatching
+  - **New items** → `broadcastItemAdd()` → `item:add` event
+  - **Deleted items** → `broadcastItemDelete()` → `item:delete` event
+  - **Updated items** (quantity, department) → `broadcastItemUpdate()` → `item:update` event
+  - **Smart broadcasting**: Distinguishes between add and update based on existing state
+- ✅ **UI Integration** ([client/src/ui/shopping-list-ui.ts](client/src/ui/shopping-list-ui.ts)) - Department assignment uses updateItem() for optimized WebSocket sync
 - ✅ **Server Endpoint** ([server/src/websocket_manager.py](server/src/websocket_manager.py), [server/src/main.py](server/src/main.py)) - Connection manager and broadcasting
 - ✅ **ConnectionStatus UI** ([client/src/ui/components/connection-status.ts](client/src/ui/components/connection-status.ts)) - Visual connection indicator
 - ✅ **Entry Point Integration** ([client/src/script.ts](client/src/script.ts)) - Automatic connection on app load
 - ✅ **Comprehensive Tests** ([client/src/data/websocket.test.ts](client/src/data/websocket.test.ts)) - 12 passing tests
+
+### Synchronized Operations
+
+All shopping list modifications are now synchronized in real-time:
+
+1. **Adding Items**:
+   - If item is new → Sends `item:add` event
+   - If item exists (quantity merge) → Sends `item:update` event
+   - Server merges quantities for same item+date combinations
+
+2. **Deleting Items**:
+   - Sends `item:delete` event with item ID
+   - All connected clients remove the item immediately
+
+3. **Updating Items**:
+   - **Quantity changes** (re-adding with new quantity) → `item:update` event
+   - **Department assignment** (Edit button) → `item:update` event
+   - Uses optimized `updateItem()` method to avoid unnecessary API calls
 
 **How to Enable**:
 

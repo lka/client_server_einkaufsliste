@@ -49,8 +49,8 @@ async function handleEditItem(itemId: string): Promise<void> {
     const updatedItem = await convertItemToProduct(itemId, departmentId);
 
     if (updatedItem) {
-      // Reload items to reflect changes
-      await shoppingListState.loadItems();
+      // Update item in state and broadcast to other clients
+      shoppingListState.updateItem(updatedItem);
       // UI updates automatically via state subscription
       showSuccess('Produkt erfolgreich zugewiesen');
     } else {
