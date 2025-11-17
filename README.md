@@ -63,8 +63,15 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - **Sichere Operation**: Warnung vor Datenverlust, Bestätigungsdialog erforderlich
     - Navigation über Benutzermenü: "💾 Datenbank-Backup"
 - ✅ **Real-time Updates mit WebSocket**: Live-Synchronisation der Einkaufsliste zwischen mehreren Clients
-  - **Automatische Synchronisation**: Änderungen werden sofort an alle verbundenen Clients übertragen
+  - **Automatische Synchronisation**: Alle Änderungen werden sofort an alle verbundenen Clients übertragen
+    - **Item hinzufügen**: Neue Items erscheinen sofort auf allen Clients
+    - **Item löschen**: Gelöschte Items verschwinden sofort überall
+    - **Item aktualisieren**: Mengen-Änderungen und Abteilungs-Zuordnungen werden live synchronisiert
   - **Smart Broadcasting**: Nur andere Clients werden benachrichtigt (nicht der Absender selbst)
+  - **Intelligentes Event-Handling**:
+    - Neue Items → `item:add` Event
+    - Gelöschte Items → `item:delete` Event
+    - Aktualisierte Items (Menge, Abteilung) → `item:update` Event
   - **Auto-Reconnection**: Automatische Wiederverbindung bei Verbindungsabbruch mit exponentiellem Backoff
   - **Heartbeat-Mechanismus**: Ping/Pong alle 30 Sekunden zur Erkennung stagnierender Verbindungen
   - **Message Queue**: Bis zu 100 Nachrichten werden während Offline-Phasen gepuffert
