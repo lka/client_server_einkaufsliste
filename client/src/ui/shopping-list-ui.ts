@@ -254,13 +254,11 @@ function showPrintPreview(): Promise<boolean> {
       const itemsArray = Array.from(groupedItems.entries());
       const midPoint = fitsOnOnePage ? itemsArray.length : Math.ceil(itemsArray.length / 2);
 
-      // Create 2-column container for first page items
+      // Create column container for first page items (flowing layout)
       const twoColumnContainer = document.createElement('div');
       twoColumnContainer.className = 'two-column-layout';
       twoColumnContainer.style.cssText = `
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0.5rem;
+        column-count: 2;
         column-gap: 1rem;
       `;
 
@@ -326,13 +324,11 @@ function showPrintPreview(): Promise<boolean> {
         backHeader.appendChild(backDateInfo);
         backPage.appendChild(backHeader);
 
-        // Create 2-column container for back page items
+        // Create column container for back page items (flowing layout)
         const backTwoColumnContainer = document.createElement('div');
         backTwoColumnContainer.className = 'two-column-layout';
         backTwoColumnContainer.style.cssText = `
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 0.5rem;
+          column-count: 2;
           column-gap: 1rem;
         `;
 
@@ -601,11 +597,9 @@ function printPreviewContent(frontContent: string, backContent: string, storeNam
           border: none;
         }
 
-        /* 2-column layout for items */
+        /* 2-column layout for items (flowing, space-efficient) */
         .two-column-layout {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 0.5rem;
+          column-count: 2;
           column-gap: 1rem;
         }
 
@@ -613,6 +607,9 @@ function printPreviewContent(frontContent: string, backContent: string, storeNam
         .two-column-layout > div {
           break-inside: avoid;
           page-break-inside: avoid;
+          display: inline-block;
+          width: 100%;
+          margin-bottom: 0.5rem;
         }
 
         /* Hide department titles when requested */
