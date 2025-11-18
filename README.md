@@ -31,6 +31,12 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
       - "Alle Daten" Option für vollständige Liste
       - Im Ausdruck wird das ausgewählte Datum statisch angezeigt
     - **2-spaltige Darstellung**: Items werden in 2 Spalten angeordnet für optimale Platznutzung
+      - Sowohl in Print-Preview als auch beim tatsächlichen Druck
+      - CSS Columns für gleichmäßige Platzverteilung
+      - `@media print` Regeln stellen sicheres 2-Spalten-Layout beim Drucken sicher
+    - **Abteilungssortierung**: Abteilungen werden in der Print-Vorschau und beim Druck nach ihrer konfigurierten Reihenfolge angezeigt
+      - Gleiche Sortierung wie auf dem Bildschirm (sort_order aus Datenbank)
+      - Konsistente Darstellung über alle Views hinweg
     - Automatische Layout-Optimierung: Bei vielen Einträgen (>35 Zeilen) wird die Liste auf Vorder- und Rückseite verteilt
     - Bei wenigen Einträgen: Rückseite zeigt Notizen-Bereich mit Linien
     - **Scrollbare Print-Preview**: Überschrift und Buttons bleiben fixiert, Vorschaubereich ist scrollbar

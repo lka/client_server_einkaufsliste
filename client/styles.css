@@ -1053,3 +1053,19 @@ main{
     width:100%;
   }
 }
+
+/* Print Styles - 2 column layout */
+@media print {
+  #items {
+    display: block;
+    column-count: 2;
+    column-gap: 1rem;
+    column-fill: auto;
+  }
+
+  .department-section {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    display: block;
+  }
+}

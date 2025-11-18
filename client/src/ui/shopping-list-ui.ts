@@ -234,14 +234,17 @@ function showPrintPreview(): Promise<boolean> {
       header.appendChild(dateDropdown);
       previewContent.appendChild(header);
 
-      // Group items by department/store
-      const groupedItems = new Map<string, any[]>();
+      // Group items by department/store with sort_order tracking
+      const groupedItems = new Map<string, { items: any[]; sortOrder: number }>();
       itemsToRender.forEach(item => {
         const key = item.department_name || 'Sonstiges';
         if (!groupedItems.has(key)) {
-          groupedItems.set(key, []);
+          groupedItems.set(key, {
+            items: [],
+            sortOrder: item.department_sort_order ?? 999, // Default high value for undefined sort_order
+          });
         }
-        groupedItems.get(key)!.push(item);
+        groupedItems.get(key)!.items.push(item);
       });
 
       // Calculate if content fits on one page (estimate ~70 lines total for 2 columns = ~35 per column)
@@ -250,8 +253,13 @@ function showPrintPreview(): Promise<boolean> {
       const estimatedLines = totalItems + (departmentCount * 2); // items + department headers
       const fitsOnOnePage = estimatedLines <= 70; // 2 columns with ~35 lines each
 
+      // Sort departments by sort_order before rendering
+      const sortedDepartments = Array.from(groupedItems.entries()).sort(
+        ([, a], [, b]) => a.sortOrder - b.sortOrder
+      );
+
       // Render grouped items on first page
-      const itemsArray = Array.from(groupedItems.entries());
+      const itemsArray = sortedDepartments;
       const midPoint = fitsOnOnePage ? itemsArray.length : Math.ceil(itemsArray.length / 2);
 
       // Create column container for first page items (flowing layout)
@@ -263,7 +271,7 @@ function showPrintPreview(): Promise<boolean> {
       `;
 
       // First page items
-      itemsArray.slice(0, midPoint).forEach(([departmentName, items]) => {
+      itemsArray.slice(0, midPoint).forEach(([departmentName, { items }]) => {
         const section = document.createElement('div');
         section.style.cssText = 'margin-bottom: 0.5rem; break-inside: avoid;';
 
@@ -333,7 +341,7 @@ function showPrintPreview(): Promise<boolean> {
         `;
 
         // Render remaining items
-        itemsArray.slice(midPoint).forEach(([departmentName, items]) => {
+        itemsArray.slice(midPoint).forEach(([departmentName, { items }]) => {
           const section = document.createElement('div');
           section.style.cssText = 'margin-bottom: 0.5rem; break-inside: avoid;';
 
