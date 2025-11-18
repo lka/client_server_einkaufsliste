@@ -39,6 +39,107 @@ def get_store_products(store_id: int, current_user: str = Depends(get_current_us
         return products
 
 
+@router.get("/stores/{store_id}/products/suggestions")
+def get_product_suggestions(
+    store_id: int,
+    q: str,
+    limit: int = 10,
+    current_user: str = Depends(get_current_user),
+):
+    """Get product suggestions for autocomplete (requires authentication).
+
+    Returns top matching names from products and template items.
+    Uses fuzzy matching with normalized names for better results.
+
+    Args:
+        store_id: Store ID
+        q: Search query string (partial product name)
+        limit: Maximum number of suggestions (default: 10)
+        current_user: Current authenticated username from JWT
+
+    Returns:
+        List[dict]: Top matching suggestions with name and source
+            [{"name": "Möhren", "source": "product"}, ...]
+
+    Raises:
+        HTTPException: If store not found
+    """
+    with get_session() as session:
+        store = session.get(Store, store_id)
+        if not store:
+            raise HTTPException(status_code=404, detail="Store not found")
+
+        if not q.strip():
+            return []
+
+        normalized_query = normalize_name(q)
+        matches = []
+
+        # Get all products for this store
+        products = session.exec(
+            select(Product).where(Product.store_id == store_id)
+        ).all()
+
+        # Add products to matches
+        for product in products:
+            normalized_product = normalize_name(product.name)
+            ratio = SequenceMatcher(None, normalized_query, normalized_product).ratio()
+
+            # Boost score if query is at start of product name
+            if normalized_product.startswith(normalized_query):
+                ratio = min(ratio + 0.3, 1.0)
+
+            if ratio > 0.3:
+                matches.append((ratio, product.name, "product"))
+
+        # Get all template names (for template suggestions)
+        from ..models import ShoppingTemplate, TemplateItem
+
+        templates = session.exec(select(ShoppingTemplate)).all()
+        for template in templates:
+            # Skip if already added from products
+            if template.name in [m[1] for m in matches]:
+                continue
+
+            normalized_template = normalize_name(template.name)
+            ratio = SequenceMatcher(None, normalized_query, normalized_template).ratio()
+
+            # Boost score if query is at start
+            if normalized_template.startswith(normalized_query):
+                ratio = min(ratio + 0.3, 1.0)
+
+            if ratio > 0.3:
+                matches.append((ratio, template.name, "template"))
+
+        # Get all template items and add unique names
+        template_items = session.exec(select(TemplateItem)).all()
+        template_item_names = set()  # Track unique template item names
+
+        for item in template_items:
+            # Skip if already added from products or templates
+            if item.name in [m[1] for m in matches]:
+                continue
+
+            # Skip duplicates within template items
+            if item.name in template_item_names:
+                continue
+
+            template_item_names.add(item.name)
+            normalized_item = normalize_name(item.name)
+            ratio = SequenceMatcher(None, normalized_query, normalized_item).ratio()
+
+            # Boost score if query is at start
+            if normalized_item.startswith(normalized_query):
+                ratio = min(ratio + 0.3, 1.0)
+
+            if ratio > 0.3:
+                matches.append((ratio, item.name, "template_item"))
+
+        # Sort by score (descending) and return top N
+        matches.sort(key=lambda x: x[0], reverse=True)
+        return [{"name": name, "source": source} for _, name, source in matches[:limit]]
+
+
 @router.get("/stores/{store_id}/products/search")
 def search_products_fuzzy(
     store_id: int, q: str, current_user: str = Depends(get_current_user)

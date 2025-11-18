@@ -11,12 +11,15 @@ import {
   convertItemToProduct,
   deleteItemsBeforeDate,
   fetchTemplates,
+  getProductSuggestions,
   type Department,
+  type ProductSuggestion,
 } from '../data/api.js';
 import { Modal } from './components/modal.js';
 import { createButton } from './components/button.js';
 import { showError, showSuccess } from './components/toast.js';
 import { createDatePicker, type DatePickerInstance } from './components/datepicker.js';
+import { Autocomplete } from './components/autocomplete.js';
 
 // Current selected store ID (null = all stores)
 let selectedStoreId: number | null = null;
@@ -1030,6 +1033,41 @@ export function initShoppingListUI(): void {
     selectedShoppingDate = `${year}-${month}-${day}`;
   }
 
+  // Initialize Autocomplete for product suggestions
+  let autocompleteInstance: Autocomplete | null = null;
+
+  // Function to initialize/re-initialize autocomplete when store changes
+  const initializeAutocomplete = () => {
+    if (autocompleteInstance) {
+      autocompleteInstance.destroy();
+      autocompleteInstance = null;
+    }
+
+    if (selectedStoreId && input) {
+      autocompleteInstance = new Autocomplete({
+        input,
+        onSearch: async (query: string) => {
+          if (!selectedStoreId) {
+            return [];
+          }
+          const suggestions = await getProductSuggestions(selectedStoreId, query, 10);
+          return suggestions.map((suggestion: ProductSuggestion) => ({
+            id: suggestion.name,
+            label: suggestion.name,
+            data: suggestion,
+          }));
+        },
+        onSelect: (suggestion) => {
+          input.value = suggestion.label;
+          mengeInput.focus();
+        },
+        debounceMs: 300,
+        minChars: 2,
+        maxSuggestions: 10,
+      });
+    }
+  };
+
   // Subscribe to state changes for automatic UI updates
   shoppingListState.subscribe((items) => {
     const filteredItems = filterItems(items);
@@ -1043,13 +1081,19 @@ export function initShoppingListUI(): void {
   });
 
   // Load stores into filter (this will also set the default selection)
-  loadStoreFilter();
+  loadStoreFilter().then(() => {
+    // Initialize autocomplete after stores are loaded
+    initializeAutocomplete();
+  });
 
   // Store filter change handler
   if (storeFilter) {
     storeFilter.addEventListener('change', () => {
       const value = storeFilter.value;
       selectedStoreId = value ? parseInt(value, 10) : null;
+
+      // Re-initialize autocomplete with new store
+      initializeAutocomplete();
 
       // Re-render with filtered items
       const items = shoppingListState.getItems();
