@@ -325,6 +325,10 @@ export function onUserLeft(callback: (userId: number) => void): () => void {
   return subscribe('user:left', callback);
 }
 
+export function onDepartmentUpdated(callback: (department: any) => void): () => void {
+  return subscribe('department:updated', callback);
+}
+
 export function onConnectionOpen(callback: () => void): () => void {
   return subscribe('connection:open', callback);
 }

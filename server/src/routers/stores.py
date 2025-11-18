@@ -1,13 +1,14 @@
 """Store and department management endpoints."""
 
 from typing import List
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from sqlmodel import select
 
 from ..models import Store, Department
 from ..db import get_session
 from ..auth import get_current_user
 from ..schemas import StoreCreate, StoreUpdate, DepartmentCreate, DepartmentUpdate
+from ..websocket_manager import manager
 
 router = APIRouter(prefix="/api/stores", tags=["stores"])
 
@@ -235,16 +236,21 @@ def delete_department(
 
 
 @departments_router.put("/{department_id}", response_model=Department)
-def update_department(
+async def update_department(
     department_id: int,
     dept_data: DepartmentUpdate,
+    background_tasks: BackgroundTasks,
     current_user: str = Depends(get_current_user),
 ):
     """Update a department (requires authentication).
 
+    Broadcasts department:updated event to all connected WebSocket clients
+    so that shopping lists can refresh and show updated department names.
+
     Args:
         department_id: Department ID
         dept_data: Department update data (partial update supported)
+        background_tasks: FastAPI background tasks
         current_user: Current authenticated username from JWT
 
     Returns:
@@ -267,6 +273,20 @@ def update_department(
         session.add(department)
         session.commit()
         session.refresh(department)
+
+        # Broadcast department update to all WebSocket clients
+        await manager.broadcast(
+            {
+                "type": "department:updated",
+                "data": {
+                    "id": department.id,
+                    "name": department.name,
+                    "store_id": department.store_id,
+                    "sort_order": department.sort_order,
+                },
+            }
+        )
+
         return department
 
 

@@ -103,6 +103,9 @@ async function renderStores(stores: readonly Store[]): Promise<void> {
             <div class="department-item" data-department-id="${dept.id}">
               <span class="department-name">${dept.name}</span>
               <div class="department-controls">
+                <button class="edit-department-btn" data-department-id="${dept.id}" data-department-name="${dept.name}" title="Abteilungsname bearbeiten">
+                  ✏️
+                </button>
                 <button class="reorder-btn up-btn" data-department-id="${dept.id}" data-direction="up" ${index === 0 ? 'disabled' : ''}>
                   ↑
                 </button>
@@ -307,6 +310,80 @@ function attachDynamicListeners(): void {
       } else {
         showError('Fehler beim Erstellen der Abteilung.');
       }
+    });
+  });
+
+  // Edit department buttons
+  const editDepartmentBtns = document.querySelectorAll('.edit-department-btn');
+  editDepartmentBtns.forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      const target = e.currentTarget as HTMLElement;
+      const departmentId = parseInt(target.dataset.departmentId || '0', 10);
+      const currentName = target.dataset.departmentName || '';
+
+      // Create modal with input field
+      const modalContent = document.createElement('div');
+
+      const label = document.createElement('label');
+      label.textContent = 'Neuer Name:';
+      label.style.cssText = 'display: block; margin-bottom: 0.5rem; font-weight: bold;';
+      modalContent.appendChild(label);
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.value = currentName;
+      input.style.cssText = 'width: 100%; padding: 0.5rem; margin-bottom: 1rem; border: 1px solid #ddd; border-radius: 4px;';
+      modalContent.appendChild(input);
+
+      const modal = new Modal({
+        title: 'Abteilungsname bearbeiten',
+        content: modalContent,
+        size: 'small',
+      });
+
+      const buttonContainer = document.createElement('div');
+      buttonContainer.style.display = 'flex';
+      buttonContainer.style.gap = '10px';
+      buttonContainer.style.justifyContent = 'flex-end';
+
+      const cancelBtn = createButton({
+        label: 'Abbrechen',
+        variant: 'secondary',
+        onClick: () => modal.close(),
+      });
+
+      const saveBtn = createButton({
+        label: 'Speichern',
+        variant: 'primary',
+        onClick: async () => {
+          const newName = input.value.trim();
+          if (!newName) {
+            showError('Bitte geben Sie einen Namen ein.');
+            return;
+          }
+
+          const success = await updateDepartment(departmentId, newName, undefined);
+          if (success) {
+            modal.close();
+            await loadStores();
+            showSuccess('Abteilungsname erfolgreich geändert');
+          } else {
+            showError('Fehler beim Ändern des Namens.');
+          }
+        },
+      });
+
+      buttonContainer.appendChild(cancelBtn);
+      buttonContainer.appendChild(saveBtn);
+      modalContent.appendChild(buttonContainer);
+
+      modal.open();
+
+      // Focus input and select text
+      setTimeout(() => {
+        input.focus();
+        input.select();
+      }, 100);
     });
   });
 

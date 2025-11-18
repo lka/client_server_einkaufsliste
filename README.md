@@ -86,11 +86,13 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - **Item hinzufügen**: Neue Items erscheinen sofort auf allen Clients
     - **Item löschen**: Gelöschte Items verschwinden sofort überall
     - **Item aktualisieren**: Mengen-Änderungen und Abteilungs-Zuordnungen werden live synchronisiert
+    - **Department-Updates**: Abteilungsnamen- und Sortierreihenfolge-Änderungen werden sofort in allen Shopping-Listen aktualisiert
   - **Smart Broadcasting**: Nur andere Clients werden benachrichtigt (nicht der Absender selbst)
   - **Intelligentes Event-Handling**:
     - Neue Items → `item:add` Event
     - Gelöschte Items → `item:delete` Event
     - Aktualisierte Items (Menge, Abteilung) → `item:update` Event
+    - Aktualisierte Departments → `department:updated` Event
   - **Auto-Reconnection**: Automatische Wiederverbindung bei Verbindungsabbruch mit exponentiellem Backoff
   - **Heartbeat-Mechanismus**: Ping/Pong alle 30 Sekunden zur Erkennung stagnierender Verbindungen
   - **Message Queue**: Bis zu 100 Nachrichten werden während Offline-Phasen gepuffert
@@ -132,6 +134,9 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
   - **Geschäfts-Sortierung**: Reihenfolge der Geschäfte mit ↑↓ Buttons ändern
     - Bestimmt die Reihenfolge im Store-Auswahlmenü
     - Persistiert in der Datenbank (sort_order Feld)
+  - **Abteilungs-Bearbeitung**: Abteilungsnamen können über ✏️-Icon geändert werden
+    - Modal-Dialog mit Eingabefeld für neuen Namen
+    - Sofortige Aktualisierung in der Datenbank
   - **Abteilungs-Sortierung**: Reihenfolge der Abteilungen mit ↑↓ Buttons ändern
     - Die Abteilungsreihenfolge wird automatisch in der Shopping-Liste übernommen
     - Produkte werden nach Abteilungsreihenfolge gruppiert angezeigt
