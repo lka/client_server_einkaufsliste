@@ -12,6 +12,19 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
   - Je 9 Abteilungen pro Geschäft (z.B. "Obst & Gemüse", "Backwaren", "Milchprodukte")
   - Produktkatalog mit über 17 gängigen Produkten
   - Zuordnung von Produkten zu Geschäften und Abteilungen
+  - **Intelligente Produktvorschläge (Autocomplete)**: Dynamische Vorschläge beim Eingeben von Produktnamen
+    - Echtzeit-Suche mit Fuzzy-Matching in der Produktdatenbank des ausgewählten Geschäfts
+    - **Berücksichtigt drei Quellen** für umfassende Vorschläge:
+      - **Produkte**: Alle Produkte im ausgewählten Geschäft
+      - **Template-Namen**: Namen aller Shopping-Templates (z.B. "Wocheneinkauf")
+      - **Template-Items**: Einzelne Artikel aus allen Templates
+    - Duplikat-Vermeidung: Jeder Name erscheint nur einmal in den Vorschlägen
+    - Vorschläge erscheinen ab 2 Zeichen mit 300ms Debouncing für optimale Performance
+    - Bis zu 10 relevante Vorschläge, sortiert nach Ähnlichkeit
+    - **Tastaturnavigation**: ↑↓ zum Navigieren, Enter zum Auswählen, Escape zum Schließen
+    - **Mausunterstützung**: Klick oder Hover zum Auswählen
+    - Automatischer Fokus auf Mengenfeld nach Auswahl für schnellen Workflow
+    - Vorschläge können durch Weitertippen ignoriert werden
   - **Automatische Produkt-Zuordnung**: Neue Items werden automatisch mit Produkten im Katalog gematcht (Fuzzy-Matching mit 60% Schwellwert)
   - **Abteilungs-Gruppierung**: Shopping-Liste zeigt Items gruppiert nach Abteilungen in Spalten-Layout
   - **Erstes Geschäft als Standard**: Automatische Auswahl des ersten Geschäfts beim Laden
