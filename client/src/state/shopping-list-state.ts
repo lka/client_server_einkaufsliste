@@ -75,6 +75,14 @@ class ShoppingListState {
         }
       })
     );
+
+    this.wsUnsubscribers.push(
+      websocket.onDepartmentUpdated(() => {
+        // Department was updated (name or sort_order changed)
+        // Reload all items to get updated department information
+        this.loadItems();
+      })
+    );
   }
 
   /**
