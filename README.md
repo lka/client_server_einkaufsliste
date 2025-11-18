@@ -23,6 +23,9 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - Erstellt automatisch ein Produkt im Katalog (ohne Mengenangaben)
     - Item erscheint danach in der gewählten Abteilung statt in "Sonstiges"
     - Nutzt vorhandene Produkte, falls gleichnamiges Produkt bereits existiert
+    - **Datumsübergreifende Zuordnung**: Wenn ein Item einer Abteilung zugeordnet wird, erhalten automatisch **alle Items mit dem gleichen Namen** (unabhängig vom Einkaufsdatum) die gleiche Abteilungszuordnung
+      - Einmalige Zuordnung genügt für alle zukünftigen und vergangenen Items mit dem gleichen Namen
+      - Verhindert wiederholte manuelle Zuordnung bei wiederkehrenden Einkäufen
   - **Intelligente Druckfunktion**: Einkaufsliste als DIN A5-Heft drucken
     - Druckt auf DIN A4 Querformat → in der Mitte falten ergibt A5-Heft
     - **Datumsbasierte Filterung**: Dropdown zur Auswahl des Einkaufsdatums in der Druckvorschau

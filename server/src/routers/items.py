@@ -297,11 +297,13 @@ def convert_item_to_product(
     request: ConvertItemRequest,
     current_user: str = Depends(get_current_user),
 ):
-    """Convert an item to a product and update the item's department assignment.
+    """Convert item to product, update all matching items.
 
     Creates a new product based on the item name (without quantity),
-    assigns it to the specified department, and updates the item to reference
-    the new product.
+    assigns it to the specified department, and updates ALL items with
+    the same name to reference the new product. This ensures consistent
+    department assignment across all shopping dates for items with
+    identical names.
 
     All authenticated users can convert items from the shared shopping list.
 
@@ -358,9 +360,16 @@ def convert_item_to_product(
             session.add(product)
             session.flush()  # Get product ID
 
-        # Update item with product reference
-        item.product_id = product.id
-        session.add(item)
+        # Update ALL items with the same name (regardless of shopping_date)
+        # to use the same product_id
+        all_matching_items = session.exec(
+            select(Item).where(Item.name == item.name)
+        ).all()
+
+        for matching_item in all_matching_items:
+            matching_item.product_id = product.id
+            session.add(matching_item)
+
         session.commit()
         session.refresh(item)
 
