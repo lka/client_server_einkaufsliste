@@ -74,19 +74,20 @@ window.addEventListener('DOMContentLoaded', async () => {
     console.log('Connecting to WebSocket...');
     websocket.connect();
 
-    // Add connection status indicator to header
-    const header = document.querySelector('header');
-    if (header) {
-      console.log('Creating ConnectionStatus component in header');
+    // Add connection status indicator to header-actions (before user menu)
+    const headerActions = document.querySelector('.header-actions') as HTMLElement;
+    if (headerActions) {
+      console.log('Creating ConnectionStatus component in header-actions');
       new ConnectionStatus({
-        container: header,
+        container: headerActions,
         onReconnect: () => {
           // Reload items when reconnected to sync state
           shoppingListState.loadItems();
-        }
+        },
+        showUserCount: true
       });
     } else {
-      console.warn('Header element not found for ConnectionStatus');
+      console.warn('Header actions element not found for ConnectionStatus');
     }
   } else {
     console.log('WebSocket not enabled. Run: localStorage.setItem("enable_ws", "true") and reload');

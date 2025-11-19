@@ -32,6 +32,7 @@ export class ConnectionStatus {
   private userCountEl: HTMLElement | null = null;
   private unsubscribers: Array<() => void> = [];
   private onReconnect?: () => void;
+  private activeUserCount: number = 0;
 
   constructor(options: ConnectionStatusOptions) {
     this.container = options.container;
@@ -66,7 +67,8 @@ export class ConnectionStatus {
     wrapper.appendChild(this.statusIndicator);
     wrapper.appendChild(this.statusLabel);
 
-    this.container.appendChild(wrapper);
+    // Insert as first child to appear before user menu
+    this.container.insertBefore(wrapper, this.container.firstChild);
   }
 
   /**
@@ -76,7 +78,14 @@ export class ConnectionStatus {
     this.userCountEl = document.createElement('span');
     this.userCountEl.className = 'connection-status-users';
     this.userCountEl.textContent = '';
-    this.container.appendChild(this.userCountEl);
+
+    // Insert before user menu (second child, after connection-status)
+    const userMenu = this.container.querySelector('.user-menu');
+    if (userMenu) {
+      this.container.insertBefore(this.userCountEl, userMenu);
+    } else {
+      this.container.appendChild(this.userCountEl);
+    }
   }
 
   /**
@@ -118,6 +127,13 @@ export class ConnectionStatus {
 
     this.unsubscribers.push(
       websocket.onUserLeft(() => {
+        this.updateUserCount();
+      })
+    );
+
+    this.unsubscribers.push(
+      websocket.onActiveUserCount((data: { count: number }) => {
+        this.activeUserCount = data.count;
         this.updateUserCount();
       })
     );
@@ -164,11 +180,10 @@ export class ConnectionStatus {
       return;
     }
 
-    // Note: This would require server to send user count
-    // For now, just show indicator that users are connected
-    if (websocket.isConnected()) {
-      this.userCountEl.textContent = '👥';
-      this.userCountEl.title = 'Mehrere Benutzer online';
+    if (websocket.isConnected() && this.activeUserCount > 0) {
+      this.userCountEl.textContent = `👥 ${this.activeUserCount}`;
+      const userText = this.activeUserCount === 1 ? 'Benutzer' : 'Benutzer';
+      this.userCountEl.title = `${this.activeUserCount} ${userText} online`;
     } else {
       this.userCountEl.textContent = '';
     }

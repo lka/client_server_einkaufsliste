@@ -25,6 +25,7 @@ header h1{margin:0;font-size:1.5rem;flex:1}
   display:flex;
   gap:.5rem;
   align-items:center;
+  margin-left:auto;
 }
 .browse-btn, .back-btn{
   background:rgba(255,255,255,.1);
