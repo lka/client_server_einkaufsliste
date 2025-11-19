@@ -57,6 +57,12 @@ The shopping list client is a TypeScript application built with a **four-layer a
 │   │  API calls   │  JWT auth    │  DOM utilities     │      │
 │   │  Token       │  localStorage│  Template loading  │      │
 │   │  refresh     │  management  │  Rendering         │      │
+│   │              │  expires_in  │                    │      │
+│   ├──────────────┼──────────────┼────────────────────┤      │
+│   │ websocket.ts │ inactivity-  │                    │      │
+│   │              │ tracker.ts   │                    │      │
+│   │  Real-time   │  Auto logout │                    │      │
+│   │  connection  │  on timeout  │                    │      │
 │   └──────────────┴──────────────┴────────────────────┘      │
 │         - Pure data operations                               │
 │         - No UI knowledge                                    │
@@ -92,12 +98,15 @@ The shopping list client is a TypeScript application built with a **four-layer a
 - **Interfaces**: `Item` (with shopping_date?: string), `Store`, `Department`, `Product`, `Template`, `TemplateItem`
 
 #### auth.ts
-- **Responsibility**: Authentication and user management
+- **Responsibility**: Authentication and user management with inactivity tracking
 - **Functions**:
-  - `login(credentials)`: Authenticate user
+  - `login(credentials)`: Authenticate user, returns `expires_in` (seconds)
   - `register(data)`: Create new account
-  - `logout()`: Clear authentication
+  - `logout()`: Clear authentication, session storage, and browser history
   - `refreshToken()`: Renew JWT token (optimized with singleton pattern)
+  - `setToken(token, expiresIn?)`: Store token with expiration time
+  - `getTokenExpiresIn()`: Retrieve stored token expiration time
+  - `clearToken()`: Remove token and expiration info
   - `getCurrentUser()`: Get user info
   - `deleteUser()`: Delete account
   - `getToken()`, `setToken()`, `clearToken()`: Token storage
@@ -139,11 +148,45 @@ The shopping list client is a TypeScript application built with a **four-layer a
   - All items built in memory before single DOM insertion
   - Significant performance gain for large lists (100+ items)
 
+#### websocket.ts
+- **Responsibility**: Real-time WebSocket connection management
+- **Functions**:
+  - `connect()`: Establish WebSocket connection with JWT authentication
+  - `disconnect()`: Close connection gracefully
+  - `isConnected()`: Check connection status
+  - `getConnectionState()`: Get detailed state (disconnected/connecting/connected/reconnecting)
+  - Event subscription: `onItemAdded()`, `onItemDeleted()`, `onItemUpdated()`, `onActiveUserCount()`
+  - Broadcasting: `broadcastItemAdd()`, `broadcastItemDelete()`, `broadcastItemUpdate()`
+- **Features**:
+  - Auto-reconnection with exponential backoff (1s to 30s)
+  - Heartbeat ping/pong every 30 seconds
+  - Message queue (up to 100 messages during offline)
+  - JWT token in WebSocket URL for authentication
+- **Event System**: Observer pattern with Map-based event listeners
+
+#### inactivity-tracker.ts (NEW)
+- **Responsibility**: Track user activity and auto-logout after inactivity
+- **Functions**:
+  - `initInactivityTracker(expiresInSeconds)`: Start tracking with token expiration time
+  - `stopInactivityTracker()`: Stop tracking and cleanup
+  - `getRemainingTime()`: Get remaining seconds until timeout
+- **Activity Events Monitored**:
+  - Mouse: `mousedown`, `mousemove`, `click`
+  - Keyboard: `keypress`
+  - Touch: `touchstart`
+  - Scroll: `scroll`
+- **Behavior**:
+  - Timer resets on any activity event
+  - After timeout: Alert message, logout, clear history, redirect to login
+  - Configurable timeout from server (`ACCESS_TOKEN_EXPIRE_MINUTES`)
+  - Clears SessionStorage and Browser History on logout
+
 **Testing**:
 - `api.test.ts`: 18 tests covering all API operations, 401 handling, and edge cases (100% coverage)
 - `auth.test.ts`: 36 tests covering authentication, token management, and refresh optimization (100% coverage)
 - `dom.test.ts`: 14 tests for DOM manipulation, rendering, template caching, and batching (98% coverage)
-- **Total**: 68 tests, 99.5%+ coverage
+- `websocket.test.ts`: 12 tests for WebSocket connection, events, and reconnection (100% coverage)
+- **Total**: 80 tests, 99%+ coverage
 
 **Principles**:
 - ✅ No direct DOM manipulation for UI features

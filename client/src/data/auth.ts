@@ -3,6 +3,7 @@
  */
 
 const TOKEN_KEY = 'auth_token';
+const TOKEN_EXPIRES_KEY = 'token_expires_in';
 
 export interface User {
   id: number;
@@ -35,8 +36,11 @@ export function getToken(): string | null {
 /**
  * Store JWT token in localStorage.
  */
-export function setToken(token: string): void {
+export function setToken(token: string, expiresIn?: number): void {
   localStorage.setItem(TOKEN_KEY, token);
+  if (expiresIn !== undefined) {
+    localStorage.setItem(TOKEN_EXPIRES_KEY, expiresIn.toString());
+  }
 }
 
 /**
@@ -44,6 +48,15 @@ export function setToken(token: string): void {
  */
 export function clearToken(): void {
   localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(TOKEN_EXPIRES_KEY);
+}
+
+/**
+ * Get token expiration time in seconds.
+ */
+export function getTokenExpiresIn(): number | null {
+  const expiresIn = localStorage.getItem(TOKEN_EXPIRES_KEY);
+  return expiresIn ? parseInt(expiresIn, 10) : null;
 }
 
 /**
@@ -108,8 +121,9 @@ export async function register(data: RegisterData): Promise<User | null> {
 
 /**
  * Login user and store JWT token.
+ * Returns the token expiration time in seconds, or null on failure.
  */
-export async function login(credentials: LoginCredentials): Promise<boolean> {
+export async function login(credentials: LoginCredentials): Promise<number | null> {
   try {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
@@ -119,22 +133,36 @@ export async function login(credentials: LoginCredentials): Promise<boolean> {
     if (!res.ok) {
       const error = await res.json();
       console.error('Login failed:', error.detail);
-      return false;
+      return null;
     }
     const data = await res.json();
-    setToken(data.access_token);
-    return true;
+    setToken(data.access_token, data.expires_in);
+    return data.expires_in;
   } catch (error) {
     console.error('Error during login:', error);
-    return false;
+    return null;
   }
 }
 
 /**
- * Logout user by clearing token.
+ * Logout user by clearing token and browser history.
  */
 export function logout(): void {
   clearToken();
+
+  // Clear session storage
+  sessionStorage.clear();
+
+  // Clear browser history by replacing state
+  try {
+    const historyLength = window.history.length;
+    if (historyLength > 1) {
+      window.history.go(-(historyLength - 1));
+    }
+    window.history.replaceState(null, '', '/');
+  } catch (error) {
+    console.error('Error clearing browser history:', error);
+  }
 }
 
 /**

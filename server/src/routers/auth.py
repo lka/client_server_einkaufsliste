@@ -106,7 +106,10 @@ def login(credentials: UserLogin):
         access_token = create_access_token(
             data={"sub": user.username}, expires_delta=access_token_expires
         )
-        return Token(access_token=access_token)
+        return Token(
+            access_token=access_token,
+            expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60,  # Convert to seconds
+        )
 
 
 @router.get("/me", response_model=UserResponse)

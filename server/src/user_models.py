@@ -67,10 +67,12 @@ class Token(SQLModel):
     Attributes:
         access_token: JWT access token
         token_type: Token type (always "bearer")
+        expires_in: Token expiration time in seconds
     """
 
     access_token: str
     token_type: str = "bearer"
+    expires_in: int
 
 
 class UserResponse(SQLModel):

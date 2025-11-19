@@ -53,8 +53,9 @@ export function initLoginPage(): void {
       return;
     }
 
-    const success = await login({ username, password });
-    if (success) {
+    const expiresIn = await login({ username, password });
+    if (expiresIn) {
+      // Login successful - inactivity tracker will be initialized in script.ts
       window.location.href = '/app';
     } else {
       showError('loginError', 'Ungültiger Benutzername oder Passwort');
