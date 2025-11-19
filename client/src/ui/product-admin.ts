@@ -142,7 +142,7 @@ function renderProductManagement(): string {
       </div>
       <div class="form-buttons">
         <button id="saveProductBtn" class="btn-primary">
-          ${editingProductId ? 'Speichern' : 'Erstellen'}
+          ⏎
         </button>
         ${editingProductId ? '<button id="cancelEditBtn" class="btn-secondary">Abbrechen</button>' : ''}
       </div>
