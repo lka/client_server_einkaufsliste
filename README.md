@@ -106,12 +106,16 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - Gelöschte Items → `item:delete` Event
     - Aktualisierte Items (Menge, Abteilung) → `item:update` Event
     - Aktualisierte Departments → `department:updated` Event
+  - **Ein-Klick-Aktivierung**: WebSocket-Toggle-Button im Benutzermenü (⋮)
+    - **"🔌 WebSocket aktivieren"** - Aktiviert WebSocket-Verbindung sofort (ohne Seiten-Reload)
+    - **"🔌 WebSocket deaktivieren"** - Trennt WebSocket-Verbindung sofort
+    - **Dynamischer Button-Status**: Zeigt aktuellen Verbindungsstatus an
+    - **Connection Status Indicator**: Visueller Status (Online/Offline/Neuverbindung) im Header mit User-Count
+    - **Active User Count**: Anzeige der Anzahl verbundener Benutzer (z.B. "👥 3")
   - **Auto-Reconnection**: Automatische Wiederverbindung bei Verbindungsabbruch mit exponentiellem Backoff
   - **Heartbeat-Mechanismus**: Ping/Pong alle 30 Sekunden zur Erkennung stagnierender Verbindungen
   - **Message Queue**: Bis zu 100 Nachrichten werden während Offline-Phasen gepuffert
   - **JWT-Authentifizierung**: Sichere WebSocket-Verbindung mit Token-basierter Authentifizierung
-  - **Connection Status Indicator**: Visueller Status (Online/Offline/Neuverbindung) im Header
-  - **Feature Flag**: Opt-In via localStorage oder URL-Parameter für einfache Aktivierung
   - **URL-Parameter Aktivierung**: `?ws=1` oder `?enable_ws=true` aktiviert WebSocket (ideal für mobile Geräte)
   - **Nahtlose Integration**: WebSocket-Events integrieren sich mit bestehendem Observer Pattern im State Layer
   - **Graceful Degradation**: Bei fehlender WebSocket-Unterstützung funktioniert die App weiterhin über HTTP

@@ -341,6 +341,10 @@ export function onConnectionError(callback: (error: Event) => void): () => void 
   return subscribe('connection:error', callback);
 }
 
+export function onActiveUserCount(callback: (data: { count: number }) => void): () => void {
+  return subscribe('users:active_count', callback);
+}
+
 // Broadcast events to server
 export function broadcastItemAdd(item: Item): void {
   send({

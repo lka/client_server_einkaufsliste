@@ -130,6 +130,12 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
     # Connect user
     await manager.connect(websocket, user_id)
 
+    # Send active user count to all users
+    active_count = manager.get_active_user_count()
+    await manager.broadcast(
+        {"type": "users:active_count", "data": {"count": active_count}}
+    )
+
     try:
         while True:
             # Receive message from client
@@ -185,6 +191,12 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
         await manager.broadcast(
             {"type": "user:left", "data": {"userId": user_id}},
             exclude_user=user_id,
+        )
+
+        # Send updated active user count to all users
+        active_count = manager.get_active_user_count()
+        await manager.broadcast(
+            {"type": "users:active_count", "data": {"count": active_count}}
         )
     except Exception as e:
         print(f"WebSocket error for user {user_id}: {e}")

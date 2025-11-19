@@ -7,6 +7,8 @@ import { logout } from '../data/auth.js';
 import { userState } from '../state/user-state.js';
 import { shoppingListState } from '../state/shopping-list-state.js';
 import { getVersion } from '../data/api.js';
+import * as websocket from '../data/websocket.js';
+import { ConnectionStatus } from './components/index.js';
 
 /**
  * Update user display in header with current username.
@@ -39,6 +41,7 @@ export function initUserMenu(): void {
   const manageTemplatesBtn = document.getElementById('manageTemplatesBtn');
   const manageUsersBtn = document.getElementById('manageUsersBtn');
   const manageBackupBtn = document.getElementById('manageBackupBtn');
+  const toggleWebSocketBtn = document.getElementById('toggleWebSocketBtn');
   const logoutBtn = document.getElementById('logoutBtn');
 
   if (!menuBtn || !menuDropdown) {
@@ -101,6 +104,78 @@ export function initUserMenu(): void {
   if (manageBackupBtn) {
     manageBackupBtn.addEventListener('click', () => {
       window.location.href = '/backup';
+    });
+  }
+
+  // Toggle WebSocket button handler
+  if (toggleWebSocketBtn) {
+    // Update button text based on current state
+    const updateWebSocketButtonState = () => {
+      const isConnected = websocket.isConnected();
+      const isEnabled = localStorage.getItem('enable_ws') === 'true';
+
+      if (isConnected) {
+        toggleWebSocketBtn.textContent = '🔌 WebSocket deaktivieren';
+      } else if (isEnabled) {
+        toggleWebSocketBtn.textContent = '🔌 WebSocket verbinden...';
+      } else {
+        toggleWebSocketBtn.textContent = '🔌 WebSocket aktivieren';
+      }
+    };
+
+    // Initialize button state
+    updateWebSocketButtonState();
+
+    // Update button state when connection changes
+    websocket.onConnectionOpen(() => {
+      updateWebSocketButtonState();
+    });
+
+    websocket.onConnectionClose(() => {
+      updateWebSocketButtonState();
+    });
+
+    toggleWebSocketBtn.addEventListener('click', () => {
+      const isConnected = websocket.isConnected();
+
+      if (isConnected) {
+        // Disconnect and disable
+        websocket.disconnect();
+        localStorage.removeItem('enable_ws');
+
+        // Remove connection status indicator
+        const statusElement = document.querySelector('.connection-status');
+        if (statusElement) {
+          statusElement.remove();
+        }
+      } else {
+        // Enable and connect
+        localStorage.setItem('enable_ws', 'true');
+
+        if (websocket.isWebSocketSupported()) {
+          websocket.connect();
+
+          // Add connection status indicator to header-actions if not present
+          const headerActions = document.querySelector('.header-actions') as HTMLElement;
+          const existingStatus = headerActions?.querySelector('.connection-status');
+
+          if (headerActions && !existingStatus) {
+            new ConnectionStatus({
+              container: headerActions,
+              onReconnect: () => {
+                // Reload items when reconnected to sync state
+                shoppingListState.loadItems();
+              },
+              showUserCount: true
+            });
+          }
+        } else {
+          alert('WebSocket wird von Ihrem Browser nicht unterstützt.');
+        }
+      }
+
+      // Update button text
+      updateWebSocketButtonState();
     });
   }
 
