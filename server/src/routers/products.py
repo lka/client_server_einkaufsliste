@@ -10,6 +10,7 @@ from ..db import get_session
 from ..auth import get_current_user
 from ..schemas import ProductCreate, ProductUpdate
 from ..utils import normalize_name
+from ..websocket_manager import manager
 
 router = APIRouter(prefix="/api", tags=["products"])
 
@@ -191,10 +192,14 @@ def search_products_fuzzy(
 
 
 @router.post("/products", response_model=Product, status_code=201)
-def create_product(
+async def create_product(
     product_data: ProductCreate, current_user: str = Depends(get_current_user)
 ):
     """Create a new product (requires authentication).
+
+    After creating the product, automatically updates all existing shopping list items
+    in this store that match the product name to use the new product's department.
+    Updates are broadcast via WebSocket to all connected clients.
 
     Args:
         product_data: Product creation data
@@ -231,6 +236,54 @@ def create_product(
         session.add(product)
         session.commit()
         session.refresh(product)
+
+        # Update all existing items in this store with matching name
+        from sqlmodel import func
+        from ..models import Item
+
+        # Find all items in this store where name matches (case-insensitive)
+        statement = select(Item).where(
+            Item.store_id == product_data.store_id,
+            func.lower(Item.name) == func.lower(product_data.name),
+        )
+        matching_items = session.exec(statement).all()
+
+        updated_items = []
+        for item in matching_items:
+            # Update item to reference the new product
+            item.product_id = product.id
+            item.name = product.name  # Normalize name to product name
+            session.add(item)
+            updated_items.append(item)
+
+        if updated_items:
+            session.commit()
+            # Refresh all updated items to get latest state
+            for item in updated_items:
+                session.refresh(item)
+
+            print(
+                f"Updated {len(updated_items)} existing items "
+                f"to use new product '{product.name}'"
+            )
+
+            # Broadcast item updates via WebSocket
+            for item in updated_items:
+                await manager.broadcast(
+                    {
+                        "type": "item:update",
+                        "data": {
+                            "id": item.id,
+                            "name": item.name,
+                            "product_id": item.product_id,
+                            "store_id": item.store_id,
+                            "user_id": item.user_id,
+                            "menge": item.menge,
+                            "shopping_date": item.shopping_date,
+                        },
+                    }
+                )
+
         return product
 
 

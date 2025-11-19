@@ -681,3 +681,61 @@ def test_cascading_delete_department():
     products = r.json()
     product_ids = [p["id"] for p in products]
     assert product_id not in product_ids
+
+
+def test_create_product_updates_existing_items():
+    """Test that creating a product updates existing items with matching name."""
+    token = get_auth_token()
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Get store and departments
+    r = client.get("/api/stores", headers=headers)
+    store_id = r.json()[0]["id"]
+
+    r = client.get(f"/api/stores/{store_id}/departments", headers=headers)
+    departments = r.json()
+    dept1_id = departments[0]["id"]
+
+    # Use a unique product name that doesn't exist in seed data
+    unique_name = "AutoUpdateTestProduct123"
+
+    # Create an item WITHOUT product (free-text item)
+    item_data = {
+        "name": unique_name.upper(),  # Different case to test case-insensitive matching
+        "store_id": store_id,
+        "menge": "5 Stück",
+    }
+    r = client.post("/api/items", json=item_data, headers=headers)
+    assert r.status_code == 201
+    item_id = r.json()["id"]
+
+    # Verify item has no product_id yet
+    r = client.get("/api/items", headers=headers)
+    items = r.json()
+    item = next(i for i in items if i["id"] == item_id)
+    assert item["product_id"] is None
+    assert item["name"] == unique_name.upper()
+
+    # Now create a product with the same name (different case)
+    product_data = {
+        "name": unique_name.lower(),  # Lower case to test case-insensitive matching
+        "store_id": store_id,
+        "department_id": dept1_id,
+        "fresh": True,
+    }
+    r = client.post("/api/products", json=product_data, headers=headers)
+    assert r.status_code == 201
+    product_id = r.json()["id"]
+
+    # Verify item is now linked to the product and name is normalized
+    r = client.get("/api/items", headers=headers)
+    items = r.json()
+    item = next(i for i in items if i["id"] == item_id)
+    assert item["product_id"] == product_id
+    assert (
+        item["name"] == unique_name.lower()
+    )  # Name should be normalized to product name
+
+    # Clean up
+    client.delete(f"/api/items/{item_id}", headers=headers)
+    client.delete(f"/api/products/{product_id}", headers=headers)
