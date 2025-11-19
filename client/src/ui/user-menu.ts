@@ -9,6 +9,7 @@ import { shoppingListState } from '../state/shopping-list-state.js';
 import { getVersion } from '../data/api.js';
 import * as websocket from '../data/websocket.js';
 import { ConnectionStatus } from './components/index.js';
+import { stopInactivityTracker } from '../data/inactivity-tracker.js';
 
 /**
  * Update user display in header with current username.
@@ -182,6 +183,7 @@ export function initUserMenu(): void {
   // Logout button handler
   if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
+      stopInactivityTracker();
       logout();
       userState.clearUser();
       shoppingListState.clear();

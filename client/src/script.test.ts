@@ -14,6 +14,7 @@ jest.mock('./data/dom.js', () => ({
 
 jest.mock('./data/auth.js', () => ({
   isAuthenticated: jest.fn(),
+  getTokenExpiresIn: jest.fn(),
 }));
 
 jest.mock('./ui/shopping-list-ui.js', () => ({
@@ -28,6 +29,7 @@ jest.mock('./ui/user-menu.js', () => ({
 describe('script.ts main app entry point', () => {
   let addEventListenerSpy: jest.SpyInstance;
   let mockIsAuthenticated: jest.MockedFunction<typeof authModule.isAuthenticated>;
+  let mockGetTokenExpiresIn: jest.MockedFunction<typeof authModule.getTokenExpiresIn>;
   let mockLoadAppTemplate: jest.MockedFunction<typeof domModule.loadAppTemplate>;
   let mockInitShoppingListUI: jest.MockedFunction<typeof shoppingListUIModule.initShoppingListUI>;
   let mockInitUserMenu: jest.MockedFunction<typeof userMenuModule.initUserMenu>;
@@ -40,10 +42,14 @@ describe('script.ts main app entry point', () => {
 
     // Get mocked functions
     mockIsAuthenticated = authModule.isAuthenticated as jest.MockedFunction<typeof authModule.isAuthenticated>;
+    mockGetTokenExpiresIn = authModule.getTokenExpiresIn as jest.MockedFunction<typeof authModule.getTokenExpiresIn>;
     mockLoadAppTemplate = domModule.loadAppTemplate as jest.MockedFunction<typeof domModule.loadAppTemplate>;
     mockInitShoppingListUI = shoppingListUIModule.initShoppingListUI as jest.MockedFunction<typeof shoppingListUIModule.initShoppingListUI>;
     mockInitUserMenu = userMenuModule.initUserMenu as jest.MockedFunction<typeof userMenuModule.initUserMenu>;
     mockUpdateUserDisplay = userMenuModule.updateUserDisplay as jest.MockedFunction<typeof userMenuModule.updateUserDisplay>;
+
+    // Mock getTokenExpiresIn to return a valid expiration time
+    mockGetTokenExpiresIn.mockReturnValue(1800); // 30 minutes
 
     // Spy on window.addEventListener
     addEventListenerSpy = jest.spyOn(window, 'addEventListener');
@@ -132,7 +138,8 @@ describe('script.ts main app entry point', () => {
     }
 
     // Verify initialization sequence
-    expect(mockIsAuthenticated).toHaveBeenCalledTimes(1);
+    // Note: isAuthenticated is called twice - once in the main init and once in inactivity tracker
+    expect(mockIsAuthenticated).toHaveBeenCalled();
     expect(mockLoadAppTemplate).toHaveBeenCalledTimes(1);
     expect(mockUpdateUserDisplay).toHaveBeenCalledTimes(1);
     expect(mockInitShoppingListUI).toHaveBeenCalledTimes(1);

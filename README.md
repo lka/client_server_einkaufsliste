@@ -6,7 +6,15 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
 
 ## Features
 
-- ✅ **JWT-Authentifizierung**: Sichere Benutzerauthentifizierung mit automatischem Token-Refresh
+- ✅ **JWT-Authentifizierung**: Sichere Benutzerauthentifizierung mit automatischem Token-Refresh und Inaktivitäts-Logout
+  - **Automatisches Inaktivitäts-Logout**: Benutzer werden nach Ablauf der Token-Gültigkeit bei Inaktivität automatisch abgemeldet
+    - Aktivitäts-Tracking durch Maus, Tastatur, Scroll und Touch-Events
+    - Timer wird bei jeder Benutzeraktivität zurückgesetzt
+    - Konfigurierbar über `ACCESS_TOKEN_EXPIRE_MINUTES` (Standard: 30 Minuten)
+    - Alert-Benachrichtigung vor Weiterleitung zur Login-Seite
+    - Automatisches Löschen von SessionStorage und Browser-History beim Logout
+  - **Token-Expiry-Information**: Server sendet `expires_in` (Sekunden) bei Login-Response
+  - **Sicheres Logout**: Löscht Token, SessionStorage und Browser-History
 - ✅ **Multi-Store-Management**: Organisation nach Geschäften und Abteilungen
   - 3 vorkonfigurierte Geschäfte: Rewe, Edeka, Kaufland
   - Je 9 Abteilungen pro Geschäft (z.B. "Obst & Gemüse", "Backwaren", "Milchprodukte")
@@ -268,14 +276,15 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
 │       └── test_user_management.py  # User management tests (10 tests)
 ├── client/
 │   ├── src/
-│   │   ├── data/                 # Data layer (API, auth, DOM utilities, WebSocket)
+│   │   ├── data/                 # Data layer (API, auth, DOM utilities, WebSocket, Inactivity)
 │   │   │   ├── api.ts            # API client functions (items, stores, departments, products)
 │   │   │   ├── api.test.ts       # API tests
-│   │   │   ├── auth.ts           # Authentication utilities
+│   │   │   ├── auth.ts           # Authentication utilities (with expires_in handling)
 │   │   │   ├── dom.ts            # DOM utilities
 │   │   │   ├── dom.test.ts       # DOM tests
 │   │   │   ├── websocket.ts      # WebSocket connection manager
-│   │   │   └── websocket.test.ts # WebSocket tests (12 tests)
+│   │   │   ├── websocket.test.ts # WebSocket tests (12 tests)
+│   │   │   └── inactivity-tracker.ts # Inactivity tracking with auto-logout
 │   │   ├── ui/                   # UI layer (feature-specific UI modules)
 │   │   │   ├── components/       # Reusable UI component library
 │   │   │   │   ├── button.ts     # Button component
@@ -939,9 +948,11 @@ Der Client ist in einer **vierschichtigen Architektur** mit Ordnertrennung organ
 #### **Data Layer** (`src/data/`)
 Kernfunktionalität für Daten und Utilities:
 - **api.ts** - API-Client für Shopping-List-Operationen (fetchItems, addItem, deleteItem)
-- **auth.ts** - Authentifizierungs-Utilities (login, register, logout, token-management)
+- **auth.ts** - Authentifizierungs-Utilities (login, register, logout, token-management mit expires_in)
 - **dom.ts** - DOM-Manipulations-Utilities (renderItems, loadTemplate)
-- **Tests**: api.test.ts (18), auth.test.ts (36), dom.test.ts (14)
+- **websocket.ts** - WebSocket-Verbindungsmanager mit Auto-Reconnect und Event-System
+- **inactivity-tracker.ts** - Inaktivitäts-Tracking mit automatischem Logout nach Token-Expire-Zeit
+- **Tests**: api.test.ts (18), auth.test.ts (36), dom.test.ts (14), websocket.test.ts (12)
 
 #### **State Layer** (`src/state/`)
 Zentralisiertes State-Management mit reaktiven Updates (Observer Pattern):

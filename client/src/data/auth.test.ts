@@ -110,9 +110,10 @@ describe('Authentication Utilities', () => {
   describe('login', () => {
     it('should login successfully and store token', async () => {
       const mockToken = 'mock-jwt-token';
+      const mockExpiresIn = 1800; // 30 minutes in seconds
       (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ access_token: mockToken, token_type: 'bearer' }),
+        json: async () => ({ access_token: mockToken, token_type: 'bearer', expires_in: mockExpiresIn }),
       } as Response);
 
       const result = await login({ username: 'testuser', password: 'password123' });
@@ -122,11 +123,11 @@ describe('Authentication Utilities', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: 'testuser', password: 'password123' }),
       });
-      expect(result).toBe(true);
+      expect(result).toBe(mockExpiresIn);
       expect(getToken()).toBe(mockToken);
     });
 
-    it('should return false when login fails', async () => {
+    it('should return null when login fails', async () => {
       (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: false,
         json: async () => ({ detail: 'Invalid credentials' }),
@@ -134,7 +135,7 @@ describe('Authentication Utilities', () => {
 
       const result = await login({ username: 'testuser', password: 'wrong' });
 
-      expect(result).toBe(false);
+      expect(result).toBeNull();
       expect(getToken()).toBeNull();
       expect(console.error).toHaveBeenCalledWith('Login failed:', 'Invalid credentials');
     });
@@ -146,7 +147,7 @@ describe('Authentication Utilities', () => {
 
       const result = await login({ username: 'testuser', password: 'password' });
 
-      expect(result).toBe(false);
+      expect(result).toBeNull();
       expect(console.error).toHaveBeenCalledWith('Error during login:', expect.any(Error));
     });
   });

@@ -4,12 +4,13 @@
  */
 
 import { loadAppTemplate } from './data/dom.js';
-import { isAuthenticated } from './data/auth.js';
+import { isAuthenticated, getTokenExpiresIn } from './data/auth.js';
 import { initShoppingListUI } from './ui/shopping-list-ui.js';
 import { initUserMenu, updateUserDisplay } from './ui/user-menu.js';
 import { initializeComponents, ConnectionStatus } from './ui/components/index.js';
 import * as websocket from './data/websocket.js';
 import { shoppingListState } from './state/shopping-list-state.js';
+import { initInactivityTracker } from './data/inactivity-tracker.js';
 
 /**
  * Check URL parameters for WebSocket activation.
@@ -63,6 +64,14 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Initialize feature modules
   initShoppingListUI();
   initUserMenu();
+
+  // Initialize inactivity tracker
+  const expiresIn = getTokenExpiresIn();
+  if (expiresIn) {
+    initInactivityTracker(expiresIn);
+  } else {
+    console.warn('Token expiration time not found - inactivity tracker not initialized');
+  }
 
   // Initialize WebSocket connection if enabled
   const wsEnabled = localStorage.getItem('enable_ws') === 'true';

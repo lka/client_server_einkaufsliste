@@ -119,7 +119,7 @@ describe('Login Page Controller', () => {
     });
 
     it('should login successfully', async () => {
-      jest.spyOn(auth, 'login').mockResolvedValue(true);
+      jest.spyOn(auth, 'login').mockResolvedValue(1800); // 30 minutes in seconds
 
       initLoginPage();
 
@@ -142,7 +142,7 @@ describe('Login Page Controller', () => {
     });
 
     it('should show error on login failure', async () => {
-      jest.spyOn(auth, 'login').mockResolvedValue(false);
+      jest.spyOn(auth, 'login').mockResolvedValue(null);
 
       initLoginPage();
 
@@ -165,7 +165,7 @@ describe('Login Page Controller', () => {
     });
 
     it('should show error when fields are empty', async () => {
-      jest.spyOn(auth, 'login').mockResolvedValue(false);
+      jest.spyOn(auth, 'login').mockResolvedValue(null);
 
       initLoginPage();
 
@@ -181,7 +181,7 @@ describe('Login Page Controller', () => {
     });
 
     it('should trim whitespace from username', async () => {
-      jest.spyOn(auth, 'login').mockResolvedValue(true);
+      jest.spyOn(auth, 'login').mockResolvedValue(1800); // 30 minutes in seconds
 
       initLoginPage();
 
@@ -374,7 +374,7 @@ describe('Login Page Controller', () => {
     });
 
     it('should submit login form on Enter key', async () => {
-      jest.spyOn(auth, 'login').mockResolvedValue(true);
+      jest.spyOn(auth, 'login').mockResolvedValue(1800); // 30 minutes in seconds
 
       initLoginPage();
 
