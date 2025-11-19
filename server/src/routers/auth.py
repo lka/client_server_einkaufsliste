@@ -164,7 +164,10 @@ def refresh_token(current_user: str = Depends(get_current_user)):
         access_token = create_access_token(
             data={"sub": user.username}, expires_delta=access_token_expires
         )
-        return Token(access_token=access_token)
+        return Token(
+            access_token=access_token,
+            expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60,  # Convert to seconds
+        )
 
 
 @router.delete("/me", status_code=204)
