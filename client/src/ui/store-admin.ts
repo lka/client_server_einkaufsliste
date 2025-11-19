@@ -90,7 +90,7 @@ async function renderStores(stores: readonly Store[]): Promise<void> {
             data-store-id="${store.id}"
           />
           <button class="add-department-btn" data-store-id="${store.id}">
-            + Hinzufügen
+            ⏎
           </button>
         </div>
 
