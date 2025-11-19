@@ -45,6 +45,12 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - Item erscheint danach in der gewählten Abteilung statt in "Sonstiges"
     - Nutzt vorhandene Produkte, falls gleichnamiges Produkt bereits existiert
     - **Datumsübergreifende Zuordnung**: Wenn ein Item einer Abteilung zugeordnet wird, erhalten automatisch **alle Items mit dem gleichen Namen** (unabhängig vom Einkaufsdatum) die gleiche Abteilungszuordnung
+  - **Automatische Item-Aktualisierung bei Produkt-Erstellung**: Wenn ein neues Produkt erstellt wird, werden automatisch alle bestehenden Einkaufslisten-Items aktualisiert
+    - **Case-insensitive Matching**: Produktname wird unabhängig von Groß-/Kleinschreibung mit Item-Namen verglichen
+    - **Automatische Verknüpfung**: Alle Items im gleichen Geschäft mit übereinstimmendem Namen werden mit dem neuen Produkt verknüpft
+    - **Namens-Normalisierung**: Item-Namen werden auf den Produktnamen normalisiert
+    - **WebSocket Broadcasting**: Alle aktualisierten Items werden live an verbundene Clients gesendet
+    - Beispiel: Erstelle Produkt "Banane" → alle Items "BANANE", "banane", "Banane" werden verknüpft und erscheinen in der richtigen Abteilung
       - Einmalige Zuordnung genügt für alle zukünftigen und vergangenen Items mit dem gleichen Namen
       - Verhindert wiederholte manuelle Zuordnung bei wiederkehrenden Einkäufen
   - **Intelligente Druckfunktion**: Einkaufsliste als DIN A5-Heft drucken
@@ -272,7 +278,7 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
 │       ├── conftest.py              # Pytest fixtures
 │       ├── test_api.py              # API integration tests (13 tests)
 │       ├── test_auth.py             # Authentication tests (10 tests)
-│       ├── test_stores.py           # Store/Department/Product CRUD tests (30 tests)
+│       ├── test_stores.py           # Store/Department/Product CRUD tests (31 tests)
 │       └── test_user_management.py  # User management tests (10 tests)
 ├── client/
 │   ├── src/
