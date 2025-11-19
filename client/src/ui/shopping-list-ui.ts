@@ -24,6 +24,14 @@ import { Autocomplete } from './components/autocomplete.js';
 // Current selected store ID (null = all stores)
 let selectedStoreId: number | null = null;
 
+/**
+ * Get the currently selected store ID.
+ * @returns The selected store ID or null if no store is selected
+ */
+export function getSelectedStoreId(): number | null {
+  return selectedStoreId;
+}
+
 // DatePicker instance for shopping date selection
 let shoppingDatePicker: DatePickerInstance | null = null;
 

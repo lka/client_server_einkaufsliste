@@ -26,6 +26,24 @@ let editingProductId: number | null = null;
  */
 export async function initProductAdmin(): Promise<void> {
   await loadStores();
+
+  // Check for store parameter in URL
+  const params = new URLSearchParams(window.location.search);
+  const storeParam = params.get('store');
+
+  if (storeParam) {
+    const storeId = parseInt(storeParam, 10);
+    // Verify that the store ID is valid
+    if (stores.find(s => s.id === storeId)) {
+      selectedStoreId = storeId;
+      // Load departments and products for the pre-selected store
+      await Promise.all([
+        loadDepartments(storeId),
+        loadProducts(storeId)
+      ]);
+    }
+  }
+
   renderUI();
   attachEventListeners();
 }

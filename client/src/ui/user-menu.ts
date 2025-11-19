@@ -10,6 +10,7 @@ import { getVersion } from '../data/api.js';
 import * as websocket from '../data/websocket.js';
 import { ConnectionStatus } from './components/index.js';
 import { stopInactivityTracker } from '../data/inactivity-tracker.js';
+import { getSelectedStoreId } from './shopping-list-ui.js';
 
 /**
  * Update user display in header with current username.
@@ -83,7 +84,13 @@ export function initUserMenu(): void {
   // Manage products button handler
   if (manageProductsBtn) {
     manageProductsBtn.addEventListener('click', () => {
-      window.location.href = '/products';
+      // Try to get the currently selected store from shopping list
+      const selectedStoreId = getSelectedStoreId();
+      if (selectedStoreId) {
+        window.location.href = `/products?store=${selectedStoreId}`;
+      } else {
+        window.location.href = '/products';
+      }
     });
   }
 
