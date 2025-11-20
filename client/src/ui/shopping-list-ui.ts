@@ -12,8 +12,10 @@ import {
   deleteItemsBeforeDate,
   fetchTemplates,
   getProductSuggestions,
+  fetchItems,
   type Department,
   type ProductSuggestion,
+  type Item,
 } from '../data/api.js';
 import { Modal } from './components/modal.js';
 import { createButton } from './components/button.js';
@@ -94,8 +96,24 @@ function showPrintPreview(): Promise<boolean> {
         .map(item => item.shopping_date)
     )).sort(); // Sort dates in ascending order
 
-    // Default to smallest (earliest) date
-    let selectedDate = uniqueDates.length > 0 ? uniqueDates[0] : null;
+    // Default to currently selected date in shopping date picker, or smallest date
+    let selectedDate: string | null = null;
+    if (shoppingDatePicker) {
+      const dateValue = shoppingDatePicker.getValue();
+      if (dateValue) {
+        // Convert to ISO format (YYYY-MM-DD)
+        const year = dateValue.getFullYear();
+        const month = String(dateValue.getMonth() + 1).padStart(2, '0');
+        const day = String(dateValue.getDate()).padStart(2, '0');
+        const isoDate = `${year}-${month}-${day}`;
+        // Only use it if it's in the list of available dates
+        selectedDate = uniqueDates.includes(isoDate) ? isoDate : null;
+      }
+    }
+    // Fallback to smallest date if no valid date from picker
+    if (!selectedDate) {
+      selectedDate = uniqueDates.length > 0 ? uniqueDates[0] : null;
+    }
 
     // Get store name
     const storeFilter = document.getElementById('storeFilter') as HTMLSelectElement;
@@ -235,10 +253,14 @@ function showPrintPreview(): Promise<boolean> {
       }
 
       // Handle date selection change
-      dateDropdown.addEventListener('change', () => {
+      dateDropdown.addEventListener('change', async () => {
         selectedDate = dateDropdown.value || null;
-        const dateFilteredItems = filterItemsByDate(filteredItems, selectedDate);
-        renderPrintContent(dateFilteredItems);
+        if (allStoresCheckbox.checked) {
+          await renderAllStoresContent(selectedDate);
+        } else {
+          const dateFilteredItems = filterItemsByDate(filteredItems, selectedDate);
+          renderPrintContent(dateFilteredItems);
+        }
       });
 
       header.appendChild(headerTitle);
@@ -282,13 +304,15 @@ function showPrintPreview(): Promise<boolean> {
       `;
 
       // First page items
-      itemsArray.slice(0, midPoint).forEach(([departmentName, { items }]) => {
+      itemsArray.slice(0, midPoint).forEach(([departmentName, { items }], idx) => {
         const section = document.createElement('div');
         section.style.cssText = 'margin-bottom: 0.5rem; break-inside: avoid;';
 
         const deptTitle = document.createElement('h4');
         deptTitle.textContent = departmentName;
-        deptTitle.style.cssText = 'margin: 0.6rem 0 0.2rem 0; color: #333; font-size: 0.9rem; font-weight: bold;';
+        // First department has no top margin
+        const topMargin = idx === 0 ? '0' : '0.6rem';
+        deptTitle.style.cssText = `margin: ${topMargin} 0 0.2rem 0; color: #333; font-size: 0.9rem; font-weight: bold;`;
         deptTitle.className = 'department-title';
         section.appendChild(deptTitle);
 
@@ -352,13 +376,15 @@ function showPrintPreview(): Promise<boolean> {
         `;
 
         // Render remaining items
-        itemsArray.slice(midPoint).forEach(([departmentName, { items }]) => {
+        itemsArray.slice(midPoint).forEach(([departmentName, { items }], idx) => {
           const section = document.createElement('div');
           section.style.cssText = 'margin-bottom: 0.5rem; break-inside: avoid;';
 
           const deptTitle = document.createElement('h4');
           deptTitle.textContent = departmentName;
-          deptTitle.style.cssText = 'margin: 0.6rem 0 0.2rem 0; color: #333; font-size: 0.9rem; font-weight: bold;';
+          // First department on back page has no top margin
+          const topMargin = idx === 0 ? '0' : '0.6rem';
+          deptTitle.style.cssText = `margin: ${topMargin} 0 0.2rem 0; color: #333; font-size: 0.9rem; font-weight: bold;`;
           deptTitle.className = 'department-title';
           section.appendChild(deptTitle);
 
@@ -380,19 +406,35 @@ function showPrintPreview(): Promise<boolean> {
       }
     };
 
-    // Initial render with filtered items (by default, use smallest date)
-    const initialFilteredItems = filterItemsByDate(filteredItems, selectedDate);
-    renderPrintContent(initialFilteredItems);
-
     // Add both pages to container
     a4Container.appendChild(previewContent);
     a4Container.appendChild(backPage);
     scrollableArea.appendChild(a4Container);
 
-    // Checkbox for hiding department titles
+    // Checkboxes for options
     const optionsContainer = document.createElement('div');
-    optionsContainer.style.cssText = 'margin-bottom: 0;';
+    optionsContainer.style.cssText = 'margin-bottom: 0; display: flex; gap: 1.5rem; flex-wrap: wrap;';
 
+    // Checkbox for "Alle Geschäfte"
+    const allStoresLabel = document.createElement('label');
+    allStoresLabel.style.cssText = 'display: flex; align-items: center; gap: 0.5rem; cursor: pointer;';
+
+    const allStoresCheckbox = document.createElement('input');
+    allStoresCheckbox.type = 'checkbox';
+    allStoresCheckbox.id = 'allStoresCheckbox';
+    allStoresCheckbox.style.cssText = 'cursor: pointer;';
+    // Check if current store filter is "Alle Geschäfte"
+    allStoresCheckbox.checked = !selectedStoreId;
+
+    const allStoresLabelText = document.createElement('span');
+    allStoresLabelText.textContent = 'Alle Geschäfte';
+    allStoresLabelText.style.cssText = 'font-size: 0.9rem;';
+
+    allStoresLabel.appendChild(allStoresCheckbox);
+    allStoresLabel.appendChild(allStoresLabelText);
+    optionsContainer.appendChild(allStoresLabel);
+
+    // Checkbox for hiding department titles
     const checkboxLabel = document.createElement('label');
     checkboxLabel.style.cssText = 'display: flex; align-items: center; gap: 0.5rem; cursor: pointer;';
 
@@ -413,7 +455,205 @@ function showPrintPreview(): Promise<boolean> {
     // Add scrollable area to dialog
     dialog.appendChild(scrollableArea);
 
-    // Update preview when checkbox changes
+    // Function to render multi-store content (all stores grouped by store)
+    const renderAllStoresContent = async (date: string | null) => {
+      // Fetch ALL items from API (not filtered by store)
+      const allItems = await fetchItems();
+      const itemsToShow = date ? allItems.filter((i: Item) => i.shopping_date === date) : allItems;
+
+      if (itemsToShow.length === 0) {
+        previewContent.innerHTML = '<p>Keine Artikel gefunden.</p>';
+        backPage.innerHTML = '<h3>Notizen</h3>';
+        return;
+      }
+
+      const stores = await fetchStores();
+
+      // Group items by store
+      const itemsByStore = new Map<number, Item[]>();
+      itemsToShow.forEach((item: Item) => {
+        if (item.store_id) {
+          if (!itemsByStore.has(item.store_id)) {
+            itemsByStore.set(item.store_id, []);
+          }
+          itemsByStore.get(item.store_id)!.push(item);
+        }
+      });
+
+      // Sort items within each store by department
+      itemsByStore.forEach((storeItems) => {
+        storeItems.sort((a, b) => {
+          const deptA = a.department_sort_order ?? 999;
+          const deptB = b.department_sort_order ?? 999;
+          if (deptA !== deptB) {
+            return deptA - deptB;
+          }
+          return (a.name || '').localeCompare(b.name || '');
+        });
+      });
+
+      // Sort stores by sort_order
+      const sortedStores = stores
+        .filter((store) => itemsByStore.has(store.id))
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+
+      // Build array of store sections with their department sections
+      const allStoreSections: Array<{ type: 'store' | 'department'; element: HTMLElement; store?: string }> = [];
+
+      sortedStores.forEach((store, index) => {
+        const storeItems = itemsByStore.get(store.id)!;
+
+        // Store header (not wrapped in section, so it can flow)
+        const storeHeader = document.createElement('h3');
+        storeHeader.textContent = store.name;
+        // First store header has no top margin
+        const topMargin = index === 0 ? '0' : '0.8rem';
+        storeHeader.style.cssText = `margin: ${topMargin} 0 0.3rem 0; color: #000; font-size: 1rem; font-weight: bold; border-bottom: 1px solid #666; padding-bottom: 0.2rem;`;
+        allStoreSections.push({ type: 'store', element: storeHeader, store: store.name });
+
+        // Group items by department with sort order
+        const itemsByDept = new Map<string, { items: Item[]; sortOrder: number }>();
+        storeItems.forEach((item) => {
+          const deptName = item.department_name || 'Sonstiges';
+          if (!itemsByDept.has(deptName)) {
+            itemsByDept.set(deptName, {
+              items: [],
+              sortOrder: item.department_sort_order ?? 999,
+            });
+          }
+          itemsByDept.get(deptName)!.items.push(item);
+        });
+
+        // Sort departments by sort_order
+        const sortedDepartments = Array.from(itemsByDept.entries()).sort(
+          ([, a], [, b]) => a.sortOrder - b.sortOrder
+        );
+
+        // Build department sections
+        sortedDepartments.forEach(([deptName, { items: deptItems }]) => {
+          const deptSection = document.createElement('div');
+          deptSection.style.cssText = 'margin-bottom: 0.5rem; break-inside: avoid;';
+
+          const deptTitle = document.createElement('h4');
+          deptTitle.textContent = deptName;
+          deptTitle.style.cssText = 'margin: 0.6rem 0 0.2rem 0; color: #333; font-size: 0.9rem; font-weight: bold;';
+          deptTitle.className = 'department-title';
+          deptSection.appendChild(deptTitle);
+
+          const itemList = document.createElement('ul');
+          itemList.style.cssText = 'margin: 0; padding-left: 0; list-style: none;';
+
+          deptItems.forEach((item) => {
+            const li = document.createElement('li');
+            li.style.cssText = 'margin-bottom: 0.1rem; line-height: 1.15; font-size: 0.85rem;';
+            li.textContent = item.menge ? `${item.name} (${item.menge})` : item.name;
+            itemList.appendChild(li);
+          });
+
+          deptSection.appendChild(itemList);
+          allStoreSections.push({ type: 'department', element: deptSection });
+        });
+      });
+
+      // Calculate if content fits on one page (estimate ~70 lines total for 2 columns = ~35 per column)
+      const totalItems = itemsToShow.length;
+      const departmentCount = allStoreSections.filter(s => s.type === 'department').length;
+      const storeCount = sortedStores.length;
+      const estimatedLines = totalItems + (departmentCount * 2) + (storeCount * 2); // items + dept headers + store headers
+      const fitsOnOnePage = estimatedLines <= 70;
+
+      // Determine split point
+      const midPoint = fitsOnOnePage ? allStoreSections.length : Math.ceil(allStoreSections.length / 2);
+
+      // Create two-column container for front page
+      const frontColumnContainer = document.createElement('div');
+      frontColumnContainer.className = 'two-column-layout';
+      frontColumnContainer.style.cssText = `
+        column-count: 2;
+        column-gap: 1rem;
+      `;
+
+      // Add first half to front page
+      allStoreSections.slice(0, midPoint).forEach(({ element }) => {
+        frontColumnContainer.appendChild(element);
+      });
+
+      // Render front page
+      previewContent.innerHTML = '';
+      previewContent.appendChild(frontColumnContainer);
+
+      // Render back page
+      backPage.innerHTML = '';
+
+      if (fitsOnOnePage) {
+        // Show notes section if content fits on one page
+        const notesTitle = document.createElement('h2');
+        notesTitle.textContent = 'Notizen';
+        notesTitle.style.cssText = 'margin: 0 0 1rem 0; font-size: 1.2rem;';
+        backPage.appendChild(notesTitle);
+
+        const notesLines = document.createElement('div');
+        notesLines.style.cssText = 'margin-top: 1rem;';
+        for (let i = 0; i < 20; i++) {
+          const line = document.createElement('div');
+          line.style.cssText = 'border-bottom: 1px solid #ddd; height: 1.2rem; margin-bottom: 0.3rem;';
+          notesLines.appendChild(line);
+        }
+        backPage.appendChild(notesLines);
+      } else {
+        // Continue list on back page
+        const backHeader = document.createElement('div');
+        backHeader.style.cssText = 'margin-bottom: 1.5rem; border-bottom: 2px solid #333; padding-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;';
+
+        const continueTitle = document.createElement('h2');
+        continueTitle.textContent = 'Alle Geschäfte (Fortsetzung)';
+        continueTitle.style.cssText = 'margin: 0; font-size: 1.2rem;';
+
+        const backDateInfo = document.createElement('span');
+        backDateInfo.textContent = date
+          ? new Date(date + 'T00:00:00').toLocaleDateString('de-DE')
+          : 'Alle Daten';
+        backDateInfo.style.cssText = 'color: #666; font-size: 0.8rem;';
+
+        backHeader.appendChild(continueTitle);
+        backHeader.appendChild(backDateInfo);
+        backPage.appendChild(backHeader);
+
+        // Create two-column container for back page
+        const backColumnContainer = document.createElement('div');
+        backColumnContainer.className = 'two-column-layout';
+        backColumnContainer.style.cssText = `
+          column-count: 2;
+          column-gap: 1rem;
+        `;
+
+        // Add second half to back page
+        allStoreSections.slice(midPoint).forEach(({ element, type }, idx) => {
+          // Remove top margin from first store header on back page
+          if (idx === 0 && type === 'store') {
+            const h3 = element as HTMLHeadingElement;
+            h3.style.marginTop = '0';
+          }
+          backColumnContainer.appendChild(element);
+        });
+
+        backPage.appendChild(backColumnContainer);
+      }
+    };
+
+    // Update preview when "Alle Geschäfte" checkbox changes
+    allStoresCheckbox.addEventListener('change', async () => {
+      if (allStoresCheckbox.checked) {
+        // Show all stores
+        await renderAllStoresContent(selectedDate);
+      } else {
+        // Show single store
+        const dateFilteredItems = filterItemsByDate(filteredItems, selectedDate);
+        renderPrintContent(dateFilteredItems);
+      }
+    });
+
+    // Update preview when department titles checkbox changes
     hideDeptCheckbox.addEventListener('change', () => {
       const frontDeptTitles = previewContent.querySelectorAll('.department-title');
       const backDeptTitles = backPage.querySelectorAll('.department-title');
@@ -434,6 +674,15 @@ function showPrintPreview(): Promise<boolean> {
         }
       });
     });
+
+    // Initial render with filtered items (by default, use smallest date)
+    // If "Alle Geschäfte" checkbox is checked (no store selected), render multi-store view
+    if (allStoresCheckbox.checked) {
+      renderAllStoresContent(selectedDate);
+    } else {
+      const initialFilteredItems = filterItemsByDate(filteredItems, selectedDate);
+      renderPrintContent(initialFilteredItems);
+    }
 
     // Button container (fixed at bottom)
     const buttonContainer = document.createElement('div');
@@ -457,8 +706,9 @@ function showPrintPreview(): Promise<boolean> {
       // Trigger browser print with the preview content
       const hideDepartments = hideDeptCheckbox.checked;
       const backPageContent = backPage.innerHTML;
+      const titleForPrint = allStoresCheckbox.checked ? 'Alle Geschäfte' : storeName;
       // Pass the selected date for printing
-      printPreviewContent(previewContent.innerHTML, backPageContent, storeName, hideDepartments, selectedDate);
+      printPreviewContent(previewContent.innerHTML, backPageContent, titleForPrint, hideDepartments, selectedDate);
       resolve(true);
     });
     buttonContainer.appendChild(printBtn);
@@ -676,6 +926,10 @@ function printPreviewContent(frontContent: string, backContent: string, storeNam
     };
   };
 }
+
+/**
+ * Show multi-store print preview with date selection
+ */
 
 /**
  * Show a modal dialog for department selection
