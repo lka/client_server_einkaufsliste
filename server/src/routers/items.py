@@ -87,6 +87,69 @@ def read_items(current_user: str = Depends(get_current_user)):
         return items_with_dept
 
 
+@router.get("/by-date", response_model=List[ItemWithDepartment])
+def read_items_by_date(
+    shopping_date: str = Query(..., description="Shopping date (YYYY-MM-DD)"),
+    current_user: str = Depends(get_current_user),
+):
+    """Read all items for a specific shopping date across all stores.
+
+    Returns all items with the specified shopping date, grouped by store,
+    with department information for proper sorting.
+
+    Args:
+        shopping_date: Date in YYYY-MM-DD format
+        current_user: Current authenticated username from JWT
+
+    Returns:
+        List[ItemWithDepartment]: Items with the specified shopping date
+    """
+    with get_session() as session:
+        # Get user to verify authentication
+        user = session.exec(select(User).where(User.username == current_user)).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Get items for the specified date
+        items = session.exec(
+            select(Item).where(Item.shopping_date == shopping_date)
+        ).all()
+
+        # Enrich items with department information
+        items_with_dept = []
+        for item in items:
+            dept_id = None
+            dept_name = None
+            dept_sort_order = None
+
+            # If item has a product, get department from product
+            if item.product_id:
+                product = session.get(Product, item.product_id)
+                if product:
+                    dept_id = product.department_id
+                    department = session.get(Department, product.department_id)
+                    if department:
+                        dept_name = department.name
+                        dept_sort_order = department.sort_order
+
+            items_with_dept.append(
+                ItemWithDepartment(
+                    id=item.id,
+                    user_id=item.user_id,
+                    store_id=item.store_id,
+                    product_id=item.product_id,
+                    name=item.name,
+                    menge=item.menge,
+                    shopping_date=item.shopping_date,
+                    department_id=dept_id,
+                    department_name=dept_name,
+                    department_sort_order=dept_sort_order,
+                )
+            )
+
+        return items_with_dept
+
+
 @router.post("", status_code=201, response_model=ItemWithDepartment)
 def create_item(item: Item, current_user: str = Depends(get_current_user)):
     """Create a new item or update quantity if item already exists in the shared list.
