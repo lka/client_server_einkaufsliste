@@ -875,7 +875,7 @@ describe('Shopping List UI', () => {
 
       // Find and click cancel button
       const buttons = Array.from(document.querySelectorAll('button'));
-      const cancelButton = buttons.find(btn => btn.textContent === 'Abbrechen');
+      const cancelButton = buttons.find(btn => btn.textContent === '❌');
 
       cancelButton?.click();
       await new Promise((resolve) => setTimeout(resolve, 0));
