@@ -117,6 +117,31 @@ header h1{margin:0;font-size:1.5rem;flex:1}
   user-select:text;
   cursor:default;
 }
+.menu-item-submenu{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.submenu-arrow{
+  font-size:1.2rem;
+  transition:transform .2s;
+}
+.menu-item-submenu.expanded .submenu-arrow{
+  transform:rotate(90deg);
+}
+.menu-submenu{
+  max-height:0;
+  overflow:hidden;
+  transition:max-height .3s ease-out;
+  background:#f9f9f9;
+}
+.menu-submenu.show{
+  max-height:500px;
+}
+.menu-submenu .menu-item{
+  padding-left:2rem;
+  font-size:.9rem;
+}
 main{
   padding:1rem;
   max-width:900px;
