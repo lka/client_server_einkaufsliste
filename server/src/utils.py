@@ -56,6 +56,7 @@ def find_similar_item(
     user_id: int,
     threshold: float = 0.8,
     shopping_date: str | None = None,
+    store_id: str | None = None,
 ) -> Item | None:
     """Find an item with a similar name using fuzzy matching for a specific user.
 
@@ -66,6 +67,8 @@ def find_similar_item(
         threshold: Similarity threshold (0.0 to 1.0, default 0.8)
         shopping_date: Optional shopping date to match (items with
             different dates won't be merged)
+        store_id: Optional store ID to filter items (items from
+            different stores won't be merged)
 
     Returns:
         Item with most similar name above threshold, or None
@@ -82,6 +85,10 @@ def find_similar_item(
     else:
         # Only match items without shopping_date
         query = query.where(Item.shopping_date.is_(None))
+
+    # Only match items from the same store if store_id is provided
+    if store_id is not None:
+        query = query.where(Item.store_id == store_id)
 
     all_items = session.exec(query).all()
 

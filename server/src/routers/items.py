@@ -191,12 +191,14 @@ def create_item(item: Item, current_user: str = Depends(get_current_user)):
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
-        # First, check for exact match in shared list with same shopping_date
-        existing_item = session.exec(
-            select(Item).where(
-                Item.name == item.name, Item.shopping_date == item.shopping_date
-            )
-        ).first()
+        # First, check for exact match in shared list with same shopping_date and store
+        query = select(Item).where(
+            Item.name == item.name, Item.shopping_date == item.shopping_date
+        )
+        # Only match items from the same store if store_id is provided
+        if item.store_id is not None:
+            query = query.where(Item.store_id == item.store_id)
+        existing_item = session.exec(query).first()
 
         # If no exact match, try fuzzy matching in shared list with same shopping_date
         if not existing_item:
@@ -206,6 +208,7 @@ def create_item(item: Item, current_user: str = Depends(get_current_user)):
                 None,
                 threshold=0.8,
                 shopping_date=item.shopping_date,
+                store_id=item.store_id,
             )
 
         result_item = None
