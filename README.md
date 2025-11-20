@@ -24,8 +24,8 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - Echtzeit-Suche mit Fuzzy-Matching in der Produktdatenbank des ausgewählten Geschäfts
     - **Berücksichtigt drei Quellen** für umfassende Vorschläge:
       - **Produkte**: Alle Produkte im ausgewählten Geschäft
-      - **Template-Namen**: Namen aller Shopping-Templates (z.B. "Wocheneinkauf")
-      - **Template-Items**: Einzelne Artikel aus allen Templates
+      - **Vorlagen-Namen**: Namen aller Shopping-Vorlagen (z.B. "Wocheneinkauf")
+      - **Vorlagen-Items**: Einzelne Artikel aus allen Vorlagen
     - Duplikat-Vermeidung: Jeder Name erscheint nur einmal in den Vorschlägen
     - Vorschläge erscheinen ab 2 Zeichen mit 300ms Debouncing für optimale Performance
     - Bis zu 10 relevante Vorschläge, sortiert nach Ähnlichkeit
@@ -84,13 +84,13 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - Jeder kann Items hinzufügen, bearbeiten und löschen
     - Items werden mit `user_id=None` erstellt (gehören nicht zu einem spezifischen Benutzer)
     - Ideal für Haushalts-Einkaufslisten, bei denen alle Familienmitglieder die gleiche Liste sehen und bearbeiten
-  - **Shopping-Templates**: Wiederverwendbare Einkaufslisten-Vorlagen
-    - Templates mit Name, Beschreibung und Artikeln (inkl. Mengenangaben) erstellen
+  - **Shopping-Vorlagen**: Wiederverwendbare Einkaufslisten-Vorlagen
+    - Vorlagen mit Name, Beschreibung und Artikeln (inkl. Mengenangaben) erstellen
     - Dedizierte Verwaltungsseite unter `/templates`
-    - Template-Name in Shopping-List eingeben → alle Artikel werden automatisch hinzugefügt
+    - Vorlagen-Name in Shopping-List eingeben → alle Artikel werden automatisch hinzugefügt
     - Artikel erben ausgewähltes Geschäft und Datum
-    - CRUD-Operationen: Erstellen, Bearbeiten, Löschen von Templates
-    - Template-Items werden inline angezeigt: "Artikel (Menge)"
+    - CRUD-Operationen: Erstellen, Bearbeiten, Löschen von Vorlagen
+    - Vorlagen-Items werden inline angezeigt: "Artikel (Menge)"
     - "Speichern"-Button nur aktiv wenn mindestens ein Artikel vorhanden ist
   - **Intelligenter DatePicker mit Einkaufstag-Visualisierung**
     - **Farbcodierte Einkaufstage**: Visuelle Hervorhebung aller geplanten Einkaufstage im Kalender
@@ -104,7 +104,7 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - **Kompakte Darstellung**: Datumsangaben aus Item-Liste entfernt (Datum ist im DatePicker ausgewählt)
   - **Datenbank-Backup & Restore**: Vollständige Datensicherung und Wiederherstellung
     - **JSON-basiertes Backup**: Strukturunabhängig, funktioniert über Software-Updates hinweg
-    - **Vollständige Datensicherung**: Alle Datenbank-Inhalte (Benutzer, Geschäfte, Produkte, Templates, Einkaufsliste)
+    - **Vollständige Datensicherung**: Alle Datenbank-Inhalte (Benutzer, Geschäfte, Produkte, Vorlagen, Einkaufsliste)
     - **Einfacher Download**: Backup wird als JSON-Datei heruntergeladen
     - **Validierte Wiederherstellung**: Automatische Format-Validierung vor Restore
     - **Dedizierte Verwaltungsseite**: Unter `/backup` mit Information und Best Practices
@@ -173,7 +173,7 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
   - **UI-Anzeige**: Version wird im Benutzermenü (⋮) am Ende des Dropdowns angezeigt
     - Format: `v0.1.0` (monospace, grau, selectable)
     - Tooltip zeigt API-Version
-    - Auf allen Seiten verfügbar (App, Stores, Products, Templates, Users, Backup)
+    - Auf allen Seiten verfügbar (App, Stores, Products, Vorlagen, Users, Backup)
   - **Version in Backups**: Jedes Backup enthält die App-Version zur Nachverfolgbarkeit
   - **pyproject.toml Integration**: Dynamic versioning mit setuptools_scm
   - Siehe [VERSIONING.md](VERSIONING.md) für Details zum Release-Workflow und Conventional Commits
@@ -647,18 +647,18 @@ Die Anwendung verwendet **JWT (JSON Web Tokens)** für sichere Authentifizierung
   - Löscht alle Items mit `shopping_date < before_date`
   - Authentifizierung erforderlich: Alle authentifizierten Benutzer können Items löschen
 
-**Template Management (alle authentifiziert):**
-- `GET /api/templates` - Alle Templates abrufen (sortiert nach Name)
-- `GET /api/templates/{id}` - Einzelnes Template mit allen Items abrufen
-- `POST /api/templates` - Neues Template erstellen
-  - Body: `{"name": "Template-Name", "description": "Optional", "items": [{"name": "Artikel", "menge": "2 L"}]}`
-  - Response: Erstelltes Template mit generierter ID
-  - Validierung: Template-Name muss eindeutig sein
-- `PUT /api/templates/{id}` - Template aktualisieren (Partial Update)
+**Vorlagen-Verwaltung (alle authentifiziert):**
+- `GET /api/templates` - Alle Vorlagen abrufen (sortiert nach Name)
+- `GET /api/templates/{id}` - Einzelne Vorlage mit allen Items abrufen
+- `POST /api/templates` - Neue Vorlage erstellen
+  - Body: `{"name": "Vorlagen-Name", "description": "Optional", "items": [{"name": "Artikel", "menge": "2 L"}]}`
+  - Response: Erstellte Vorlage mit generierter ID
+  - Validierung: Vorlagen-Name muss eindeutig sein
+- `PUT /api/templates/{id}` - Vorlage aktualisieren (Partial Update)
   - Body: `{"name": "Neuer Name", "description": "Neue Beschreibung", "items": [...]}`
   - Alle Felder optional - nur bereitgestellte Felder werden aktualisiert
   - Items-Update ersetzt alle vorhandenen Items (nicht inkrementell)
-- `DELETE /api/templates/{id}` - Template löschen
+- `DELETE /api/templates/{id}` - Vorlage löschen
   - Cascading Delete: Löscht automatisch alle zugehörigen TemplateItems
 
 **Database Backup & Restore (alle authentifiziert):**
@@ -818,7 +818,7 @@ npm test -- --watch
 - ✅ Data Layer: API Client (94), Authentication (36), DOM (18) = 148 Tests
   - Inklusive 401 Handling & Token Refresh Failures
   - Inklusive Token-Refresh-Optimierung (Singleton, Cooldown, Concurrent Requests)
-  - Inklusive Template-Caching (Memory Cache, Load Flag, Zero Network Cost)
+  - Inklusive Vorlagen-Caching (Memory Cache, Load Flag, Zero Network Cost)
   - Inklusive DOM-Batching (DocumentFragment, O(1) Reflows)
   - Tests für Mengenangaben in API und DOM
   - Tests für Department-Gruppierung und Sortierung
