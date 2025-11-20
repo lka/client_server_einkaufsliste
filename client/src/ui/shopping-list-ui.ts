@@ -78,8 +78,8 @@ async function handleEditItem(itemId: string): Promise<void> {
 /**
  * Show print preview dialog
  */
-function showPrintPreview(): Promise<boolean> {
-  return new Promise((resolve) => {
+async function showPrintPreview(): Promise<boolean> {
+  return new Promise(async (resolve) => {
     const items = shoppingListState.getItems();
     const filteredItems = filterItemsByStore(items);
 
@@ -115,11 +115,15 @@ function showPrintPreview(): Promise<boolean> {
       selectedDate = uniqueDates.length > 0 ? uniqueDates[0] : null;
     }
 
-    // Get store name
+    // Get stores for dropdown
+    const allStores = await fetchStores();
+
+    // Get initial store name and ID
     const storeFilter = document.getElementById('storeFilter') as HTMLSelectElement;
-    const storeName = selectedStoreId
+    let currentStoreName = selectedStoreId
       ? storeFilter.options[storeFilter.selectedIndex].text
       : 'Alle Geschäfte';
+    let currentStoreId: number | null = selectedStoreId;
 
     // Create backdrop
     const backdrop = document.createElement('div');
@@ -223,11 +227,30 @@ function showPrintPreview(): Promise<boolean> {
       const header = document.createElement('div');
       header.style.cssText = 'margin-bottom: 1.5rem; border-bottom: 2px solid #333; padding-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;';
 
-      const headerTitle = document.createElement('h2');
-      headerTitle.textContent = storeName;
-      headerTitle.style.cssText = 'margin: 0; font-size: 1.2rem;';
+      // Store dropdown
+      const storeDropdown = document.createElement('select');
+      storeDropdown.style.cssText = 'font-size: 1.2rem; font-weight: bold; padding: 0.25rem 0.5rem; border: 1px solid #ccc; border-radius: 4px; cursor: pointer;';
 
-      // Date dropdown instead of fixed date
+      // Add "Alle Geschäfte" option
+      const allStoresOption = document.createElement('option');
+      allStoresOption.value = '';
+      allStoresOption.textContent = 'Alle Geschäfte';
+      storeDropdown.appendChild(allStoresOption);
+
+      // Add store options
+      allStores.forEach(store => {
+        const option = document.createElement('option');
+        option.value = store.id.toString();
+        option.textContent = store.name;
+        storeDropdown.appendChild(option);
+      });
+
+      // Set default to current store
+      if (currentStoreId) {
+        storeDropdown.value = currentStoreId.toString();
+      }
+
+      // Date dropdown
       const dateDropdown = document.createElement('select');
       dateDropdown.style.cssText = 'color: #666; font-size: 0.8rem; padding: 0.25rem 0.5rem; border: 1px solid #ccc; border-radius: 4px; cursor: pointer;';
 
@@ -252,18 +275,40 @@ function showPrintPreview(): Promise<boolean> {
         dateDropdown.value = selectedDate;
       }
 
-      // Handle date selection change
-      dateDropdown.addEventListener('change', async () => {
-        selectedDate = dateDropdown.value || null;
-        if (allStoresCheckbox.checked) {
+      // Handle store selection change
+      storeDropdown.addEventListener('change', async () => {
+        const newStoreId = storeDropdown.value ? parseInt(storeDropdown.value) : null;
+        currentStoreId = newStoreId;
+        currentStoreName = newStoreId
+          ? allStores.find(s => s.id === newStoreId)?.name || 'Alle Geschäfte'
+          : 'Alle Geschäfte';
+
+        if (currentStoreId === null) {
+          // Show all stores
           await renderAllStoresContent(selectedDate);
         } else {
-          const dateFilteredItems = filterItemsByDate(filteredItems, selectedDate);
+          // Filter items by selected store
+          const allItems = shoppingListState.getItems();
+          const storeFilteredItems = allItems.filter(item => item.store_id === currentStoreId);
+          const dateFilteredItems = filterItemsByDate(storeFilteredItems, selectedDate);
           renderPrintContent(dateFilteredItems);
         }
       });
 
-      header.appendChild(headerTitle);
+      // Handle date selection change
+      dateDropdown.addEventListener('change', async () => {
+        selectedDate = dateDropdown.value || null;
+        if (currentStoreId === null) {
+          await renderAllStoresContent(selectedDate);
+        } else {
+          const allItems = shoppingListState.getItems();
+          const storeFilteredItems = allItems.filter(item => item.store_id === currentStoreId);
+          const dateFilteredItems = filterItemsByDate(storeFilteredItems, selectedDate);
+          renderPrintContent(dateFilteredItems);
+        }
+      });
+
+      header.appendChild(storeDropdown);
       header.appendChild(dateDropdown);
       previewContent.appendChild(header);
 
@@ -354,7 +399,7 @@ function showPrintPreview(): Promise<boolean> {
         backHeader.style.cssText = 'margin-bottom: 1.5rem; border-bottom: 2px solid #333; padding-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;';
 
         const continueTitle = document.createElement('h2');
-        continueTitle.textContent = `${storeName} (Fortsetzung)`;
+        continueTitle.textContent = `${currentStoreName} (Fortsetzung)`;
         continueTitle.style.cssText = 'margin: 0; font-size: 1.2rem;';
 
         const backDateInfo = document.createElement('span');
@@ -414,25 +459,6 @@ function showPrintPreview(): Promise<boolean> {
     // Checkboxes for options
     const optionsContainer = document.createElement('div');
     optionsContainer.style.cssText = 'margin-bottom: 0; display: flex; gap: 1.5rem; flex-wrap: wrap;';
-
-    // Checkbox for "Alle Geschäfte"
-    const allStoresLabel = document.createElement('label');
-    allStoresLabel.style.cssText = 'display: flex; align-items: center; gap: 0.5rem; cursor: pointer;';
-
-    const allStoresCheckbox = document.createElement('input');
-    allStoresCheckbox.type = 'checkbox';
-    allStoresCheckbox.id = 'allStoresCheckbox';
-    allStoresCheckbox.style.cssText = 'cursor: pointer;';
-    // Check if current store filter is "Alle Geschäfte"
-    allStoresCheckbox.checked = !selectedStoreId;
-
-    const allStoresLabelText = document.createElement('span');
-    allStoresLabelText.textContent = 'Alle Geschäfte';
-    allStoresLabelText.style.cssText = 'font-size: 0.9rem;';
-
-    allStoresLabel.appendChild(allStoresCheckbox);
-    allStoresLabel.appendChild(allStoresLabelText);
-    optionsContainer.appendChild(allStoresLabel);
 
     // Checkbox for hiding department titles
     const checkboxLabel = document.createElement('label');
@@ -641,18 +667,6 @@ function showPrintPreview(): Promise<boolean> {
       }
     };
 
-    // Update preview when "Alle Geschäfte" checkbox changes
-    allStoresCheckbox.addEventListener('change', async () => {
-      if (allStoresCheckbox.checked) {
-        // Show all stores
-        await renderAllStoresContent(selectedDate);
-      } else {
-        // Show single store
-        const dateFilteredItems = filterItemsByDate(filteredItems, selectedDate);
-        renderPrintContent(dateFilteredItems);
-      }
-    });
-
     // Update preview when department titles checkbox changes
     hideDeptCheckbox.addEventListener('change', () => {
       const frontDeptTitles = previewContent.querySelectorAll('.department-title');
@@ -676,8 +690,8 @@ function showPrintPreview(): Promise<boolean> {
     });
 
     // Initial render with filtered items (by default, use smallest date)
-    // If "Alle Geschäfte" checkbox is checked (no store selected), render multi-store view
-    if (allStoresCheckbox.checked) {
+    // If no store selected (currentStoreId is null), render multi-store view
+    if (currentStoreId === null) {
       renderAllStoresContent(selectedDate);
     } else {
       const initialFilteredItems = filterItemsByDate(filteredItems, selectedDate);
@@ -706,7 +720,7 @@ function showPrintPreview(): Promise<boolean> {
       // Trigger browser print with the preview content
       const hideDepartments = hideDeptCheckbox.checked;
       const backPageContent = backPage.innerHTML;
-      const titleForPrint = allStoresCheckbox.checked ? 'Alle Geschäfte' : storeName;
+      const titleForPrint = currentStoreName;
       // Pass the selected date for printing
       printPreviewContent(previewContent.innerHTML, backPageContent, titleForPrint, hideDepartments, selectedDate);
       resolve(true);
@@ -756,16 +770,22 @@ function printPreviewContent(frontContent: string, backContent: string, storeNam
     return;
   }
 
-  // Replace dropdown with static date text in the content
+  // Replace dropdowns with static text in the content
   let processedFrontContent = frontContent;
   let processedBackContent = backContent;
 
+  // First, replace store dropdown with static store name
+  processedFrontContent = processedFrontContent.replace(
+    /<select[^>]*>[\s\S]*?<\/select>/,
+    `<span style="font-size: 1.2rem; font-weight: bold;">${storeName}</span>`
+  );
+
+  // Then, replace date dropdown with static date
   if (selectedDate) {
     // Format date for display
     const dateObj = new Date(selectedDate + 'T00:00:00');
     const formattedDate = dateObj.toLocaleDateString('de-DE');
 
-    // Replace select dropdown with span containing the date
     processedFrontContent = processedFrontContent.replace(
       /<select[^>]*>[\s\S]*?<\/select>/,
       `<span style="color: #666; font-size: 0.8rem;">${formattedDate}</span>`
