@@ -274,15 +274,16 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - Template wird im Speicher gecacht für nachfolgende Aufrufe
     - Keine redundanten Netzwerk-Requests
   - **Hierarchische Struktur**: Zwei Submenüs für logische Gruppierung
-    - **⚙️ Einstellungen-Submenü**: Alle Verwaltungsfunktionen
-      - 🏪 Geschäfte verwalten
-      - 📦 Produkte verwalten
-      - 📋 Vorlagen verwalten
-      - 👥 Benutzer verwalten
-      - 💾 Datenbank-Backup
-    - **🔌 WebSocket-Submenü**: WebSocket-Funktionen
+    - **⚙️ Verwaltung-Submenü**: Alle Verwaltungsfunktionen
+      - 🏪 Geschäfte
+      - 📦 Produkte
+      - 📋 Vorlagen
+      - 👥 Benutzer
+    - **⚙️ Einstellungen-Submenü**: Einstellungen und administrative Funktionen
       - 🔌 WebSocket aktivieren/deaktivieren
       - 📋 Link kopieren (für mobile Geräte)
+      - 🗓️ Vor Datum löschen
+      - 💾 Datenbank-Backup
     - 🚪 Abmelden (Hauptmenü)
     - Version-Info (Hauptmenü)
   - **Smooth Animations**: Max-height-Transition für sanftes Auf-/Zuklappen

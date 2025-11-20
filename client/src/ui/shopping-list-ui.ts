@@ -1000,7 +1000,7 @@ function showDepartmentSelectionDialog(
 /**
  * Show a modal dialog for selecting a date to delete items before
  */
-function showDeleteByDateDialog(): Promise<void> {
+export function showDeleteByDateDialog(): Promise<void> {
   return new Promise((resolve) => {
     // Create modal content
     const modalContent = document.createElement('div');
@@ -1455,15 +1455,6 @@ export function initShoppingListUI(): void {
   if (printBtn) {
     printBtn.addEventListener('click', async () => {
       await showPrintPreview();
-    });
-  }
-
-  // Clear by date button handler
-  const clearByDateBtn = document.getElementById('clearByDateBtn') as HTMLButtonElement;
-  if (clearByDateBtn) {
-    clearByDateBtn.addEventListener('click', async () => {
-      // Show modal with DatePicker for date selection
-      await showDeleteByDateDialog();
     });
   }
 

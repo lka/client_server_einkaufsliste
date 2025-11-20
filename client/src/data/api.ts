@@ -289,7 +289,7 @@ export async function deleteItemsBeforeDate(beforeDate: string, storeId?: number
 
   try {
     // Build URL with optional store_id query parameter
-    const url = new URL(`${API_BASE}/by-date/${beforeDate}`);
+    const url = new URL(`${API_BASE}/by-date/${beforeDate}`, window.location.origin);
     if (storeId !== undefined) {
       url.searchParams.append('store_id', storeId.toString());
     }
