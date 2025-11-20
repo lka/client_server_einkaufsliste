@@ -729,7 +729,8 @@ async function showPrintPreview(): Promise<boolean> {
 
     // Cancel button
     const cancelBtn = document.createElement('button');
-    cancelBtn.textContent = 'Abbrechen';
+    cancelBtn.textContent = '❌';
+    cancelBtn.title = 'Abbrechen';
     cancelBtn.style.cssText = `
       flex: 1;
       padding: 0.75rem 1rem;
