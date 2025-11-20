@@ -256,9 +256,7 @@ export async function initUserMenu(): Promise<void> {
         localStorage.setItem('enable_ws', 'true');
 
         if (websocket.isWebSocketSupported()) {
-          websocket.connect();
-
-          // Add connection status indicator to header-actions if not present
+          // Add connection status indicator to header-actions if not present (BEFORE connecting)
           const headerActions = document.querySelector('.header-actions') as HTMLElement;
           const existingStatus = headerActions?.querySelector('.connection-status');
 
@@ -272,6 +270,9 @@ export async function initUserMenu(): Promise<void> {
               showUserCount: true
             });
           }
+
+          // Connect after status indicator is created to ensure events are properly subscribed
+          websocket.connect();
         } else {
           alert('WebSocket wird von Ihrem Browser nicht unterstützt.');
         }
