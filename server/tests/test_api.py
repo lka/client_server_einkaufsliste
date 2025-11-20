@@ -607,3 +607,109 @@ def test_delete_items_before_date_with_store_filter():
     client.delete(f"/api/items/{item3_id}", headers=headers)
     client.delete(f"/api/stores/{store1_id}", headers=headers)
     client.delete(f"/api/stores/{store2_id}", headers=headers)
+
+
+def test_item_stays_with_selected_store():
+    """Test that items stay with the selected store and don't get merged across stores.
+
+    This test verifies the fix for the bug where adding a product to Store A
+    that exists in Store B's product catalog would incorrectly assign it to Store B.
+    The item should stay with Store A under "Sonstiges"
+    if not found in Store A's catalog.
+    """
+    # Get authentication token
+    token = get_auth_token()
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Create two test stores
+    store_a_data = {"name": "Store A", "address": "Address A"}
+    r_store_a = client.post("/api/stores", json=store_a_data, headers=headers)
+    assert r_store_a.status_code == 201
+    store_a_id = r_store_a.json()["id"]
+
+    store_b_data = {"name": "Store B", "address": "Address B"}
+    r_store_b = client.post("/api/stores", json=store_b_data, headers=headers)
+    assert r_store_b.status_code == 201
+    store_b_id = r_store_b.json()["id"]
+
+    # Add an item "Milch" to Store A with a specific shopping date
+    item_a_data = {
+        "name": "Milch",
+        "menge": "1 L",
+        "store_id": store_a_id,
+        "shopping_date": "2025-12-20",
+    }
+    r_item_a = client.post("/api/items", json=item_a_data, headers=headers)
+    assert r_item_a.status_code == 201
+    item_a = r_item_a.json()
+    item_a_id = item_a["id"]
+
+    # Verify the item was created with Store A
+    assert item_a["store_id"] == store_a_id
+    assert item_a["name"] == "Milch"
+
+    # Now add a similar item "Milch" to Store B with the SAME shopping date
+    item_b_data = {
+        "name": "Milch",
+        "menge": "2 L",
+        "store_id": store_b_id,
+        "shopping_date": "2025-12-20",
+    }
+    r_item_b = client.post("/api/items", json=item_b_data, headers=headers)
+    assert r_item_b.status_code == 201
+    item_b = r_item_b.json()
+    item_b_id = item_b["id"]
+
+    # Verify the second item was created with Store B (not merged with Store A's item)
+    assert item_b["store_id"] == store_b_id
+    assert item_b["name"] == "Milch"
+    assert item_b_id != item_a_id  # Should be a separate item
+
+    # Verify both items exist in the list with correct store assignments
+    r = client.get("/api/items", headers=headers)
+    all_items = r.json()
+
+    item_a_from_list = next(
+        (item for item in all_items if item["id"] == item_a_id), None
+    )
+    item_b_from_list = next(
+        (item for item in all_items if item["id"] == item_b_id), None
+    )
+
+    assert item_a_from_list is not None
+    assert item_a_from_list["store_id"] == store_a_id
+    assert item_a_from_list["menge"] == "1 L"
+
+    assert item_b_from_list is not None
+    assert item_b_from_list["store_id"] == store_b_id
+    assert item_b_from_list["menge"] == "2 L"
+
+    # Now test fuzzy matching: add "Milch" again to Store A (should merge with existing)
+    item_a2_data = {
+        "name": "Milch",
+        "menge": "3 L",
+        "store_id": store_a_id,
+        "shopping_date": "2025-12-20",
+    }
+    r_item_a2 = client.post("/api/items", json=item_a2_data, headers=headers)
+    assert r_item_a2.status_code == 201
+    item_a2 = r_item_a2.json()
+
+    # Should have merged with the existing Store A item
+    assert item_a2["id"] == item_a_id  # Same ID (merged)
+    assert item_a2["store_id"] == store_a_id
+    assert "4 L" in item_a2["menge"]  # 1L + 3L = 4L
+
+    # Verify Store B's item was not affected
+    r = client.get("/api/items", headers=headers)
+    all_items = r.json()
+    item_b_from_list = next(
+        (item for item in all_items if item["id"] == item_b_id), None
+    )
+    assert item_b_from_list["menge"] == "2 L"  # Should still be 2L (unchanged)
+
+    # Cleanup
+    client.delete(f"/api/items/{item_a_id}", headers=headers)
+    client.delete(f"/api/items/{item_b_id}", headers=headers)
+    client.delete(f"/api/stores/{store_a_id}", headers=headers)
+    client.delete(f"/api/stores/{store_b_id}", headers=headers)
