@@ -21,10 +21,41 @@ delete (window as any).location;
 global.confirm = jest.fn() as unknown as typeof confirm;
 global.alert = jest.fn() as unknown as typeof alert;
 
+// Mock fetch for menu template loading
+const mockFetch = jest.fn() as any;
+(global as any).fetch = mockFetch;
+
 describe('User Menu UI', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (window as any).location.href = '';
+
+    // Reset fetch mock to default implementation
+    mockFetch.mockImplementation((url: string) => {
+      if (url === 'src/ui/components/menu-dropdown.html') {
+        return Promise.resolve({
+          ok: true,
+          text: () => Promise.resolve(`
+            <button id="settingsMenuBtn" class="menu-item menu-item-submenu">⚙️ Einstellungen <span class="submenu-arrow">›</span></button>
+            <div id="settingsSubmenu" class="menu-submenu">
+              <button id="manageStoresBtn" class="menu-item">🏪 Geschäfte verwalten</button>
+              <button id="manageProductsBtn" class="menu-item">📦 Produkte verwalten</button>
+              <button id="manageTemplatesBtn" class="menu-item">📋 Vorlagen verwalten</button>
+              <button id="manageUsersBtn" class="menu-item">👥 Benutzer verwalten</button>
+              <button id="manageBackupBtn" class="menu-item">💾 Datenbank-Backup</button>
+            </div>
+            <button id="websocketMenuBtn" class="menu-item menu-item-submenu">🔌 WebSocket <span class="submenu-arrow">›</span></button>
+            <div id="websocketSubmenu" class="menu-submenu">
+              <button id="toggleWebSocketBtn" class="menu-item">🔌 WebSocket aktivieren</button>
+              <button id="copyWebSocketLinkBtn" class="menu-item">📋 Link kopieren</button>
+            </div>
+            <button id="logoutBtn" class="menu-item">🚪 Abmelden</button>
+            <div id="versionInfo" class="menu-version"></div>
+          `),
+        });
+      }
+      return Promise.reject(new Error('Not found'));
+    });
 
     // Setup DOM
     document.body.innerHTML = `
@@ -33,11 +64,7 @@ describe('User Menu UI', () => {
         <div class="user-menu">
           <button id="menuBtn">⋮</button>
           <div id="menuDropdown" class="menu-dropdown">
-            <button id="backToAppBtn">Zurück zur App</button>
-            <button id="manageStoresBtn">Geschäfte verwalten</button>
-            <button id="manageProductsBtn">Produkte verwalten</button>
-            <button id="logoutBtn">Abmelden</button>
-            <button id="deleteAccountBtn">Account löschen</button>
+            <!-- Menu items will be loaded dynamically -->
           </div>
         </div>
       </header>
@@ -129,8 +156,8 @@ describe('User Menu UI', () => {
   });
 
   describe('initUserMenu', () => {
-    it('should initialize menu event handlers', () => {
-      initUserMenu();
+    it('should initialize menu event handlers', async () => {
+      await initUserMenu();
 
       const menuBtn = document.getElementById('menuBtn');
       const menuDropdown = document.getElementById('menuDropdown');
@@ -139,8 +166,8 @@ describe('User Menu UI', () => {
       expect(menuDropdown).toBeDefined();
     });
 
-    it('should toggle menu on button click', () => {
-      initUserMenu();
+    it('should toggle menu on button click', async () => {
+      await initUserMenu();
 
       const menuBtn = document.getElementById('menuBtn')!;
       const menuDropdown = document.getElementById('menuDropdown')!;
@@ -154,8 +181,8 @@ describe('User Menu UI', () => {
       expect(menuDropdown.classList.contains('show')).toBe(false);
     });
 
-    it('should close menu when clicking outside', () => {
-      initUserMenu();
+    it('should close menu when clicking outside', async () => {
+      await initUserMenu();
 
       const menuBtn = document.getElementById('menuBtn')!;
       const menuDropdown = document.getElementById('menuDropdown')!;
@@ -169,8 +196,8 @@ describe('User Menu UI', () => {
       expect(menuDropdown.classList.contains('show')).toBe(false);
     });
 
-    it('should not close menu when clicking inside dropdown', () => {
-      initUserMenu();
+    it('should not close menu when clicking inside dropdown', async () => {
+      await initUserMenu();
 
       const menuBtn = document.getElementById('menuBtn')!;
       const menuDropdown = document.getElementById('menuDropdown')!;
@@ -184,8 +211,13 @@ describe('User Menu UI', () => {
       expect(menuDropdown.classList.contains('show')).toBe(true);
     });
 
-    it('should navigate to app when back button clicked', () => {
-      initUserMenu();
+    it('should navigate to app when back button clicked', async () => {
+      // Add backToAppBtn to DOM for this test
+      const backBtn = document.createElement('button');
+      backBtn.id = 'backToAppBtn';
+      document.body.appendChild(backBtn);
+
+      await initUserMenu();
 
       const backToAppBtn = document.getElementById('backToAppBtn')!;
       backToAppBtn.click();
@@ -193,8 +225,8 @@ describe('User Menu UI', () => {
       expect((window as any).location.href).toBe('/app');
     });
 
-    it('should navigate to stores when manage stores button clicked', () => {
-      initUserMenu();
+    it('should navigate to stores when manage stores button clicked', async () => {
+      await initUserMenu();
 
       const manageStoresBtn = document.getElementById('manageStoresBtn')!;
       manageStoresBtn.click();
@@ -202,8 +234,8 @@ describe('User Menu UI', () => {
       expect((window as any).location.href).toBe('/stores');
     });
 
-    it('should navigate to products when manage products button clicked', () => {
-      initUserMenu();
+    it('should navigate to products when manage products button clicked', async () => {
+      await initUserMenu();
 
       const manageProductsBtn = document.getElementById('manageProductsBtn')!;
       manageProductsBtn.click();
@@ -211,12 +243,12 @@ describe('User Menu UI', () => {
       expect((window as any).location.href).toBe('/products');
     });
 
-    it('should logout when logout button clicked', () => {
+    it('should logout when logout button clicked', async () => {
       (auth.logout as jest.MockedFunction<typeof auth.logout>).mockImplementation(() => {});
       (userState.clearUser as jest.MockedFunction<typeof userState.clearUser>).mockImplementation(() => {});
       (shoppingListState.clear as jest.MockedFunction<typeof shoppingListState.clear>).mockImplementation(() => {});
 
-      initUserMenu();
+      await initUserMenu();
 
       const logoutBtn = document.getElementById('logoutBtn')!;
       logoutBtn.click();
@@ -228,64 +260,90 @@ describe('User Menu UI', () => {
     });
 
 
-    it('should handle missing menu elements gracefully', () => {
+    it('should handle missing menu elements gracefully', async () => {
       document.body.innerHTML = '<div></div>';
 
       jest.spyOn(console, 'error').mockImplementation(() => {});
 
-      initUserMenu();
+      await initUserMenu();
 
       expect(console.error).toHaveBeenCalledWith('User menu elements not found');
     });
 
-    it('should handle missing back to app button', () => {
-      document.getElementById('backToAppBtn')?.remove();
+    it('should handle missing back to app button', async () => {
+      await initUserMenu();
 
-      initUserMenu();
-
-      // Should not throw error
+      // backToAppBtn is not in the menu template, so it should be null
       expect(document.getElementById('backToAppBtn')).toBeNull();
     });
 
-    it('should handle missing manage stores button', () => {
-      document.getElementById('manageStoresBtn')?.remove();
+    it('should load menu template with all buttons', async () => {
+      await initUserMenu();
 
-      initUserMenu();
+      // Verify main menu buttons
+      expect(document.getElementById('settingsMenuBtn')).not.toBeNull();
+      expect(document.getElementById('websocketMenuBtn')).not.toBeNull();
+      expect(document.getElementById('logoutBtn')).not.toBeNull();
+      expect(document.getElementById('versionInfo')).not.toBeNull();
 
-      // Should not throw error
-      expect(document.getElementById('manageStoresBtn')).toBeNull();
+      // Verify settings submenu
+      expect(document.getElementById('settingsSubmenu')).not.toBeNull();
+      expect(document.getElementById('manageStoresBtn')).not.toBeNull();
+      expect(document.getElementById('manageProductsBtn')).not.toBeNull();
+      expect(document.getElementById('manageTemplatesBtn')).not.toBeNull();
+      expect(document.getElementById('manageUsersBtn')).not.toBeNull();
+      expect(document.getElementById('manageBackupBtn')).not.toBeNull();
+
+      // Verify websocket submenu
+      expect(document.getElementById('websocketSubmenu')).not.toBeNull();
+      expect(document.getElementById('toggleWebSocketBtn')).not.toBeNull();
+      expect(document.getElementById('copyWebSocketLinkBtn')).not.toBeNull();
     });
 
-    it('should handle missing manage products button', () => {
-      document.getElementById('manageProductsBtn')?.remove();
+    it('should toggle settings submenu on button click', async () => {
+      await initUserMenu();
 
-      initUserMenu();
+      const settingsMenuBtn = document.getElementById('settingsMenuBtn')!;
+      const settingsSubmenu = document.getElementById('settingsSubmenu')!;
 
-      // Should not throw error
-      expect(document.getElementById('manageProductsBtn')).toBeNull();
+      expect(settingsSubmenu.classList.contains('show')).toBe(false);
+      expect(settingsMenuBtn.classList.contains('expanded')).toBe(false);
+
+      settingsMenuBtn.click();
+      expect(settingsSubmenu.classList.contains('show')).toBe(true);
+      expect(settingsMenuBtn.classList.contains('expanded')).toBe(true);
+
+      settingsMenuBtn.click();
+      expect(settingsSubmenu.classList.contains('show')).toBe(false);
+      expect(settingsMenuBtn.classList.contains('expanded')).toBe(false);
     });
 
-    it('should handle missing logout button', () => {
-      document.getElementById('logoutBtn')?.remove();
+    it('should toggle websocket submenu on button click', async () => {
+      await initUserMenu();
 
-      (auth.logout as jest.MockedFunction<typeof auth.logout>).mockImplementation(() => {});
+      const websocketMenuBtn = document.getElementById('websocketMenuBtn')!;
+      const websocketSubmenu = document.getElementById('websocketSubmenu')!;
 
-      initUserMenu();
+      expect(websocketSubmenu.classList.contains('show')).toBe(false);
+      expect(websocketMenuBtn.classList.contains('expanded')).toBe(false);
 
-      // Should not throw error
-      expect(document.getElementById('logoutBtn')).toBeNull();
+      websocketMenuBtn.click();
+      expect(websocketSubmenu.classList.contains('show')).toBe(true);
+      expect(websocketMenuBtn.classList.contains('expanded')).toBe(true);
+
+      websocketMenuBtn.click();
+      expect(websocketSubmenu.classList.contains('show')).toBe(false);
+      expect(websocketMenuBtn.classList.contains('expanded')).toBe(false);
     });
 
     it('should handle missing delete button', async () => {
-      document.getElementById('deleteAccountBtn')?.remove();
-
       (userState.deleteCurrentUser as jest.MockedFunction<typeof userState.deleteCurrentUser>).mockResolvedValue(
         true
       );
 
-      initUserMenu();
+      await initUserMenu();
 
-      // Should not throw error
+      // deleteAccountBtn is not in the menu template, so it should be null
       expect(document.getElementById('deleteAccountBtn')).toBeNull();
     });
   });

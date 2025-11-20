@@ -265,6 +265,36 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - Nicht verfügbar für Administratoren (aus Sicherheitsgründen)
     - Mit Bestätigungsdialog und Warnhinweis
   - Navigation über Benutzermenü: "👥 Benutzer verwalten"
+- ✅ **Zentralisiertes Dropdown-Menü**: Dynamisch geladenes, hierarchisches Benutzermenü
+  - **Single Source of Truth**: Menü-Template wird zentral in `menu-dropdown.html` verwaltet
+    - Änderungen am Menü müssen nur noch an einer Stelle vorgenommen werden
+    - Automatisches Laden auf allen Seiten (app, stores, products, templates, users, backup)
+  - **Dynamisches Laden**: Template wird per fetch geladen und gecacht für optimale Performance
+    - Fetch erfolgt beim ersten Aufruf von `initUserMenu()`
+    - Template wird im Speicher gecacht für nachfolgende Aufrufe
+    - Keine redundanten Netzwerk-Requests
+  - **Hierarchische Struktur**: Zwei Submenüs für logische Gruppierung
+    - **⚙️ Einstellungen-Submenü**: Alle Verwaltungsfunktionen
+      - 🏪 Geschäfte verwalten
+      - 📦 Produkte verwalten
+      - 📋 Vorlagen verwalten
+      - 👥 Benutzer verwalten
+      - 💾 Datenbank-Backup
+    - **🔌 WebSocket-Submenü**: WebSocket-Funktionen
+      - 🔌 WebSocket aktivieren/deaktivieren
+      - 📋 Link kopieren (für mobile Geräte)
+    - 🚪 Abmelden (Hauptmenü)
+    - Version-Info (Hauptmenü)
+  - **Smooth Animations**: Max-height-Transition für sanftes Auf-/Zuklappen
+    - Pfeil-Icon rotiert beim Öffnen (› → ∨)
+    - 300ms Transition-Dauer für flüssige Animation
+  - **Automatisches Cleanup**: Submenüs schließen sich beim Klick außerhalb
+    - Event-Handler für document-click entfernt alle `show` und `expanded` Klassen
+  - **Konsistente UX**: Identische Submenü-Logik auf allen Seiten
+    - Gleiche CSS-Styles für beide Submenüs (`.menu-submenu`)
+    - Eingerückte Items (padding-left: 2rem)
+    - Hellgrauer Hintergrund (#f9f9f9) zur Abgrenzung
+  - **Wartungsfreundlich**: Nur `menu-dropdown.html` muss für Menü-Änderungen bearbeitet werden
 
 ## Project Structure
 
@@ -318,6 +348,7 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
 │   │   │   │   ├── dropdown.ts   # Dropdown/select component (native & searchable)
 │   │   │   │   ├── tabs.ts       # Tab navigation component
 │   │   │   │   ├── toast.ts      # Toast notification system
+│   │   │   │   ├── menu-dropdown.html # Centralized menu template (loaded dynamically)
 │   │   │   │   └── index.ts      # Component library exports & initialization
 │   │   ├── state/                # State layer (state management)
 │   │   │   ├── shopping-list-state.ts      # Shopping list state manager
@@ -833,13 +864,17 @@ npm test -- --watch
   - Tests für Mengenangaben im State
   - Test für Fuzzy-Matching-Update (verhindert Duplikate)
   - Tests für Store/Department/Product State Management
-- ✅ UI Layer: Shopping List UI (29), User Menu (16), Store Admin (27), Product Admin (15) = 87 Tests
+- ✅ UI Layer: Shopping List UI (29), User Menu (17), Store Admin (27), Product Admin (15) = 88 Tests
   - Tests für Mengenfeld-Eingabe
   - Tests für CRUD-Operationen
   - **Shopping List UI Tests (29)**:
     - Edit-Button Funktionalität (8 Tests): Dialog-Anzeige, Department-Auswahl, Fehlerbehandlung
     - Item-Deletion und DatePicker Integration
     - DatePicker Modal-Funktionalität für Date-Based Deletion
+  - **User Menu Tests (17)**:
+    - Template-Loading und Caching
+    - Submenü-Toggle-Funktionalität (2 Tests für Settings und WebSocket)
+    - Navigation und Event-Handler
   - **Store Admin Tests**: Store-Reordering (↑↓ Buttons), Department-Reordering
   - Product Admin Tests: Store-Auswahl, Department-Verwaltung, Form-Validierung
 - ✅ Pages Layer: Login Controller (20) = 20 Tests
@@ -851,8 +886,8 @@ npm test -- --watch
 
 **Gesamt-Teststatistik:**
 - 📊 **Server**: 66 Tests, 85% Coverage
-- 📊 **Client**: 445 Tests, 85.46% Coverage
-- 📊 **Gesamt**: 511 Tests ✅
+- 📊 **Client**: 457 Tests, 85.46% Coverage
+- 📊 **Gesamt**: 523 Tests ✅
 
 ### Continuous Integration (CI)
 
@@ -865,7 +900,7 @@ Das Projekt nutzt GitHub Actions für automatisierte Tests bei jedem Push/Pull R
 
 **Client Tests (TypeScript):**
 - TypeScript Build
-- Jest Tests (445 Tests mit 85.46% Coverage)
+- Jest Tests (457 Tests mit 85.46% Coverage)
 
 Beide Jobs laufen parallel für maximale Geschwindigkeit. Die CI-Konfiguration befindet sich in `.github/workflows/ci.yml`.
 

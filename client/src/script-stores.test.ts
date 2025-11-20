@@ -192,7 +192,7 @@ describe('script-stores.ts store admin entry point', () => {
     mockInitStoreAdmin.mockImplementation(() => {
       callOrder.push('initStoreAdmin');
     });
-    mockInitUserMenu.mockImplementation(() => {
+    mockInitUserMenu.mockImplementation(async () => {
       callOrder.push('initUserMenu');
     });
 

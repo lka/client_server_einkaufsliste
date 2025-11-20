@@ -190,7 +190,7 @@ describe('script-products.ts products page entry point', () => {
     mockUpdateUserDisplay.mockImplementation(async () => {
       callOrder.push('updateUserDisplay');
     });
-    mockInitUserMenu.mockImplementation(() => {
+    mockInitUserMenu.mockImplementation(async () => {
       callOrder.push('initUserMenu');
     });
     mockInitProductAdmin.mockImplementation(async () => {

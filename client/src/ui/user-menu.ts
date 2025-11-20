@@ -15,6 +15,35 @@ import { getSelectedStoreId } from './shopping-list-ui.js';
 // Store ConnectionStatus instance for proper cleanup
 let connectionStatusInstance: ConnectionStatus | null = null;
 
+// Cache for menu template to avoid redundant fetches
+let menuTemplateCache: string | null = null;
+
+/**
+ * Load the menu dropdown template from HTML file.
+ */
+async function loadMenuTemplate(menuDropdown: HTMLElement): Promise<void> {
+  try {
+    // Return cached template if available
+    if (menuTemplateCache) {
+      menuDropdown.innerHTML = menuTemplateCache;
+      return;
+    }
+
+    // Fetch template
+    const response = await fetch('src/ui/components/menu-dropdown.html');
+    if (!response.ok) {
+      console.error('Failed to load menu template:', response.statusText);
+      return;
+    }
+
+    const html = await response.text();
+    menuTemplateCache = html;
+    menuDropdown.innerHTML = html;
+  } catch (error) {
+    console.error('Error loading menu template:', error);
+  }
+}
+
 /**
  * Get the current ConnectionStatus instance
  */
@@ -51,10 +80,24 @@ export async function updateUserDisplay(): Promise<void> {
 /**
  * Initialize user menu event handlers.
  */
-export function initUserMenu(): void {
+export async function initUserMenu(): Promise<void> {
   const menuBtn = document.getElementById('menuBtn');
   const menuDropdown = document.getElementById('menuDropdown');
+
+  if (!menuBtn || !menuDropdown) {
+    console.error('User menu elements not found');
+    return;
+  }
+
+  // Load menu template
+  await loadMenuTemplate(menuDropdown);
+
+  // Get menu buttons after template is loaded
   const backToAppBtn = document.getElementById('backToAppBtn');
+  const settingsMenuBtn = document.getElementById('settingsMenuBtn');
+  const settingsSubmenu = document.getElementById('settingsSubmenu');
+  const websocketMenuBtn = document.getElementById('websocketMenuBtn');
+  const websocketSubmenu = document.getElementById('websocketSubmenu');
   const manageStoresBtn = document.getElementById('manageStoresBtn');
   const manageProductsBtn = document.getElementById('manageProductsBtn');
   const manageTemplatesBtn = document.getElementById('manageTemplatesBtn');
@@ -63,11 +106,6 @@ export function initUserMenu(): void {
   const toggleWebSocketBtn = document.getElementById('toggleWebSocketBtn');
   const copyWebSocketLinkBtn = document.getElementById('copyWebSocketLinkBtn');
   const logoutBtn = document.getElementById('logoutBtn');
-
-  if (!menuBtn || !menuDropdown) {
-    console.error('User menu elements not found');
-    return;
-  }
 
   // Menu toggle handler
   menuBtn.addEventListener('click', (e) => {
@@ -78,12 +116,43 @@ export function initUserMenu(): void {
   // Close menu when clicking outside
   document.addEventListener('click', () => {
     menuDropdown.classList.remove('show');
+    // Also close submenus
+    if (settingsSubmenu) {
+      settingsSubmenu.classList.remove('show');
+    }
+    if (settingsMenuBtn) {
+      settingsMenuBtn.classList.remove('expanded');
+    }
+    if (websocketSubmenu) {
+      websocketSubmenu.classList.remove('show');
+    }
+    if (websocketMenuBtn) {
+      websocketMenuBtn.classList.remove('expanded');
+    }
   });
 
   // Prevent menu from closing when clicking inside dropdown
   menuDropdown.addEventListener('click', (e) => {
     e.stopPropagation();
   });
+
+  // Settings submenu toggle handler
+  if (settingsMenuBtn && settingsSubmenu) {
+    settingsMenuBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      settingsSubmenu.classList.toggle('show');
+      settingsMenuBtn.classList.toggle('expanded');
+    });
+  }
+
+  // WebSocket submenu toggle handler
+  if (websocketMenuBtn && websocketSubmenu) {
+    websocketMenuBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      websocketSubmenu.classList.toggle('show');
+      websocketMenuBtn.classList.toggle('expanded');
+    });
+  }
 
   // Back to app button handler
   if (backToAppBtn) {

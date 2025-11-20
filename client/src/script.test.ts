@@ -199,7 +199,7 @@ describe('script.ts main app entry point', () => {
     mockInitShoppingListUI.mockImplementation(() => {
       callOrder.push('initShoppingListUI');
     });
-    mockInitUserMenu.mockImplementation(() => {
+    mockInitUserMenu.mockImplementation(async () => {
       callOrder.push('initUserMenu');
     });
 
