@@ -34,6 +34,9 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - Automatischer Fokus auf Mengenfeld nach Auswahl für schnellen Workflow
     - Vorschläge können durch Weitertippen ignoriert werden
   - **Automatische Produkt-Zuordnung**: Neue Items werden automatisch mit Produkten im Katalog gematcht (Fuzzy-Matching mit 60% Schwellwert)
+    - **Store-Boundary-Schutz**: Items bleiben beim ausgewählten Geschäft, auch wenn Produkt nur in anderem Geschäft existiert
+    - **Sonstiges-Fallback**: Items ohne Produktmatch im ausgewählten Geschäft erscheinen unter "Sonstiges"
+    - **Keine Store-übergreifenden Merges**: Fuzzy-Matching berücksichtigt store_id - Items verschiedener Geschäfte werden nicht zusammengeführt
   - **Abteilungs-Gruppierung**: Shopping-Liste zeigt Items gruppiert nach Abteilungen in Spalten-Layout
   - **Erstes Geschäft als Standard**: Automatische Auswahl des ersten Geschäfts beim Laden
   - **Items vor Datum löschen**: Alle Items mit Einkaufsdatum vor einem gewählten Datum löschen
@@ -125,12 +128,26 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - **"🔌 WebSocket deaktivieren"** - Trennt WebSocket-Verbindung sofort
     - **Dynamischer Button-Status**: Zeigt aktuellen Verbindungsstatus an
     - **Connection Status Indicator**: Visueller Status (Online/Offline/Neuverbindung) im Header mit User-Count
+      - 🟢 **Grün** = Online (connected)
+      - 🔵 **Blau (pulsierend)** = Verbinde... (connecting)
+      - 🟠 **Orange (pulsierend)** = Neuverbindung... (reconnecting)
+      - 🔴 **Rot** = Offline (disconnected)
+      - Keine Toast-Benachrichtigungen - visuelle Anzeige ist ausreichend
     - **Active User Count**: Anzeige der Anzahl verbundener Benutzer (z.B. "👥 3")
+    - **Sauberes Cleanup**: ConnectionStatus-Instanz wird ordnungsgemäß beim Deaktivieren zerstört (keine Duplikate)
+  - **WebSocket-Link teilen**: Neuer Button "📋 WebSocket-Link kopieren" im Benutzermenü
+    - **Mobile-First**: Nutzt native Share API auf mobilen Geräten (WhatsApp, E-Mail, etc.)
+    - **Desktop**: Kopiert Link automatisch in Zwischenablage mit Toast-Feedback
+    - **URL-Format**: Generiert Link mit `?ws=1` Parameter (z.B. `https://ihre-domain.de/app?ws=1`)
+    - **Automatische Aktivierung**: Empfänger öffnen Link → WebSocket wird automatisch aktiviert
+    - **Ideal für mobile Geräte**: Einfaches Teilen per Messenger oder Mail
   - **Auto-Reconnection**: Automatische Wiederverbindung bei Verbindungsabbruch mit exponentiellem Backoff
   - **Heartbeat-Mechanismus**: Ping/Pong alle 30 Sekunden zur Erkennung stagnierender Verbindungen
   - **Message Queue**: Bis zu 100 Nachrichten werden während Offline-Phasen gepuffert
   - **JWT-Authentifizierung**: Sichere WebSocket-Verbindung mit Token-basierter Authentifizierung
-  - **URL-Parameter Aktivierung**: `?ws=1` oder `?enable_ws=true` aktiviert WebSocket (ideal für mobile Geräte)
+  - **URL-Parameter Aktivierung**: `?ws=1` oder `?enable_ws=true` aktiviert WebSocket automatisch
+    - Parameter wird nach Aktivierung aus URL entfernt (clean URL)
+    - Einstellung wird in localStorage persistiert
   - **Nahtlose Integration**: WebSocket-Events integrieren sich mit bestehendem Observer Pattern im State Layer
   - **Graceful Degradation**: Bei fehlender WebSocket-Unterstützung funktioniert die App weiterhin über HTTP
   - **Multi-User Support**: Mehrere Benutzer können gleichzeitig die gleiche Liste bearbeiten
@@ -714,12 +731,12 @@ pytest --cov=server --cov-report=html
 ```
 
 **Aktuelle Test-Abdeckung:**
-- ✅ **64 Tests insgesamt**
+- ✅ **66 Tests insgesamt**
   - **85% Code-Coverage** für Server-Code
 - ✅ **Authentifizierung** (10 Tests):
   - Registrierung, Login, Token-Validierung, Token-Refresh, Account-Löschung
   - Genehmigungsprüfung beim Login
-- ✅ **Shopping-List CRUD** (14 Tests):
+- ✅ **Shopping-List CRUD** (15 Tests):
   - **Item zu Produkt konvertieren**: Items aus "Sonstiges" in Produktkatalog aufnehmen (2 Tests)
     - Neues Produkt erstellen und Abteilung zuweisen
     - Vorhandenes Produkt wiederverwenden
@@ -739,6 +756,11 @@ pytest --cov=server --cov-report=html
     - Alternative Schreibweisen ("Moehre" → "Möhren")
     - Singular/Plural ("Kartoffel" → "Kartoffeln")
     - Keine False Positives bei unterschiedlichen Produkten
+  - **Store-Boundary-Schutz**: Items bleiben beim ausgewählten Geschäft (1 Test)
+    - Test: `test_item_stays_with_selected_store`
+    - Verifiziert, dass Items verschiedener Geschäfte nicht zusammengeführt werden
+    - Prüft, dass Fuzzy-Matching store_id berücksichtigt
+    - Bestätigt separate Item-Verwaltung pro Geschäft
   - **Geteilte Einkaufsliste**: Alle authentifizierten Benutzer teilen sich eine gemeinsame Liste
     - Items haben keine Benutzer-Zuordnung mehr (`user_id=None`)
     - Jeder authentifizierte Benutzer kann alle Items sehen, hinzufügen, bearbeiten und löschen
@@ -828,9 +850,9 @@ npm test -- --watch
 - ✅ Error Handling, Edge Cases, User Interactions
 
 **Gesamt-Teststatistik:**
-- 📊 **Server**: 64 Tests, 85% Coverage
+- 📊 **Server**: 66 Tests, 85% Coverage
 - 📊 **Client**: 445 Tests, 85.46% Coverage
-- 📊 **Gesamt**: 509 Tests ✅
+- 📊 **Gesamt**: 511 Tests ✅
 
 ### Continuous Integration (CI)
 

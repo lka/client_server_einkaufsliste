@@ -8,7 +8,6 @@
 
 import * as websocket from '../../data/websocket.js';
 import type { User } from '../../data/api.js';
-import { showSuccess, showWarning, showError } from './toast.js';
 
 export interface ConnectionStatusOptions {
   container: HTMLElement;
@@ -30,6 +29,7 @@ export class ConnectionStatus {
   private statusIndicator: HTMLElement;
   private statusLabel: HTMLElement;
   private userCountEl: HTMLElement | null = null;
+  private wrapperElement: HTMLElement | null = null;
   private unsubscribers: Array<() => void> = [];
   private onReconnect?: () => void;
   private activeUserCount: number = 0;
@@ -67,6 +67,9 @@ export class ConnectionStatus {
     wrapper.appendChild(this.statusIndicator);
     wrapper.appendChild(this.statusLabel);
 
+    // Store reference to wrapper for cleanup
+    this.wrapperElement = wrapper;
+
     // Insert as first child to appear before user menu
     this.container.insertBefore(wrapper, this.container.firstChild);
   }
@@ -95,7 +98,7 @@ export class ConnectionStatus {
     this.unsubscribers.push(
       websocket.onConnectionOpen(() => {
         this.updateStatus();
-        showSuccess('WebSocket verbunden - Live-Updates aktiv');
+        // Visual status indicator is sufficient, no toast needed
         if (this.onReconnect) {
           this.onReconnect();
         }
@@ -103,18 +106,16 @@ export class ConnectionStatus {
     );
 
     this.unsubscribers.push(
-      websocket.onConnectionClose((event: { code: number; reason: string }) => {
+      websocket.onConnectionClose(() => {
         this.updateStatus();
-        if (event.code !== 1000) {
-          showWarning('WebSocket getrennt - Neuverbindung...');
-        }
+        // Visual status indicator is sufficient, no toast needed
       })
     );
 
     this.unsubscribers.push(
       websocket.onConnectionError(() => {
         this.updateStatus();
-        showError('WebSocket-Verbindungsfehler');
+        // Visual status indicator is sufficient, no toast needed
       })
     );
 
@@ -197,8 +198,18 @@ export class ConnectionStatus {
     this.unsubscribers.forEach(unsub => unsub());
     this.unsubscribers = [];
 
-    // Remove DOM elements
-    this.container.innerHTML = '';
+    // Remove only the connection status elements, not the entire container
+    if (this.wrapperElement && this.wrapperElement.parentNode) {
+      this.wrapperElement.parentNode.removeChild(this.wrapperElement);
+    }
+
+    if (this.userCountEl && this.userCountEl.parentNode) {
+      this.userCountEl.parentNode.removeChild(this.userCountEl);
+    }
+
+    // Clear references
+    this.wrapperElement = null;
+    this.userCountEl = null;
   }
 }
 
