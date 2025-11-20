@@ -38,8 +38,15 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - **Sonstiges-Fallback**: Items ohne Produktmatch im ausgewählten Geschäft erscheinen unter "Sonstiges"
     - **Keine Store-übergreifenden Merges**: Fuzzy-Matching berücksichtigt store_id - Items verschiedener Geschäfte werden nicht zusammengeführt
   - **Abteilungs-Gruppierung**: Shopping-Liste zeigt Items gruppiert nach Abteilungen in Spalten-Layout
+    - **"Sonstiges" an erster Stelle**: Nicht zugeordnete Items werden in der Ansicht ganz oben angezeigt
+    - In Druckvorschau und Ausdruck bleibt die normale Abteilungssortierung erhalten
   - **Erstes Geschäft als Standard**: Automatische Auswahl des ersten Geschäfts beim Laden
-  - **Items vor Datum löschen**: Alle Items mit Einkaufsdatum vor einem gewählten Datum löschen
+  - **Automatische Bereinigung alter Daten**: Beim Serverstart werden veraltete Daten automatisch gelöscht
+    - **Nicht freigeschaltete Benutzer**: Benutzer, die nie vom Admin freigegeben wurden
+    - **Alte Einkaufslisten-Einträge**: Items deren `shopping_date` älter ist als die konfigurierte Zeitspanne
+    - Konfigurierbar über `UNAPPROVED_USER_EXPIRY_HOURS` in `.env` (Standard: 48 Stunden)
+    - Items ohne `shopping_date` werden NICHT gelöscht (für persistente Listen)
+  - **Items vor Datum löschen**: Alle Items mit Einkaufsdatum vor einem gewählten Datum manuell löschen
     - DatePicker zur Datumsauswahl
     - Optional gefiltert nach ausgewähltem Geschäft
     - Mit Sicherheitsabfrage und Vorschau der betroffenen Items
@@ -123,7 +130,7 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - Gelöschte Items → `item:delete` Event
     - Aktualisierte Items (Menge, Abteilung) → `item:update` Event
     - Aktualisierte Departments → `department:updated` Event
-  - **Ein-Klick-Aktivierung**: WebSocket-Toggle-Button im Benutzermenü (⋮)
+  - **Ein-Klick-Aktivierung**: WebSocket-Toggle-Button im Benutzermenü (⋮ → Einstellungen)
     - **"🔌 WebSocket aktivieren"** - Aktiviert WebSocket-Verbindung sofort (ohne Seiten-Reload)
     - **"🔌 WebSocket deaktivieren"** - Trennt WebSocket-Verbindung sofort
     - **Dynamischer Button-Status**: Zeigt aktuellen Verbindungsstatus an
@@ -135,6 +142,7 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
       - Keine Toast-Benachrichtigungen - visuelle Anzeige ist ausreichend
     - **Active User Count**: Anzeige der Anzahl verbundener Benutzer (z.B. "👥 3")
     - **Sauberes Cleanup**: ConnectionStatus-Instanz wird ordnungsgemäß beim Deaktivieren zerstört (keine Duplikate)
+    - **Optimierte Event-Reihenfolge**: ConnectionStatus wird vor WebSocket-Connect erstellt (verhindert Race-Conditions auf mobilen Geräten)
   - **WebSocket-Link teilen**: Neuer Button "📋 WebSocket-Link kopieren" im Benutzermenü
     - **Mobile-First**: Nutzt native Share API auf mobilen Geräten (WhatsApp, E-Mail, etc.)
     - **Desktop**: Kopiert Link automatisch in Zwischenablage mit Toast-Feedback
