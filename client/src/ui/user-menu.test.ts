@@ -36,18 +36,19 @@ describe('User Menu UI', () => {
         return Promise.resolve({
           ok: true,
           text: () => Promise.resolve(`
-            <button id="settingsMenuBtn" class="menu-item menu-item-submenu">⚙️ Einstellungen <span class="submenu-arrow">›</span></button>
+            <button id="settingsMenuBtn" class="menu-item menu-item-submenu">⚙️ Verwaltung <span class="submenu-arrow">›</span></button>
             <div id="settingsSubmenu" class="menu-submenu">
-              <button id="manageStoresBtn" class="menu-item">🏪 Geschäfte verwalten</button>
-              <button id="manageProductsBtn" class="menu-item">📦 Produkte verwalten</button>
-              <button id="manageTemplatesBtn" class="menu-item">📋 Vorlagen verwalten</button>
-              <button id="manageUsersBtn" class="menu-item">👥 Benutzer verwalten</button>
-              <button id="manageBackupBtn" class="menu-item">💾 Datenbank-Backup</button>
+              <button id="manageStoresBtn" class="menu-item">🏪 Geschäfte</button>
+              <button id="manageProductsBtn" class="menu-item">📦 Produkte</button>
+              <button id="manageTemplatesBtn" class="menu-item">📋 Vorlagen</button>
+              <button id="manageUsersBtn" class="menu-item">👥 Benutzer</button>
             </div>
-            <button id="websocketMenuBtn" class="menu-item menu-item-submenu">🔌 WebSocket <span class="submenu-arrow">›</span></button>
+            <button id="websocketMenuBtn" class="menu-item menu-item-submenu">⚙️ Einstellungen <span class="submenu-arrow">›</span></button>
             <div id="websocketSubmenu" class="menu-submenu">
               <button id="toggleWebSocketBtn" class="menu-item">🔌 WebSocket aktivieren</button>
               <button id="copyWebSocketLinkBtn" class="menu-item">📋 Link kopieren</button>
+              <button id="clearByDateBtn" class="menu-item">🗓️ Vor Datum löschen</button>
+              <button id="manageBackupBtn" class="menu-item">💾 Datenbank-Backup</button>
             </div>
             <button id="logoutBtn" class="menu-item">🚪 Abmelden</button>
             <div id="versionInfo" class="menu-version"></div>
@@ -292,12 +293,13 @@ describe('User Menu UI', () => {
       expect(document.getElementById('manageProductsBtn')).not.toBeNull();
       expect(document.getElementById('manageTemplatesBtn')).not.toBeNull();
       expect(document.getElementById('manageUsersBtn')).not.toBeNull();
-      expect(document.getElementById('manageBackupBtn')).not.toBeNull();
 
-      // Verify websocket submenu
+      // Verify administration submenu (websocket submenu)
       expect(document.getElementById('websocketSubmenu')).not.toBeNull();
       expect(document.getElementById('toggleWebSocketBtn')).not.toBeNull();
       expect(document.getElementById('copyWebSocketLinkBtn')).not.toBeNull();
+      expect(document.getElementById('clearByDateBtn')).not.toBeNull();
+      expect(document.getElementById('manageBackupBtn')).not.toBeNull();
     });
 
     it('should toggle settings submenu on button click', async () => {

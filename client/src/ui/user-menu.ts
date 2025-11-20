@@ -10,7 +10,7 @@ import { getVersion } from '../data/api.js';
 import * as websocket from '../data/websocket.js';
 import { ConnectionStatus, showToast } from './components/index.js';
 import { stopInactivityTracker } from '../data/inactivity-tracker.js';
-import { getSelectedStoreId } from './shopping-list-ui.js';
+import { getSelectedStoreId, showDeleteByDateDialog } from './shopping-list-ui.js';
 
 // Store ConnectionStatus instance for proper cleanup
 let connectionStatusInstance: ConnectionStatus | null = null;
@@ -105,6 +105,7 @@ export async function initUserMenu(): Promise<void> {
   const manageBackupBtn = document.getElementById('manageBackupBtn');
   const toggleWebSocketBtn = document.getElementById('toggleWebSocketBtn');
   const copyWebSocketLinkBtn = document.getElementById('copyWebSocketLinkBtn');
+  const clearByDateBtn = document.getElementById('clearByDateBtn');
   const logoutBtn = document.getElementById('logoutBtn');
 
   // Menu toggle handler
@@ -199,6 +200,13 @@ export async function initUserMenu(): Promise<void> {
   if (manageBackupBtn) {
     manageBackupBtn.addEventListener('click', () => {
       window.location.href = '/backup';
+    });
+  }
+
+  // Clear by date button handler
+  if (clearByDateBtn) {
+    clearByDateBtn.addEventListener('click', async () => {
+      await showDeleteByDateDialog();
     });
   }
 

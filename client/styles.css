@@ -169,25 +169,6 @@ main{
   font-size:1rem;
   background:white;
 }
-.clear-by-date-btn{
-  padding:.5rem 1rem;
-  background:#ff9800;
-  color:white;
-  border:none;
-  border-radius:6px;
-  cursor:pointer;
-  font-size:.9rem;
-  transition:background .2s;
-  white-space:nowrap;
-}
-.clear-by-date-btn:hover{
-  background:#f57c00;
-}
-.clear-by-date-btn:disabled{
-  background:#ccc;
-  cursor:not-allowed;
-  opacity:.5;
-}
 .add{
   display:flex;
   gap:.5rem;
