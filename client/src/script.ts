@@ -6,7 +6,7 @@
 import { loadAppTemplate } from './data/dom.js';
 import { isAuthenticated, getTokenExpiresIn } from './data/auth.js';
 import { initShoppingListUI } from './ui/shopping-list-ui.js';
-import { initUserMenu, updateUserDisplay } from './ui/user-menu.js';
+import { initUserMenu, updateUserDisplay, setConnectionStatusInstance } from './ui/user-menu.js';
 import { initializeComponents, ConnectionStatus } from './ui/components/index.js';
 import * as websocket from './data/websocket.js';
 import { shoppingListState } from './state/shopping-list-state.js';
@@ -87,7 +87,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     const headerActions = document.querySelector('.header-actions') as HTMLElement;
     if (headerActions) {
       console.log('Creating ConnectionStatus component in header-actions');
-      new ConnectionStatus({
+      const connectionStatus = new ConnectionStatus({
         container: headerActions,
         onReconnect: () => {
           // Reload items when reconnected to sync state
@@ -95,6 +95,8 @@ window.addEventListener('DOMContentLoaded', async () => {
         },
         showUserCount: true
       });
+      // Store the instance for proper cleanup when toggling WebSocket
+      setConnectionStatusInstance(connectionStatus);
     } else {
       console.warn('Header actions element not found for ConnectionStatus');
     }

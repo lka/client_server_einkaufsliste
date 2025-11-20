@@ -8,9 +8,26 @@ import { userState } from '../state/user-state.js';
 import { shoppingListState } from '../state/shopping-list-state.js';
 import { getVersion } from '../data/api.js';
 import * as websocket from '../data/websocket.js';
-import { ConnectionStatus } from './components/index.js';
+import { ConnectionStatus, showToast } from './components/index.js';
 import { stopInactivityTracker } from '../data/inactivity-tracker.js';
 import { getSelectedStoreId } from './shopping-list-ui.js';
+
+// Store ConnectionStatus instance for proper cleanup
+let connectionStatusInstance: ConnectionStatus | null = null;
+
+/**
+ * Get the current ConnectionStatus instance
+ */
+export function getConnectionStatusInstance(): ConnectionStatus | null {
+  return connectionStatusInstance;
+}
+
+/**
+ * Set the ConnectionStatus instance (for external initialization)
+ */
+export function setConnectionStatusInstance(instance: ConnectionStatus | null): void {
+  connectionStatusInstance = instance;
+}
 
 /**
  * Update user display in header with current username.
@@ -44,6 +61,7 @@ export function initUserMenu(): void {
   const manageUsersBtn = document.getElementById('manageUsersBtn');
   const manageBackupBtn = document.getElementById('manageBackupBtn');
   const toggleWebSocketBtn = document.getElementById('toggleWebSocketBtn');
+  const copyWebSocketLinkBtn = document.getElementById('copyWebSocketLinkBtn');
   const logoutBtn = document.getElementById('logoutBtn');
 
   if (!menuBtn || !menuDropdown) {
@@ -151,10 +169,10 @@ export function initUserMenu(): void {
         websocket.disconnect();
         localStorage.removeItem('enable_ws');
 
-        // Remove connection status indicator
-        const statusElement = document.querySelector('.connection-status');
-        if (statusElement) {
-          statusElement.remove();
+        // Properly destroy the ConnectionStatus instance (removes DOM and unsubscribes)
+        if (connectionStatusInstance) {
+          connectionStatusInstance.destroy();
+          connectionStatusInstance = null;
         }
       } else {
         // Enable and connect
@@ -167,8 +185,8 @@ export function initUserMenu(): void {
           const headerActions = document.querySelector('.header-actions') as HTMLElement;
           const existingStatus = headerActions?.querySelector('.connection-status');
 
-          if (headerActions && !existingStatus) {
-            new ConnectionStatus({
+          if (headerActions && !existingStatus && !connectionStatusInstance) {
+            connectionStatusInstance = new ConnectionStatus({
               container: headerActions,
               onReconnect: () => {
                 // Reload items when reconnected to sync state
@@ -184,6 +202,54 @@ export function initUserMenu(): void {
 
       // Update button text
       updateWebSocketButtonState();
+    });
+  }
+
+  // Copy WebSocket Link button handler
+  if (copyWebSocketLinkBtn) {
+    copyWebSocketLinkBtn.addEventListener('click', async () => {
+      // Generate URL with WebSocket parameter
+      const url = new URL(window.location.href);
+      url.searchParams.set('ws', '1');
+      const wsLink = url.toString();
+
+      try {
+        // Try to use native share API if available (mobile devices)
+        if (navigator.share) {
+          await navigator.share({
+            title: 'Einkaufsliste mit WebSocket',
+            text: 'Öffne die Einkaufsliste mit aktiviertem WebSocket',
+            url: wsLink
+          });
+          showToast({
+            message: 'Link erfolgreich geteilt!',
+            type: 'success',
+            duration: 2000
+          });
+          console.log('Link erfolgreich geteilt');
+        } else {
+          // Fallback: Copy to clipboard
+          await navigator.clipboard.writeText(wsLink);
+
+          // Show success toast
+          showToast({
+            message: '✓ WebSocket-Link in Zwischenablage kopiert!',
+            type: 'success',
+            duration: 2000
+          });
+        }
+      } catch (error) {
+        console.error('Fehler beim Kopieren/Teilen des Links:', error);
+
+        showToast({
+          message: 'Fehler beim Kopieren des Links',
+          type: 'error',
+          duration: 3000
+        });
+
+        // Ultimate fallback: Show the link in an alert
+        alert(`WebSocket-Link:\n\n${wsLink}\n\nBitte manuell kopieren.`);
+      }
     });
   }
 
