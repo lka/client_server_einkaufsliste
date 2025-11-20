@@ -439,7 +439,10 @@ ADMIN_USERNAME=admin
 ADMIN_PASSWORD=ihr-sicheres-passwort
 ADMIN_EMAIL=admin@example.com
 
-# User Approval Settings
+# Cleanup Settings
+# Automatisches Löschen von veralteten Daten (in Stunden)
+# - Nicht freigeschaltete Benutzer
+# - Einkaufslisten-Einträge mit shopping_date älter als dieser Wert
 UNAPPROVED_USER_EXPIRY_HOURS=48
 ```
 
@@ -586,7 +589,7 @@ Die Anwendung verwendet **JWT (JSON Web Tokens)** für sichere Authentifizierung
 | `ADMIN_USERNAME` | Administrator-Benutzername | - | Ja |
 | `ADMIN_PASSWORD` | Administrator-Passwort | - | Ja |
 | `ADMIN_EMAIL` | Administrator-E-Mail | `admin@example.com` | Nein |
-| `UNAPPROVED_USER_EXPIRY_HOURS` | Stunden bis nicht freigeschaltete Benutzer gelöscht werden | `48` | Nein |
+| `UNAPPROVED_USER_EXPIRY_HOURS` | Stunden bis veraltete Daten automatisch gelöscht werden (nicht freigeschaltete Benutzer und alte Einkaufslisten-Einträge) | `48` | Nein |
 
 ### Sicherheitshinweise
 

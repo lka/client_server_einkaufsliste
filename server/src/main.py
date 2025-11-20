@@ -46,7 +46,7 @@ async def lifespan(app: FastAPI):
 
     # Create or update admin user from .env
     from .admin_setup import create_or_update_admin_user
-    from .user_cleanup import cleanup_expired_users
+    from .user_cleanup import cleanup_expired_users, cleanup_expired_items
     from sqlmodel import Session
 
     with Session(engine) as session:
@@ -57,6 +57,9 @@ async def lifespan(app: FastAPI):
 
         # Cleanup expired unapproved users
         cleanup_expired_users(session)
+
+        # Cleanup expired shopping list items
+        cleanup_expired_items(session)
 
     try:
         yield

@@ -1,9 +1,10 @@
-"""User cleanup utilities for removing expired unapproved users."""
+"""Cleanup utilities for removing expired data (users and items)."""
 
 import os
 from datetime import datetime, timedelta, timezone
 from sqlmodel import Session, select
 from .user_models import User
+from .models import Item
 
 
 def cleanup_expired_users(session: Session) -> int:
@@ -47,5 +48,50 @@ def cleanup_expired_users(session: Session) -> int:
         print(f"Deleted {count} expired unapproved user(s)")
     else:
         print("No expired unapproved users to delete")
+
+    return count
+
+
+def cleanup_expired_items(session: Session) -> int:
+    """Delete shopping list items older than the configured expiry time.
+
+    Items are deleted based on their shopping_date. Items without a shopping_date
+    are not deleted.
+
+    Args:
+        session: Database session
+
+    Returns:
+        Number of items deleted
+    """
+    # Get expiry hours from environment (default 48 hours)
+    expiry_hours = int(os.getenv("UNAPPROVED_USER_EXPIRY_HOURS", "48"))
+
+    # Calculate cutoff date (YYYY-MM-DD format)
+    cutoff_date = (datetime.now(timezone.utc) - timedelta(hours=expiry_hours)).date()
+    cutoff_date_str = cutoff_date.isoformat()
+
+    # Find expired items (items with shopping_date before cutoff)
+    statement = select(Item).where(
+        Item.shopping_date.is_not(None),  # type: ignore
+        Item.shopping_date < cutoff_date_str,  # type: ignore
+    )
+    expired_items = session.exec(statement).all()
+
+    # Delete expired items
+    count = 0
+    for item in expired_items:
+        print(
+            f"Deleting expired item: {item.name} "
+            f"(shopping_date: {item.shopping_date})"
+        )
+        session.delete(item)
+        count += 1
+
+    if count > 0:
+        session.commit()
+        print(f"Deleted {count} expired shopping list item(s)")
+    else:
+        print("No expired shopping list items to delete")
 
     return count
