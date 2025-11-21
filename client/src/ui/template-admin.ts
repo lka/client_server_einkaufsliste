@@ -49,7 +49,7 @@ function createFormButtons(): void {
 
   // Create save button
   const saveBtnElement = createButton({
-    label: 'Template speichern',
+    label: '💾 Vorlage speichern',
     variant: 'success',
     onClick: handleSaveTemplate,
   });

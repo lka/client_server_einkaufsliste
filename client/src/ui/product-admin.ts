@@ -390,7 +390,7 @@ async function handleDeleteProduct(productId: number): Promise<void> {
   });
 
   const deleteBtn = createButton({
-    label: 'Löschen',
+    label: '🗑️ Löschen',
     variant: 'danger',
     onClick: async () => {
       try {

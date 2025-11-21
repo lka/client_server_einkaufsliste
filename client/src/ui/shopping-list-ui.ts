@@ -1042,7 +1042,7 @@ export function showDeleteByDateDialog(): Promise<void> {
 
     // Create delete button
     const deleteBtn = createButton({
-      label: 'Löschen',
+      label: '🗑️ Löschen',
       variant: 'primary',
       onClick: async () => {
         const selectedDate = datePicker.getValue();
@@ -1104,7 +1104,7 @@ export function showDeleteByDateDialog(): Promise<void> {
 
     // Create and open modal
     const modal = new Modal({
-      title: 'Items vor Datum löschen',
+      title: '❌ Items vor Datum löschen',
       content: modalContent,
       size: 'medium',
       closeOnBackdropClick: true,
@@ -1391,12 +1391,12 @@ export function initShoppingListUI(): void {
     if (matchedTemplate) {
       // Template found - insert all template items
       if (!selectedStoreId) {
-        showError('Bitte wählen Sie zuerst ein Geschäft aus, um ein Template zu verwenden.');
+        showError('Bitte wählen Sie zuerst ein Geschäft aus, um eine Vorlage zu verwenden.');
         return;
       }
 
       if (!shoppingDate) {
-        showError('Bitte wählen Sie ein Datum aus, um ein Template zu verwenden.');
+        showError('Bitte wählen Sie ein Datum aus, um eine Vorlage zu verwenden.');
         return;
       }
 
@@ -1415,7 +1415,7 @@ export function initShoppingListUI(): void {
       }
 
       if (successCount > 0) {
-        showSuccess(`${successCount} Artikel aus Template "${matchedTemplate.name}" hinzugefügt!`);
+        showSuccess(`${successCount} Artikel aus Vorlage "${matchedTemplate.name}" hinzugefügt!`);
         input.value = '';
         mengeInput.value = '';
         // Keep the date picker value for next item
