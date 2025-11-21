@@ -264,7 +264,7 @@ function attachDynamicListeners(): void {
       });
 
       const deleteBtn = createButton({
-        label: 'Löschen',
+        label: '🗑️ Löschen',
         variant: 'danger',
         onClick: async () => {
           const success = await deleteStore(storeId);
@@ -417,7 +417,7 @@ function attachDynamicListeners(): void {
       });
 
       const deleteBtn = createButton({
-        label: 'Löschen',
+        label: '🗑️ Löschen',
         variant: 'danger',
         onClick: async () => {
           const success = await deleteDepartment(departmentId);
