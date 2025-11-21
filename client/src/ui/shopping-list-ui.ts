@@ -1104,7 +1104,7 @@ export function showDeleteByDateDialog(): Promise<void> {
 
     // Create and open modal
     const modal = new Modal({
-      title: '❌ Items vor Datum löschen',
+      title: 'Items vor Datum löschen',
       content: modalContent,
       size: 'medium',
       closeOnBackdropClick: true,
