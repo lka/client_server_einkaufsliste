@@ -59,7 +59,7 @@ function createFormButtons(): void {
 
   // Create cancel button
   const cancelBtnElement = createButton({
-    label: 'Abbrechen',
+    label: '❌ Abbrechen',
     variant: 'secondary',
     onClick: handleCancelEdit,
   });

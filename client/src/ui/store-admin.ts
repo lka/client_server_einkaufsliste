@@ -90,7 +90,7 @@ async function renderStores(stores: readonly Store[]): Promise<void> {
             data-store-id="${store.id}"
           />
           <button class="add-department-btn" data-store-id="${store.id}">
-            ⏎
+            ⏎ Ok
           </button>
         </div>
 
@@ -258,7 +258,7 @@ function attachDynamicListeners(): void {
       buttonContainer.style.marginTop = '20px';
 
       const cancelBtn = createButton({
-        label: 'Abbrechen',
+        label: '❌ Abbrechen',
         variant: 'secondary',
         onClick: () => modal.close(),
       });
@@ -347,13 +347,13 @@ function attachDynamicListeners(): void {
       buttonContainer.style.justifyContent = 'flex-end';
 
       const cancelBtn = createButton({
-        label: 'Abbrechen',
+        label: '❌ Abbrechen',
         variant: 'secondary',
         onClick: () => modal.close(),
       });
 
       const saveBtn = createButton({
-        label: 'Speichern',
+        label: '💾 Speichern',
         variant: 'primary',
         onClick: async () => {
           const newName = input.value.trim();
@@ -411,7 +411,7 @@ function attachDynamicListeners(): void {
       buttonContainer.style.marginTop = '20px';
 
       const cancelBtn = createButton({
-        label: 'Abbrechen',
+        label: '❌ Abbrechen',
         variant: 'secondary',
         onClick: () => modal.close(),
       });

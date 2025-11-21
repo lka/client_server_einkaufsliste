@@ -142,9 +142,9 @@ function renderProductManagement(): string {
       </div>
       <div class="form-buttons">
         <button id="saveProductBtn" class="btn-primary">
-          ⏎
+          ⏎ Ok
         </button>
-        ${editingProductId ? '<button id="cancelEditBtn" class="btn-secondary" title="Abbrechen">❌</button>' : ''}
+        ${editingProductId ? '<button id="cancelEditBtn" class="btn-secondary" title="Abbrechen">❌ Abbrechen</button>' : ''}
       </div>
     </section>
 
@@ -384,7 +384,7 @@ async function handleDeleteProduct(productId: number): Promise<void> {
   buttonContainer.style.marginTop = '20px';
 
   const cancelBtn = createButton({
-    label: 'Abbrechen',
+    label: '❌ Abbrechen',
     variant: 'secondary',
     onClick: () => modal.close(),
   });
