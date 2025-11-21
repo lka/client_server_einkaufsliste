@@ -81,7 +81,7 @@ async function handleEditItem(itemId: string): Promise<void> {
 async function showPrintPreview(): Promise<boolean> {
   return new Promise(async (resolve) => {
     const items = shoppingListState.getItems();
-    const filteredItems = filterItemsByStore(items);
+    const filteredItems = filterItems(items);
 
     if (filteredItems.length === 0) {
       showError('Keine Einträge zum Drucken vorhanden.');
@@ -703,48 +703,34 @@ async function showPrintPreview(): Promise<boolean> {
     buttonContainer.style.cssText = 'display: flex; gap: 1rem; padding: 1.5rem 2rem; border-top: 1px solid #e0e0e0; flex-shrink: 0;';
 
     // Print button
-    const printBtn = document.createElement('button');
-    printBtn.textContent = '🖨️ Drucken';
-    printBtn.style.cssText = `
-      flex: 1;
-      padding: 0.75rem 1rem;
-      background: #007bff;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 1rem;
-    `;
-    printBtn.addEventListener('click', () => {
-      document.body.removeChild(backdrop);
-      // Trigger browser print with the preview content
-      const hideDepartments = hideDeptCheckbox.checked;
-      const backPageContent = backPage.innerHTML;
-      const titleForPrint = currentStoreName;
-      // Pass the selected date for printing
-      printPreviewContent(previewContent.innerHTML, backPageContent, titleForPrint, hideDepartments, selectedDate);
-      resolve(true);
+    const printBtn = createButton({
+      label: '🖨️ Drucken',
+      variant: 'primary',
+      onClick: () => {
+        document.body.removeChild(backdrop);
+        // Trigger browser print with the preview content
+        const hideDepartments = hideDeptCheckbox.checked;
+        const backPageContent = backPage.innerHTML;
+        const titleForPrint = currentStoreName;
+        // Pass the selected date for printing
+        printPreviewContent(previewContent.innerHTML, backPageContent, titleForPrint, hideDepartments, selectedDate);
+        resolve(true);
+      }
     });
+    printBtn.style.flex = '1';
     buttonContainer.appendChild(printBtn);
 
     // Cancel button
-    const cancelBtn = document.createElement('button');
-    cancelBtn.textContent = '❌';
-    cancelBtn.title = 'Abbrechen';
-    cancelBtn.style.cssText = `
-      flex: 1;
-      padding: 0.75rem 1rem;
-      background: #999;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 1rem;
-    `;
-    cancelBtn.addEventListener('click', () => {
-      document.body.removeChild(backdrop);
-      resolve(false);
+    const cancelBtn = createButton({
+      label: '❌ Abbrechen',
+      variant: 'secondary',
+      ariaLabel: 'Abbrechen',
+      onClick: () => {
+        document.body.removeChild(backdrop);
+        resolve(false);
+      }
     });
+    cancelBtn.style.flex = '1';
     buttonContainer.appendChild(cancelBtn);
 
     dialog.appendChild(buttonContainer);
@@ -994,7 +980,7 @@ function showDepartmentSelectionDialog(
 
     // Create cancel button
     const cancelBtn = createButton({
-      label: 'Abbrechen',
+      label: '❌ Abbrechen',
       variant: 'secondary',
       onClick: () => {
         modal.close();
@@ -1104,7 +1090,7 @@ export function showDeleteByDateDialog(): Promise<void> {
 
     // Create cancel button
     const cancelBtn = createButton({
-      label: 'Abbrechen',
+      label: '❌ Abbrechen',
       variant: 'secondary',
       onClick: () => {
         modal.close();
@@ -1202,7 +1188,7 @@ async function loadStoreFilter(): Promise<void> {
     selectedStoreId = stores[0].id;
     // Trigger re-render with filtered items
     const items = shoppingListState.getItems();
-    const filteredItems = filterItemsByStore(items);
+    const filteredItems = filterItems(items);
     renderItems(filteredItems);
   }
 }
@@ -1224,17 +1210,6 @@ function filterItems(items: any[]): any[] {
   }
 
   return filtered;
-}
-
-/**
- * Filter items by selected store only (for compatibility).
- * @deprecated Use filterItems() instead
- */
-function filterItemsByStore(items: any[]): any[] {
-  if (selectedStoreId === null) {
-    return items; // Show all items
-  }
-  return items.filter(item => item.store_id === selectedStoreId);
 }
 
 /**
@@ -1380,7 +1355,7 @@ export function initShoppingListUI(): void {
 
       // Re-render with filtered items
       const items = shoppingListState.getItems();
-      const filteredItems = filterItemsByStore(items);
+      const filteredItems = filterItems(items);
       renderItems(filteredItems);
     });
   }

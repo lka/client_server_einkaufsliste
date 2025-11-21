@@ -654,7 +654,7 @@ describe('Shopping List UI', () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Find and click cancel button
-      const cancelButton = mockDepartmentButtons.find(btn => btn.textContent === 'Abbrechen');
+      const cancelButton = mockDepartmentButtons.find(btn => btn.textContent === '❌ Abbrechen');
       expect(cancelButton).toBeTruthy();
       cancelButton?.click();
       await new Promise((resolve) => setTimeout(resolve, 100));
@@ -875,7 +875,7 @@ describe('Shopping List UI', () => {
 
       // Find and click cancel button
       const buttons = Array.from(document.querySelectorAll('button'));
-      const cancelButton = buttons.find(btn => btn.textContent === '❌');
+      const cancelButton = buttons.find(btn => btn.textContent === '❌ Abbrechen');
 
       cancelButton?.click();
       await new Promise((resolve) => setTimeout(resolve, 0));
