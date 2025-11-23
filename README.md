@@ -121,8 +121,9 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
 - ✅ **Real-time Updates mit WebSocket**: Live-Synchronisation der Einkaufsliste zwischen mehreren Clients
   - **Automatische Synchronisation**: Alle Änderungen werden sofort an alle verbundenen Clients übertragen
     - **Item hinzufügen**: Neue Items erscheinen sofort auf allen Clients
-    - **Item löschen**: Gelöschte Items verschwinden sofort überall
-    - **Item aktualisieren**: Mengen-Änderungen und Abteilungs-Zuordnungen werden live synchronisiert
+    - **Item löschen**: Gelöschte Items verschwinden sofort überall (auch bei Subtraktion auf 0)
+    - **Item aktualisieren**: Mengen-Änderungen (inkl. Subtraktion) und Abteilungs-Zuordnungen werden live synchronisiert
+    - **Bulk-Löschungen**: Items, die per Datum gelöscht werden, werden live von allen Clients entfernt
     - **Department-Updates**: Abteilungsnamen- und Sortierreihenfolge-Änderungen werden sofort in allen Shopping-Listen aktualisiert
   - **Smart Broadcasting**: Nur andere Clients werden benachrichtigt (nicht der Absender selbst)
   - **Intelligentes Event-Handling**:
@@ -213,6 +214,9 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - Wenn die Menge auf 0 oder darunter geht, wird das Item automatisch gelöscht
     - Negative Mengen ohne bestehendes Item werden ignoriert (man kann nicht von nichts subtrahieren)
   - Intelligente Suche in kommagetrennte Listen
+  - **Case-Insensitive Matching**: Groß-/Kleinschreibung wird ignoriert
+    - "Radiccio" wird mit "RADICCIO" oder "radiccio" zusammengeführt
+    - Verhindert versehentliche Duplikate durch unterschiedliche Schreibweise
   - **Fuzzy Matching**: Ähnliche Produktnamen werden automatisch zusammengeführt
     - "Möhre" wird zu "Möhren" hinzugefügt (Singular/Plural)
     - "Moehre" wird zu "Möhren" hinzugefügt (alternative Schreibweise)
@@ -784,12 +788,12 @@ pytest --cov=server --cov-report=html
 ```
 
 **Aktuelle Test-Abdeckung:**
-- ✅ **70 Tests insgesamt**
+- ✅ **71 Tests insgesamt**
   - **85%+ Code-Coverage** für Server-Code
 - ✅ **Authentifizierung** (10 Tests):
   - Registrierung, Login, Token-Validierung, Token-Refresh, Account-Löschung
   - Genehmigungsprüfung beim Login
-- ✅ **Shopping-List CRUD** (19 Tests):
+- ✅ **Shopping-List CRUD** (20 Tests):
   - **Item zu Produkt konvertieren**: Items aus "Sonstiges" in Produktkatalog aufnehmen (2 Tests)
     - Neues Produkt erstellen und Abteilung zuweisen
     - Vorhandenes Produkt wiederverwenden
@@ -809,6 +813,9 @@ pytest --cov=server --cov-report=html
     - Automatisches Löschen bei Menge = 0 ("5" + "-5" = Item gelöscht)
     - Subtraktion aus kommagetrennte Listen ("800 g, 3 Packungen" + "-300 g" = "500 g, 3 Packungen")
     - Negative Mengen ohne bestehendes Item werden ignoriert
+  - **Case-Insensitive Matching** (1 Test):
+    - Items mit unterschiedlicher Groß-/Kleinschreibung werden korrekt zusammengeführt
+    - "Radiccio" + "RADICCIO" = Merge, nicht zwei separate Items
   - **Fuzzy Matching**:
     - Ähnliche Produktnamen werden erkannt ("Möhre" → "Möhren")
     - Alternative Schreibweisen ("Moehre" → "Möhren")
@@ -912,9 +919,9 @@ npm test -- --watch
 - ✅ Error Handling, Edge Cases, User Interactions
 
 **Gesamt-Teststatistik:**
-- 📊 **Server**: 70 Tests, 85%+ Coverage
+- 📊 **Server**: 71 Tests, 85%+ Coverage
 - 📊 **Client**: 457 Tests, 85.46% Coverage
-- 📊 **Gesamt**: 527 Tests ✅
+- 📊 **Gesamt**: 528 Tests ✅
 
 ### Continuous Integration (CI)
 
@@ -923,7 +930,7 @@ Das Projekt nutzt GitHub Actions für automatisierte Tests bei jedem Push/Pull R
 **Server Tests (Python):**
 - Black Code-Formatierung prüfen
 - Flake8 Linting
-- Pytest Tests (70 Tests mit 85%+ Coverage)
+- Pytest Tests (71 Tests mit 85%+ Coverage)
 
 **Client Tests (TypeScript):**
 - TypeScript Build
