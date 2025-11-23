@@ -214,12 +214,56 @@ def create_item(item: Item, current_user: str = Depends(get_current_user)):
         result_item = None
         if existing_item:
             # Merge quantities into existing item (only if shopping_date matches)
-            existing_item.menge = merge_quantities(existing_item.menge, item.menge)
-            session.add(existing_item)
-            session.commit()
-            session.refresh(existing_item)
-            result_item = existing_item
+            merged_menge = merge_quantities(existing_item.menge, item.menge)
+
+            # If merge results in None (quantity went to zero or below), delete the item
+            if merged_menge is None or merged_menge.strip() == "":
+                session.delete(existing_item)
+                session.commit()
+                # Return the item with None menge to indicate deletion
+                existing_item.menge = None
+                result_item = existing_item
+            else:
+                existing_item.menge = merged_menge
+                session.add(existing_item)
+                session.commit()
+                session.refresh(existing_item)
+                result_item = existing_item
         else:
+            # Check if new item has negative quantity
+            # Parse quantity to check if it's negative
+            if item.menge:
+                from ..utils import parse_quantity
+
+                parsed_num, _ = parse_quantity(item.menge)
+                if parsed_num is not None and parsed_num < 0:
+                    # Can't subtract from non-existent item - ignore this request
+                    # Create a dummy item with None menge to indicate no action
+                    result_item = Item(
+                        id=str(uuid.uuid4()),
+                        name=item.name,
+                        menge=None,
+                        user_id=None,
+                        store_id=item.store_id,
+                        shopping_date=item.shopping_date,
+                    )
+                    # Don't save to DB, just return it
+                    dept_id = None
+                    dept_name = None
+                    dept_sort_order = None
+                    return ItemWithDepartment(
+                        id=result_item.id,
+                        user_id=result_item.user_id,
+                        store_id=result_item.store_id,
+                        product_id=None,
+                        name=result_item.name,
+                        menge=result_item.menge,
+                        shopping_date=result_item.shopping_date,
+                        department_id=dept_id,
+                        department_name=dept_name,
+                        department_sort_order=dept_sort_order,
+                    )
+
             # Create new item
             if not item.id:
                 item.id = str(uuid.uuid4())

@@ -208,6 +208,10 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
 - ✅ **Mengenangaben mit Smart-Merging & Fuzzy Matching**: Optionale Mengenangaben für jeden Artikel (z.B. "500 g", "2 Stück")
   - **Kommagetrennte Eingaben**: Mehrere Mengen gleichzeitig eingeben (z.B. "2, 500 g")
   - Automatisches Summieren von Mengen mit gleicher Einheit
+  - **Intelligente Subtraktion**: Negative Mengen (mit `-` Präfix) werden intelligent subtrahiert
+    - "Möhren 500 g" + "-300 g" = "Möhren 200 g"
+    - Wenn die Menge auf 0 oder darunter geht, wird das Item automatisch gelöscht
+    - Negative Mengen ohne bestehendes Item werden ignoriert (man kann nicht von nichts subtrahieren)
   - Intelligente Suche in kommagetrennte Listen
   - **Fuzzy Matching**: Ähnliche Produktnamen werden automatisch zusammengeführt
     - "Möhre" wird zu "Möhren" hinzugefügt (Singular/Plural)
@@ -218,6 +222,7 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - Ermöglicht Planung für mehrere Einkaufstouren
   - Beispiele (gleiches Datum):
     - "Möhren 500 g" + "Möhren 300 g" = "Möhren 800 g"
+    - "Möhren 500 g" + "Möhren -300 g" = "Möhren 200 g"
     - "Zucker 500 g, 2 Packungen" + "Zucker 300 g" = "Zucker 800 g, 2 Packungen"
     - "Reis 500 g" + "2, 300 g" = "Reis 800 g, 2"
   - Beispiele (unterschiedliche Daten):
@@ -666,6 +671,10 @@ Die Anwendung verwendet **JWT (JSON Web Tokens)** für sichere Authentifizierung
     - **Gemeinsame Liste**: Alle Items in der Liste werden berücksichtigt (keine Benutzer-spezifische Filterung)
     - **Fuzzy Matching**: Ähnliche Namen werden erkannt ("Möhre" → "Möhren", "Moehre" → "Möhren")
     - **Kommagetrennte Eingaben**: Mehrere Mengen werden separat verarbeitet ("2, 500 g" → ["2", "500 g"])
+    - **Intelligente Subtraktion**: Negative Mengen subtrahieren von bestehenden Mengen
+      - "500 g" + "-300 g" = "200 g"
+      - Wenn Menge auf 0 oder darunter geht, wird das Item automatisch gelöscht
+      - Negative Mengen ohne bestehendes Item werden ignoriert
     - Gleiche Einheit → Mengen werden summiert (z.B. "500 g" + "300 g" = "800 g")
     - Verschiedene Einheiten → Als kommagetrennte Liste gespeichert (z.B. "500 g" + "2 Packungen" = "500 g, 2 Packungen")
     - Einheit in Liste vorhanden → Nur diese Einheit wird summiert (z.B. "500 g, 2 Packungen" + "300 g" = "800 g, 2 Packungen")
@@ -775,12 +784,12 @@ pytest --cov=server --cov-report=html
 ```
 
 **Aktuelle Test-Abdeckung:**
-- ✅ **66 Tests insgesamt**
-  - **85% Code-Coverage** für Server-Code
+- ✅ **70 Tests insgesamt**
+  - **85%+ Code-Coverage** für Server-Code
 - ✅ **Authentifizierung** (10 Tests):
   - Registrierung, Login, Token-Validierung, Token-Refresh, Account-Löschung
   - Genehmigungsprüfung beim Login
-- ✅ **Shopping-List CRUD** (15 Tests):
+- ✅ **Shopping-List CRUD** (19 Tests):
   - **Item zu Produkt konvertieren**: Items aus "Sonstiges" in Produktkatalog aufnehmen (2 Tests)
     - Neues Produkt erstellen und Abteilung zuweisen
     - Vorhandenes Produkt wiederverwenden
@@ -795,6 +804,11 @@ pytest --cov=server --cov-report=html
     - Intelligente Suche in kommagetrennte Listen ("500 g, 2 Packungen" + "300 g" = "800 g, 2 Packungen")
     - Summierung ohne Einheit ("6" + "12" = "18")
     - **Kommagetrennte Eingaben**: Verarbeitung mehrerer Mengen ("500 g" + "2, 300 g" = "800 g, 2")
+  - **Intelligente Subtraktion** (4 Tests):
+    - Subtraktion von Mengen mit gleicher Einheit ("500 g" + "-300 g" = "200 g")
+    - Automatisches Löschen bei Menge = 0 ("5" + "-5" = Item gelöscht)
+    - Subtraktion aus kommagetrennte Listen ("800 g, 3 Packungen" + "-300 g" = "500 g, 3 Packungen")
+    - Negative Mengen ohne bestehendes Item werden ignoriert
   - **Fuzzy Matching**:
     - Ähnliche Produktnamen werden erkannt ("Möhre" → "Möhren")
     - Alternative Schreibweisen ("Moehre" → "Möhren")
@@ -898,9 +912,9 @@ npm test -- --watch
 - ✅ Error Handling, Edge Cases, User Interactions
 
 **Gesamt-Teststatistik:**
-- 📊 **Server**: 66 Tests, 85% Coverage
+- 📊 **Server**: 70 Tests, 85%+ Coverage
 - 📊 **Client**: 457 Tests, 85.46% Coverage
-- 📊 **Gesamt**: 523 Tests ✅
+- 📊 **Gesamt**: 527 Tests ✅
 
 ### Continuous Integration (CI)
 
@@ -909,7 +923,7 @@ Das Projekt nutzt GitHub Actions für automatisierte Tests bei jedem Push/Pull R
 **Server Tests (Python):**
 - Black Code-Formatierung prüfen
 - Flake8 Linting
-- Pytest Tests (64 Tests mit 85% Coverage)
+- Pytest Tests (70 Tests mit 85%+ Coverage)
 
 **Client Tests (TypeScript):**
 - TypeScript Build

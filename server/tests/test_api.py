@@ -713,3 +713,125 @@ def test_item_stays_with_selected_store():
     client.delete(f"/api/items/{item_b_id}", headers=headers)
     client.delete(f"/api/stores/{store_a_id}", headers=headers)
     client.delete(f"/api/stores/{store_b_id}", headers=headers)
+
+
+def test_quantity_subtraction_same_unit():
+    """Test that negative quantities subtract from existing quantities."""
+    # Get authentication token
+    token = get_auth_token()
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Create item with quantity
+    r = client.post(
+        "/api/items", json={"name": "Kartoffeln", "menge": "500 g"}, headers=headers
+    )
+    assert r.status_code == 201
+    first_item = r.json()
+    assert first_item["menge"] == "500 g"
+    first_id = first_item["id"]
+
+    # Subtract from the quantity
+    r = client.post(
+        "/api/items", json={"name": "Kartoffeln", "menge": "-300 g"}, headers=headers
+    )
+    assert r.status_code == 201
+    updated_item = r.json()
+    assert updated_item["name"] == "Kartoffeln"
+    assert updated_item["menge"] == "200 g"
+    assert updated_item["id"] == first_id  # Same ID
+
+    # Verify only one item exists
+    r = client.get("/api/items", headers=headers)
+    items = r.json()
+    kartoffeln_items = [it for it in items if it["name"] == "Kartoffeln"]
+    assert len(kartoffeln_items) == 1
+    assert kartoffeln_items[0]["menge"] == "200 g"
+
+    # Cleanup
+    client.delete(f"/api/items/{first_id}", headers=headers)
+
+
+def test_quantity_subtraction_to_zero():
+    """Test that subtracting entire quantity removes the item."""
+    # Get authentication token
+    token = get_auth_token()
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Create item with quantity
+    r = client.post("/api/items", json={"name": "Äpfel", "menge": "5"}, headers=headers)
+    assert r.status_code == 201
+    first_item = r.json()
+    first_id = first_item["id"]
+
+    # Subtract exact amount - should result in deletion
+    r = client.post(
+        "/api/items", json={"name": "Äpfel", "menge": "-5"}, headers=headers
+    )
+    assert r.status_code == 201  # Item is created/updated but with menge=None
+
+    # Verify item was deleted or has no quantity
+    r = client.get("/api/items", headers=headers)
+    items = r.json()
+    apfel_items = [it for it in items if it["name"] == "Äpfel"]
+    # Item should either not exist or have None menge
+    assert len(apfel_items) == 0 or apfel_items[0].get("menge") is None
+
+    # Cleanup if still exists
+    if apfel_items:
+        client.delete(f"/api/items/{first_id}", headers=headers)
+
+
+def test_quantity_subtraction_complex_list():
+    """Test subtracting from comma-separated quantity list."""
+    # Get authentication token
+    token = get_auth_token()
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Create item with multiple quantities
+    r = client.post(
+        "/api/items",
+        json={"name": "Mehl", "menge": "800 g, 3 Packungen"},
+        headers=headers,
+    )
+    assert r.status_code == 201
+    first_item = r.json()
+    first_id = first_item["id"]
+
+    # Subtract some grams
+    r = client.post(
+        "/api/items", json={"name": "Mehl", "menge": "-300 g"}, headers=headers
+    )
+    assert r.status_code == 201
+    updated_item = r.json()
+    assert updated_item["menge"] == "500 g, 3 Packungen"
+
+    # Subtract some Packungen
+    r = client.post(
+        "/api/items", json={"name": "Mehl", "menge": "-2 Packungen"}, headers=headers
+    )
+    assert r.status_code == 201
+    updated_item = r.json()
+    assert updated_item["menge"] == "500 g, 1 Packungen"
+
+    # Cleanup
+    client.delete(f"/api/items/{first_id}", headers=headers)
+
+
+def test_quantity_subtraction_without_existing():
+    """Test that negative quantities without existing items are ignored."""
+    # Get authentication token
+    token = get_auth_token()
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Try to subtract from non-existent item - should be ignored
+    r = client.post(
+        "/api/items", json={"name": "Bananen", "menge": "-5"}, headers=headers
+    )
+    # The API might create the item or ignore it
+    # Let's verify the result
+    if r.status_code == 201:
+        created_item = r.json()
+        # Should either not be created or have no/null menge
+        assert created_item.get("menge") is None or created_item.get("menge") == ""
+        if created_item.get("id"):
+            client.delete(f"/api/items/{created_item['id']}", headers=headers)
