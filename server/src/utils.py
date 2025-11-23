@@ -11,16 +11,17 @@ def parse_quantity(menge: str | None) -> tuple[float | None, str | None]:
     """Parse quantity string into number and unit.
 
     Args:
-        menge: Quantity string like "500 g" or "2 Stück"
+        menge: Quantity string like "500 g", "2 Stück", or "-300 g" for subtraction
 
     Returns:
         Tuple of (number, unit) or (None, None) if parsing fails
+        Number can be negative for subtraction
     """
     if not menge:
         return None, None
 
-    # Match number (int or float) followed by optional unit
-    match = re.match(r"^(\d+(?:[.,]\d+)?)\s*(.*)$", menge.strip())
+    # Match optional minus sign, number (int/float), optional unit
+    match = re.match(r"^(-?\d+(?:[.,]\d+)?)\s*(.*)$", menge.strip())
     if match:
         number_str = match.group(1).replace(",", ".")
         unit = match.group(2).strip() if match.group(2) else None
@@ -115,17 +116,24 @@ def find_similar_item(
 def merge_quantities(existing_menge: str | None, new_menge: str | None) -> str | None:
     """Merge two quantities, searching for matching units in comma-separated list.
 
+    Supports both addition and subtraction. Negative quantities (starting with -)
+    are subtracted from existing quantities.
+
     Args:
         existing_menge: Existing quantity string (may be comma-separated
         like "500 g, 2 Packungen")
-        new_menge: New quantity to add (may also be comma-separated like "2, 500 g")
+        new_menge: New quantity to add/subtract
+                   (may be comma-separated like "2, 500 g")
+                   Use negative values for subtraction (e.g., "-300 g")
 
     Returns:
-        Merged quantity string. If unit exists in list, sums it.
-        Otherwise appends to list.
+        Merged quantity string. If unit exists in list, adds/subtracts it.
+        Otherwise appends to list. Items with zero or negative quantities are removed.
 
     Examples:
         - merge_quantities("500 g", "300 g") -> "800 g"
+        - merge_quantities("500 g", "-300 g") -> "200 g"
+        - merge_quantities("500 g", "-600 g") -> None (quantity becomes negative)
         - merge_quantities("500 g", "2 Packungen") -> "500 g, 2 Packungen"
         - merge_quantities("500 g, 2 Packungen", "300 g") -> "800 g, 2 Packungen"
         - merge_quantities("500 g, 2 Packungen", "3 Packungen") -> "500 g, 5 Packungen"
@@ -166,27 +174,33 @@ def merge_quantities(existing_menge: str | None, new_menge: str | None) -> str |
             part_num, part_unit = parse_quantity(part)
 
             if part_num is not None and part_unit == new_unit and not found_match:
-                # Found matching unit - sum them
+                # Found match - sum them (supports subtraction)
                 total = part_num + new_num
-                # Format nicely: use int if whole number, otherwise float
-                if total == int(total):
-                    total_str = str(int(total))
-                else:
-                    total_str = str(total).replace(".", ",")
 
-                if part_unit:
-                    merged_parts.append(f"{total_str} {part_unit}")
-                else:
-                    merged_parts.append(total_str)
+                # Only add to merged_parts if total is positive
+                if total > 0:
+                    # Format nicely: use int if whole number, otherwise float
+                    if total == int(total):
+                        total_str = str(int(total))
+                    else:
+                        total_str = str(total).replace(".", ",")
+
+                    if part_unit:
+                        merged_parts.append(f"{total_str} {part_unit}")
+                    else:
+                        merged_parts.append(total_str)
+                # If total <= 0, skip this part (remove it from the list)
                 found_match = True
             else:
                 # Keep existing part as-is
                 merged_parts.append(part)
 
-        # If no match found, append this new part
-        if not found_match:
+        # If no match found and new_num is positive, append new part
+        # If new_num is negative, ignore it (can't subtract from nothing)
+        if not found_match and new_num > 0:
             merged_parts.append(new_part)
 
         result_menge = ", ".join(merged_parts)
 
-    return result_menge
+    # If result is empty, return None (all quantities were subtracted to zero or below)
+    return result_menge if result_menge.strip() else None
