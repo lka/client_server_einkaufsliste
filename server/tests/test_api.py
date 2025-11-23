@@ -835,3 +835,55 @@ def test_quantity_subtraction_without_existing():
         assert created_item.get("menge") is None or created_item.get("menge") == ""
         if created_item.get("id"):
             client.delete(f"/api/items/{created_item['id']}", headers=headers)
+
+
+def test_case_insensitive_item_matching():
+    """Test that items with different casing are merged correctly."""
+    # Get authentication token
+    token = get_auth_token()
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Add item with specific casing
+    r = client.post(
+        "/api/items", json={"name": "Radiccio", "menge": "1"}, headers=headers
+    )
+    assert r.status_code == 201
+    first_item = r.json()
+    assert first_item["name"] == "Radiccio"
+    assert first_item["menge"] == "1"
+    first_id = first_item["id"]
+
+    # Add same item with same casing - should merge
+    r = client.post(
+        "/api/items", json={"name": "Radiccio", "menge": "1"}, headers=headers
+    )
+    assert r.status_code == 201
+    merged_item = r.json()
+    assert merged_item["name"] == "Radiccio"
+    assert merged_item["menge"] == "2"
+    assert merged_item["id"] == first_id  # Same ID - merged, not new item
+
+    # Verify only one item exists
+    r = client.get("/api/items", headers=headers)
+    items = r.json()
+    radiccio_items = [it for it in items if "radiccio" in it["name"].lower()]
+    assert len(radiccio_items) == 1
+    assert radiccio_items[0]["menge"] == "2"
+
+    # Add with different casing - should still merge
+    r = client.post(
+        "/api/items", json={"name": "RADICCIO", "menge": "1"}, headers=headers
+    )
+    assert r.status_code == 201
+    merged_item = r.json()
+    assert merged_item["menge"] == "3"
+    assert merged_item["id"] == first_id  # Still same ID
+
+    # Verify still only one item
+    r = client.get("/api/items", headers=headers)
+    items = r.json()
+    radiccio_items = [it for it in items if "radiccio" in it["name"].lower()]
+    assert len(radiccio_items) == 1
+
+    # Cleanup
+    client.delete(f"/api/items/{first_id}", headers=headers)

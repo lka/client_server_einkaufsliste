@@ -18,6 +18,7 @@ from typing import List
 from difflib import SequenceMatcher
 from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlmodel import select
+from ..websocket_manager import manager
 
 from ..models import Item, Product, Department
 from ..user_models import User
@@ -151,7 +152,7 @@ def read_items_by_date(
 
 
 @router.post("", status_code=201, response_model=ItemWithDepartment)
-def create_item(item: Item, current_user: str = Depends(get_current_user)):
+async def create_item(item: Item, current_user: str = Depends(get_current_user)):
     """Create a new item or update quantity if item already exists in the shared list.
 
     Adds items to the shared shopping list that all authenticated users can access.
@@ -192,8 +193,12 @@ def create_item(item: Item, current_user: str = Depends(get_current_user)):
             raise HTTPException(status_code=404, detail="User not found")
 
         # First, check for exact match in shared list with same shopping_date and store
+        # Use case-insensitive comparison for item names
+        from sqlmodel import func
+
         query = select(Item).where(
-            Item.name == item.name, Item.shopping_date == item.shopping_date
+            func.lower(Item.name) == func.lower(item.name),
+            Item.shopping_date == item.shopping_date,
         )
         # Only match items from the same store if store_id is provided
         if item.store_id is not None:
@@ -218,8 +223,18 @@ def create_item(item: Item, current_user: str = Depends(get_current_user)):
 
             # If merge results in None (quantity went to zero or below), delete the item
             if merged_menge is None or merged_menge.strip() == "":
+                item_id = existing_item.id
                 session.delete(existing_item)
                 session.commit()
+
+                # Broadcast deletion via WebSocket
+                await manager.broadcast(
+                    {
+                        "type": "item:deleted",
+                        "data": {"id": item_id},
+                    }
+                )
+
                 # Return the item with None menge to indicate deletion
                 existing_item.menge = None
                 result_item = existing_item
@@ -229,6 +244,22 @@ def create_item(item: Item, current_user: str = Depends(get_current_user)):
                 session.commit()
                 session.refresh(existing_item)
                 result_item = existing_item
+
+                # Broadcast update via WebSocket
+                await manager.broadcast(
+                    {
+                        "type": "item:updated",
+                        "data": {
+                            "id": existing_item.id,
+                            "name": existing_item.name,
+                            "menge": existing_item.menge,
+                            "store_id": existing_item.store_id,
+                            "product_id": existing_item.product_id,
+                            "shopping_date": existing_item.shopping_date,
+                            "user_id": existing_item.user_id,
+                        },
+                    }
+                )
         else:
             # Check if new item has negative quantity
             # Parse quantity to check if it's negative
@@ -302,6 +333,22 @@ def create_item(item: Item, current_user: str = Depends(get_current_user)):
             session.refresh(item)
             result_item = item
 
+            # Broadcast new item via WebSocket
+            await manager.broadcast(
+                {
+                    "type": "item:added",
+                    "data": {
+                        "id": item.id,
+                        "name": item.name,
+                        "menge": item.menge,
+                        "store_id": item.store_id,
+                        "product_id": item.product_id,
+                        "shopping_date": item.shopping_date,
+                        "user_id": item.user_id,
+                    },
+                }
+            )
+
         # Enrich with department information
         dept_id = None
         dept_name = None
@@ -331,7 +378,7 @@ def create_item(item: Item, current_user: str = Depends(get_current_user)):
 
 
 @router.delete("/{item_id}", status_code=204)
-def delete_item(item_id: str, current_user: str = Depends(get_current_user)):
+async def delete_item(item_id: str, current_user: str = Depends(get_current_user)):
     """Delete an item by its id from the database (requires authentication).
 
     All authenticated users can delete items from the shared shopping list.
@@ -354,11 +401,20 @@ def delete_item(item_id: str, current_user: str = Depends(get_current_user)):
             raise HTTPException(status_code=404, detail="Not found")
         session.delete(item)
         session.commit()
+
+        # Broadcast deletion via WebSocket
+        await manager.broadcast(
+            {
+                "type": "item:deleted",
+                "data": {"id": item_id},
+            }
+        )
+
         return None
 
 
 @router.delete("/by-date/{before_date}")
-def delete_items_before_date(
+async def delete_items_before_date(
     before_date: str,
     store_id: int | None = Query(None),
     current_user: str = Depends(get_current_user),
@@ -394,10 +450,22 @@ def delete_items_before_date(
         items_to_delete = session.exec(query).all()
 
         count = len(items_to_delete)
+        deleted_ids = []
         for item in items_to_delete:
+            deleted_ids.append(item.id)
             session.delete(item)
 
         session.commit()
+
+        # Broadcast deletions via WebSocket
+        for item_id in deleted_ids:
+            await manager.broadcast(
+                {
+                    "type": "item:deleted",
+                    "data": {"id": item_id},
+                }
+            )
+
         return {"deleted_count": count}
 
 
