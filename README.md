@@ -292,6 +292,7 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
       - 📋 Link kopieren (für mobile Geräte)
       - 🗓️ Vor Datum löschen
       - 💾 Datenbank-Backup
+    - 📖 Dokumentation (Hauptmenü) - Öffnet GitHub README in neuem Fenster
     - 🚪 Abmelden (Hauptmenü)
     - Version-Info (Hauptmenü)
   - **Smooth Animations**: Max-height-Transition für sanftes Auf-/Zuklappen

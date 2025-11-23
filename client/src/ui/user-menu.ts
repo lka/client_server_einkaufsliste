@@ -106,6 +106,7 @@ export async function initUserMenu(): Promise<void> {
   const toggleWebSocketBtn = document.getElementById('toggleWebSocketBtn');
   const copyWebSocketLinkBtn = document.getElementById('copyWebSocketLinkBtn');
   const clearByDateBtn = document.getElementById('clearByDateBtn');
+  const documentationBtn = document.getElementById('documentationBtn');
   const logoutBtn = document.getElementById('logoutBtn');
 
   // Menu toggle handler
@@ -328,6 +329,13 @@ export async function initUserMenu(): Promise<void> {
         // Ultimate fallback: Show the link in an alert
         alert(`WebSocket-Link:\n\n${wsLink}\n\nBitte manuell kopieren.`);
       }
+    });
+  }
+
+  // Documentation button handler
+  if (documentationBtn) {
+    documentationBtn.addEventListener('click', () => {
+      window.open('https://github.com/lka/client_server_einkaufsliste/blob/master/README.md', '_blank');
     });
   }
 
