@@ -1400,9 +1400,18 @@ export function initShoppingListUI(): void {
         return;
       }
 
-      // Add all template items
+      // Add all template items (but skip any that match template names to prevent recursion)
       let successCount = 0;
+      let skippedCount = 0;
+      const templateNames = templates.map(t => t.name.toLowerCase());
+
       for (const templateItem of matchedTemplate.items) {
+        // Skip items that match template names (recursion prevention)
+        if (templateNames.includes(templateItem.name.toLowerCase())) {
+          skippedCount++;
+          continue;
+        }
+
         const item = await shoppingListState.addItem(
           templateItem.name,
           templateItem.menge,
@@ -1415,11 +1424,20 @@ export function initShoppingListUI(): void {
       }
 
       if (successCount > 0) {
-        showSuccess(`${successCount} Artikel aus Vorlage "${matchedTemplate.name}" hinzugefügt!`);
+        let message = `${successCount} Artikel aus Vorlage "${matchedTemplate.name}" hinzugefügt!`;
+        if (skippedCount > 0) {
+          message += ` (${skippedCount} Artikel übersprungen, um Rekursion zu vermeiden)`;
+        }
+        showSuccess(message);
         input.value = '';
         mengeInput.value = '1';
         // Keep the date picker value for next item
         // UI updates automatically via state subscription
+      } else if (skippedCount > 0) {
+        showError(
+          `Alle ${skippedCount} Artikel aus Vorlage "${matchedTemplate.name}" wurden übersprungen, ` +
+          `da sie Template-Namen entsprechen (Rekursionsschutz).`
+        );
       }
     } else {
       // Normal item - add as usual

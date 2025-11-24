@@ -99,6 +99,10 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - CRUD-Operationen: Erstellen, Bearbeiten, Löschen von Vorlagen
     - Vorlagen-Items werden inline angezeigt: "Artikel (Menge)"
     - "Speichern"-Button nur aktiv wenn mindestens ein Artikel vorhanden ist
+    - **Rekursionsschutz**: Verhindert automatisch, dass Template-Namen als Items verwendet werden
+      - Beim Hinzufügen von Items: Warnung, wenn Item-Name einem Template-Namen entspricht
+      - Beim Speichern: Validierung gegen eigenen Template-Namen und andere Templates
+      - Bei Template-Expansion: Automatisches Überspringen von Items mit Template-Namen
   - **Intelligenter DatePicker mit Einkaufstag-Visualisierung**
     - **Farbcodierte Einkaufstage**: Visuelle Hervorhebung aller geplanten Einkaufstage im Kalender
       - 🟡 **Nächster Einkaufstag** → Gelb mit gelbem Rand
