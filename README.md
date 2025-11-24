@@ -207,13 +207,14 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
   - **Store-Filter**: Anzeige und Verwaltung nach ausgewähltem Geschäft
   - Navigation über Benutzermenü: "📦 Produkte verwalten"
 - ✅ **Mengenangaben mit Smart-Merging & Fuzzy Matching**: Optionale Mengenangaben für jeden Artikel (z.B. "500 g", "2 Stück")
-  - **Kommagetrennte Eingaben**: Mehrere Mengen gleichzeitig eingeben (z.B. "2, 500 g")
+  - **Default-Wert "1"**: Mengenfeld ist standardmäßig auf "1" vorausgefüllt für schnelleres Hinzufügen
+  - **Semikolon-getrennte Eingaben**: Mehrere Mengen gleichzeitig eingeben (z.B. "2; 500 g")
   - Automatisches Summieren von Mengen mit gleicher Einheit
   - **Intelligente Subtraktion**: Negative Mengen (mit `-` Präfix) werden intelligent subtrahiert
     - "Möhren 500 g" + "-300 g" = "Möhren 200 g"
     - Wenn die Menge auf 0 oder darunter geht, wird das Item automatisch gelöscht
     - Negative Mengen ohne bestehendes Item werden ignoriert (man kann nicht von nichts subtrahieren)
-  - Intelligente Suche in kommagetrennte Listen
+  - Intelligente Suche in semikolon-getrennte Listen
   - **Case-Insensitive Matching**: Groß-/Kleinschreibung wird ignoriert
     - "Radiccio" wird mit "RADICCIO" oder "radiccio" zusammengeführt
     - Verhindert versehentliche Duplikate durch unterschiedliche Schreibweise
@@ -227,8 +228,8 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
   - Beispiele (gleiches Datum):
     - "Möhren 500 g" + "Möhren 300 g" = "Möhren 800 g"
     - "Möhren 500 g" + "Möhren -300 g" = "Möhren 200 g"
-    - "Zucker 500 g, 2 Packungen" + "Zucker 300 g" = "Zucker 800 g, 2 Packungen"
-    - "Reis 500 g" + "2, 300 g" = "Reis 800 g, 2"
+    - "Zucker 500 g; 2 Packungen" + "Zucker 300 g" = "Zucker 800 g; 2 Packungen"
+    - "Reis 500 g" + "2; 300 g" = "Reis 800 g; 2"
   - Beispiele (unterschiedliche Daten):
     - "Möhren 500 g" [15.01.2025] + "Möhren 300 g" [17.01.2025] = Zwei separate Items
 - ✅ **Einkaufsdatum**: Optionale Datumsangabe für geplanten Einkauf
@@ -666,7 +667,7 @@ Die Anwendung verwendet **JWT (JSON Web Tokens)** für sichere Authentifizierung
   - Beispiele:
     - `{"name": "Möhren", "menge": "500 g", "store_id": 1}` → Automatisches Matching zu Produkt "Möhren" in Abteilung "Obst & Gemüse"
     - `{"name": "Milch", "store_id": 1}` (ohne Menge) → Matching zu "Milch" in "Milchprodukte"
-    - `{"name": "Reis", "menge": "2, 500 g"}` (kommagetrennte Eingabe)
+    - `{"name": "Reis", "menge": "2; 500 g"}` (semikolon-getrennte Eingabe)
   - **Automatisches Produkt-Matching**: Wenn `store_id` angegeben ist:
     - Fuzzy-Matching gegen alle Produkte im Store (60% Schwellwert)
     - Automatische Zuweisung von `product_id` bei Match
@@ -674,14 +675,14 @@ Die Anwendung verwendet **JWT (JSON Web Tokens)** für sichere Authentifizierung
   - **Smart-Merging mit Einheiten-Suche & Fuzzy Matching**: Wenn ein Artikel bereits in der gemeinsamen Liste existiert oder ähnlich ist:
     - **Gemeinsame Liste**: Alle Items in der Liste werden berücksichtigt (keine Benutzer-spezifische Filterung)
     - **Fuzzy Matching**: Ähnliche Namen werden erkannt ("Möhre" → "Möhren", "Moehre" → "Möhren")
-    - **Kommagetrennte Eingaben**: Mehrere Mengen werden separat verarbeitet ("2, 500 g" → ["2", "500 g"])
+    - **Semikolon-getrennte Eingaben**: Mehrere Mengen werden separat verarbeitet ("2; 500 g" → ["2", "500 g"])
     - **Intelligente Subtraktion**: Negative Mengen subtrahieren von bestehenden Mengen
       - "500 g" + "-300 g" = "200 g"
       - Wenn Menge auf 0 oder darunter geht, wird das Item automatisch gelöscht
       - Negative Mengen ohne bestehendes Item werden ignoriert
     - Gleiche Einheit → Mengen werden summiert (z.B. "500 g" + "300 g" = "800 g")
-    - Verschiedene Einheiten → Als kommagetrennte Liste gespeichert (z.B. "500 g" + "2 Packungen" = "500 g, 2 Packungen")
-    - Einheit in Liste vorhanden → Nur diese Einheit wird summiert (z.B. "500 g, 2 Packungen" + "300 g" = "800 g, 2 Packungen")
+    - Verschiedene Einheiten → Als semikolon-getrennte Liste gespeichert (z.B. "500 g" + "2 Packungen" = "500 g; 2 Packungen")
+    - Einheit in Liste vorhanden → Nur diese Einheit wird summiert (z.B. "500 g; 2 Packungen" + "300 g" = "800 g; 2 Packungen")
     - Keine Einheit → Zahlen werden summiert (z.B. "6" + "12" = "18")
   - **Keine Benutzer-Zuordnung**: Items werden mit `user_id=None` erstellt (gehören zur gemeinsamen Liste)
 - `GET /api/stores/{store_id}/products/search?q={query}` - Fuzzy-Suche nach Produkten in einem Store
@@ -788,12 +789,12 @@ pytest --cov=server --cov-report=html
 ```
 
 **Aktuelle Test-Abdeckung:**
-- ✅ **71 Tests insgesamt**
+- ✅ **72 Tests insgesamt**
   - **85%+ Code-Coverage** für Server-Code
 - ✅ **Authentifizierung** (10 Tests):
   - Registrierung, Login, Token-Validierung, Token-Refresh, Account-Löschung
   - Genehmigungsprüfung beim Login
-- ✅ **Shopping-List CRUD** (20 Tests):
+- ✅ **Shopping-List CRUD** (21 Tests):
   - **Item zu Produkt konvertieren**: Items aus "Sonstiges" in Produktkatalog aufnehmen (2 Tests)
     - Neues Produkt erstellen und Abteilung zuweisen
     - Vorhandenes Produkt wiederverwenden
@@ -804,15 +805,16 @@ pytest --cov=server --cov-report=html
   - **Mengenangaben**: Items mit und ohne optionale Menge
   - **Smart-Merging mit Einheiten-Suche**:
     - Summierung bei gleicher Einheit ("500 g" + "300 g" = "800 g")
-    - Kombination bei verschiedenen Einheiten ("500 g" + "2 Packungen" = "500 g, 2 Packungen")
-    - Intelligente Suche in kommagetrennte Listen ("500 g, 2 Packungen" + "300 g" = "800 g, 2 Packungen")
+    - Kombination bei verschiedenen Einheiten ("500 g" + "2 Packungen" = "500 g; 2 Packungen")
+    - Intelligente Suche in semikolon-getrennte Listen ("500 g; 2 Packungen" + "300 g" = "800 g; 2 Packungen")
     - Summierung ohne Einheit ("6" + "12" = "18")
-    - **Kommagetrennte Eingaben**: Verarbeitung mehrerer Mengen ("500 g" + "2, 300 g" = "800 g, 2")
-  - **Intelligente Subtraktion** (4 Tests):
+    - **Semikolon-getrennte Eingaben**: Verarbeitung mehrerer Mengen ("500 g" + "2; 300 g" = "800 g; 2")
+  - **Intelligente Subtraktion** (5 Tests):
     - Subtraktion von Mengen mit gleicher Einheit ("500 g" + "-300 g" = "200 g")
     - Automatisches Löschen bei Menge = 0 ("5" + "-5" = Item gelöscht)
-    - Subtraktion aus kommagetrennte Listen ("800 g, 3 Packungen" + "-300 g" = "500 g, 3 Packungen")
+    - Subtraktion aus semikolon-getrennte Listen ("800 g; 3 Packungen" + "-300 g" = "500 g; 3 Packungen")
     - Negative Mengen ohne bestehendes Item werden ignoriert
+    - Subtraktion von Items ohne Mengenangabe löscht das Item ("Brot" + "-1" = Item gelöscht)
   - **Case-Insensitive Matching** (1 Test):
     - Items mit unterschiedlicher Groß-/Kleinschreibung werden korrekt zusammengeführt
     - "Radiccio" + "RADICCIO" = Merge, nicht zwei separate Items
@@ -919,9 +921,9 @@ npm test -- --watch
 - ✅ Error Handling, Edge Cases, User Interactions
 
 **Gesamt-Teststatistik:**
-- 📊 **Server**: 71 Tests, 85%+ Coverage
-- 📊 **Client**: 457 Tests, 85.46% Coverage
-- 📊 **Gesamt**: 528 Tests ✅
+- 📊 **Server**: 72 Tests, 85%+ Coverage
+- 📊 **Client**: 458 Tests, 85.46% Coverage
+- 📊 **Gesamt**: 530 Tests ✅
 
 ### Continuous Integration (CI)
 
@@ -930,11 +932,11 @@ Das Projekt nutzt GitHub Actions für automatisierte Tests bei jedem Push/Pull R
 **Server Tests (Python):**
 - Black Code-Formatierung prüfen
 - Flake8 Linting
-- Pytest Tests (71 Tests mit 85%+ Coverage)
+- Pytest Tests (72 Tests mit 85%+ Coverage)
 
 **Client Tests (TypeScript):**
 - TypeScript Build
-- Jest Tests (457 Tests mit 85.46% Coverage)
+- Jest Tests (458 Tests mit 85.46% Coverage)
 
 Beide Jobs laufen parallel für maximale Geschwindigkeit. Die CI-Konfiguration befindet sich in `.github/workflows/ci.yml`.
 

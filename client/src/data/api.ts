@@ -7,7 +7,7 @@ import { getToken, clearToken, refreshToken } from './auth.js';
 export interface Item {
   id: string;
   name: string;
-  menge?: string;
+  menge?: string | null;  // null indicates item was deleted (quantity subtracted to 0)
   shopping_date?: string;
   user_id?: number;
   store_id?: number;

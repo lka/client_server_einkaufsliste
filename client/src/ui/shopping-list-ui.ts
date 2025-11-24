@@ -1417,7 +1417,7 @@ export function initShoppingListUI(): void {
       if (successCount > 0) {
         showSuccess(`${successCount} Artikel aus Vorlage "${matchedTemplate.name}" hinzugefügt!`);
         input.value = '';
-        mengeInput.value = '';
+        mengeInput.value = '1';
         // Keep the date picker value for next item
         // UI updates automatically via state subscription
       }
@@ -1426,7 +1426,7 @@ export function initShoppingListUI(): void {
       const item = await shoppingListState.addItem(val, menge, selectedStoreId || undefined, shoppingDate);
       if (item) {
         input.value = '';
-        mengeInput.value = '';
+        mengeInput.value = '1';
         // Keep the date picker value for next item
         // UI updates automatically via state subscription
       }

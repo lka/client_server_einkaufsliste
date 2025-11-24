@@ -154,7 +154,7 @@ describe('Shopping List UI', () => {
 
       expect(shoppingListState.addItem).toHaveBeenCalledWith('New Item', undefined, undefined, undefined);
       expect(mockInput.value).toBe('');
-      expect(mockMengeInput.value).toBe('');
+      expect(mockMengeInput.value).toBe('1');
     });
 
     it('should ignore add button click with empty input', async () => {
@@ -187,7 +187,7 @@ describe('Shopping List UI', () => {
 
       expect(shoppingListState.addItem).toHaveBeenCalledWith('Möhren', '500 g', undefined, undefined);
       expect(mockInput.value).toBe('');
-      expect(mockMengeInput.value).toBe('');
+      expect(mockMengeInput.value).toBe('1');
     });
 
     it('should handle add button click when addItem returns null', async () => {

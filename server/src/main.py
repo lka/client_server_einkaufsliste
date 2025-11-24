@@ -101,7 +101,7 @@ def get_api_version():
 
 @app.websocket("/ws/{token}")
 async def websocket_endpoint(websocket: WebSocket, token: str):
-    """WebSocket endpoint for real-time updates.
+    """Handle WebSocket endpoint for real-time updates.
 
     Args:
         websocket: WebSocket connection
