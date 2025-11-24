@@ -748,9 +748,24 @@ async function showPrintPreview(): Promise<boolean> {
 }
 
 /**
+ * Detect if user is on Android
+ */
+function isAndroid(): boolean {
+  return /Android/i.test(navigator.userAgent);
+}
+
+/**
  * Print preview content using browser print dialog
  */
 function printPreviewContent(frontContent: string, backContent: string, storeName: string, hideDepartments: boolean = false, selectedDate: string | null = null): void {
+  // Android devices have issues with popup windows for printing
+  // Use inline printing approach for Android
+  if (isAndroid()) {
+    printPreviewContentInline(frontContent, backContent, storeName, hideDepartments, selectedDate);
+    return;
+  }
+
+  // Standard popup approach for non-Android devices
   const printWindow = window.open('', '_blank');
   if (!printWindow) {
     showError('Popup-Blocker verhindert das Drucken. Bitte erlauben Sie Popups für diese Seite.');
@@ -932,6 +947,200 @@ function printPreviewContent(frontContent: string, backContent: string, storeNam
       printWindow.close();
     };
   };
+}
+
+/**
+ * Print preview content inline (for Android compatibility)
+ * Temporarily replaces current page content with print content
+ */
+function printPreviewContentInline(frontContent: string, backContent: string, storeName: string, hideDepartments: boolean = false, selectedDate: string | null = null): void {
+  // Save current page content
+  const originalContent = document.body.innerHTML;
+  const originalTitle = document.title;
+
+  // Replace dropdowns with static text in the content
+  let processedFrontContent = frontContent;
+  let processedBackContent = backContent;
+
+  // First, replace store dropdown with static store name
+  processedFrontContent = processedFrontContent.replace(
+    /<select[^>]*>[\s\S]*?<\/select>/,
+    `<span style="font-size: 1.2rem; font-weight: bold;">${storeName}</span>`
+  );
+
+  // Then, replace date dropdown with static date
+  if (selectedDate) {
+    // Format date for display
+    const dateObj = new Date(selectedDate + 'T00:00:00');
+    const formattedDate = dateObj.toLocaleDateString('de-DE');
+
+    processedFrontContent = processedFrontContent.replace(
+      /<select[^>]*>[\s\S]*?<\/select>/,
+      `<span style="color: #666; font-size: 0.8rem;">${formattedDate}</span>`
+    );
+
+    processedBackContent = processedBackContent.replace(
+      /<span[^>]*>(\d{2}\.\d{2}\.\d{4}|Alle Daten)<\/span>/,
+      `<span style="color: #666; font-size: 0.8rem;">${formattedDate}</span>`
+    );
+  } else {
+    // If no date selected, show "Alle Daten"
+    processedFrontContent = processedFrontContent.replace(
+      /<select[^>]*>[\s\S]*?<\/select>/,
+      '<span style="color: #666; font-size: 0.8rem;">Alle Daten</span>'
+    );
+  }
+
+  const bodyClass = hideDepartments ? ' class="hide-departments"' : '';
+
+  // Create print styles
+  const printStyles = `
+    <style>
+      /* DIN A4 landscape with two A5 pages side by side */
+      @page {
+        size: A4 landscape;
+        margin: 0;
+      }
+
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.1;
+        color: #333;
+        margin: 0;
+        padding: 0;
+      }
+
+      /* Container for the two A5 pages */
+      .print-container {
+        display: flex;
+        width: 297mm;
+        height: 210mm;
+      }
+
+      /* Each A5 page (half of A4 landscape) */
+      .a5-page {
+        width: 148.5mm;
+        height: 210mm;
+        padding: 10mm;
+        box-sizing: border-box;
+        page-break-inside: avoid;
+      }
+
+      /* Left page (front) */
+      .a5-page.front {
+        border-right: 1px dashed #ccc;
+      }
+
+      h2 {
+        margin: 0 0 0.3rem 0;
+        font-size: 1.2rem;
+      }
+
+      p {
+        margin: 0 0 0.5rem 0;
+        font-size: 0.8rem;
+      }
+
+      h4.department-title {
+        margin: 0.6rem 0 0.2rem 0;
+        color: #333;
+        font-size: 0.9rem;
+        font-weight: bold;
+      }
+
+      ul {
+        margin: 0;
+        padding-left: 0;
+        list-style: none;
+      }
+
+      li {
+        margin-bottom: 0.1rem;
+        line-height: 1.15;
+        font-size: 0.85rem;
+      }
+
+      .print-preview-content {
+        padding: 0;
+        background: white;
+        border: none;
+      }
+
+      /* 2-column layout for items */
+      .two-column-layout {
+        column-count: 2;
+        column-gap: 1rem;
+      }
+
+      .department-section {
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+
+      /* Hide department titles if requested */
+      body.hide-departments h4.department-title {
+        display: none;
+      }
+
+      /* Notes area on back page */
+      .notes-area {
+        margin-top: 1rem;
+      }
+
+      .notes-area h3 {
+        margin-top: 0;
+        font-size: 1rem;
+      }
+
+      .note-lines {
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem;
+      }
+
+      .note-line {
+        border-bottom: 1px solid #ddd;
+        height: 1rem;
+      }
+
+      @media print {
+        .two-column-layout {
+          column-count: 2;
+          column-gap: 1rem;
+        }
+      }
+    </style>
+  `;
+
+  // Replace body content with print content
+  document.title = storeName;
+  document.body.innerHTML = `
+    ${printStyles}
+    <div class="print-container"${bodyClass}>
+      <div class="a5-page front">
+        ${processedFrontContent}
+      </div>
+      <div class="a5-page back">
+        ${processedBackContent}
+      </div>
+    </div>
+  `;
+
+  // Trigger print
+  window.print();
+
+  // Restore original content after print dialog
+  const restoreContent = () => {
+    document.title = originalTitle;
+    document.body.innerHTML = originalContent;
+    // Reinitialize event listeners after restoring content
+    window.removeEventListener('afterprint', restoreContent);
+    // Reload the page to restore all functionality
+    window.location.reload();
+  };
+
+  // Listen for print completion
+  window.addEventListener('afterprint', restoreContent);
 }
 
 /**
