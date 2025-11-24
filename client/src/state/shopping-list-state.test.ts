@@ -196,6 +196,28 @@ describe('Shopping List State', () => {
       expect(listener).toHaveBeenCalledWith([updatedItem]);
     });
 
+    it('should remove item if server returns item with null menge (subtraction to zero)', async () => {
+      // First, add an item "Äpfel"
+      const existingItem: Item = { id: '1', name: 'Äpfel', menge: '5' };
+      (api.addItem as jest.MockedFunction<typeof api.addItem>).mockResolvedValue(existingItem);
+      await shoppingListState.addItem('Äpfel', '5');
+
+      // Now subtract all - server returns item with menge: null (indicating deletion)
+      const deletedItem: Item = { id: '1', name: 'Äpfel', menge: null };
+      (api.addItem as jest.MockedFunction<typeof api.addItem>).mockResolvedValue(deletedItem);
+
+      const listener = jest.fn();
+      shoppingListState.subscribe(listener);
+
+      const result = await shoppingListState.addItem('Äpfel', '-5');
+
+      expect(result).toEqual(deletedItem);
+      // Item should be removed from state
+      const items = shoppingListState.getItems();
+      expect(items).toHaveLength(0);
+      expect(listener).toHaveBeenCalledWith([]);
+    });
+
     it('should reject empty item name', async () => {
       const result = await shoppingListState.addItem('   ');
 

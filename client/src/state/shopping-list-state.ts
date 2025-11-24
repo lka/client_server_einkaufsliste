@@ -155,13 +155,17 @@ class ShoppingListState {
         const existingIndex = this.items.findIndex(item => item.id === returnedItem.id);
 
         if (existingIndex !== -1) {
-          // Update existing item (e.g., quantity was merged)
-          this.items[existingIndex] = returnedItem;
-          this.notifyListeners();
-
-          // Broadcast update to other users via WebSocket
-          if (websocket.isConnected()) {
-            websocket.broadcastItemUpdate(returnedItem);
+          // Check if item was deleted (menge is null after subtraction to 0)
+          if (returnedItem.menge === null || returnedItem.menge === '') {
+            // Remove item from state (was deleted due to subtraction)
+            this.items.splice(existingIndex, 1);
+            this.notifyListeners();
+            // Note: Server already broadcasts deletion via WebSocket
+          } else {
+            // Update existing item (e.g., quantity was merged)
+            this.items[existingIndex] = returnedItem;
+            this.notifyListeners();
+            // Note: Server already broadcasts update via WebSocket
           }
         } else {
           // Add new item

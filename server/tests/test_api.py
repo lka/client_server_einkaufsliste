@@ -161,14 +161,14 @@ def test_quantity_merging_different_unit():
     first_item = r.json()
     first_id = first_item["id"]
 
-    # Add same item with different unit - should combine with comma
+    # Add same item with different unit - should combine with semicolon
     r = client.post(
         "/api/items", json={"name": "Zucker", "menge": "2 Packungen"}, headers=headers
     )
     assert r.status_code == 201
     updated_item = r.json()
     assert updated_item["name"] == "Zucker"
-    assert updated_item["menge"] == "500 g, 2 Packungen"
+    assert updated_item["menge"] == "500 g; 2 Packungen"
     assert updated_item["id"] == first_id
 
     # Cleanup
@@ -200,7 +200,7 @@ def test_quantity_merging_no_unit():
 
 
 def test_quantity_merging_complex_list():
-    """Test merging quantities in a comma-separated list."""
+    """Test merging quantities in a semicolon-separated list."""
     # Get authentication token
     token = get_auth_token()
     headers = {"Authorization": f"Bearer {token}"}
@@ -213,13 +213,13 @@ def test_quantity_merging_complex_list():
     first_item = r.json()
     first_id = first_item["id"]
 
-    # Add different unit - should combine with comma
+    # Add different unit - should combine with semicolon
     r = client.post(
         "/api/items", json={"name": "Mehl", "menge": "2 Packungen"}, headers=headers
     )
     assert r.status_code == 201
     updated_item = r.json()
-    assert updated_item["menge"] == "500 g, 2 Packungen"
+    assert updated_item["menge"] == "500 g; 2 Packungen"
 
     # Add more grams - should find and sum the existing grams
     r = client.post(
@@ -227,7 +227,7 @@ def test_quantity_merging_complex_list():
     )
     assert r.status_code == 201
     updated_item = r.json()
-    assert updated_item["menge"] == "800 g, 2 Packungen"
+    assert updated_item["menge"] == "800 g; 2 Packungen"
 
     # Add more Packungen - should find and sum the existing Packungen
     r = client.post(
@@ -235,7 +235,7 @@ def test_quantity_merging_complex_list():
     )
     assert r.status_code == 201
     updated_item = r.json()
-    assert updated_item["menge"] == "800 g, 5 Packungen"
+    assert updated_item["menge"] == "800 g; 5 Packungen"
 
     # Cleanup
     client.delete(f"/api/items/{first_id}", headers=headers)
@@ -367,16 +367,16 @@ def test_comma_separated_input():
     first_id = first_item["id"]
     assert first_item["menge"] == "500 g"
 
-    # Add comma-separated input: "2, 300 g"
+    # Add semicolon-separated input: "2; 300 g"
     # Should process "2" (no unit) and "300 g" separately
     r = client.post(
-        "/api/items", json={"name": "Reis", "menge": "2, 300 g"}, headers=headers
+        "/api/items", json={"name": "Reis", "menge": "2; 300 g"}, headers=headers
     )
     assert r.status_code == 201
     updated_item = r.json()
     assert updated_item["name"] == "Reis"
     # Should sum the grams (500 + 300 = 800) and append "2"
-    assert updated_item["menge"] == "800 g, 2"
+    assert updated_item["menge"] == "800 g; 2"
     assert updated_item["id"] == first_id
 
     # Verify only one item exists
@@ -384,7 +384,7 @@ def test_comma_separated_input():
     items = r.json()
     reis_items = [it for it in items if it["name"] == "Reis"]
     assert len(reis_items) == 1
-    assert reis_items[0]["menge"] == "800 g, 2"
+    assert reis_items[0]["menge"] == "800 g; 2"
 
     # Cleanup
     client.delete(f"/api/items/{first_id}", headers=headers)
@@ -782,7 +782,7 @@ def test_quantity_subtraction_to_zero():
 
 
 def test_quantity_subtraction_complex_list():
-    """Test subtracting from comma-separated quantity list."""
+    """Test subtracting from semicolon-separated quantity list."""
     # Get authentication token
     token = get_auth_token()
     headers = {"Authorization": f"Bearer {token}"}
@@ -790,7 +790,7 @@ def test_quantity_subtraction_complex_list():
     # Create item with multiple quantities
     r = client.post(
         "/api/items",
-        json={"name": "Mehl", "menge": "800 g, 3 Packungen"},
+        json={"name": "Mehl", "menge": "800 g; 3 Packungen"},
         headers=headers,
     )
     assert r.status_code == 201
@@ -803,7 +803,7 @@ def test_quantity_subtraction_complex_list():
     )
     assert r.status_code == 201
     updated_item = r.json()
-    assert updated_item["menge"] == "500 g, 3 Packungen"
+    assert updated_item["menge"] == "500 g; 3 Packungen"
 
     # Subtract some Packungen
     r = client.post(
@@ -811,7 +811,7 @@ def test_quantity_subtraction_complex_list():
     )
     assert r.status_code == 201
     updated_item = r.json()
-    assert updated_item["menge"] == "500 g, 1 Packungen"
+    assert updated_item["menge"] == "500 g; 1 Packungen"
 
     # Cleanup
     client.delete(f"/api/items/{first_id}", headers=headers)
@@ -835,6 +835,37 @@ def test_quantity_subtraction_without_existing():
         assert created_item.get("menge") is None or created_item.get("menge") == ""
         if created_item.get("id"):
             client.delete(f"/api/items/{created_item['id']}", headers=headers)
+
+
+def test_quantity_subtraction_from_item_without_menge():
+    """Test that subtracting from item without quantity deletes the item."""
+    # Get authentication token
+    token = get_auth_token()
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Add item without quantity
+    r = client.post("/api/items", json={"name": "Brot"}, headers=headers)
+    assert r.status_code == 201
+    first_item = r.json()
+    assert first_item["menge"] is None
+    first_id = first_item["id"]
+
+    # Subtract from item without quantity - should delete it
+    r = client.post("/api/items", json={"name": "Brot", "menge": "-1"}, headers=headers)
+    assert r.status_code == 201
+    result = r.json()
+    # Item should be marked as deleted (menge: None)
+    assert result.get("menge") is None
+
+    # Verify item was deleted from list
+    r = client.get("/api/items", headers=headers)
+    items = r.json()
+    brot_items = [it for it in items if it["name"] == "Brot"]
+    assert len(brot_items) == 0
+
+    # Cleanup (if needed)
+    if brot_items:
+        client.delete(f"/api/items/{first_id}", headers=headers)
 
 
 def test_case_insensitive_item_matching():

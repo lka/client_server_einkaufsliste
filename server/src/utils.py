@@ -120,10 +120,10 @@ def merge_quantities(existing_menge: str | None, new_menge: str | None) -> str |
     are subtracted from existing quantities.
 
     Args:
-        existing_menge: Existing quantity string (may be comma-separated
-        like "500 g, 2 Packungen")
+        existing_menge: Existing quantity string (may be semicolon-separated
+        like "500 g; 2 Packungen")
         new_menge: New quantity to add/subtract
-                   (may be comma-separated like "2, 500 g")
+                   (may be semicolon-separated like "2; 500 g")
                    Use negative values for subtraction (e.g., "-300 g")
 
     Returns:
@@ -134,18 +134,25 @@ def merge_quantities(existing_menge: str | None, new_menge: str | None) -> str |
         - merge_quantities("500 g", "300 g") -> "800 g"
         - merge_quantities("500 g", "-300 g") -> "200 g"
         - merge_quantities("500 g", "-600 g") -> None (quantity becomes negative)
-        - merge_quantities("500 g", "2 Packungen") -> "500 g, 2 Packungen"
-        - merge_quantities("500 g, 2 Packungen", "300 g") -> "800 g, 2 Packungen"
-        - merge_quantities("500 g, 2 Packungen", "3 Packungen") -> "500 g, 5 Packungen"
-        - merge_quantities("500 g", "2, 300 g") -> "800 g, 2"
+        - merge_quantities(None, "-1") -> None (can't subtract from nothing)
+        - merge_quantities("500 g", "2 Packungen") -> "500 g; 2 Packungen"
+        - merge_quantities("500 g; 2 Packungen", "300 g") -> "800 g; 2 Packungen"
+        - merge_quantities("500 g; 2 Packungen", "3 Packungen") -> "500 g; 5 Packungen"
+        - merge_quantities("500 g", "2; 300 g") -> "800 g; 2"
     """
     if not existing_menge:
+        # If there's no existing quantity, check if new quantity is negative
+        # Can't subtract from nothing - return None to indicate deletion
+        if new_menge:
+            parsed_num, _ = parse_quantity(new_menge)
+            if parsed_num is not None and parsed_num < 0:
+                return None  # Negative quantity without existing = delete item
         return new_menge
     if not new_menge:
         return existing_menge
 
-    # Split new_menge by comma and process each part separately
-    new_parts = [part.strip() for part in new_menge.split(",")]
+    # Split new_menge by semicolon and process each part separately
+    new_parts = [part.strip() for part in new_menge.split(";")]
 
     # Start with existing quantities
     result_menge = existing_menge
@@ -160,11 +167,11 @@ def merge_quantities(existing_menge: str | None, new_menge: str | None) -> str |
 
         if new_num is None:
             # Can't parse - just append it
-            result_menge = f"{result_menge}, {new_part}"
+            result_menge = f"{result_menge}; {new_part}"
             continue
 
-        # Split current result quantities by comma
-        existing_parts = [part.strip() for part in result_menge.split(",")]
+        # Split current result quantities by semicolon
+        existing_parts = [part.strip() for part in result_menge.split(";")]
 
         # Try to find matching unit in existing parts
         found_match = False
@@ -200,7 +207,7 @@ def merge_quantities(existing_menge: str | None, new_menge: str | None) -> str |
         if not found_match and new_num > 0:
             merged_parts.append(new_part)
 
-        result_menge = ", ".join(merged_parts)
+        result_menge = "; ".join(merged_parts)
 
     # If result is empty, return None (all quantities were subtracted to zero or below)
     return result_menge if result_menge.strip() else None
