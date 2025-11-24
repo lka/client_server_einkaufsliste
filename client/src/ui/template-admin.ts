@@ -233,7 +233,7 @@ function attachTemplateAdminListeners(): void {
 /**
  * Handle adding an item to the current template form.
  */
-function handleAddItem(): void {
+async function handleAddItem(): Promise<void> {
   const nameInput = document.getElementById('itemNameInput') as HTMLInputElement;
   const mengeInput = document.getElementById('itemMengeInput') as HTMLInputElement;
 
@@ -242,6 +242,20 @@ function handleAddItem(): void {
   const name = nameInput.value.trim();
   if (!name) {
     showError('Bitte geben Sie einen Artikel-Namen ein.');
+    return;
+  }
+
+  // Check if the item name matches an existing template name (case-insensitive)
+  const templates = await fetchTemplates();
+  const matchingTemplate = templates.find(
+    (t) => t.name.toLowerCase() === name.toLowerCase()
+  );
+
+  if (matchingTemplate) {
+    showError(
+      `Der Artikel-Name "${name}" entspricht einem Template-Namen. ` +
+      `Dies würde zu Rekursion führen. Bitte wählen Sie einen anderen Namen.`
+    );
     return;
   }
 
@@ -288,6 +302,36 @@ async function handleSaveTemplate(): Promise<void> {
   if (currentItems.length === 0) {
     showError('Bitte fügen Sie mindestens einen Artikel hinzu.');
     return;
+  }
+
+  // Check if any item in this template has the same name as this template (self-reference)
+  const selfReferenceItem = currentItems.find(
+    (item) => item.name.toLowerCase() === name.toLowerCase()
+  );
+
+  if (selfReferenceItem) {
+    showError(
+      `Das Template "${name}" enthält einen Artikel mit dem gleichen Namen. ` +
+      `Dies würde zu Rekursion führen. Bitte entfernen Sie den Artikel "${selfReferenceItem.name}".`
+    );
+    return;
+  }
+
+  // Check if any item matches another template name
+  const templates = await fetchTemplates();
+  for (const item of currentItems) {
+    const matchingTemplate = templates.find(
+      (t) => t.name.toLowerCase() === item.name.toLowerCase() &&
+            (editingTemplateId === null || t.id !== editingTemplateId)
+    );
+
+    if (matchingTemplate) {
+      showError(
+        `Der Artikel "${item.name}" entspricht dem Template-Namen "${matchingTemplate.name}". ` +
+        `Dies würde zu Rekursion führen. Bitte entfernen Sie diesen Artikel.`
+      );
+      return;
+    }
   }
 
   // Save template
