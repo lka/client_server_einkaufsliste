@@ -65,6 +65,12 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
       - Verhindert wiederholte manuelle Zuordnung bei wiederkehrenden Einkäufen
   - **Intelligente Druckfunktion**: Einkaufsliste als DIN A5-Heft drucken
     - Druckt auf DIN A4 Querformat → in der Mitte falten ergibt A5-Heft
+    - **Plattform-spezifisches Drucken**: Optimiert für verschiedene Geräte
+      - **Desktop (Windows/Mac)**: Popup-Fenster mit Druckvorschau
+      - **iPad/iOS**: Popup-Fenster mit nativer Druckfunktion
+      - **Android-Tablets**: Inline-Drucken (ersetzt temporär Seiteninhalt)
+        - Verhindert Hängenbleiben des Druckdialogs auf Android
+        - Automatische Wiederherstellung der Seite nach Druckvorgang
     - **Datumsbasierte Filterung**: Dropdown zur Auswahl des Einkaufsdatums in der Druckvorschau
       - Zeigt alle verfügbaren Shopping-Daten
       - Default: Kleinstes (frühestes) Datum
