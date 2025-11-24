@@ -35,6 +35,27 @@ def get_session() -> Generator[Session, None, None]:
         yield session
 
 
+def _try_parse_iso_date(date_str: str) -> Any:
+    """Try to parse an ISO date string into a datetime or date object.
+
+    Args:
+        date_str: The ISO date string to parse
+    Returns:
+        datetime or date object if parsing is successful, else original string
+    """
+    try:
+        return datetime.fromisoformat(date_str)
+    except (ValueError, TypeError):
+        pass
+
+    try:
+        return date.fromisoformat(date_str)
+    except (ValueError, TypeError):
+        pass
+
+    return date_str
+
+
 def convert_date_strings(data: dict[str, Any]) -> dict[str, Any]:
     """Convert ISO date strings to datetime/date objects.
 
@@ -52,20 +73,20 @@ def convert_date_strings(data: dict[str, Any]) -> dict[str, Any]:
     date_fields = ["shopping_date"]
 
     for field in datetime_fields:
-        if field in converted and converted[field] is not None:
-            if isinstance(converted[field], str):
-                try:
-                    converted[field] = datetime.fromisoformat(converted[field])
-                except (ValueError, TypeError):
-                    pass  # Leave as is if conversion fails
+        if (
+            field in converted
+            and converted[field] is not None
+            and isinstance(converted[field], str)
+        ):
+            converted[field] = _try_parse_iso_date(converted[field])
 
     for field in date_fields:
-        if field in converted and converted[field] is not None:
-            if isinstance(converted[field], str):
-                try:
-                    converted[field] = date.fromisoformat(converted[field])
-                except (ValueError, TypeError):
-                    pass  # Leave as is if conversion fails
+        if (
+            field in converted
+            and converted[field] is not None
+            and isinstance(converted[field], str)
+        ):
+            converted[field] = _try_parse_iso_date(converted[field])
 
     return converted
 
@@ -141,6 +162,44 @@ def create_backup(
     return backup
 
 
+def _clear_existing_data(session: Session):
+    """Helper function to clear all existing data from the database."""
+    # Delete in correct order (respecting foreign keys)
+    for item in session.exec(select(TemplateItem)).all():
+        session.delete(item)
+
+    for template in session.exec(select(ShoppingTemplate)).all():
+        session.delete(template)
+
+    for item in session.exec(select(Item)).all():
+        session.delete(item)
+
+    for product in session.exec(select(Product)).all():
+        session.delete(product)
+
+    for dept in session.exec(select(Department)).all():
+        session.delete(dept)
+
+    for store in session.exec(select(Store)).all():
+        session.delete(store)
+
+    for user in session.exec(select(User)).all():
+        session.delete(user)
+
+
+def _restore_entity_list(
+    session: Session,
+    entity_class: Any,
+    data_list: list[dict[str, Any]],
+):
+    """Helper function to restore a list of entities into the database."""
+    for data in data_list:
+        converted_data = convert_date_strings(data)
+        entity = entity_class(**converted_data)
+        session.add(entity)
+    session.commit()
+
+
 @router.post("/restore", status_code=200)
 def restore_backup(
     restore_data: RestoreData,
@@ -179,86 +238,38 @@ def restore_backup(
         if clear_existing:
             # Delete in correct order (respecting foreign keys)
             session.exec(select(TemplateItem)).all()
-            for item in session.exec(select(TemplateItem)).all():
-                session.delete(item)
-
-            for template in session.exec(select(ShoppingTemplate)).all():
-                session.delete(template)
-
-            for item in session.exec(select(Item)).all():
-                session.delete(item)
-
-            for product in session.exec(select(Product)).all():
-                session.delete(product)
-
-            for dept in session.exec(select(Department)).all():
-                session.delete(dept)
-
-            for store in session.exec(select(Store)).all():
-                session.delete(store)
-
-            for user in session.exec(select(User)).all():
-                session.delete(user)
-
+            _clear_existing_data(session)
             session.commit()
 
         # Restore data in correct order (respecting foreign keys)
         restored_counts = {}
 
         # 1. Users (no dependencies)
-        for user_data in restore_data.users:
-            converted_data = convert_date_strings(user_data)
-            user = User(**converted_data)
-            session.add(user)
-        session.commit()
+        _restore_entity_list(session, User, restore_data.users)
         restored_counts["users"] = len(restore_data.users)
 
         # 2. Stores (no dependencies)
-        for store_data in restore_data.stores:
-            converted_data = convert_date_strings(store_data)
-            store = Store(**converted_data)
-            session.add(store)
-        session.commit()
+        _restore_entity_list(session, Store, restore_data.stores)
         restored_counts["stores"] = len(restore_data.stores)
 
         # 3. Departments (depends on stores)
-        for dept_data in restore_data.departments:
-            converted_data = convert_date_strings(dept_data)
-            dept = Department(**converted_data)
-            session.add(dept)
-        session.commit()
+        _restore_entity_list(session, Department, restore_data.departments)
         restored_counts["departments"] = len(restore_data.departments)
 
         # 4. Products (depends on departments and stores)
-        for prod_data in restore_data.products:
-            converted_data = convert_date_strings(prod_data)
-            product = Product(**converted_data)
-            session.add(product)
-        session.commit()
+        _restore_entity_list(session, Product, restore_data.products)
         restored_counts["products"] = len(restore_data.products)
 
         # 5. Items (depends on stores)
-        for item_data in restore_data.items:
-            converted_data = convert_date_strings(item_data)
-            item = Item(**converted_data)
-            session.add(item)
-        session.commit()
+        _restore_entity_list(session, Item, restore_data.items)
         restored_counts["items"] = len(restore_data.items)
 
         # 6. Templates (no dependencies)
-        for template_data in restore_data.templates:
-            converted_data = convert_date_strings(template_data)
-            template = ShoppingTemplate(**converted_data)
-            session.add(template)
-        session.commit()
+        _restore_entity_list(session, ShoppingTemplate, restore_data.templates)
         restored_counts["templates"] = len(restore_data.templates)
 
         # 7. Template Items (depends on templates)
-        for item_data in restore_data.template_items:
-            converted_data = convert_date_strings(item_data)
-            item = TemplateItem(**converted_data)
-            session.add(item)
-        session.commit()
+        _restore_entity_list(session, TemplateItem, restore_data.template_items)
         restored_counts["template_items"] = len(restore_data.template_items)
 
         return JSONResponse(

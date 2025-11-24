@@ -151,6 +151,165 @@ def read_items_by_date(
         return items_with_dept
 
 
+def _find_existing_item(
+    session, item_name: str, shopping_date: str | None, store_id: int | None
+) -> Item | None:
+    """Find existing item with exact or fuzzy match."""
+    from sqlmodel import func
+
+    # Try exact match first (case-insensitive)
+    query = select(Item).where(
+        func.lower(Item.name) == func.lower(item_name),
+        Item.shopping_date == shopping_date,
+    )
+    if store_id is not None:
+        query = query.where(Item.store_id == store_id)
+
+    existing_item = session.exec(query).first()
+
+    # If no exact match, try fuzzy matching
+    if not existing_item:
+        existing_item = find_similar_item(
+            session,
+            item_name,
+            None,
+            threshold=0.8,
+            shopping_date=shopping_date,
+            store_id=store_id,
+        )
+
+    return existing_item
+
+
+async def _handle_item_merge(session, existing_item: Item, new_menge: str | None):
+    """Merge quantities and broadcast changes."""
+    merged_menge = merge_quantities(existing_item.menge, new_menge)
+
+    # Check if item should be deleted (quantity <= 0)
+    if merged_menge is None or merged_menge.strip() == "":
+        item_id = existing_item.id
+        session.delete(existing_item)
+        session.commit()
+
+        # Broadcast deletion
+        await manager.broadcast({"type": "item:deleted", "data": {"id": item_id}})
+
+        # Return item with None menge to indicate deletion
+        existing_item.menge = None
+        return existing_item
+
+    # Update existing item
+    existing_item.menge = merged_menge
+    session.add(existing_item)
+    session.commit()
+    session.refresh(existing_item)
+
+    # Broadcast update
+    await manager.broadcast(
+        {
+            "type": "item:updated",
+            "data": {
+                "id": existing_item.id,
+                "name": existing_item.name,
+                "menge": existing_item.menge,
+                "store_id": existing_item.store_id,
+                "product_id": existing_item.product_id,
+                "shopping_date": existing_item.shopping_date,
+                "user_id": existing_item.user_id,
+            },
+        }
+    )
+
+    return existing_item
+
+
+def _create_negative_quantity_dummy(item: Item) -> ItemWithDepartment:
+    """Create dummy item for negative quantity on non-existent item."""
+    dummy_item = Item(
+        id=str(uuid.uuid4()),
+        name=item.name,
+        menge=None,
+        user_id=None,
+        store_id=item.store_id,
+        shopping_date=item.shopping_date,
+    )
+
+    return ItemWithDepartment(
+        id=dummy_item.id,
+        user_id=dummy_item.user_id,
+        store_id=dummy_item.store_id,
+        product_id=None,
+        name=dummy_item.name,
+        menge=dummy_item.menge,
+        shopping_date=dummy_item.shopping_date,
+        department_id=None,
+        department_name=None,
+        department_sort_order=None,
+    )
+
+
+def _find_matching_product(session, item: Item) -> int | None:
+    """Find matching product using fuzzy matching."""
+    if not item.store_id or item.product_id:
+        return item.product_id
+
+    # Get all products for this store
+    products = session.exec(
+        select(Product).where(Product.store_id == item.store_id)
+    ).all()
+
+    if not products:
+        return None
+
+    # Fuzzy match against all products
+    normalized_query = normalize_name(item.name)
+    best_match = None
+    best_ratio = 0.0
+
+    for product in products:
+        normalized_product = normalize_name(product.name)
+        ratio = SequenceMatcher(None, normalized_query, normalized_product).ratio()
+
+        if ratio > best_ratio:
+            best_ratio = ratio
+            best_match = product
+
+    # Assign product if match is good enough (threshold 0.6)
+    if best_ratio >= 0.6 and best_match:
+        return best_match.id
+
+    return None
+
+
+def _enrich_with_department(session, result_item: Item) -> ItemWithDepartment:
+    """Enrich item with department information."""
+    dept_id = None
+    dept_name = None
+    dept_sort_order = None
+
+    if result_item.product_id:
+        product = session.get(Product, result_item.product_id)
+        if product:
+            dept_id = product.department_id
+            department = session.get(Department, product.department_id)
+            if department:
+                dept_name = department.name
+                dept_sort_order = department.sort_order
+
+    return ItemWithDepartment(
+        id=result_item.id,
+        user_id=result_item.user_id,
+        store_id=result_item.store_id,
+        product_id=result_item.product_id,
+        name=result_item.name,
+        menge=result_item.menge,
+        shopping_date=result_item.shopping_date,
+        department_id=dept_id,
+        department_name=dept_name,
+        department_sort_order=dept_sort_order,
+    )
+
+
 @router.post("", status_code=201, response_model=ItemWithDepartment)
 async def create_item(item: Item, current_user: str = Depends(get_current_user)):
     """Create a new item or update quantity if item already exists in the shared list.
@@ -187,194 +346,60 @@ async def create_item(item: Item, current_user: str = Depends(get_current_user))
         ItemWithDepartment: The created or updated item with department information.
     """
     with get_session() as session:
-        # Get user to verify authentication
+        # Verify authentication
         user = session.exec(select(User).where(User.username == current_user)).first()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
-        # First, check for exact match in shared list with same shopping_date and store
-        # Use case-insensitive comparison for item names
-        from sqlmodel import func
-
-        query = select(Item).where(
-            func.lower(Item.name) == func.lower(item.name),
-            Item.shopping_date == item.shopping_date,
+        # Find existing item with exact or fuzzy match
+        existing_item = _find_existing_item(
+            session, item.name, item.shopping_date, item.store_id
         )
-        # Only match items from the same store if store_id is provided
-        if item.store_id is not None:
-            query = query.where(Item.store_id == item.store_id)
-        existing_item = session.exec(query).first()
 
-        # If no exact match, try fuzzy matching in shared list with same shopping_date
-        if not existing_item:
-            existing_item = find_similar_item(
-                session,
-                item.name,
-                None,
-                threshold=0.8,
-                shopping_date=item.shopping_date,
-                store_id=item.store_id,
-            )
-
-        result_item = None
+        # Handle existing item: merge quantities
         if existing_item:
-            # Merge quantities into existing item (only if shopping_date matches)
-            merged_menge = merge_quantities(existing_item.menge, item.menge)
+            result_item = await _handle_item_merge(session, existing_item, item.menge)
+            return _enrich_with_department(session, result_item)
 
-            # If merge results in None (quantity went to zero or below), delete the item
-            if merged_menge is None or merged_menge.strip() == "":
-                item_id = existing_item.id
-                session.delete(existing_item)
-                session.commit()
+        # Handle negative quantity for non-existent item
+        if item.menge:
+            from ..utils import parse_quantity
 
-                # Broadcast deletion via WebSocket
-                await manager.broadcast(
-                    {
-                        "type": "item:deleted",
-                        "data": {"id": item_id},
-                    }
-                )
+            parsed_num, _ = parse_quantity(item.menge)
+            if parsed_num is not None and parsed_num < 0:
+                return _create_negative_quantity_dummy(item)
 
-                # Return the item with None menge to indicate deletion
-                existing_item.menge = None
-                result_item = existing_item
-            else:
-                existing_item.menge = merged_menge
-                session.add(existing_item)
-                session.commit()
-                session.refresh(existing_item)
-                result_item = existing_item
+        # Create new item
+        if not item.id:
+            item.id = str(uuid.uuid4())
+        item.user_id = None  # Shared list
 
-                # Broadcast update via WebSocket
-                await manager.broadcast(
-                    {
-                        "type": "item:updated",
-                        "data": {
-                            "id": existing_item.id,
-                            "name": existing_item.name,
-                            "menge": existing_item.menge,
-                            "store_id": existing_item.store_id,
-                            "product_id": existing_item.product_id,
-                            "shopping_date": existing_item.shopping_date,
-                            "user_id": existing_item.user_id,
-                        },
-                    }
-                )
-        else:
-            # Check if new item has negative quantity
-            # Parse quantity to check if it's negative
-            if item.menge:
-                from ..utils import parse_quantity
+        # Find matching product
+        product_id = _find_matching_product(session, item)
+        if product_id:
+            item.product_id = product_id
 
-                parsed_num, _ = parse_quantity(item.menge)
-                if parsed_num is not None and parsed_num < 0:
-                    # Can't subtract from non-existent item - ignore this request
-                    # Create a dummy item with None menge to indicate no action
-                    result_item = Item(
-                        id=str(uuid.uuid4()),
-                        name=item.name,
-                        menge=None,
-                        user_id=None,
-                        store_id=item.store_id,
-                        shopping_date=item.shopping_date,
-                    )
-                    # Don't save to DB, just return it
-                    dept_id = None
-                    dept_name = None
-                    dept_sort_order = None
-                    return ItemWithDepartment(
-                        id=result_item.id,
-                        user_id=result_item.user_id,
-                        store_id=result_item.store_id,
-                        product_id=None,
-                        name=result_item.name,
-                        menge=result_item.menge,
-                        shopping_date=result_item.shopping_date,
-                        department_id=dept_id,
-                        department_name=dept_name,
-                        department_sort_order=dept_sort_order,
-                    )
+        # Save and broadcast
+        session.add(item)
+        session.commit()
+        session.refresh(item)
 
-            # Create new item
-            if not item.id:
-                item.id = str(uuid.uuid4())
-            # Don't set user_id - this is a shared list
-            item.user_id = None
-
-            # If store_id is provided, try to find matching product
-            if item.store_id and not item.product_id:
-                # Get all products for this store
-                products = session.exec(
-                    select(Product).where(Product.store_id == item.store_id)
-                ).all()
-
-                if products:
-                    # Fuzzy match against all products
-                    normalized_query = normalize_name(item.name)
-                    best_match = None
-                    best_ratio = 0.0
-
-                    for product in products:
-                        normalized_product = normalize_name(product.name)
-                        ratio = SequenceMatcher(
-                            None, normalized_query, normalized_product
-                        ).ratio()
-
-                        if ratio > best_ratio:
-                            best_ratio = ratio
-                            best_match = product
-
-                    # Assign product if match is good enough (threshold 0.6)
-                    if best_ratio >= 0.6 and best_match:
-                        item.product_id = best_match.id
-
-            session.add(item)
-            session.commit()
-            session.refresh(item)
-            result_item = item
-
-            # Broadcast new item via WebSocket
-            await manager.broadcast(
-                {
-                    "type": "item:added",
-                    "data": {
-                        "id": item.id,
-                        "name": item.name,
-                        "menge": item.menge,
-                        "store_id": item.store_id,
-                        "product_id": item.product_id,
-                        "shopping_date": item.shopping_date,
-                        "user_id": item.user_id,
-                    },
-                }
-            )
-
-        # Enrich with department information
-        dept_id = None
-        dept_name = None
-        dept_sort_order = None
-
-        if result_item.product_id:
-            product = session.get(Product, result_item.product_id)
-            if product:
-                dept_id = product.department_id
-                department = session.get(Department, product.department_id)
-                if department:
-                    dept_name = department.name
-                    dept_sort_order = department.sort_order
-
-        return ItemWithDepartment(
-            id=result_item.id,
-            user_id=result_item.user_id,
-            store_id=result_item.store_id,
-            product_id=result_item.product_id,
-            name=result_item.name,
-            menge=result_item.menge,
-            shopping_date=result_item.shopping_date,
-            department_id=dept_id,
-            department_name=dept_name,
-            department_sort_order=dept_sort_order,
+        await manager.broadcast(
+            {
+                "type": "item:added",
+                "data": {
+                    "id": item.id,
+                    "name": item.name,
+                    "menge": item.menge,
+                    "store_id": item.store_id,
+                    "product_id": item.product_id,
+                    "shopping_date": item.shopping_date,
+                    "user_id": item.user_id,
+                },
+            }
         )
+
+        return _enrich_with_department(session, item)
 
 
 @router.delete("/{item_id}", status_code=204)

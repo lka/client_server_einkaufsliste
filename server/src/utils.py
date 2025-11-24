@@ -113,6 +113,77 @@ def find_similar_item(
     return best_match
 
 
+def _validate_quantities(
+    existing_menge: str | None, new_menge: str | None
+) -> tuple[bool, str | None]:
+    """Validate quantities and handle edge cases.
+
+    Returns:
+        (should_continue, result): If should_continue is False,
+                                   return result immediately
+    """
+    if not existing_menge:
+        if new_menge:
+            parsed_num, _ = parse_quantity(new_menge)
+            if parsed_num is not None and parsed_num < 0:
+                return (False, None)  # Can't subtract from nothing
+        return (False, new_menge)
+
+    if not new_menge:
+        return (False, existing_menge)
+
+    return (True, None)  # Continue with merge logic
+
+
+def _format_quantity_value(total: float, unit: str | None) -> str:
+    """Format a quantity value with its unit."""
+    # Use int if whole number, otherwise float
+    if total == int(total):
+        total_str = str(int(total))
+    else:
+        total_str = str(total).replace(".", ",")
+
+    if unit:
+        return f"{total_str} {unit}"
+    return total_str
+
+
+def _merge_single_part(
+    new_part: str, existing_parts: list[str]
+) -> tuple[list[str], bool]:
+    """Merge a single quantity part with existing parts.
+
+    Returns:
+        (merged_parts, found_match): List of merged parts and whether a match was found
+    """
+    new_num, new_unit = parse_quantity(new_part)
+
+    if new_num is None:
+        # Can't parse - just append it
+        return (existing_parts + [new_part], False)
+
+    found_match = False
+    merged_parts = []
+
+    for part in existing_parts:
+        part_num, part_unit = parse_quantity(part)
+
+        if part_num is not None and part_unit == new_unit and not found_match:
+            # Found match - sum them (supports subtraction)
+            total = part_num + new_num
+
+            # Only add if total is positive
+            if total > 0:
+                merged_parts.append(_format_quantity_value(total, part_unit))
+            # If total <= 0, skip this part (remove it from the list)
+            found_match = True
+        else:
+            # Keep existing part as-is
+            merged_parts.append(part)
+
+    return (merged_parts, found_match)
+
+
 def merge_quantities(existing_menge: str | None, new_menge: str | None) -> str | None:
     """Merge two quantities, searching for matching units in comma-separated list.
 
@@ -140,16 +211,10 @@ def merge_quantities(existing_menge: str | None, new_menge: str | None) -> str |
         - merge_quantities("500 g; 2 Packungen", "3 Packungen") -> "500 g; 5 Packungen"
         - merge_quantities("500 g", "2; 300 g") -> "800 g; 2"
     """
-    if not existing_menge:
-        # If there's no existing quantity, check if new quantity is negative
-        # Can't subtract from nothing - return None to indicate deletion
-        if new_menge:
-            parsed_num, _ = parse_quantity(new_menge)
-            if parsed_num is not None and parsed_num < 0:
-                return None  # Negative quantity without existing = delete item
-        return new_menge
-    if not new_menge:
-        return existing_menge
+    # Check if we should continue or return early
+    should_continue, early_result = _validate_quantities(existing_menge, new_menge)
+    if not should_continue:
+        return early_result
 
     # Split new_menge by semicolon and process each part separately
     new_parts = [part.strip() for part in new_menge.split(";")]
@@ -162,50 +227,17 @@ def merge_quantities(existing_menge: str | None, new_menge: str | None) -> str |
         if not new_part:
             continue
 
-        # Parse this part of the new quantity
-        new_num, new_unit = parse_quantity(new_part)
-
-        if new_num is None:
-            # Can't parse - just append it
-            result_menge = f"{result_menge}; {new_part}"
-            continue
-
         # Split current result quantities by semicolon
         existing_parts = [part.strip() for part in result_menge.split(";")]
 
-        # Try to find matching unit in existing parts
-        found_match = False
-        merged_parts = []
-
-        for part in existing_parts:
-            part_num, part_unit = parse_quantity(part)
-
-            if part_num is not None and part_unit == new_unit and not found_match:
-                # Found match - sum them (supports subtraction)
-                total = part_num + new_num
-
-                # Only add to merged_parts if total is positive
-                if total > 0:
-                    # Format nicely: use int if whole number, otherwise float
-                    if total == int(total):
-                        total_str = str(int(total))
-                    else:
-                        total_str = str(total).replace(".", ",")
-
-                    if part_unit:
-                        merged_parts.append(f"{total_str} {part_unit}")
-                    else:
-                        merged_parts.append(total_str)
-                # If total <= 0, skip this part (remove it from the list)
-                found_match = True
-            else:
-                # Keep existing part as-is
-                merged_parts.append(part)
+        merged_parts, found_match = _merge_single_part(new_part, existing_parts)
 
         # If no match found and new_num is positive, append new part
         # If new_num is negative, ignore it (can't subtract from nothing)
-        if not found_match and new_num > 0:
-            merged_parts.append(new_part)
+        if not found_match:
+            new_num, _ = parse_quantity(new_part)
+            if new_num is not None and new_num > 0:
+                merged_parts.append(new_part)
 
         result_menge = "; ".join(merged_parts)
 
