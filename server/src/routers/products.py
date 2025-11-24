@@ -40,6 +40,53 @@ def get_store_products(store_id: int, current_user: str = Depends(get_current_us
         return products
 
 
+def _add_products_to_matches(
+    products: List[Product],
+    normalized_query: str,
+    matches: List[tuple],
+):
+    """Helper function to add products to matches list based on fuzzy matching."""
+    for product in products:
+        normalized_product = normalize_name(product.name)
+        ratio = SequenceMatcher(None, normalized_query, normalized_product).ratio()
+
+        # Boost score if query is at start of product name
+        if normalized_product.startswith(normalized_query):
+            ratio = min(ratio + 0.3, 1.0)
+
+        if ratio > 0.3:
+            matches.append((ratio, product.name, "product"))
+
+
+def _add_template_items_to_matches(
+    template_items: List,
+    normalized_query: str,
+    matches: List[tuple],
+    existing_names: set,
+):
+    """Helper function to add template items to matches list based on fuzzy matching."""
+    for item in template_items:
+        # Skip if already added from products or templates
+        if item.name in [m[1] for m in matches]:
+            continue
+
+        # Skip duplicates within template items
+        # Skip if already added
+        if item.name in existing_names:
+            continue
+
+        existing_names.add(item.name)
+        normalized_item = normalize_name(item.name)
+        ratio = SequenceMatcher(None, normalized_query, normalized_item).ratio()
+
+        # Boost score if query is at start
+        if normalized_item.startswith(normalized_query):
+            ratio = min(ratio + 0.3, 1.0)
+
+        if ratio > 0.3:
+            matches.append((ratio, item.name, "template_item"))
+
+
 @router.get("/stores/{store_id}/products/suggestions")
 def get_product_suggestions(
     store_id: int,
@@ -82,16 +129,18 @@ def get_product_suggestions(
         ).all()
 
         # Add products to matches
-        for product in products:
-            normalized_product = normalize_name(product.name)
-            ratio = SequenceMatcher(None, normalized_query, normalized_product).ratio()
+        _add_products_to_matches(products, normalized_query, matches)
+        # for product in products:
+        #     normalized_product = normalize_name(product.name)
+        #     ratio = SequenceMatcher(None, normalized_query,
+        #                             normalized_product).ratio()
 
-            # Boost score if query is at start of product name
-            if normalized_product.startswith(normalized_query):
-                ratio = min(ratio + 0.3, 1.0)
+        #     # Boost score if query is at start of product name
+        #     if normalized_product.startswith(normalized_query):
+        #         ratio = min(ratio + 0.3, 1.0)
 
-            if ratio > 0.3:
-                matches.append((ratio, product.name, "product"))
+        #     if ratio > 0.3:
+        #         matches.append((ratio, product.name, "product"))
 
         # Get all template names (for template suggestions)
         from ..models import ShoppingTemplate, TemplateItem
@@ -116,25 +165,29 @@ def get_product_suggestions(
         template_items = session.exec(select(TemplateItem)).all()
         template_item_names = set()  # Track unique template item names
 
-        for item in template_items:
-            # Skip if already added from products or templates
-            if item.name in [m[1] for m in matches]:
-                continue
+        # Add template items to matches
+        _add_template_items_to_matches(
+            template_items, normalized_query, matches, template_item_names
+        )
+        # for item in template_items:
+        #     # Skip if already added from products or templates
+        #     if item.name in [m[1] for m in matches]:
+        #         continue
 
-            # Skip duplicates within template items
-            if item.name in template_item_names:
-                continue
+        #     # Skip duplicates within template items
+        #     if item.name in template_item_names:
+        #         continue
 
-            template_item_names.add(item.name)
-            normalized_item = normalize_name(item.name)
-            ratio = SequenceMatcher(None, normalized_query, normalized_item).ratio()
+        #     template_item_names.add(item.name)
+        #     normalized_item = normalize_name(item.name)
+        #     ratio = SequenceMatcher(None, normalized_query, normalized_item).ratio()
 
-            # Boost score if query is at start
-            if normalized_item.startswith(normalized_query):
-                ratio = min(ratio + 0.3, 1.0)
+        #     # Boost score if query is at start
+        #     if normalized_item.startswith(normalized_query):
+        #         ratio = min(ratio + 0.3, 1.0)
 
-            if ratio > 0.3:
-                matches.append((ratio, item.name, "template_item"))
+        #     if ratio > 0.3:
+        #         matches.append((ratio, item.name, "template_item"))
 
         # Sort by score (descending) and return top N
         matches.sort(key=lambda x: x[0], reverse=True)
