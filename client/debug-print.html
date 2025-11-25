@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>Debug Print Test</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+    }
+    #debug {
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      right: 10px;
+      max-height: 300px;
+      overflow-y: auto;
+      background: rgba(0, 0, 0, 0.9);
+      color: #0f0;
+      font-family: monospace;
+      font-size: 12px;
+      padding: 10px;
+      border-radius: 6px;
+      z-index: 10000;
+    }
+    button {
+      padding: 12px 24px;
+      margin: 10px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .version {
+      background: #007bff;
+      color: white;
+      padding: 10px;
+      margin: 10px;
+      border-radius: 6px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="version">VERSION: 2024-11-24 16:05 - Debug Print Test</div>
+
+  <h1>Print Debug Test für Android Tablet</h1>
+
+  <button onclick="testPrint()">Test Drucken</button>
+  <button onclick="clearDebug()">Debug löschen</button>
+
+  <div id="content">
+    <h2>Test-Inhalt für Druckvorschau</h2>
+    <ul>
+      <li>Artikel 1</li>
+      <li>Artikel 2</li>
+      <li>Artikel 3</li>
+      <li>Artikel 4</li>
+      <li>Artikel 5</li>
+    </ul>
+  </div>
+
+  <div id="debug">
+    <div style="color: #0ff;">Debug-Konsole bereit...</div>
+  </div>
+
+  <script>
+    function log(message, type = 'log') {
+      const debug = document.getElementById('debug');
+      const timestamp = new Date().toLocaleTimeString();
+      const color = type === 'error' ? '#f00' : type === 'warn' ? '#ff0' : '#0f0';
+      debug.innerHTML += `<div style="color: ${color}; margin-bottom: 3px;">[${timestamp}] ${message}</div>`;
+      debug.scrollTop = debug.scrollHeight;
+      console.log(message);
+    }
+
+    function clearDebug() {
+      document.getElementById('debug').innerHTML = '<div style="color: #0ff;">Debug-Konsole geleert...</div>';
+    }
+
+    function testPrint() {
+      log('=== PRINT TEST START ===', 'warn');
+      log('User Agent: ' + navigator.userAgent);
+      log('Platform: ' + navigator.platform);
+      log('Content length: ' + document.body.innerHTML.length);
+
+      try {
+        log('Calling window.print()...', 'warn');
+        window.print();
+        log('window.print() returned successfully', 'log');
+      } catch (error) {
+        log('ERROR: ' + error.message, 'error');
+        alert('Druckfehler: ' + error.message);
+      }
+
+      log('=== PRINT TEST END ===', 'warn');
+    }
+
+    // Log page load
+    log('Seite geladen: ' + new Date().toLocaleTimeString());
+    log('Bereit für Test');
+  </script>
+</body>
+</html>
