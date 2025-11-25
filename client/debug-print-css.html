@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>CSS Print Test</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+    }
+    #debug {
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      right: 10px;
+      max-height: 300px;
+      overflow-y: auto;
+      background: rgba(0, 0, 0, 0.9);
+      color: #0f0;
+      font-family: monospace;
+      font-size: 12px;
+      padding: 10px;
+      border-radius: 6px;
+      z-index: 10000;
+    }
+    button {
+      padding: 12px 24px;
+      margin: 5px;
+      font-size: 14px;
+      cursor: pointer;
+      display: block;
+    }
+    .version {
+      background: #007bff;
+      color: white;
+      padding: 10px;
+      margin: 10px;
+      border-radius: 6px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="version">VERSION: 2024-11-24 16:15 - CSS Einzeltest</div>
+
+  <h1>CSS Print Tests</h1>
+
+  <button onclick="testNoCSS()">Test A: Ohne CSS</button>
+  <button onclick="testPageSize()">Test B: Nur @page size</button>
+  <button onclick="testPageMargin()">Test C: @page mit margin</button>
+  <button onclick="testLandscape()">Test D: A4 landscape</button>
+  <button onclick="testMediaPrint()">Test E: @media print</button>
+  <button onclick="testPageBreak()">Test F: page-break-after</button>
+  <button onclick="clearDebug()">Debug löschen</button>
+
+  <div id="content">
+    <h2>Original Content</h2>
+    <ul>
+      <li>Item 1</li>
+      <li>Item 2</li>
+      <li>Item 3</li>
+    </ul>
+  </div>
+
+  <div id="debug">
+    <div style="color: #0ff;">Debug-Konsole bereit...</div>
+  </div>
+
+  <script>
+    const originalContent = document.body.innerHTML;
+
+    function log(message, type = 'log') {
+      const debug = document.getElementById('debug');
+      if (!debug) {
+        console.log(message);
+        return;
+      }
+      const timestamp = new Date().toLocaleTimeString();
+      const color = type === 'error' ? '#f00' : type === 'warn' ? '#ff0' : '#0f0';
+      debug.innerHTML += `<div style="color: ${color}; margin-bottom: 3px;">[${timestamp}] ${message}</div>`;
+      debug.scrollTop = debug.scrollHeight;
+      console.log(message);
+    }
+
+    function clearDebug() {
+      const debug = document.getElementById('debug');
+      if (debug) {
+        debug.innerHTML = '<div style="color: #0ff;">Debug-Konsole geleert...</div>';
+      }
+    }
+
+    function restoreContent() {
+      setTimeout(() => {
+        document.body.innerHTML = originalContent;
+      }, 1000);
+    }
+
+    function doPrint(testName) {
+      log('Warte 200ms...', 'log');
+      setTimeout(() => {
+        log('Rufe window.print() auf...', 'warn');
+        try {
+          window.print();
+          log('SUCCESS: ' + testName + ' funktioniert!', 'log');
+        } catch (error) {
+          log('ERROR: ' + error.message, 'error');
+          alert('Fehler: ' + error.message);
+        }
+        restoreContent();
+      }, 200);
+    }
+
+    function testNoCSS() {
+      log('=== TEST A: OHNE CSS ===', 'warn');
+      document.body.innerHTML = `
+        <h1>Test A: Ohne CSS</h1>
+        <p>Einfacher Text ohne Styles</p>
+        <ul>
+          <li>Item 1</li>
+          <li>Item 2</li>
+          <li>Item 3</li>
+        </ul>
+      `;
+      doPrint('Test A');
+    }
+
+    function testPageSize() {
+      log('=== TEST B: NUR @page size ===', 'warn');
+      document.body.innerHTML = `
+        <style>
+          @page {
+            size: A4;
+          }
+        </style>
+        <h1>Test B: Nur @page size: A4</h1>
+        <p>Testet ob @page size das Problem ist</p>
+        <ul>
+          <li>Item 1</li>
+          <li>Item 2</li>
+          <li>Item 3</li>
+        </ul>
+      `;
+      doPrint('Test B');
+    }
+
+    function testPageMargin() {
+      log('=== TEST C: @page MIT MARGIN ===', 'warn');
+      document.body.innerHTML = `
+        <style>
+          @page {
+            size: A4;
+            margin: 10mm;
+          }
+        </style>
+        <h1>Test C: @page mit margin</h1>
+        <p>Testet ob margin das Problem ist</p>
+        <ul>
+          <li>Item 1</li>
+          <li>Item 2</li>
+          <li>Item 3</li>
+        </ul>
+      `;
+      doPrint('Test C');
+    }
+
+    function testLandscape() {
+      log('=== TEST D: A4 LANDSCAPE ===', 'warn');
+      document.body.innerHTML = `
+        <style>
+          @page {
+            size: A4 landscape;
+            margin: 10mm;
+          }
+        </style>
+        <h1>Test D: A4 landscape</h1>
+        <p>Testet ob landscape das Problem ist</p>
+        <ul>
+          <li>Item 1</li>
+          <li>Item 2</li>
+          <li>Item 3</li>
+        </ul>
+      `;
+      doPrint('Test D');
+    }
+
+    function testMediaPrint() {
+      log('=== TEST E: @media print ===', 'warn');
+      document.body.innerHTML = `
+        <style>
+          @media print {
+            body {
+              font-family: Arial, sans-serif;
+              color: #333;
+            }
+            h1 {
+              font-size: 18pt;
+            }
+          }
+        </style>
+        <h1>Test E: @media print</h1>
+        <p>Testet ob @media print das Problem ist</p>
+        <ul>
+          <li>Item 1</li>
+          <li>Item 2</li>
+          <li>Item 3</li>
+        </ul>
+      `;
+      doPrint('Test E');
+    }
+
+    function testPageBreak() {
+      log('=== TEST F: PAGE-BREAK-AFTER ===', 'warn');
+      document.body.innerHTML = `
+        <style>
+          @page {
+            size: A4 landscape;
+            margin: 10mm;
+          }
+          .page {
+            page-break-after: always;
+          }
+        </style>
+        <div class="page">
+          <h1>Test F: Seite 1</h1>
+          <p>Testet ob page-break-after das Problem ist</p>
+          <ul>
+            <li>Item 1</li>
+            <li>Item 2</li>
+          </ul>
+        </div>
+        <div class="page">
+          <h1>Seite 2</h1>
+          <ul>
+            <li>Item 3</li>
+            <li>Item 4</li>
+          </ul>
+        </div>
+      `;
+      doPrint('Test F');
+    }
+
+    log('Seite geladen');
+    log('Bitte Tests von A bis F durchführen');
+    log('Notieren Sie, welcher Test NICHT funktioniert');
+  </script>
+</body>
+</html>
