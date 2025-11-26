@@ -790,6 +790,21 @@ describe('Shopping List UI', () => {
     beforeEach(() => {
       // Mock fetchStores to return stores
       (fetchStores as jest.MockedFunction<typeof fetchStores>).mockResolvedValue(mockStores);
+
+      // Mock window.matchMedia for Android detection
+      Object.defineProperty(window, 'matchMedia', {
+        writable: true,
+        value: jest.fn().mockImplementation(query => ({
+          matches: false,
+          media: query,
+          onchange: null,
+          addListener: jest.fn(),
+          removeListener: jest.fn(),
+          addEventListener: jest.fn(),
+          removeEventListener: jest.fn(),
+          dispatchEvent: jest.fn(),
+        })),
+      });
     });
 
     it('should show alert when print button clicked with no items', async () => {
