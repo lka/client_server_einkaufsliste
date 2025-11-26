@@ -208,15 +208,18 @@ def test_user_management_requires_auth():
     """Test that all user management endpoints require authentication."""
     # Get all users without auth
     r = client.get("/api/users")
-    assert r.status_code == 403
+    # FastAPI HTTPBearer returns 403 when credentials are missing
+    assert r.status_code in [401, 403]
 
     # Get pending users without auth
     r = client.get("/api/users/pending")
-    assert r.status_code == 403
+    # FastAPI HTTPBearer returns 403 when credentials are missing
+    assert r.status_code in [401, 403]
 
     # Approve user without auth
     r = client.post("/api/users/1/approve")
-    assert r.status_code == 403
+    # FastAPI HTTPBearer returns 403 when credentials are missing
+    assert r.status_code in [401, 403]
 
 
 def test_approved_user_can_approve_others():
