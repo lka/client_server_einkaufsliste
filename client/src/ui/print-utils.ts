@@ -5,11 +5,50 @@
 
 import { showError } from './components/toast.js';
 
+// Debug mode flag - set to true to enable debug console and logging
+const DEBUG = false;
+
 /**
  * Check if the current device is Android
+ * This function detects Android even when "Desktop mode" is enabled in Chrome
  */
 export function isAndroid(): boolean {
-  return /Android/i.test(navigator.userAgent);
+  const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+
+  // Check for Android in userAgent (works when desktop mode is OFF)
+  if (/android/i.test(userAgent)) {
+    return true;
+  }
+
+  // Check platform API (modern approach)
+  if ((navigator as any).userAgentData) {
+    const platform = (navigator as any).userAgentData.platform || '';
+    if (/android/i.test(platform)) {
+      return true;
+    }
+  }
+
+  // Check traditional platform property
+  if (navigator.platform && /android/i.test(navigator.platform)) {
+    return true;
+  }
+
+  // Additional heuristic: Check for touch support combined with screen characteristics
+  // This helps detect Android tablets even in "Desktop mode"
+  const hasTouchScreen = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  const isLikelyMobile = /Mobile|Tablet/i.test(userAgent) || window.matchMedia('(pointer: coarse)').matches;
+
+  // If we have touch support and mobile-like characteristics, but not iOS, it's likely Android
+  if (hasTouchScreen && isLikelyMobile) {
+    // Make sure it's not iOS (iPad, iPhone)
+    const isIOS = /iPad|iPhone|iPod/i.test(userAgent) ||
+                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (!isIOS) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 /**
@@ -59,16 +98,15 @@ export function printPreviewContentInline(
     );
   }
 
-  // Remove inline column styles from the HTML to force single column
-  processedFrontContent = processedFrontContent.replace(/style="[^"]*column-count:[^"]*"/g, 'style=""');
-  processedFrontContent = processedFrontContent.replace(/style="[^"]*columns:[^"]*"/g, 'style=""');
-  processedBackContent = processedBackContent.replace(/style="[^"]*column-count:[^"]*"/g, 'style=""');
-  processedBackContent = processedBackContent.replace(/style="[^"]*columns:[^"]*"/g, 'style=""');
+  // Convert CSS columns to actual side-by-side divs for Android compatibility
+  // This is the same approach used for iOS/Safari
+  processedFrontContent = convertColumnsToSideBySide(processedFrontContent);
+  processedBackContent = convertColumnsToSideBySide(processedBackContent);
 
-  // Create print styles - ultra-simplified for Android compatibility
+  // Create print styles - optimized for Android with side-by-side layout like iPad
   const printStyles = `
     <style>
-      /* Ultra-simplified print styles for Android compatibility - NO @page rules */
+      /* Android print styles - side-by-side layout (Items left, Notes right) */
 
       * {
         box-sizing: border-box;
@@ -83,16 +121,21 @@ export function printPreviewContentInline(
         background: white;
       }
 
+      /* Container holds two sections side by side: Items (left) and Notes (right) */
       .print-container {
-        display: block;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10mm;
         width: 100%;
       }
 
       .a5-page {
-        display: block;
-        width: 100%;
-        margin-bottom: 30px;
-        padding: 10px 0;
+        padding: 5mm;
+      }
+
+      .a5-page.front {
+        border-right: 1px dashed #ccc;
+        padding-right: 10mm;
       }
 
       h2 {
@@ -126,11 +169,28 @@ export function printPreviewContentInline(
         font-size: 14px;
       }
 
-      /* Force single column layout for Android - no columns at all */
+      /* 2-column layout container - columns are created as actual divs by convertColumnsToSideBySide() */
       .two-column-layout {
         display: block;
         width: 100%;
-        column-count: 1 !important;
+        font-size: 0;
+      }
+
+      .two-column-layout > div {
+        display: inline-block;
+        vertical-align: top;
+        font-size: 14px;
+        box-sizing: border-box;
+      }
+
+      .two-column-layout > div:first-child {
+        width: 47%;
+        padding-right: 1rem;
+      }
+
+      .two-column-layout > div:last-child {
+        width: 47%;
+        padding-left: 1rem;
       }
 
       .department-section {
@@ -172,12 +232,17 @@ export function printPreviewContentInline(
           padding: 10px;
         }
 
-        .a5-page {
-          page-break-after: always;
+        /* Keep both sections on one page */
+        .print-container {
+          page-break-inside: avoid;
         }
 
-        .a5-page.back {
-          page-break-after: auto;
+        .a5-page {
+          page-break-inside: auto;
+        }
+
+        .a5-page.front {
+          border-right: 1px dashed #ccc;
         }
       }
     </style>
@@ -205,127 +270,46 @@ export function printPreviewContentInline(
     </div>
   `;
 
-  // Add debug console and back button for Android
-  const debugConsoleHtml = `
-    <div id="debugConsole" style="
-      position: fixed;
-      bottom: 10px;
-      left: 10px;
-      right: 10px;
-      max-height: 200px;
-      overflow-y: auto;
-      background: rgba(0, 0, 0, 0.9);
-      color: #0f0;
-      font-family: monospace;
-      font-size: 11px;
-      padding: 10px;
-      border-radius: 6px;
-      z-index: 10000;
-      display: block;
-    ">VERSION 2024-11-24 15:30</div>
-    <div style="position: fixed; top: 10px; left: 10px; z-index: 9999;">
-      <button id="restoreContentBtn" style="
-        padding: 12px 24px;
-        background: #007bff;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        font-size: 16px;
-        cursor: pointer;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-        margin-right: 10px;
-      ">← Zurück zur Liste</button>
-      <button id="toggleDebugBtn" style="
-        padding: 12px 24px;
-        background: #28a745;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        font-size: 16px;
-        cursor: pointer;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-      ">Debug Ein/Aus</button>
-    </div>
-  `;
+  // Load debug features only if DEBUG mode is enabled
+  if (DEBUG) {
+    // Dynamically import debug module
+    import('./print-debug.js').then((debugModule) => {
+      const { debugLog } = debugModule.addDebugConsole();
+      debugModule.setupDebugHandlers(originalContent, originalTitle, debugLog);
 
-  // Insert debug console and buttons at the beginning of body
-  document.body.insertAdjacentHTML('afterbegin', debugConsoleHtml);
+      // Initial debug output
+      debugLog('WICHTIG: Drücken Sie "Zurück zur Liste" nach dem Drucken', 'warn');
+      debugLog('Print-Ansicht wird vorbereitet...', 'log');
+      debugLog(`Content-Länge: ${document.body.innerHTML.length} Zeichen`, 'log');
+      debugLog(`Anzahl Items: ${document.querySelectorAll('li').length}`, 'log');
 
-  // Create custom console logger
-  const debugLog = (message: string, type: 'log' | 'error' | 'warn' = 'log') => {
-    console.log(message);
-    const debugConsole = document.getElementById('debugConsole');
-    if (debugConsole) {
-      const timestamp = new Date().toLocaleTimeString();
-      const color = type === 'error' ? '#f00' : type === 'warn' ? '#ff0' : '#0f0';
-      debugConsole.innerHTML += `<div style="color: ${color}; margin-bottom: 3px;">[${timestamp}] ${message}</div>`;
-      debugConsole.scrollTop = debugConsole.scrollHeight;
-    }
-  };
+      // Trigger print with debug logging
+      setTimeout(() => {
+        debugLog('Starte Druckvorgang...', 'log');
+        debugLog(`Final Content-Länge: ${document.body.innerHTML.length}`, 'log');
+        debugLog(`Final Anzahl Items: ${document.querySelectorAll('li').length}`, 'log');
 
-  // Function to restore content
-  const restoreContent = () => {
-    debugLog('Restoring content...', 'log');
-    document.title = originalTitle;
-    document.body.innerHTML = originalContent;
-    // Reload the page to restore all functionality
-    window.location.reload();
-  };
+        // Force a reflow before printing
+        document.body.offsetHeight;
+        debugLog('Reflow erzwungen', 'log');
 
-  // Add click handler for back button
-  const backButton = document.getElementById('restoreContentBtn');
-  if (backButton) {
-    backButton.addEventListener('click', restoreContent);
-  }
-
-  // Add click handler for debug toggle button
-  const toggleDebugBtn = document.getElementById('toggleDebugBtn');
-  const debugConsole = document.getElementById('debugConsole');
-  if (toggleDebugBtn && debugConsole) {
-    toggleDebugBtn.addEventListener('click', () => {
-      if (debugConsole.style.display === 'none') {
-        debugConsole.style.display = 'block';
-        debugLog('Debug-Konsole aktiviert', 'log');
-      } else {
-        debugConsole.style.display = 'none';
-      }
+        debugLog('Rufe window.print() auf...', 'warn');
+        try {
+          window.print();
+          debugLog('window.print() erfolgreich aufgerufen', 'log');
+        } catch (error) {
+          const errorMsg = 'Fehler beim Aufruf von window.print(): ' + (error as Error).message;
+          debugLog(errorMsg, 'error');
+          alert('Druckfehler: ' + (error as Error).message);
+        }
+      }, 300);
     });
-  }
-
-  // DO NOT auto-restore on Android - it causes the print preview to fail
-  // The content must stay until the user manually clicks the back button
-  // Android's print engine needs the DOM to remain stable during preview generation
-
-  debugLog('WICHTIG: Drücken Sie "Zurück zur Liste" nach dem Drucken', 'warn');
-
-  // Initial debug output
-  debugLog('Print-Ansicht wird vorbereitet...', 'log');
-  debugLog(`Content-Länge: ${document.body.innerHTML.length} Zeichen`, 'log');
-  debugLog(`Anzahl Items: ${document.querySelectorAll('li').length}`, 'log');
-
-  // Trigger print after a delay to ensure:
-  // 1. Content is fully rendered
-  // 2. Styles are applied
-  // 3. Android print engine has time to initialize
-  setTimeout(() => {
-    debugLog('Starte Druckvorgang...', 'log');
-    debugLog(`Final Content-Länge: ${document.body.innerHTML.length}`, 'log');
-    debugLog(`Final Anzahl Items: ${document.querySelectorAll('li').length}`, 'log');
-
-    // Force a reflow before printing
-    document.body.offsetHeight;
-    debugLog('Reflow erzwungen', 'log');
-
-    debugLog('Rufe window.print() auf...', 'warn');
-    try {
+  } else {
+    // Production mode: just trigger print without debug features
+    setTimeout(() => {
       window.print();
-      debugLog('window.print() erfolgreich aufgerufen', 'log');
-    } catch (error) {
-      const errorMsg = 'Fehler beim Aufruf von window.print(): ' + (error as Error).message;
-      debugLog(errorMsg, 'error');
-      alert('Druckfehler: ' + (error as Error).message);
-    }
-  }, 300);
+    }, 300);
+  }
 }
 
 /**
