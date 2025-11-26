@@ -366,7 +366,10 @@ async function showPrintPreview(): Promise<boolean> {
         const itemList = document.createElement('ul');
         itemList.style.cssText = 'margin: 0; padding-left: 0; list-style: none;';
 
-        items.forEach(item => {
+        // Sort items alphabetically by name
+        const sortedItems = [...items].sort((a, b) => a.name.localeCompare(b.name, 'de'));
+
+        sortedItems.forEach(item => {
           const li = document.createElement('li');
           li.style.cssText = 'margin-bottom: 0.1rem; line-height: 1.15; font-size: 0.85rem;';
           li.textContent = item.menge ? `${item.name} (${item.menge})` : item.name;
@@ -439,7 +442,10 @@ async function showPrintPreview(): Promise<boolean> {
           const itemList = document.createElement('ul');
           itemList.style.cssText = 'margin: 0; padding-left: 0; list-style: none;';
 
-          items.forEach(item => {
+          // Sort items alphabetically by name
+          const sortedItems = [...items].sort((a, b) => a.name.localeCompare(b.name, 'de'));
+
+          sortedItems.forEach(item => {
             const li = document.createElement('li');
             li.style.cssText = 'margin-bottom: 0.1rem; line-height: 1.15; font-size: 0.85rem;';
             li.textContent = item.menge ? `${item.name} (${item.menge})` : item.name;
@@ -573,7 +579,10 @@ async function showPrintPreview(): Promise<boolean> {
           const itemList = document.createElement('ul');
           itemList.style.cssText = 'margin: 0; padding-left: 0; list-style: none;';
 
-          deptItems.forEach((item) => {
+          // Sort items alphabetically by name
+          const sortedDeptItems = [...deptItems].sort((a, b) => a.name.localeCompare(b.name, 'de'));
+
+          sortedDeptItems.forEach((item) => {
             const li = document.createElement('li');
             li.style.cssText = 'margin-bottom: 0.1rem; line-height: 1.15; font-size: 0.85rem;';
             li.textContent = item.menge ? `${item.name} (${item.menge})` : item.name;
