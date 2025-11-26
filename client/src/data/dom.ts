@@ -90,7 +90,10 @@ function createDepartmentSection(
   const itemsList = document.createElement('ul');
   itemsList.className = 'department-items';
 
-  for (const item of items) {
+  // Sort items alphabetically by name
+  const sortedItems = [...items].sort((a, b) => a.name.localeCompare(b.name, 'de'));
+
+  for (const item of sortedItems) {
     const li = createItemElement(item, isInSonstiges);
     itemsList.appendChild(li);
   }

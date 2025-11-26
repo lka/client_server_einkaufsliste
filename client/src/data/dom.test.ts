@@ -53,8 +53,9 @@ describe('DOM Utilities', () => {
       const itemsList = section?.querySelector('.department-items');
       expect(itemsList?.children.length).toBe(3);
 
+      // Items are sorted alphabetically within department
       const firstItem = itemsList?.children[0];
-      expect(firstItem?.querySelector('span')?.textContent).toBe('Milk');
+      expect(firstItem?.querySelector('span')?.textContent).toBe('Bread');
       // Items in "Sonstiges" have both edit and delete buttons
       const buttons = firstItem?.querySelectorAll('button');
       expect(buttons?.length).toBe(2);
@@ -79,17 +80,18 @@ describe('DOM Utilities', () => {
       const itemsList = section?.querySelector('.department-items');
       expect(itemsList?.children.length).toBe(3);
 
-      // Check first item with menge
+      // Items are sorted alphabetically within department
+      // Check first item (Äpfel - alphabetically first)
       const firstItem = itemsList?.children[0];
-      expect(firstItem?.querySelector('span')?.textContent).toBe('Möhren (500 g)');
+      expect(firstItem?.querySelector('span')?.textContent).toBe('Äpfel');
 
-      // Check second item without menge
+      // Check second item (Milch - alphabetically second)
       const secondItem = itemsList?.children[1];
-      expect(secondItem?.querySelector('span')?.textContent).toBe('Äpfel');
+      expect(secondItem?.querySelector('span')?.textContent).toBe('Milch (2 Liter)');
 
-      // Check third item with menge
+      // Check third item (Möhren - alphabetically third)
       const thirdItem = itemsList?.children[2];
-      expect(thirdItem?.querySelector('span')?.textContent).toBe('Milch (2 Liter)');
+      expect(thirdItem?.querySelector('span')?.textContent).toBe('Möhren (500 g)');
     });
 
     it('should clear previous items before rendering', () => {

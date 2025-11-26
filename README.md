@@ -90,6 +90,10 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - **Abteilungssortierung**: Abteilungen werden in der Print-Vorschau und beim Druck nach ihrer konfigurierten Reihenfolge angezeigt
       - Gleiche Sortierung wie auf dem Bildschirm (sort_order aus Datenbank)
       - Konsistente Darstellung über alle Views hinweg
+    - **Alphabetische Item-Sortierung**: Items werden innerhalb jeder Abteilung alphabetisch sortiert
+      - Gilt für Shopping-Liste und alle Print-Ansichten (Einzel-Geschäft und Alle Geschäfte)
+      - Deutsche Sortierung (`localeCompare('de')`) für korrekte Umlaute (ä, ö, ü)
+      - Verbessert Übersichtlichkeit und erleichtert das Auffinden von Produkten
     - Automatische Layout-Optimierung: Bei vielen Einträgen (>35 Zeilen) wird die Liste auf Vorder- und Rückseite verteilt
     - Bei wenigen Einträgen: Rückseite zeigt Notizen-Bereich mit Linien
     - **Scrollbare Print-Preview**: Überschrift und Buttons bleiben fixiert, Vorschaubereich ist scrollbar
