@@ -69,8 +69,15 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
       - **Desktop (Windows/Mac)**: Popup-Fenster mit Druckvorschau
       - **iPad/iOS**: Popup-Fenster mit nativer Druckfunktion
       - **Android-Tablets**: Inline-Drucken (ersetzt temporär Seiteninhalt)
+        - **Robuste Android-Erkennung**: Funktioniert auch im "Desktopwebsite"-Modus von Chrome
+          - Multi-Method Detection: userAgent, userAgentData, platform, touch+mobile heuristic
+          - Zuverlässige Erkennung auch bei aktiviertem Desktop-Modus
+        - **Ein-Seiten-Layout**: Items links, Notizen rechts (wie auf iPad)
         - Verhindert Hängenbleiben des Druckdialogs auf Android
-        - Automatische Wiederherstellung der Seite nach Druckvorgang
+        - **Debug-Modus**: Optional aktivierbar durch `DEBUG = true` Flag
+          - Dynamisches Laden von Debug-Console nur bei Bedarf
+          - Separate Modul `print-debug.ts` für Debug-Funktionen
+          - Produktions-Build ohne Debug-Overhead
     - **Datumsbasierte Filterung**: Dropdown zur Auswahl des Einkaufsdatums in der Druckvorschau
       - Zeigt alle verfügbaren Shopping-Daten
       - Default: Kleinstes (frühestes) Datum
@@ -380,6 +387,8 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
 │   │   │   │   ├── toast.ts      # Toast notification system
 │   │   │   │   ├── menu-dropdown.html # Centralized menu template (loaded dynamically)
 │   │   │   │   └── index.ts      # Component library exports & initialization
+│   │   │   ├── print-utils.ts    # Print functionality (platform-specific)
+│   │   │   ├── print-debug.ts    # Debug console for print (optional, loaded dynamically)
 │   │   ├── state/                # State layer (state management)
 │   │   │   ├── shopping-list-state.ts      # Shopping list state manager
 │   │   │   ├── shopping-list-state.test.ts # State tests

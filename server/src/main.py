@@ -11,9 +11,6 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from starlette.staticfiles import StaticFiles
 
-# from starlette.responses import Response
-from starlette.types import Scope, Receive, Send
-
 from .db import get_engine, create_db_and_tables, get_session
 from .routers import auth, users, stores, products, items, pages, templates, backup
 from .routers.stores import departments_router
@@ -209,35 +206,11 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
         manager.disconnect(websocket, user_id)
 
 
-# Custom StaticFiles class that disables caching for debugging
-class NoCacheStaticFiles(StaticFiles):
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        async def send_wrapper(message):
-            if message["type"] == "http.response.start":
-                headers = list(message.get("headers", []))
-                # Remove any cache headers
-                headers = [
-                    h
-                    for h in headers
-                    if h[0].lower() not in (b"cache-control", b"etag", b"last-modified")
-                ]
-                # Add no-cache headers
-                headers.append(
-                    (b"cache-control", b"no-cache, no-store, must-revalidate")
-                )
-                headers.append((b"pragma", b"no-cache"))
-                headers.append((b"expires", b"0"))
-                message["headers"] = headers
-            await send(message)
-
-        await super().__call__(scope, receive, send_wrapper)
-
-
 # Mount client static files (index.html at root)
 # Note: static files are mounted after API route definitions so they do not
 # shadow API endpoints (mounting at '/' before route registration can
 # intercept and return 404 for API paths).
-app.mount("/", NoCacheStaticFiles(directory=CLIENT_DIR, html=True), name="static")
+app.mount("/", StaticFiles(directory=CLIENT_DIR, html=True), name="static")
 
 
 if __name__ == "__main__":

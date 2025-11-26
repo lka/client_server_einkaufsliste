@@ -776,6 +776,49 @@ The shopping list client is a TypeScript application built with a **four-layer a
 - **Dependencies**:
   - `../data/api.js`: User management operations
 
+#### print-utils.ts
+- **Responsibility**: Platform-specific print functionality with optimized layout
+- **Platform Detection**:
+  - `isAndroid()`: Multi-method Android detection (userAgent, userAgentData, platform, touch+mobile heuristic)
+  - Works reliably even when "Desktopwebsite" mode is enabled in Chrome
+  - `isIOS()`: Detects iPad/iPhone including desktop mode (MacIntel + maxTouchPoints)
+- **Print Strategies**:
+  - **Desktop/iOS**: Opens popup window with print content (`printPreviewContentPopup()`)
+  - **Android**: Inline print by replacing page content (`printPreviewContentInline()`)
+    - Prevents Android print dialog from hanging
+    - Provides "← Zurück zur Liste" button to restore content
+    - Optional debug console for troubleshooting (loaded only when `DEBUG = true`)
+- **Layout Features**:
+  - **Grid Layout**: Items left, Notes right on one page (for iPad and Android)
+  - CSS Grid: `display: grid; grid-template-columns: 1fr 1fr`
+  - **Two-Column Sections**: Each section (Items/Notes) uses 2-column layout
+  - `convertColumnsToSideBySide()`: Converts CSS columns to actual DOM divs for compatibility
+  - Dashed border between sections
+  - Print media queries prevent page breaks
+- **DEBUG Mode** (default: `false`):
+  - Set `const DEBUG = true` to enable debug features
+  - Dynamically loads `print-debug.ts` module only when enabled
+  - Production builds don't include debug overhead
+- **Dependencies**:
+  - `./print-debug.js`: Debug console (dynamic import, optional)
+
+#### print-debug.ts
+- **Responsibility**: Debug utilities for print functionality (optional module)
+- **Functions**:
+  - `addDebugConsole()`: Creates on-screen debug console with version info and logs
+  - `setupDebugHandlers()`: Sets up event handlers for back button and debug toggle
+- **Features**:
+  - Fixed-position debug console with scrollable log
+  - "← Zurück zur Liste" button to restore original content
+  - "Debug Ein/Aus" toggle button
+  - Timestamped log messages with color coding (log/warn/error)
+  - Auto-scroll to latest log entry
+- **Loading**: Only loaded via dynamic `import()` when `DEBUG = true` in print-utils.ts
+- **Benefits**:
+  - Smaller production bundle size
+  - Debug features available when needed
+  - No performance impact in production
+
 **Testing**:
 - `shopping-list-ui.test.ts`: 14 tests covering all UI interactions (100% coverage)
 - `user-menu.test.ts`: 16 tests covering menu functionality (100% coverage)
@@ -787,6 +830,8 @@ The shopping list client is a TypeScript application built with a **four-layer a
 - ✅ Uses Data Layer via clean interfaces
 - ✅ All UI logic contained in UI layer
 - ✅ No direct API calls (goes through Data Layer)
+- ✅ Platform-specific optimizations for best user experience
+- ✅ Optional debug features via feature flags
 
 ---
 
