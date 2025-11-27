@@ -335,13 +335,12 @@ function addMealItemToDOM(container: Element, text: string, entryId: number): vo
   span.style.cssText = 'flex: 1; font-size: 0.9rem;';
 
   const deleteBtn = document.createElement('button');
-  deleteBtn.textContent = '×';
+  deleteBtn.textContent = '🗑️';
   deleteBtn.className = 'delete-meal-item';
   deleteBtn.style.cssText = `
     background: transparent;
     border: none;
-    color: #d32f2f;
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     cursor: pointer;
     padding: 0;
     width: 24px;
@@ -351,9 +350,16 @@ function addMealItemToDOM(container: Element, text: string, entryId: number): vo
     justify-content: center;
     opacity: 0.6;
     transition: opacity 0.2s;
+    filter: grayscale(100%);
   `;
-  deleteBtn.addEventListener('mouseover', () => deleteBtn.style.opacity = '1');
-  deleteBtn.addEventListener('mouseout', () => deleteBtn.style.opacity = '0.6');
+  deleteBtn.addEventListener('mouseover', () => {
+    deleteBtn.style.opacity = '1';
+    deleteBtn.style.filter = 'grayscale(0%)';
+  });
+  deleteBtn.addEventListener('mouseout', () => {
+    deleteBtn.style.opacity = '0.6';
+    deleteBtn.style.filter = 'grayscale(100%)';
+  });
   deleteBtn.addEventListener('click', async () => {
     deleteBtn.disabled = true;
     try {
