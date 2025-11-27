@@ -5,6 +5,7 @@
 
 import { getWeekplanEntries, createWeekplanEntry, deleteWeekplanEntry, WeekplanEntry } from '../data/api.js';
 import { onWeekplanAdded, onWeekplanDeleted, broadcastWeekplanAdd, broadcastWeekplanDelete } from '../data/websocket.js';
+import { printWeekplan } from './print-utils.js';
 
 // Store entries by date and meal
 const entriesStore: Map<string, Map<string, WeekplanEntry[]>> = new Map();
@@ -169,6 +170,49 @@ function navigateToPreviousWeek(): void {
 function navigateToNextWeek(): void {
   weekOffset++;
   renderWeek();
+}
+
+/**
+ * Handle print weekplan button click
+ */
+function handlePrintWeekplan(): void {
+  const today = new Date();
+  const targetDate = new Date(today);
+  targetDate.setDate(today.getDate() + (weekOffset * 7));
+
+  const monday = getMonday(targetDate);
+  const weekNumber = getISOWeek(monday);
+  const year = monday.getFullYear();
+
+  // Calculate date range for the week
+  const dates: Date[] = [];
+  for (let i = 0; i < 7; i++) {
+    const day = new Date(monday);
+    day.setDate(monday.getDate() + i);
+    dates.push(day);
+  }
+
+  // Build entries map for printing - always include all 7 days
+  const printEntries = new Map<string, Map<string, Array<{ id: number; text: string }>>>();
+
+  for (let i = 0; i < 7; i++) {
+    const dateISO = formatISODate(dates[i]);
+    const dateEntries = entriesStore.get(dateISO);
+    const dayPrintEntries = new Map<string, Array<{ id: number; text: string }>>();
+
+    ['morning', 'lunch', 'dinner'].forEach(meal => {
+      const mealEntries = dateEntries?.get(meal);
+      if (mealEntries && mealEntries.length > 0) {
+        dayPrintEntries.set(meal, mealEntries.map(e => ({ id: e.id!, text: e.text })));
+      }
+    });
+
+    // Always add the date to the map, even if there are no entries
+    printEntries.set(dateISO, dayPrintEntries);
+  }
+
+  // Call print function
+  printWeekplan(weekNumber, year, printEntries);
 }
 
 /**
@@ -410,6 +454,7 @@ export function initWeekplan(): void {
   // Attach event listeners for navigation
   const prevWeekBtn = document.getElementById('prevWeekBtn');
   const nextWeekBtn = document.getElementById('nextWeekBtn');
+  const printWeekBtn = document.getElementById('printWeekBtn');
 
   if (prevWeekBtn) {
     prevWeekBtn.addEventListener('click', navigateToPreviousWeek);
@@ -417,6 +462,10 @@ export function initWeekplan(): void {
 
   if (nextWeekBtn) {
     nextWeekBtn.addEventListener('click', navigateToNextWeek);
+  }
+
+  if (printWeekBtn) {
+    printWeekBtn.addEventListener('click', handlePrintWeekplan);
   }
 
   // Attach event listeners for add meal buttons

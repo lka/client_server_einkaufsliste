@@ -1192,6 +1192,31 @@ main{
   transform: translateY(0);
 }
 
+.week-navigation .print-btn {
+  padding: 0.6rem 1.2rem;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: background 0.2s, transform 0.1s;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.week-navigation .print-btn:hover {
+  background: #218838;
+  transform: translateY(-1px);
+}
+
+.week-navigation .print-btn:active {
+  transform: translateY(0);
+}
+
 .week-display {
   flex: 1;
   text-align: center;
