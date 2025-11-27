@@ -4,6 +4,10 @@ Python FastAPI Server + TypeScript Client mit JWT-Authentifizierung und umfassen
 
 Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, persistenter Datenspeicherung, **Mengenangaben** und vollständig getesteter API.
 
+## Release
+
+ - Release 1.0.0: Ab hier wird der Wochenplaner integriert
+ 
 ## Features
 
 - ✅ **JWT-Authentifizierung**: Sichere Benutzerauthentifizierung mit automatischem Token-Refresh und Inaktivitäts-Logout
