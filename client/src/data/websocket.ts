@@ -367,6 +367,32 @@ export function broadcastItemUpdate(item: Item): void {
   });
 }
 
+// Weekplan event subscriptions
+export function onWeekplanAdded(callback: (data: any) => void): () => void {
+  return subscribe('weekplan:added', callback);
+}
+
+export function onWeekplanDeleted(callback: (data: { id: number }) => void): () => void {
+  return subscribe('weekplan:deleted', callback);
+}
+
+// Weekplan broadcast events
+export function broadcastWeekplanAdd(entry: any): void {
+  send({
+    type: 'weekplan:add',
+    data: entry,
+    timestamp: new Date().toISOString()
+  });
+}
+
+export function broadcastWeekplanDelete(entryId: number): void {
+  send({
+    type: 'weekplan:delete',
+    data: { id: entryId },
+    timestamp: new Date().toISOString()
+  });
+}
+
 /**
  * Check if WebSocket is supported by browser
  */

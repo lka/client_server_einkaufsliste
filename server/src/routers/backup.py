@@ -2,7 +2,8 @@
 
 This module provides endpoints for backing up and restoring the entire database:
 - JSON-based backup format that is structure-independent
-- Full export of all data (users, stores, departments, products, items, templates)
+- Full export of all data (users, stores, departments, products, items, templates,
+                           weekplan entries)
 - Restore with validation and error handling
 - Version information for compatibility checking
 """
@@ -23,6 +24,7 @@ from ..models import (
     Item,
     ShoppingTemplate,
     TemplateItem,
+    WeekplanEntry,
 )
 from ..auth import get_current_user
 from ..version import get_version
@@ -106,6 +108,7 @@ class BackupData(BaseModel):
     items: list[dict[str, Any]]
     templates: list[dict[str, Any]]
     template_items: list[dict[str, Any]]
+    weekplan_entries: list[dict[str, Any]]
 
 
 class RestoreData(BaseModel):
@@ -120,6 +123,7 @@ class RestoreData(BaseModel):
     items: list[dict[str, Any]]
     templates: list[dict[str, Any]]
     template_items: list[dict[str, Any]]
+    weekplan_entries: list[dict[str, Any]]
 
 
 @router.get("", response_model=BackupData)
@@ -145,6 +149,7 @@ def create_backup(
     items = session.exec(select(Item)).all()
     templates = session.exec(select(ShoppingTemplate)).all()
     template_items = session.exec(select(TemplateItem)).all()
+    weekplan_entries = session.exec(select(WeekplanEntry)).all()
 
     # Convert to dictionaries (SQLModel handles this automatically)
     backup = BackupData(
@@ -157,19 +162,23 @@ def create_backup(
         items=[item.model_dump() for item in items],
         templates=[template.model_dump() for template in templates],
         template_items=[item.model_dump() for item in template_items],
+        weekplan_entries=[entry.model_dump() for entry in weekplan_entries],
     )
 
     return backup
 
 
 def _clear_existing_data(session: Session):
-    """Helper function to clear all existing data from the database."""
+    """Clear all existing data from the database (Helper function)."""
     # Delete in correct order (respecting foreign keys)
     for item in session.exec(select(TemplateItem)).all():
         session.delete(item)
 
     for template in session.exec(select(ShoppingTemplate)).all():
         session.delete(template)
+
+    for entry in session.exec(select(WeekplanEntry)).all():
+        session.delete(entry)
 
     for item in session.exec(select(Item)).all():
         session.delete(item)
@@ -192,7 +201,7 @@ def _restore_entity_list(
     entity_class: Any,
     data_list: list[dict[str, Any]],
 ):
-    """Helper function to restore a list of entities into the database."""
+    """Restore a list of entities into the databaseHelper function ."""
     for data in data_list:
         converted_data = convert_date_strings(data)
         entity = entity_class(**converted_data)
@@ -271,6 +280,10 @@ def restore_backup(
         # 7. Template Items (depends on templates)
         _restore_entity_list(session, TemplateItem, restore_data.template_items)
         restored_counts["template_items"] = len(restore_data.template_items)
+
+        # 8. Weekplan Entries (no dependencies)
+        _restore_entity_list(session, WeekplanEntry, restore_data.weekplan_entries)
+        restored_counts["weekplan_entries"] = len(restore_data.weekplan_entries)
 
         return JSONResponse(
             content={

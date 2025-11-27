@@ -1,0 +1,215 @@
+<header>
+  <h1>Wochenplan</h1>
+  <div class="header-actions">
+    <button id="backToAppBtn" class="back-btn">← Zurück</button>
+    <div class="user-menu">
+      <button id="menuBtn" class="menu-btn">⋮</button>
+      <div id="menuDropdown" class="menu-dropdown">
+        <!-- Wird dynamisch gefüllt aus menu-dropdown.html -->
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="weekplan-container">
+    <!-- Week Navigation -->
+    <section class="week-navigation">
+      <button id="prevWeekBtn" class="nav-btn">← Vorherige Woche</button>
+      <h2 id="weekDisplay" class="week-display">KW 48 · 25.11. - 01.12.2025</h2>
+      <button id="nextWeekBtn" class="nav-btn">Nächste Woche →</button>
+    </section>
+
+    <!-- Week Days Grid -->
+    <section class="week-grid">
+      <div class="day-column" data-day="monday">
+        <div class="day-header">
+          <h3>Montag</h3>
+          <span class="day-date">25.11.</span>
+        </div>
+        <div class="day-content">
+          <div class="meal-section" data-meal="morning">
+            <button class="add-meal-btn" title="Eintrag hinzufügen">+</button>
+            <div class="meal-content">
+              <!-- Morgen Inhalte -->
+            </div>
+          </div>
+          <div class="meal-section" data-meal="lunch">
+            <button class="add-meal-btn" title="Eintrag hinzufügen">+</button>
+            <div class="meal-content">
+              <!-- Mittag Inhalte -->
+            </div>
+          </div>
+          <div class="meal-section" data-meal="dinner">
+            <button class="add-meal-btn" title="Eintrag hinzufügen">+</button>
+            <div class="meal-content">
+              <!-- Abend Inhalte -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="day-column" data-day="tuesday">
+        <div class="day-header">
+          <h3>Dienstag</h3>
+          <span class="day-date">26.11.</span>
+        </div>
+        <div class="day-content">
+          <div class="meal-section" data-meal="morning">
+            <button class="add-meal-btn" title="Eintrag hinzufügen">+</button>
+            <div class="meal-content">
+              <!-- Morgen Inhalte -->
+            </div>
+          </div>
+          <div class="meal-section" data-meal="lunch">
+            <button class="add-meal-btn" title="Eintrag hinzufügen">+</button>
+            <div class="meal-content">
+              <!-- Mittag Inhalte -->
+            </div>
+          </div>
+          <div class="meal-section" data-meal="dinner">
+            <button class="add-meal-btn" title="Eintrag hinzufügen">+</button>
+            <div class="meal-content">
+              <!-- Abend Inhalte -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="day-column" data-day="wednesday">
+        <div class="day-header">
+          <h3>Mittwoch</h3>
+          <span class="day-date">27.11.</span>
+        </div>
+        <div class="day-content">
+          <div class="meal-section" data-meal="morning">
+            <button class="add-meal-btn" title="Eintrag hinzufügen">+</button>
+            <div class="meal-content">
+              <!-- Morgen Inhalte -->
+            </div>
+          </div>
+          <div class="meal-section" data-meal="lunch">
+            <button class="add-meal-btn" title="Eintrag hinzufügen">+</button>
+            <div class="meal-content">
+              <!-- Mittag Inhalte -->
+            </div>
+          </div>
+          <div class="meal-section" data-meal="dinner">
+            <button class="add-meal-btn" title="Eintrag hinzufügen">+</button>
+            <div class="meal-content">
+              <!-- Abend Inhalte -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="day-column" data-day="thursday">
+        <div class="day-header">
+          <h3>Donnerstag</h3>
+          <span class="day-date">28.11.</span>
+        </div>
+        <div class="day-content">
+          <div class="meal-section" data-meal="morning">
+            <button class="add-meal-btn" title="Eintrag hinzufügen">+</button>
+            <div class="meal-content">
+              <!-- Morgen Inhalte -->
+            </div>
+          </div>
+          <div class="meal-section" data-meal="lunch">
+            <button class="add-meal-btn" title="Eintrag hinzufügen">+</button>
+            <div class="meal-content">
+              <!-- Mittag Inhalte -->
+            </div>
+          </div>
+          <div class="meal-section" data-meal="dinner">
+            <button class="add-meal-btn" title="Eintrag hinzufügen">+</button>
+            <div class="meal-content">
+              <!-- Abend Inhalte -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="day-column" data-day="friday">
+        <div class="day-header">
+          <h3>Freitag</h3>
+          <span class="day-date">29.11.</span>
+        </div>
+        <div class="day-content">
+          <div class="meal-section" data-meal="morning">
+            <button class="add-meal-btn" title="Eintrag hinzufügen">+</button>
+            <div class="meal-content">
+              <!-- Morgen Inhalte -->
+            </div>
+          </div>
+          <div class="meal-section" data-meal="lunch">
+            <button class="add-meal-btn" title="Eintrag hinzufügen">+</button>
+            <div class="meal-content">
+              <!-- Mittag Inhalte -->
+            </div>
+          </div>
+          <div class="meal-section" data-meal="dinner">
+            <button class="add-meal-btn" title="Eintrag hinzufügen">+</button>
+            <div class="meal-content">
+              <!-- Abend Inhalte -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="day-column" data-day="saturday">
+        <div class="day-header">
+          <h3>Samstag</h3>
+          <span class="day-date">30.11.</span>
+        </div>
+        <div class="day-content">
+          <div class="meal-section" data-meal="morning">
+            <button class="add-meal-btn" title="Eintrag hinzufügen">+</button>
+            <div class="meal-content">
+              <!-- Morgen Inhalte -->
+            </div>
+          </div>
+          <div class="meal-section" data-meal="lunch">
+            <button class="add-meal-btn" title="Eintrag hinzufügen">+</button>
+            <div class="meal-content">
+              <!-- Mittag Inhalte -->
+            </div>
+          </div>
+          <div class="meal-section" data-meal="dinner">
+            <button class="add-meal-btn" title="Eintrag hinzufügen">+</button>
+            <div class="meal-content">
+              <!-- Abend Inhalte -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="day-column" data-day="sunday">
+        <div class="day-header">
+          <h3>Sonntag</h3>
+          <span class="day-date">01.12.</span>
+        </div>
+        <div class="day-content">
+          <div class="meal-section" data-meal="morning">
+            <button class="add-meal-btn" title="Eintrag hinzufügen">+</button>
+            <div class="meal-content">
+              <!-- Morgen Inhalte -->
+            </div>
+          </div>
+          <div class="meal-section" data-meal="lunch">
+            <button class="add-meal-btn" title="Eintrag hinzufügen">+</button>
+            <div class="meal-content">
+              <!-- Mittag Inhalte -->
+            </div>
+          </div>
+          <div class="meal-section" data-meal="dinner">
+            <button class="add-meal-btn" title="Eintrag hinzufügen">+</button>
+            <div class="meal-content">
+              <!-- Abend Inhalte -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>

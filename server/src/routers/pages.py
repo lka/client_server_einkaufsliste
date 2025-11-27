@@ -53,6 +53,13 @@ def serve_backup_page():
     return FileResponse(backup_file)
 
 
+@router.get("/weekplan")
+def serve_weekplan_page():
+    """Serve the weekly planning page."""
+    weekplan_file = os.path.join(CLIENT_DIR, "index-weekplan.html")
+    return FileResponse(weekplan_file)
+
+
 @router.get("/favicon.{ext}")
 def serve_favicon(ext: str):
     """Serve the favicon file (svg or ico)."""

@@ -155,13 +155,16 @@ The shopping list client is a TypeScript application built with a **four-layer a
   - `disconnect()`: Close connection gracefully
   - `isConnected()`: Check connection status
   - `getConnectionState()`: Get detailed state (disconnected/connecting/connected/reconnecting)
-  - Event subscription: `onItemAdded()`, `onItemDeleted()`, `onItemUpdated()`, `onActiveUserCount()`
-  - Broadcasting: `broadcastItemAdd()`, `broadcastItemDelete()`, `broadcastItemUpdate()`
+  - **Shopping List Events**: `onItemAdded()`, `onItemDeleted()`, `onItemUpdated()`, `onActiveUserCount()`
+  - **Shopping List Broadcasting**: `broadcastItemAdd()`, `broadcastItemDelete()`, `broadcastItemUpdate()`
+  - **Weekplan Events**: `onWeekplanAdded()`, `onWeekplanDeleted()`
+  - **Weekplan Broadcasting**: `broadcastWeekplanAdd()`, `broadcastWeekplanDelete()`
 - **Features**:
   - Auto-reconnection with exponential backoff (1s to 30s)
   - Heartbeat ping/pong every 30 seconds
   - Message queue (up to 100 messages during offline)
   - JWT token in WebSocket URL for authentication
+  - Supports multiple feature event types (items, weekplan, users)
 - **Event System**: Observer pattern with Map-based event listeners
 
 #### inactivity-tracker.ts (NEW)
@@ -776,6 +779,50 @@ The shopping list client is a TypeScript application built with a **four-layer a
 - **Dependencies**:
   - `../data/api.js`: User management operations
 
+#### weekplan.ts
+- **Responsibility**: Weekly meal plan UI for managing shared meal entries
+- **Functions**:
+  - `initWeekplan()`: Initialize weekplan UI, event handlers, and WebSocket subscriptions
+  - `renderWeek()`: Display week view with date calculations and entry loading
+  - `navigateToPreviousWeek()`, `navigateToNextWeek()`: Week navigation
+  - `handleAddMealEntry(event)`: Handle + button click to add new meal entry
+  - `addMealItemToDOM(container, text, entryId)`: Create meal item DOM element with delete button
+  - `handleWeekplanAdded(data)`: Handle incoming WebSocket event for new entries
+  - `handleWeekplanDeleted(data)`: Handle incoming WebSocket event for deleted entries
+- **WebSocket Integration**:
+  - Subscribes to `weekplan:added` events from other users
+  - Subscribes to `weekplan:deleted` events from other users
+  - Broadcasts `weekplan:add` when creating new entries
+  - Broadcasts `weekplan:delete` when deleting entries
+  - Real-time synchronization keeps all users in sync
+- **State Management**:
+  - Local `entriesStore` Map for caching entries by date and meal
+  - Loads entries from API on week change
+  - Updates store when entries are added/deleted locally or via WebSocket
+- **Date Handling**:
+  - `getISOWeek(date)`: Calculate ISO week number
+  - `getMonday(date)`: Get Monday of the week for a date
+  - `formatShortDate(date)`: Format as DD.MM. for display
+  - `formatISODate(date)`: Format as YYYY-MM-DD for API
+- **Features**:
+  - Week navigation with offset tracking
+  - Current day highlighting (red color in header)
+  - Inline input for adding entries (appears on + button click)
+  - Delete button (×) for each entry
+  - Automatic date calculation for each day column
+  - KW (calendar week) display with date range
+  - 3 meal sections per day: morning, lunch, dinner
+  - Shared entries (no user-specific filtering)
+- **Event Handlers**:
+  - Previous/Next week buttons → update weekOffset and re-render
+  - Add meal button (+) → create inline input field
+  - Input Enter key → create entry via API and broadcast
+  - Input Escape key → cancel and remove input
+  - Delete button (×) → delete entry via API and broadcast
+- **Dependencies**:
+  - `../data/api.js`: getWeekplanEntries, createWeekplanEntry, deleteWeekplanEntry
+  - `../data/websocket.js`: onWeekplanAdded, onWeekplanDeleted, broadcastWeekplanAdd, broadcastWeekplanDelete
+
 #### print-utils.ts
 - **Responsibility**: Platform-specific print functionality with optimized layout
 - **Platform Detection**:
@@ -926,6 +973,24 @@ The shopping list client is a TypeScript application built with a **four-layer a
 - **Responsibility**: User admin page entry point
 - **Similar flow to script-stores.ts**
 - **Dependencies**: `./ui/user-admin.js`
+
+#### script-weekplan.ts
+- **Responsibility**: Weekly meal plan page entry point
+- **Flow**:
+  1. Check authentication
+  2. Initialize component library styles
+  3. Load weekplan template
+  4. Update user display
+  5. Initialize weekplan UI and user menu
+  6. Initialize WebSocket connection (if enabled)
+- **Dependencies**: `./data/dom.js`, `./data/auth.js`, `./ui/weekplan.js`, `./ui/user-menu.js`, `./data/websocket.js`
+- **WebSocket Integration**: Connects to WebSocket for real-time weekplan synchronization
+- **Features**:
+  - Week navigation (previous/next week)
+  - Day columns for Monday-Sunday
+  - 3 meal sections per day (morning, lunch, dinner)
+  - Shared plan visible to all authenticated users
+  - Real-time updates via WebSocket events (`weekplan:added`, `weekplan:deleted`)
 
 **Principles**:
 - ✅ Minimal code (orchestration only)
@@ -1529,14 +1594,18 @@ const status = new ConnectionStatus({
 ```typescript
 // Client → Server
 {
-  type: 'item:add' | 'item:delete' | 'item:update' | 'ping',
-  data: { ... }
+  type: 'item:add' | 'item:delete' | 'item:update' |
+        'weekplan:add' | 'weekplan:delete' | 'ping',
+  data: { ... },
+  timestamp?: string
 }
 
 // Server → Client
 {
   type: 'item:added' | 'item:deleted' | 'item:updated' |
-        'store:changed' | 'user:joined' | 'user:left' | 'pong',
+        'weekplan:added' | 'weekplan:deleted' |
+        'store:changed' | 'user:joined' | 'user:left' |
+        'users:active_count' | 'pong',
   data: { ... },
   timestamp: string,
   userId?: number  // Who triggered the event
