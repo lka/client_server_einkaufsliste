@@ -152,6 +152,11 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - **Wochennavigation**: Vor/Zurück-Buttons zum Durchblättern der Wochen
     - **Aktuelle Woche hervorgehoben**: Heutiger Tag wird farblich markiert
     - **KW-Anzeige**: Kalenderwoche und Datumsbereich werden im Header angezeigt
+    - **Druckfunktion**: Wochenplan als Tabelle in DIN A4 Querformat drucken
+      - **Optimiertes Layout**: 7 Tage-Spalten (Montag-Sonntag) mit Datum unter jedem Tag
+      - **3 Zeilen**: Eine Zeile pro Mahlzeit (Morgens, Mittags, Abends)
+      - **Plattform-spezifisch**: Popup-Fenster (Desktop/iOS) oder Inline (Android)
+      - **A4 Querformat**: Optimale Nutzung des Platzes für übersichtliche Darstellung
     - **Real-time Sync**: Änderungen werden über WebSocket live synchronisiert
       - **Weekplan:add** Event für neue Einträge
       - **Weekplan:delete** Event für gelöschte Einträge
