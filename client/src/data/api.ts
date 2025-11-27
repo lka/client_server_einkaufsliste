@@ -62,6 +62,13 @@ export interface Template {
   items: TemplateItem[];
 }
 
+export interface WeekplanEntry {
+  id?: number;
+  date: string;  // ISO format: YYYY-MM-DD
+  meal: string;  // 'morning', 'lunch', 'dinner'
+  text: string;
+}
+
 export interface BackupData {
   version: string;
   timestamp: string;
@@ -1206,5 +1213,103 @@ export async function getVersion(): Promise<VersionInfo | null> {
   } catch (error) {
     console.error('Error fetching version:', error);
     return null;
+  }
+}
+
+/**
+ * Get weekplan entries for a specific week
+ */
+export async function getWeekplanEntries(weekStart: string): Promise<WeekplanEntry[]> {
+  const token = getToken();
+  if (!token) {
+    throw new Error('Not authenticated');
+  }
+
+  try {
+    const res = await fetch(`/api/weekplan/entries?week_start=${weekStart}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (res.status === 401) {
+      clearToken();
+      throw new Error('Session expired');
+    }
+
+    if (!res.ok) {
+      throw new Error(`Failed to fetch weekplan entries: ${res.statusText}`);
+    }
+
+    return await res.json();
+  } catch (error) {
+    console.error('Error fetching weekplan entries:', error);
+    throw error;
+  }
+}
+
+/**
+ * Create a new weekplan entry
+ */
+export async function createWeekplanEntry(entry: Omit<WeekplanEntry, 'id'>): Promise<WeekplanEntry> {
+  const token = getToken();
+  if (!token) {
+    throw new Error('Not authenticated');
+  }
+
+  try {
+    const res = await fetch('/api/weekplan/entries', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(entry),
+    });
+
+    if (res.status === 401) {
+      clearToken();
+      throw new Error('Session expired');
+    }
+
+    if (!res.ok) {
+      throw new Error(`Failed to create weekplan entry: ${res.statusText}`);
+    }
+
+    return await res.json();
+  } catch (error) {
+    console.error('Error creating weekplan entry:', error);
+    throw error;
+  }
+}
+
+/**
+ * Delete a weekplan entry
+ */
+export async function deleteWeekplanEntry(entryId: number): Promise<void> {
+  const token = getToken();
+  if (!token) {
+    throw new Error('Not authenticated');
+  }
+
+  try {
+    const res = await fetch(`/api/weekplan/entries/${entryId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (res.status === 401) {
+      clearToken();
+      throw new Error('Session expired');
+    }
+
+    if (!res.ok) {
+      throw new Error(`Failed to delete weekplan entry: ${res.statusText}`);
+    }
+  } catch (error) {
+    console.error('Error deleting weekplan entry:', error);
+    throw error;
   }
 }

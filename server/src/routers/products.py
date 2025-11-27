@@ -45,7 +45,7 @@ def _add_products_to_matches(
     normalized_query: str,
     matches: List[tuple],
 ):
-    """Helper function to add products to matches list based on fuzzy matching."""
+    """Add products to matches list based on fuzzy matching (Helper function)."""
     for product in products:
         normalized_product = normalize_name(product.name)
         ratio = SequenceMatcher(None, normalized_query, normalized_product).ratio()
@@ -64,7 +64,7 @@ def _add_template_items_to_matches(
     matches: List[tuple],
     existing_names: set,
 ):
-    """Helper function to add template items to matches list based on fuzzy matching."""
+    """Add template items to matches list based on fuzzy matching (Helper function)."""
     for item in template_items:
         # Skip if already added from products or templates
         if item.name in [m[1] for m in matches]:

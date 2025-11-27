@@ -12,7 +12,17 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from starlette.staticfiles import StaticFiles
 
 from .db import get_engine, create_db_and_tables, get_session
-from .routers import auth, users, stores, products, items, pages, templates, backup
+from .routers import (
+    auth,
+    users,
+    stores,
+    products,
+    items,
+    pages,
+    templates,
+    backup,
+    weekplan,
+)
 from .routers.stores import departments_router
 from .version import get_version
 from .websocket_manager import manager
@@ -34,7 +44,7 @@ async def lifespan(app: FastAPI):
     """
     # Import models to register them with SQLModel
     from .user_models import User  # noqa: F401
-    from .models import Store, Department, Product  # noqa: F401
+    from .models import Store, Department, Product, WeekplanEntry  # noqa: F401
 
     engine = get_engine()
     create_db_and_tables(engine)
@@ -83,6 +93,7 @@ app.include_router(products.router)
 app.include_router(items.router)
 app.include_router(templates.router)
 app.include_router(backup.router)
+app.include_router(weekplan.router)
 app.include_router(pages.router)
 
 
@@ -180,6 +191,30 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                 await manager.broadcast(
                     {
                         "type": "item:updated",
+                        "data": data.get("data"),
+                        "timestamp": data.get("timestamp"),
+                        "userId": user_id,
+                    },
+                    exclude_user=user_id,
+                )
+
+            elif event_type == "weekplan:add":
+                # Broadcast weekplan entry added to other users
+                await manager.broadcast(
+                    {
+                        "type": "weekplan:added",
+                        "data": data.get("data"),
+                        "timestamp": data.get("timestamp"),
+                        "userId": user_id,
+                    },
+                    exclude_user=user_id,
+                )
+
+            elif event_type == "weekplan:delete":
+                # Broadcast weekplan entry deleted to other users
+                await manager.broadcast(
+                    {
+                        "type": "weekplan:deleted",
                         "data": data.get("data"),
                         "timestamp": data.get("timestamp"),
                         "userId": user_id,

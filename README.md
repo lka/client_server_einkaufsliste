@@ -132,13 +132,29 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - **Kompakte Darstellung**: Datumsangaben aus Item-Liste entfernt (Datum ist im DatePicker ausgewählt)
   - **Datenbank-Backup & Restore**: Vollständige Datensicherung und Wiederherstellung
     - **JSON-basiertes Backup**: Strukturunabhängig, funktioniert über Software-Updates hinweg
-    - **Vollständige Datensicherung**: Alle Datenbank-Inhalte (Benutzer, Geschäfte, Produkte, Vorlagen, Einkaufsliste)
+    - **Vollständige Datensicherung**: Alle Datenbank-Inhalte (Benutzer, Geschäfte, Produkte, Vorlagen, Einkaufsliste, Wochenplan)
     - **Einfacher Download**: Backup wird als JSON-Datei heruntergeladen
     - **Validierte Wiederherstellung**: Automatische Format-Validierung vor Restore
     - **Dedizierte Verwaltungsseite**: Unter `/backup` mit Information und Best Practices
     - **Versionsinformationen**: Backup enthält App-Version (aus Git Tags) und Zeitstempel
     - **Sichere Operation**: Warnung vor Datenverlust, Bestätigungsdialog erforderlich
     - Navigation über Benutzermenü: "💾 Datenbank-Backup"
+  - **Wochenplan**: Gemeinsamer Essensplan für die ganze Woche
+    - **Wochenansicht**: Übersichtliche Kalender-Darstellung mit 7 Tagen (Montag-Sonntag)
+    - **3 Mahlzeiten pro Tag**: Unterteilung in Morgens, Mittags, Abends
+    - **Gemeinsamer Plan**: Alle Benutzer sehen und bearbeiten denselben Wochenplan
+    - **Schnelles Hinzufügen**: + Button in jeder Mahlzeit-Sektion für neue Einträge
+    - **Inline-Bearbeitung**: Einträge können sofort gelöscht werden (×-Button)
+    - **Wochennavigation**: Vor/Zurück-Buttons zum Durchblättern der Wochen
+    - **Aktuelle Woche hervorgehoben**: Heutiger Tag wird farblich markiert
+    - **KW-Anzeige**: Kalenderwoche und Datumsbereich werden im Header angezeigt
+    - **Real-time Sync**: Änderungen werden über WebSocket live synchronisiert
+      - **Weekplan:add** Event für neue Einträge
+      - **Weekplan:delete** Event für gelöschte Einträge
+      - Automatische Aktualisierung auf allen verbundenen Clients
+    - **Persistente Speicherung**: Alle Einträge werden in der Datenbank gespeichert
+    - **Backup-Integration**: Wochenplan-Einträge werden im Datenbank-Backup gesichert
+    - Navigation über Benutzermenü: "🗓️ Wochenplan"
 - ✅ **Real-time Updates mit WebSocket**: Live-Synchronisation der Einkaufsliste zwischen mehreren Clients
   - **Automatische Synchronisation**: Alle Änderungen werden sofort an alle verbundenen Clients übertragen
     - **Item hinzufügen**: Neue Items erscheinen sofort auf allen Clients
@@ -727,6 +743,23 @@ Die Anwendung verwendet **JWT (JSON Web Tokens)** für sichere Authentifizierung
   - Response: `{"deleted_count": number}` - Anzahl der gelöschten Items
   - Löscht alle Items mit `shopping_date < before_date`
   - Authentifizierung erforderlich: Alle authentifizierten Benutzer können Items löschen
+
+**Wochenplan (alle authentifiziert, gemeinsame Einträge):**
+- `GET /api/weekplan/entries?week_start={YYYY-MM-DD}` - Alle Einträge für eine Woche abrufen
+  - Query-Parameter: `week_start` (Montag der Woche im ISO-Format)
+  - Response: Liste von `WeekplanEntryResponse` - Enthält `id`, `date`, `meal`, `text`
+  - **Gemeinsamer Plan**: Alle authentifizierten Benutzer sehen dieselben Einträge
+  - Beispiel: `/api/weekplan/entries?week_start=2025-01-27` (holt alle Einträge vom 27.01. bis 02.02.)
+- `POST /api/weekplan/entries` - Neuen Wochenplan-Eintrag erstellen
+  - Body: `{"date": "YYYY-MM-DD", "meal": "morning|lunch|dinner", "text": "Eintrag"}`
+  - Response: `WeekplanEntryResponse` - Erstellter Eintrag mit ID
+  - Beispiele:
+    - `{"date": "2025-01-29", "meal": "lunch", "text": "Spaghetti Bolognese"}`
+    - `{"date": "2025-01-30", "meal": "dinner", "text": "Pizza"}`
+  - **Keine Benutzer-Zuordnung**: Einträge werden ohne `user_id` erstellt (gemeinsamer Plan)
+- `DELETE /api/weekplan/entries/{entry_id}` - Wochenplan-Eintrag löschen
+  - Response: `{"message": "Entry deleted successfully"}`
+  - **Keine Ownership-Prüfung**: Jeder authentifizierte Benutzer kann jeden Eintrag löschen
 
 **Vorlagen-Verwaltung (alle authentifiziert):**
 - `GET /api/templates` - Alle Vorlagen abrufen (sortiert nach Name)

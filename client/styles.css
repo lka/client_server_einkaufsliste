@@ -1150,3 +1150,177 @@ main{
     transform: rotate(360deg);
   }
 }
+
+/* ==================== Weekplan Styles ==================== */
+.weekplan-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.week-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background: var(--card);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.week-navigation .nav-btn {
+  padding: 0.6rem 1.2rem;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: background 0.2s, transform 0.1s;
+  white-space: nowrap;
+}
+
+.week-navigation .nav-btn:hover {
+  background: #005a9e;
+  transform: translateY(-1px);
+}
+
+.week-navigation .nav-btn:active {
+  transform: translateY(0);
+}
+
+.week-display {
+  flex: 1;
+  text-align: center;
+  margin: 0;
+  font-size: 1.3rem;
+  color: #333;
+  font-weight: 600;
+}
+
+.week-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.25rem;
+  margin-bottom: 2rem;
+}
+
+.day-column {
+  background: var(--card);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 300px;
+}
+
+.day-header {
+  background: linear-gradient(135deg, var(--accent), #005a9e);
+  color: white;
+  padding: 0.15rem;
+  text-align: center;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.day-header h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.day-header .day-date {
+  font-size: 0.8rem;
+  opacity: 0.9;
+}
+
+.day-header.today {
+  color: lightcoral
+}
+
+.day-content {
+  padding: 0;
+  flex: 1;
+  background: #fafafa;
+  display: flex;
+  flex-direction: column;
+}
+
+.meal-section {
+  padding: 0.5rem;
+  border-bottom: 2px dashed #999;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.meal-section:last-child {
+  border-bottom: none;
+}
+
+.add-meal-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: var(--accent);
+  color: white;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, transform 0.1s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+}
+
+.add-meal-btn:hover {
+  background: #005a9e;
+  transform: scale(1.1);
+}
+
+.add-meal-btn:active {
+  transform: scale(0.95);
+}
+
+.meal-content {
+  min-height: 60px;
+  color: #666;
+  padding: 0.5rem;
+  flex: 1;
+}
+
+/* Responsive adjustments for weekplan */
+@media (max-width: 1200px) {
+  .week-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .week-navigation {
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+
+  .week-display {
+    font-size: 1.1rem;
+  }
+
+  .week-grid {
+    grid-template-columns: 1fr;
+    gap: 0.8rem;
+  }
+
+  .day-column {
+    min-height: 200px;
+  }
+}

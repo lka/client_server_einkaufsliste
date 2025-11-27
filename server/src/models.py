@@ -145,3 +145,19 @@ class TemplateItem(SQLModel, table=True):
 
     # Relationships
     template: ShoppingTemplate = Relationship(back_populates="template_items")
+
+
+class WeekplanEntry(SQLModel, table=True):
+    """Weekly meal plan entry (shared across all users).
+
+    Attributes:
+        id: Primary key (auto-generated integer)
+        date: Date in ISO format (YYYY-MM-DD)
+        meal: Meal type ('morning', 'lunch', 'dinner')
+        text: Entry text content
+    """
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    date: str = Field(index=True)  # ISO format: YYYY-MM-DD
+    meal: str = Field(index=True)  # 'morning', 'lunch', 'dinner'
+    text: str

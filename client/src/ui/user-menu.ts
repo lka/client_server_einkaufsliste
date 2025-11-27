@@ -94,6 +94,7 @@ export async function initUserMenu(): Promise<void> {
 
   // Get menu buttons after template is loaded
   const backToAppBtn = document.getElementById('backToAppBtn');
+  const weekplanBtn = document.getElementById('weekplanBtn');
   const settingsMenuBtn = document.getElementById('settingsMenuBtn');
   const settingsSubmenu = document.getElementById('settingsSubmenu');
   const websocketMenuBtn = document.getElementById('websocketMenuBtn');
@@ -160,6 +161,13 @@ export async function initUserMenu(): Promise<void> {
   if (backToAppBtn) {
     backToAppBtn.addEventListener('click', () => {
       window.location.href = '/app';
+    });
+  }
+
+  // Weekplan button handler
+  if (weekplanBtn) {
+    weekplanBtn.addEventListener('click', () => {
+      window.location.href = '/weekplan';
     });
   }
 
