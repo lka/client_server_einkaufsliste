@@ -148,7 +148,7 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - **3 Mahlzeiten pro Tag**: Unterteilung in Morgens, Mittags, Abends
     - **Gemeinsamer Plan**: Alle Benutzer sehen und bearbeiten denselben Wochenplan
     - **Schnelles Hinzufügen**: + Button in jeder Mahlzeit-Sektion für neue Einträge
-    - **Inline-Bearbeitung**: Einträge können sofort gelöscht werden (×-Button)
+    - **Inline-Bearbeitung**: Einträge können sofort gelöscht werden (🗑️-Button)
     - **Wochennavigation**: Vor/Zurück-Buttons zum Durchblättern der Wochen
     - **Aktuelle Woche hervorgehoben**: Heutiger Tag wird farblich markiert
     - **KW-Anzeige**: Kalenderwoche und Datumsbereich werden im Header angezeigt
@@ -280,7 +280,7 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - "Möhren 500 g" [15.01.2025] + "Möhren 300 g" [17.01.2025] = Zwei separate Items
 - ✅ **Einkaufsdatum**: Optionale Datumsangabe für geplanten Einkauf
   - **DatePicker-Komponente**: Benutzerfreundlicher Kalender mit deutscher Lokalisierung
-  - **Automatische Vorauswahl**: Standard ist der nächste Mittwoch
+  - **Konfigurierbare Vorauswahl**: Standard-Einkaufstag ist über `.env` konfigurierbar (`MAIN_SHOPPING_DAY`, Standard: Mittwoch)
   - **Visuelles Design**: Aktueller Tag ist deutlich hervorgehoben (rot hinterlegt)
   - **Flexibel**: Datum kann geändert oder gelöscht werden
   - **Anzeige**: Datum wird in der Liste neben jedem Item angezeigt [DD.MM.YYYY]
@@ -511,6 +511,15 @@ ADMIN_EMAIL=admin@example.com
 # - Nicht freigeschaltete Benutzer
 # - Einkaufslisten-Einträge mit shopping_date älter als dieser Wert
 UNAPPROVED_USER_EXPIRY_HOURS=48
+
+# Shopping Day Configuration
+# Haupteinkaufstag (wird als Standard im Shopping List DatePicker verwendet)
+# Werte: 0=Sonntag, 1=Montag, 2=Dienstag, 3=Mittwoch, 4=Donnerstag, 5=Freitag, 6=Samstag
+MAIN_SHOPPING_DAY=3
+
+# Einkaufstag für Frischeprodukte (verfügbar für zukünftige Server-Logik)
+# Werte: 0=Sonntag, 1=Montag, 2=Dienstag, 3=Mittwoch, 4=Donnerstag, 5=Freitag, 6=Samstag
+FRESH_PRODUCTS_DAY=6
 ```
 
 **Wichtig**:
@@ -657,6 +666,8 @@ Die Anwendung verwendet **JWT (JSON Web Tokens)** für sichere Authentifizierung
 | `ADMIN_PASSWORD` | Administrator-Passwort | - | Ja |
 | `ADMIN_EMAIL` | Administrator-E-Mail | `admin@example.com` | Nein |
 | `UNAPPROVED_USER_EXPIRY_HOURS` | Stunden bis veraltete Daten automatisch gelöscht werden (nicht freigeschaltete Benutzer und alte Einkaufslisten-Einträge) | `48` | Nein |
+| `MAIN_SHOPPING_DAY` | Haupteinkaufstag (wird als Standard im Shopping List DatePicker verwendet). Werte: 0=Sonntag, 1=Montag, 2=Dienstag, 3=Mittwoch, 4=Donnerstag, 5=Freitag, 6=Samstag | `3` (Mittwoch) | Nein |
+| `FRESH_PRODUCTS_DAY` | Einkaufstag für Frischeprodukte (verfügbar für zukünftige Server-Logik). Werte: 0=Sonntag bis 6=Samstag | `6` (Samstag) | Nein |
 
 ### Sicherheitshinweise
 
@@ -803,6 +814,13 @@ Die Anwendung verwendet **JWT (JSON Web Tokens)** für sichere Authentifizierung
   - `version`: Semantic Version aus Git Tags (oder Fallback)
   - `api`: API-Version (aktuell: v1)
   - Wird im UI im Benutzermenü angezeigt
+
+**Configuration (öffentlich, keine Authentifizierung):**
+- `GET /api/config` - Server-Konfigurationseinstellungen abrufen
+  - Response: `{"main_shopping_day": 3, "fresh_products_day": 6}`
+  - `main_shopping_day`: Haupteinkaufstag (0=Sonntag bis 6=Samstag) aus `MAIN_SHOPPING_DAY` in `.env`
+  - `fresh_products_day`: Frischeprodukte-Einkaufstag (0=Sonntag bis 6=Samstag) aus `FRESH_PRODUCTS_DAY` in `.env`
+  - Wird vom Client verwendet, um den Standard-Einkaufstag im DatePicker zu setzen
 
 ## Code-Qualität
 

@@ -100,12 +100,18 @@ export interface VersionInfo {
   api: string;
 }
 
+export interface Config {
+  main_shopping_day: number;  // 0=Sunday, 1=Monday, ..., 6=Saturday
+  fresh_products_day: number;  // 0=Sunday, 1=Monday, ..., 6=Saturday
+}
+
 export const API_BASE = '/api/items';
 export const API_STORES = '/api/stores';
 export const API_USERS = '/api/users';
 export const API_TEMPLATES = '/api/templates';
 export const API_BACKUP = '/api/backup';
 export const API_VERSION = '/api/version';
+export const API_CONFIG = '/api/config';
 
 /**
  * Get authorization headers with JWT token.
@@ -1342,5 +1348,25 @@ export async function deleteWeekplanEntry(entryId: number): Promise<void> {
   } catch (error) {
     console.error('Error deleting weekplan entry:', error);
     throw error;
+  }
+}
+
+/**
+ * Get server configuration.
+ * This endpoint does not require authentication.
+ */
+export async function getConfig(): Promise<Config | null> {
+  try {
+    const res = await fetch(API_CONFIG, {
+      method: 'GET',
+    });
+    if (!res.ok) {
+      console.error('Failed to fetch config:', res.statusText);
+      return null;
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Error fetching config:', error);
+    return null;
   }
 }
