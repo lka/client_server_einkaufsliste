@@ -17,7 +17,8 @@ def get_config():
         dict: Configuration settings including:
             - main_shopping_day: Integer 0-6 representing the main shopping day
               (0=Sunday, 1=Monday, ..., 6=Saturday)
-            - fresh_products_day: Integer 0-6 representing the fresh products shopping day
+            - fresh_products_day: Integer 0-6 representing
+              the fresh products shopping day
               (0=Sunday, 1=Monday, ..., 6=Saturday)
     """
     # Get shopping day configuration from environment variables
