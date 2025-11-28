@@ -22,6 +22,7 @@ from .routers import (
     templates,
     backup,
     weekplan,
+    config,
 )
 from .routers.stores import departments_router
 from .version import get_version
@@ -94,6 +95,7 @@ app.include_router(items.router)
 app.include_router(templates.router)
 app.include_router(backup.router)
 app.include_router(weekplan.router)
+app.include_router(config.router)
 app.include_router(pages.router)
 
 

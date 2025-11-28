@@ -13,6 +13,7 @@ import {
   fetchTemplates,
   getProductSuggestions,
   fetchItems,
+  getConfig,
   type Department,
   type ProductSuggestion,
   type Item,
@@ -1077,45 +1078,88 @@ export function initShoppingListUI(): void {
 
   // Initialize DatePicker for shopping date selection
   if (shoppingDatePickerContainer) {
-    // Calculate next Wednesday
-    const today = new Date();
-    const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-    const daysUntilWednesday = currentDay === 3 ? 7 : (3 - currentDay + 7) % 7; // 3 = Wednesday
-    const nextWednesday = new Date(today);
-    nextWednesday.setDate(today.getDate() + (daysUntilWednesday === 0 ? 7 : daysUntilWednesday));
+    // Fetch configuration to get the main shopping day
+    getConfig().then(config => {
+      // Default to Wednesday (3) if config not available
+      const mainShoppingDay = config?.main_shopping_day ?? 3;
 
-    // Extract unique shopping dates from items
-    const shoppingDates = extractShoppingDates();
+      // Calculate next occurrence of the configured shopping day
+      const today = new Date();
+      const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+      const daysUntilShoppingDay = currentDay === mainShoppingDay ? 7 : (mainShoppingDay - currentDay + 7) % 7;
+      const nextShoppingDay = new Date(today);
+      nextShoppingDay.setDate(today.getDate() + (daysUntilShoppingDay === 0 ? 7 : daysUntilShoppingDay));
 
-    shoppingDatePicker = createDatePicker({
-      placeholder: 'Einkaufsdatum (optional)',
-      format: 'dd.MM.yyyy',
-      value: nextWednesday,
-      highlightDates: shoppingDates,
-      onChange: (date) => {
-        // Update selected shopping date for filtering
-        if (date) {
-          const year = date.getFullYear();
-          const month = String(date.getMonth() + 1).padStart(2, '0');
-          const day = String(date.getDate()).padStart(2, '0');
-          selectedShoppingDate = `${year}-${month}-${day}`;
-        } else {
-          selectedShoppingDate = null;
-        }
+      // Extract unique shopping dates from items
+      const shoppingDates = extractShoppingDates();
 
-        // Re-render items with new date filter
-        const items = shoppingListState.getItems();
-        const filteredItems = filterItems(items);
-        renderItems(filteredItems);
-      },
+      shoppingDatePicker = createDatePicker({
+        placeholder: 'Einkaufsdatum (optional)',
+        format: 'dd.MM.yyyy',
+        value: nextShoppingDay,
+        highlightDates: shoppingDates,
+        onChange: (date) => {
+          // Update selected shopping date for filtering
+          if (date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            selectedShoppingDate = `${year}-${month}-${day}`;
+          } else {
+            selectedShoppingDate = null;
+          }
+
+          // Re-render items with new date filter
+          const items = shoppingListState.getItems();
+          const filteredItems = filterItems(items);
+          renderItems(filteredItems);
+        },
+      });
+      shoppingDatePickerContainer.appendChild(shoppingDatePicker.container);
+
+      // Set initial selectedShoppingDate to match the default DatePicker value
+      const year = nextShoppingDay.getFullYear();
+      const month = String(nextShoppingDay.getMonth() + 1).padStart(2, '0');
+      const day = String(nextShoppingDay.getDate()).padStart(2, '0');
+      selectedShoppingDate = `${year}-${month}-${day}`;
+    }).catch(error => {
+      console.error('Error loading config, using default Wednesday:', error);
+      // Fallback to Wednesday if config loading fails
+      const today = new Date();
+      const currentDay = today.getDay();
+      const daysUntilWednesday = currentDay === 3 ? 7 : (3 - currentDay + 7) % 7;
+      const nextWednesday = new Date(today);
+      nextWednesday.setDate(today.getDate() + (daysUntilWednesday === 0 ? 7 : daysUntilWednesday));
+
+      const shoppingDates = extractShoppingDates();
+
+      shoppingDatePicker = createDatePicker({
+        placeholder: 'Einkaufsdatum (optional)',
+        format: 'dd.MM.yyyy',
+        value: nextWednesday,
+        highlightDates: shoppingDates,
+        onChange: (date) => {
+          if (date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            selectedShoppingDate = `${year}-${month}-${day}`;
+          } else {
+            selectedShoppingDate = null;
+          }
+
+          const items = shoppingListState.getItems();
+          const filteredItems = filterItems(items);
+          renderItems(filteredItems);
+        },
+      });
+      shoppingDatePickerContainer.appendChild(shoppingDatePicker.container);
+
+      const year = nextWednesday.getFullYear();
+      const month = String(nextWednesday.getMonth() + 1).padStart(2, '0');
+      const day = String(nextWednesday.getDate()).padStart(2, '0');
+      selectedShoppingDate = `${year}-${month}-${day}`;
     });
-    shoppingDatePickerContainer.appendChild(shoppingDatePicker.container);
-
-    // Set initial selectedShoppingDate to match the default DatePicker value
-    const year = nextWednesday.getFullYear();
-    const month = String(nextWednesday.getMonth() + 1).padStart(2, '0');
-    const day = String(nextWednesday.getDate()).padStart(2, '0');
-    selectedShoppingDate = `${year}-${month}-${day}`;
   }
 
   // Initialize Autocomplete for product suggestions
