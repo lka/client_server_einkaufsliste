@@ -3,9 +3,10 @@
  * Manages the weekly planning view with navigation and day columns
  */
 
-import { getWeekplanEntries, createWeekplanEntry, deleteWeekplanEntry, WeekplanEntry } from '../data/api.js';
+import { getWeekplanEntries, createWeekplanEntry, deleteWeekplanEntry, getWeekplanSuggestions, WeekplanEntry } from '../data/api.js';
 import { onWeekplanAdded, onWeekplanDeleted, broadcastWeekplanAdd, broadcastWeekplanDelete } from '../data/websocket.js';
 import { printWeekplan } from './print-utils.js';
+import { Autocomplete } from './components/autocomplete.js';
 
 // Store entries by date and meal
 const entriesStore: Map<string, Map<string, WeekplanEntry[]>> = new Map();
@@ -231,6 +232,13 @@ function handleAddMealEntry(event: Event): void {
 
   if (!meal || !dayName) return;
 
+  // Create wrapper for input and autocomplete
+  const inputWrapper = document.createElement('div');
+  inputWrapper.style.cssText = `
+    position: relative;
+    margin-bottom: 0.5rem;
+  `;
+
   // Create input field
   const input = document.createElement('input');
   input.type = 'text';
@@ -241,61 +249,86 @@ function handleAddMealEntry(event: Event): void {
     padding: 0.5rem;
     border: 1px solid #ddd;
     border-radius: 4px;
-    margin-bottom: 0.5rem;
     font-size: 0.9rem;
   `;
+
+  inputWrapper.appendChild(input);
+
+  // Function to save the entry
+  const saveEntry = async (text: string) => {
+    if (!text.trim()) return;
+
+    input.disabled = true;
+
+    // Calculate full date from displayed date
+    const today = new Date();
+    const targetDate = new Date(today);
+    targetDate.setDate(today.getDate() + (weekOffset * 7));
+    const monday = getMonday(targetDate);
+
+    const dayIndex = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].indexOf(dayName);
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + dayIndex);
+    const dateISO = formatISODate(date);
+
+    try {
+      const entry = await createWeekplanEntry({
+        date: dateISO,
+        meal: meal,
+        text: text.trim()
+      });
+
+      // Add to store
+      if (!entriesStore.has(dateISO)) {
+        entriesStore.set(dateISO, new Map());
+      }
+      const dateMap = entriesStore.get(dateISO)!;
+      if (!dateMap.has(meal)) {
+        dateMap.set(meal, []);
+      }
+      dateMap.get(meal)!.push(entry);
+
+      // Add to DOM
+      addMealItemToDOM(mealContent, entry.text, entry.id!);
+      autocomplete.destroy();
+      inputWrapper.remove();
+
+      // Broadcast to other users via WebSocket
+      broadcastWeekplanAdd(entry);
+    } catch (error) {
+      console.error('Failed to create entry:', error);
+      input.disabled = false;
+      alert('Fehler beim Speichern des Eintrags');
+    }
+  };
+
+  // Initialize Autocomplete for entry suggestions
+  const autocomplete = new Autocomplete({
+    input,
+    onSearch: async (query: string) => {
+      const suggestions = await getWeekplanSuggestions(query, 5);
+      return suggestions.map(text => ({
+        id: text,
+        label: text,
+        data: text,
+      }));
+    },
+    onSelect: (suggestion) => {
+      // Save entry immediately when suggestion is selected
+      saveEntry(suggestion.label);
+    },
+    debounceMs: 300,
+    minChars: 2,
+    maxSuggestions: 5,
+  });
 
   // Add entry on Enter key
   input.addEventListener('keydown', async (e) => {
     if (e.key === 'Enter' && input.value.trim()) {
-      const text = input.value.trim();
-      input.disabled = true;
-
-      // Get the date for this day
-      const dateSpan = dayColumn.querySelector('.day-date');
-      if (dateSpan) {
-        // Calculate full date from displayed date
-        const today = new Date();
-        const targetDate = new Date(today);
-        targetDate.setDate(today.getDate() + (weekOffset * 7));
-        const monday = getMonday(targetDate);
-
-        const dayIndex = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].indexOf(dayName);
-        const date = new Date(monday);
-        date.setDate(monday.getDate() + dayIndex);
-        const dateISO = formatISODate(date);
-
-        try {
-          const entry = await createWeekplanEntry({
-            date: dateISO,
-            meal: meal,
-            text: text
-          });
-
-          // Add to store
-          if (!entriesStore.has(dateISO)) {
-            entriesStore.set(dateISO, new Map());
-          }
-          const dateMap = entriesStore.get(dateISO)!;
-          if (!dateMap.has(meal)) {
-            dateMap.set(meal, []);
-          }
-          dateMap.get(meal)!.push(entry);
-
-          // Add to DOM
-          addMealItemToDOM(mealContent, entry.text, entry.id!);
-          input.remove();
-
-          // Broadcast to other users via WebSocket
-          broadcastWeekplanAdd(entry);
-        } catch (error) {
-          console.error('Failed to create entry:', error);
-          input.disabled = false;
-          alert('Fehler beim Speichern des Eintrags');
-        }
-      }
+      await saveEntry(input.value);
     } else if (e.key === 'Escape') {
-      input.remove();
+      autocomplete.destroy();
+      inputWrapper.remove();
     }
   });
 
@@ -303,12 +336,13 @@ function handleAddMealEntry(event: Event): void {
   input.addEventListener('blur', () => {
     setTimeout(() => {
       if (!input.value.trim()) {
-        input.remove();
+        autocomplete.destroy();
+        inputWrapper.remove();
       }
     }, 200);
   });
 
-  mealContent.insertBefore(input, mealContent.firstChild);
+  mealContent.insertBefore(inputWrapper, mealContent.firstChild);
   input.focus();
 }
 
