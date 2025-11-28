@@ -152,6 +152,19 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - **Wochennavigation**: Vor/Zurück-Buttons zum Durchblättern der Wochen
     - **Aktuelle Woche hervorgehoben**: Heutiger Tag wird farblich markiert
     - **KW-Anzeige**: Kalenderwoche und Datumsbereich werden im Header angezeigt
+    - **Template-Integration**: Automatische Einkaufslisten-Generierung aus Wochenplan
+      - **Automatisches Hinzufügen**: Wenn Wochenplan-Eintrag einem Template-Namen entspricht, werden Template-Items automatisch zur Einkaufsliste hinzugefügt
+      - **Intelligente Datumsberechnung**:
+        - Standard-Einkaufsdatum: Nächster MAIN_SHOPPING_DAY (konfigurierbar in .env)
+        - Frischeprodukte-Logik: Wenn Wochenplan-Datum > nächster FRESH_PRODUCTS_DAY und Produkt als "fresh" markiert → FRESH_PRODUCTS_DAY verwenden
+      - **Geschäfts-Zuordnung**: Erstes Geschäft nach sort_order wird automatisch verwendet
+      - **Intelligente Mengenaddition**: Template-Items werden mit bestehenden Items zusammengeführt
+        - Gleiche Einheit → Mengen werden summiert
+        - Verschiedene Einheiten → Als semikolon-getrennte Liste gespeichert
+      - **Automatisches Entfernen**: Beim Löschen eines Wochenplan-Eintrags werden Template-Items-Mengen subtrahiert
+        - Negative Subtraktion reduziert Mengen intelligent
+        - Items mit Menge ≤ 0 werden automatisch gelöscht
+      - **Exakter Match erforderlich**: Nur bei exakter Übereinstimmung des Wochenplan-Texts mit Template-Namen
     - **Druckfunktion**: Wochenplan als Tabelle in DIN A4 Querformat drucken
       - **Optimiertes Layout**: 7 Tage-Spalten (Montag-Sonntag) mit Datum unter jedem Tag
       - **3 Zeilen**: Eine Zeile pro Mahlzeit (Morgens, Mittags, Abends)
@@ -777,9 +790,19 @@ Die Anwendung verwendet **JWT (JSON Web Tokens)** für sichere Authentifizierung
     - `{"date": "2025-01-29", "meal": "lunch", "text": "Spaghetti Bolognese"}`
     - `{"date": "2025-01-30", "meal": "dinner", "text": "Pizza"}`
   - **Keine Benutzer-Zuordnung**: Einträge werden ohne `user_id` erstellt (gemeinsamer Plan)
+  - **Template-Integration**: Wenn `text` exakt einem Template-Namen entspricht:
+    - Template-Items werden automatisch zur Einkaufsliste hinzugefügt
+    - Einkaufsdatum: Nächster MAIN_SHOPPING_DAY (aus .env)
+    - Geschäft: Erstes Geschäft nach sort_order
+    - Frischeprodukte: Wenn Wochenplan-Datum > nächster FRESH_PRODUCTS_DAY und Produkt als "fresh" markiert → FRESH_PRODUCTS_DAY verwenden
+    - Intelligente Mengenaddition bei bereits vorhandenen Items
 - `DELETE /api/weekplan/entries/{entry_id}` - Wochenplan-Eintrag löschen
   - Response: `{"message": "Entry deleted successfully"}`
   - **Keine Ownership-Prüfung**: Jeder authentifizierte Benutzer kann jeden Eintrag löschen
+  - **Template-Integration**: Wenn `text` exakt einem Template-Namen entspricht:
+    - Template-Items-Mengen werden von der Einkaufsliste subtrahiert
+    - Items mit Menge ≤ 0 werden automatisch gelöscht
+    - Nutzt intelligente Mengensubtraktion (merge_quantities mit negativen Werten)
 
 **Vorlagen-Verwaltung (alle authentifiziert):**
 - `GET /api/templates` - Alle Vorlagen abrufen (sortiert nach Name)
@@ -872,7 +895,7 @@ pytest --cov=server --cov-report=html
 ```
 
 **Aktuelle Test-Abdeckung:**
-- ✅ **72 Tests insgesamt**
+- ✅ **78 Tests insgesamt** (10 Authentifizierung + 21 Shopping-List + 31 Store-Management + 10 User-Management + 6 Wochenplan)
   - **85%+ Code-Coverage** für Server-Code
 - ✅ **Authentifizierung** (10 Tests):
   - Registrierung, Login, Token-Validierung, Token-Refresh, Account-Löschung
@@ -943,6 +966,17 @@ pytest --cov=server --cov-report=html
   - Authentifizierungschecks für alle User-Management-Endpoints
   - Genehmigte Benutzer können andere genehmigen
   - Account-Löschung, Token-Invalidierung
+- ✅ **Wochenplan & Template-Integration** (6 Tests):
+  - **Basis CRUD** (3 Tests):
+    - Wochenplan-Eintrag erstellen (POST /api/weekplan/entries)
+    - Wochenplan-Einträge abrufen für eine Woche (GET)
+    - Wochenplan-Eintrag löschen (DELETE)
+  - **Template-Integration** (3 Tests):
+    - Automatisches Hinzufügen von Template-Items zur Einkaufsliste beim Erstellen
+    - Kein Hinzufügen wenn Text nicht mit Template-Namen übereinstimmt
+    - Automatisches Entfernen/Reduzieren von Items beim Löschen
+  - Verifiziert intelligente Mengenaddition und -subtraktion
+  - Testet Datumsberechnung (MAIN_SHOPPING_DAY, FRESH_PRODUCTS_DAY)
 - ✅ Geschützte Endpunkte (401/403 Tests)
 - ✅ Token-Refresh-Mechanismus
 
@@ -1004,9 +1038,9 @@ npm test -- --watch
 - ✅ Error Handling, Edge Cases, User Interactions
 
 **Gesamt-Teststatistik:**
-- 📊 **Server**: 72 Tests, 85%+ Coverage
+- 📊 **Server**: 78 Tests, 85%+ Coverage
 - 📊 **Client**: 458 Tests, 85.46% Coverage
-- 📊 **Gesamt**: 530 Tests ✅
+- 📊 **Gesamt**: 536 Tests ✅
 
 ### Continuous Integration (CI)
 
