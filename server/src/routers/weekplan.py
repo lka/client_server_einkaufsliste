@@ -1,11 +1,13 @@
 """Weekly meal plan endpoints."""
 
+import os
 from typing import List
+from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, Depends
 from sqlmodel import select
 from pydantic import BaseModel
 
-from ..models import WeekplanEntry
+from ..models import WeekplanEntry, ShoppingTemplate, Store, Product, Item
 from ..user_models import User
 from ..db import get_session
 from ..auth import get_current_user
@@ -28,6 +30,241 @@ class WeekplanEntryResponse(BaseModel):
     date: str
     meal: str
     text: str
+
+
+def _get_next_weekday(from_date: datetime, target_weekday: int) -> datetime:
+    """Calculate the next occurrence of a target weekday.
+
+    Args:
+        from_date: Starting date
+        target_weekday: Target day of week (0=Monday, 6=Sunday)
+
+    Returns:
+        Next occurrence of target weekday (including today if it matches)
+    """
+    days_ahead = target_weekday - from_date.weekday()
+    if days_ahead < 0:  # Target day already passed this week
+        days_ahead += 7
+    return from_date + timedelta(days=days_ahead)
+
+
+def _add_template_items_to_shopping_list(
+    session, template_name: str, weekplan_date: str
+) -> None:
+    """Add template items to shopping list when weekplan entry matches template name.
+
+    Args:
+        session: Database session
+        template_name: Name of the template to check
+        weekplan_date: Date from weekplan entry (YYYY-MM-DD)
+    """
+    # Check if template exists with exact match
+    template = session.exec(
+        select(ShoppingTemplate).where(ShoppingTemplate.name == template_name)
+    ).first()
+
+    if not template:
+        return  # No matching template, nothing to do
+
+    # Get shopping day configuration from environment
+    main_shopping_day = int(os.getenv("MAIN_SHOPPING_DAY", "2"))  # Default: Wednesday
+    fresh_products_day = int(os.getenv("FRESH_PRODUCTS_DAY", "4"))  # Default: Friday
+
+    # Get first store by sort_order
+    first_store = session.exec(
+        select(Store).order_by(Store.sort_order, Store.id)
+    ).first()
+
+    if not first_store:
+        return  # No store available
+
+    # Parse weekplan date
+    weekplan_datetime = datetime.fromisoformat(weekplan_date)
+
+    # Calculate next MAIN_SHOPPING_DAY from today
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    next_main_shopping = _get_next_weekday(today, main_shopping_day)
+    next_fresh_products = _get_next_weekday(today, fresh_products_day)
+
+    # If shopping day is today, move to next week
+    # (we want the NEXT occurrence, not today)
+    if next_main_shopping.date() == today.date():
+        next_main_shopping = next_main_shopping + timedelta(days=7)
+    if next_fresh_products.date() == today.date():
+        next_fresh_products = next_fresh_products + timedelta(days=7)
+
+    # Add each template item to shopping list
+    for template_item in template.template_items:
+        # Determine shopping date based on product freshness
+        shopping_date = next_main_shopping.date().isoformat()
+
+        # Check if this is a fresh product
+        # Find matching product in the first store
+        products = session.exec(
+            select(Product).where(
+                Product.store_id == first_store.id, Product.name == template_item.name
+            )
+        ).all()
+
+        is_fresh = False
+        for product in products:
+            if product.fresh:
+                is_fresh = True
+                break
+
+        # If weekplan date >= next fresh products day and item is fresh,
+        # use fresh products day instead of main shopping day
+        if weekplan_datetime.date() >= next_fresh_products.date() and is_fresh:
+            shopping_date = next_fresh_products.date().isoformat()
+
+        # Add items directly with merge logic (similar to create_item endpoint)
+        from ..routers.items import _find_existing_item, _find_matching_product
+        from ..utils import merge_quantities
+        import uuid
+
+        # Find existing item with same name, date, and store
+        existing_item = _find_existing_item(
+            session, template_item.name, shopping_date, first_store.id
+        )
+
+        if existing_item:
+            # Merge quantities
+            merged_menge = merge_quantities(existing_item.menge, template_item.menge)
+            if merged_menge is None or merged_menge.strip() == "":
+                session.delete(existing_item)
+            else:
+                existing_item.menge = merged_menge
+                session.add(existing_item)
+        else:
+            # Create new item
+            new_item = Item(
+                id=str(uuid.uuid4()),
+                name=template_item.name,
+                menge=template_item.menge,
+                store_id=first_store.id,
+                shopping_date=shopping_date,
+                user_id=None,
+            )
+
+            # Find matching product
+            product_id = _find_matching_product(session, new_item)
+            if product_id:
+                new_item.product_id = product_id
+
+            session.add(new_item)
+
+        session.commit()
+
+
+def _remove_template_items_from_shopping_list(
+    session, template_name: str, weekplan_date: str
+) -> None:
+    """Remove template items from shopping list when weekplan entry is deleted.
+
+    This reverses the action of _add_template_items_to_shopping_list by
+    subtracting the template quantities from the shopping list.
+
+    Args:
+        session: Database session
+        template_name: Name of the template to check
+        weekplan_date: Date from weekplan entry (YYYY-MM-DD)
+    """
+    # Check if template exists with exact match
+    template = session.exec(
+        select(ShoppingTemplate).where(ShoppingTemplate.name == template_name)
+    ).first()
+
+    if not template:
+        return  # No matching template, nothing to do
+
+    # Get shopping day configuration from environment
+    main_shopping_day = int(os.getenv("MAIN_SHOPPING_DAY", "2"))  # Default: Wednesday
+    fresh_products_day = int(os.getenv("FRESH_PRODUCTS_DAY", "4"))  # Default: Friday
+
+    # Get first store by sort_order
+    first_store = session.exec(
+        select(Store).order_by(Store.sort_order, Store.id)
+    ).first()
+
+    if not first_store:
+        return  # No store available
+
+    # Parse weekplan date
+    weekplan_datetime = datetime.fromisoformat(weekplan_date)
+
+    # Calculate next MAIN_SHOPPING_DAY from today
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    next_main_shopping = _get_next_weekday(today, main_shopping_day)
+    next_fresh_products = _get_next_weekday(today, fresh_products_day)
+
+    # If shopping day is today, move to next week
+    # (we want the NEXT occurrence, not today)
+    if next_main_shopping.date() == today.date():
+        next_main_shopping = next_main_shopping + timedelta(days=7)
+    if next_fresh_products.date() == today.date():
+        next_fresh_products = next_fresh_products + timedelta(days=7)
+
+    # Remove each template item from shopping list
+    for template_item in template.template_items:
+        # Determine shopping date based on product freshness (same logic as add)
+        shopping_date = next_main_shopping.date().isoformat()
+
+        # Check if this is a fresh product
+        products = session.exec(
+            select(Product).where(
+                Product.store_id == first_store.id, Product.name == template_item.name
+            )
+        ).all()
+
+        is_fresh = False
+        for product in products:
+            if product.fresh:
+                is_fresh = True
+                break
+
+        # If weekplan date >= next fresh products day and item is fresh,
+        # use fresh products day instead of main shopping day
+        if weekplan_datetime.date() >= next_fresh_products.date() and is_fresh:
+            shopping_date = next_fresh_products.date().isoformat()
+
+        # Subtract quantities using merge logic
+        from ..routers.items import _find_existing_item
+        from ..utils import merge_quantities
+
+        # Find existing item with same name, date, and store
+        existing_item = _find_existing_item(
+            session, template_item.name, shopping_date, first_store.id
+        )
+
+        if existing_item and template_item.menge:
+            # Create negative quantity for subtraction
+            negative_menge = template_item.menge
+            if negative_menge:
+                # Parse and negate the quantity
+                from ..utils import parse_quantity
+
+                parsed_num, unit = parse_quantity(negative_menge)
+                if parsed_num is not None:
+                    # Create negative version
+                    if parsed_num == int(parsed_num):
+                        negative_menge = f"-{int(parsed_num)}"
+                    else:
+                        negative_menge = f"-{parsed_num}"
+                    if unit:
+                        negative_menge = f"{negative_menge} {unit}"
+
+                    # Merge with negative quantity (subtraction)
+                    merged_menge = merge_quantities(existing_item.menge, negative_menge)
+
+                    if merged_menge is None or merged_menge.strip() == "":
+                        # Quantity reduced to zero or below, delete item
+                        session.delete(existing_item)
+                    else:
+                        # Update with reduced quantity
+                        existing_item.menge = merged_menge
+                        session.add(existing_item)
+
+                    session.commit()
 
 
 @router.get("/entries", response_model=List[WeekplanEntryResponse])
@@ -76,6 +313,10 @@ def create_weekplan_entry(
 ):
     """Create a new weekplan entry (shared across all users).
 
+    If the entry text matches a shopping template name exactly, the template's
+    items are automatically added to the shopping list with intelligent quantity
+    merging.
+
     Args:
         entry: Entry data
         current_user: Current authenticated username from JWT (for authentication only)
@@ -95,6 +336,9 @@ def create_weekplan_entry(
         session.commit()
         session.refresh(db_entry)
 
+        # Check if entry text matches a shopping template and add items to shopping list
+        _add_template_items_to_shopping_list(session, entry.text, entry.date)
+
         return WeekplanEntryResponse(
             id=db_entry.id, date=db_entry.date, meal=db_entry.meal, text=db_entry.text
         )
@@ -103,6 +347,10 @@ def create_weekplan_entry(
 @router.delete("/entries/{entry_id}")
 def delete_weekplan_entry(entry_id: int, current_user: str = Depends(get_current_user)):
     """Delete a weekplan entry (shared across all users).
+
+    If the entry text matches a shopping template name exactly, the template's
+    items are automatically removed from the shopping list (quantities are
+    subtracted using intelligent quantity merging).
 
     Args:
         entry_id: Entry ID
@@ -121,6 +369,12 @@ def delete_weekplan_entry(entry_id: int, current_user: str = Depends(get_current
         entry = session.get(WeekplanEntry, entry_id)
         if not entry:
             raise HTTPException(status_code=404, detail="Entry not found")
+
+        # Check if entry text matches a shopping template and remove items
+        # from shopping list
+        # Do this BEFORE deleting the entry so we still have access to entry.text
+        # and entry.date
+        _remove_template_items_from_shopping_list(session, entry.text, entry.date)
 
         # Delete entry (no ownership check - shared across all users)
         session.delete(entry)

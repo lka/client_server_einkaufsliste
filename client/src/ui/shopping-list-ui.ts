@@ -1080,8 +1080,11 @@ export function initShoppingListUI(): void {
   if (shoppingDatePickerContainer) {
     // Fetch configuration to get the main shopping day
     getConfig().then(config => {
-      // Default to Wednesday (3) if config not available
-      const mainShoppingDay = config?.main_shopping_day ?? 3;
+      // Default to Wednesday (2 in Python convention: 0=Monday)
+      const mainShoppingDayPython = config?.main_shopping_day ?? 2;
+      // Convert from Python convention (0=Monday) to JavaScript convention (0=Sunday)
+      const mainShoppingDay = (mainShoppingDayPython + 1) % 7;
+      console.log(`Shopping day config: Python=${mainShoppingDayPython}, JS=${mainShoppingDay}`);
 
       // Calculate next occurrence of the configured shopping day
       const today = new Date();
@@ -1124,19 +1127,20 @@ export function initShoppingListUI(): void {
       selectedShoppingDate = `${year}-${month}-${day}`;
     }).catch(error => {
       console.error('Error loading config, using default Wednesday:', error);
-      // Fallback to Wednesday if config loading fails
+      // Fallback to Wednesday (3 in JS convention: 0=Sunday)
+      const mainShoppingDay = 3;  // Wednesday in JavaScript convention
       const today = new Date();
       const currentDay = today.getDay();
-      const daysUntilWednesday = currentDay === 3 ? 7 : (3 - currentDay + 7) % 7;
-      const nextWednesday = new Date(today);
-      nextWednesday.setDate(today.getDate() + (daysUntilWednesday === 0 ? 7 : daysUntilWednesday));
+      const daysUntilShoppingDay = currentDay === mainShoppingDay ? 7 : (mainShoppingDay - currentDay + 7) % 7;
+      const nextShoppingDay = new Date(today);
+      nextShoppingDay.setDate(today.getDate() + (daysUntilShoppingDay === 0 ? 7 : daysUntilShoppingDay));
 
       const shoppingDates = extractShoppingDates();
 
       shoppingDatePicker = createDatePicker({
         placeholder: 'Einkaufsdatum (optional)',
         format: 'dd.MM.yyyy',
-        value: nextWednesday,
+        value: nextShoppingDay,
         highlightDates: shoppingDates,
         onChange: (date) => {
           if (date) {
@@ -1155,9 +1159,9 @@ export function initShoppingListUI(): void {
       });
       shoppingDatePickerContainer.appendChild(shoppingDatePicker.container);
 
-      const year = nextWednesday.getFullYear();
-      const month = String(nextWednesday.getMonth() + 1).padStart(2, '0');
-      const day = String(nextWednesday.getDate()).padStart(2, '0');
+      const year = nextShoppingDay.getFullYear();
+      const month = String(nextShoppingDay.getMonth() + 1).padStart(2, '0');
+      const day = String(nextShoppingDay.getDate()).padStart(2, '0');
       selectedShoppingDate = `${year}-${month}-${day}`;
     });
   }
