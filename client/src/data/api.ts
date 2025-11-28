@@ -1284,6 +1284,37 @@ export async function createWeekplanEntry(entry: Omit<WeekplanEntry, 'id'>): Pro
 }
 
 /**
+ * Get weekplan entry suggestions based on query
+ * Returns up to maxSuggestions unique template names
+ */
+export async function getWeekplanSuggestions(query: string, maxSuggestions: number = 5): Promise<string[]> {
+  try {
+    // Fetch all templates
+    const templates = await fetchTemplates();
+
+    // Extract only template names
+    const templateNames: string[] = [];
+    for (const template of templates) {
+      if (template.name && template.name.trim()) {
+        templateNames.push(template.name.trim());
+      }
+    }
+
+    // Filter by query, sort alphabetically, and limit
+    const lowerQuery = query.toLowerCase();
+    const matches = templateNames
+      .filter(name => name.toLowerCase().includes(lowerQuery))
+      .sort()
+      .slice(0, maxSuggestions);
+
+    return matches;
+  } catch (error) {
+    console.error('Error fetching weekplan suggestions:', error);
+    return [];
+  }
+}
+
+/**
  * Delete a weekplan entry
  */
 export async function deleteWeekplanEntry(entryId: number): Promise<void> {
