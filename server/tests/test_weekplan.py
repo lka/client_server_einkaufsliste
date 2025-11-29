@@ -156,15 +156,20 @@ def test_delete_weekplan_entry():
 def test_create_entry_with_template_name_adds_items():
     """Test that creating a weekplan entry with a template name\
     adds items to shopping list."""
+    from datetime import datetime, timedelta
+
     token = get_auth_token()
     headers = {"Authorization": f"Bearer {token}"}
     create_sample_template()
+
+    # Use a future date (tomorrow)
+    future_date = (datetime.now() + timedelta(days=1)).date().isoformat()
 
     # Create weekplan entry with template name
     response = client.post(
         "/api/weekplan/entries",
         headers=headers,
-        json={"date": "2025-01-29", "meal": "lunch", "text": "Wocheneinkauf"},
+        json={"date": future_date, "meal": "lunch", "text": "Wocheneinkauf"},
     )
     assert response.status_code == 200
 
@@ -181,14 +186,19 @@ def test_create_entry_with_template_name_adds_items():
 def test_create_entry_without_template_name_no_items_added():
     """Test that creating a weekplan entry without matching template name\
     doesn't add items."""
+    from datetime import datetime, timedelta
+
     token = get_auth_token()
     headers = {"Authorization": f"Bearer {token}"}
     create_sample_template()
 
+    # Use a future date (tomorrow)
+    future_date = (datetime.now() + timedelta(days=1)).date().isoformat()
+
     response = client.post(
         "/api/weekplan/entries",
         headers=headers,
-        json={"date": "2025-01-29", "meal": "lunch", "text": "Random Meal"},
+        json={"date": future_date, "meal": "lunch", "text": "Random Meal"},
     )
     assert response.status_code == 200
 
@@ -200,15 +210,20 @@ def test_create_entry_without_template_name_no_items_added():
 def test_delete_entry_with_template_name():
     """Test that deleting a weekplan entry works correctly\
     (template integration tested implicitly)."""
+    from datetime import datetime, timedelta
+
     token = get_auth_token()
     headers = {"Authorization": f"Bearer {token}"}
     create_sample_template()
+
+    # Use a future date (tomorrow)
+    future_date = (datetime.now() + timedelta(days=1)).date().isoformat()
 
     # Create entry
     response = client.post(
         "/api/weekplan/entries",
         headers=headers,
-        json={"date": "2025-02-20", "meal": "lunch", "text": "Wocheneinkauf"},
+        json={"date": future_date, "meal": "lunch", "text": "Wocheneinkauf"},
     )
     assert response.status_code == 200
     entry_id = response.json()["id"]
