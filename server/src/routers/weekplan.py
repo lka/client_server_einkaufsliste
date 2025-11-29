@@ -11,6 +11,7 @@ from ..models import WeekplanEntry, ShoppingTemplate, Store, Product, Item
 from ..user_models import User
 from ..db import get_session
 from ..auth import get_current_user
+from ..websocket_manager import manager
 
 router = APIRouter(prefix="/api/weekplan", tags=["weekplan"])
 
@@ -48,35 +49,24 @@ def _get_next_weekday(from_date: datetime, target_weekday: int) -> datetime:
     return from_date + timedelta(days=days_ahead)
 
 
-def _add_template_items_to_shopping_list(
-    session, template_name: str, weekplan_date: str
-) -> None:
-    """Add template items to shopping list when weekplan entry matches template name.
+def _calculate_shopping_date(
+    weekplan_date: str, template_item_name: str, first_store: Store, session, meal: str
+) -> str:
+    """Calculate the appropriate shopping date for a template item.
 
     Args:
-        session: Database session
-        template_name: Name of the template to check
         weekplan_date: Date from weekplan entry (YYYY-MM-DD)
+        template_item_name: Name of the template item
+        first_store: Store to use for product lookup
+        session: Database session
+        meal: Meal type ('morning', 'lunch', 'dinner')
+
+    Returns:
+        Shopping date in ISO format (YYYY-MM-DD)
     """
-    # Check if template exists with exact match
-    template = session.exec(
-        select(ShoppingTemplate).where(ShoppingTemplate.name == template_name)
-    ).first()
-
-    if not template:
-        return  # No matching template, nothing to do
-
     # Get shopping day configuration from environment
     main_shopping_day = int(os.getenv("MAIN_SHOPPING_DAY", "2"))  # Default: Wednesday
     fresh_products_day = int(os.getenv("FRESH_PRODUCTS_DAY", "4"))  # Default: Friday
-
-    # Get first store by sort_order
-    first_store = session.exec(
-        select(Store).order_by(Store.sort_order, Store.id)
-    ).first()
-
-    if not first_store:
-        return  # No store available
 
     # Parse weekplan date
     weekplan_datetime = datetime.fromisoformat(weekplan_date)
@@ -86,36 +76,131 @@ def _add_template_items_to_shopping_list(
     next_main_shopping = _get_next_weekday(today, main_shopping_day)
     next_fresh_products = _get_next_weekday(today, fresh_products_day)
 
-    # If shopping day is today, move to next week
-    # (we want the NEXT occurrence, not today)
-    if next_main_shopping.date() == today.date():
-        next_main_shopping = next_main_shopping + timedelta(days=7)
-    if next_fresh_products.date() == today.date():
+    # Important: Shopping date must be:
+    # 1. NOT in the past (>= today)
+    # 2. For dinner: NOT after the weekplan date (<= weekplan date)
+    # 3. For morning/lunch: BEFORE the weekplan date (< weekplan date)
+
+    # Meal-specific date comparison
+    # For dinner, shopping on the same day is allowed
+    # For breakfast and lunch, shopping must be the day before or earlier
+    allow_same_day = meal == "dinner"
+
+    # If the calculated shopping day is AFTER the weekplan date,
+    # it's too late - we need to shop before the meal!
+    if next_main_shopping.date() > weekplan_datetime.date():
+        # The next regular shopping day is after the meal - too late!
+        # Use today if it's valid for this meal type
+        if allow_same_day and today.date() <= weekplan_datetime.date():
+            next_main_shopping = today
+        elif not allow_same_day and today.date() < weekplan_datetime.date():
+            next_main_shopping = today
+        else:
+            # Even today doesn't work - this shouldn't happen
+            # as we filter past dates earlier, but just in case
+            next_main_shopping = today
+    elif not allow_same_day and next_main_shopping.date() == weekplan_datetime.date():
+        # For morning/lunch: if shopping day equals meal day, use today instead
+        # (only if today is before the meal)
+        if today.date() < weekplan_datetime.date():
+            next_main_shopping = today
+
+    # For fresh products, adjust the date to be valid
+    if next_fresh_products.date() < today.date():
+        # The fresh products day is in the past - move to next week
         next_fresh_products = next_fresh_products + timedelta(days=7)
+
+    # Now check if fresh products day is after the weekplan date
+    if next_fresh_products.date() > weekplan_datetime.date():
+        # The fresh products day is after the meal - too late!
+        # Use the main shopping day instead (which we already adjusted above)
+        next_fresh_products = next_main_shopping
+    elif not allow_same_day and next_fresh_products.date() == weekplan_datetime.date():
+        # For morning/lunch: if fresh products day equals meal day, use today instead
+        # (only if today is before the meal)
+        if today.date() < weekplan_datetime.date():
+            next_fresh_products = today
+        else:
+            # Today is on or after the meal day - use main shopping day
+            next_fresh_products = next_main_shopping
+
+    # Default to main shopping day
+    shopping_date = next_main_shopping.date().isoformat()
+
+    # Check if this is a fresh product
+    # Find matching product in the first store
+    products = session.exec(
+        select(Product).where(
+            Product.store_id == first_store.id, Product.name == template_item_name
+        )
+    ).all()
+
+    is_fresh = False
+    for product in products:
+        if product.fresh:
+            is_fresh = True
+            break
+
+    # Fresh products logic:
+    # Use fresh products day when weekplan_datetime >= next_fresh_products
+    # EXCEPTION: For dinner on main shopping day, use main shopping day instead
+    #            (don't buy fresh products on Friday for Wednesday dinner)
+    if is_fresh and weekplan_datetime.date() >= next_fresh_products.date():
+        # Check for the special case: dinner on main shopping day
+        # if meal == "dinner" and weekplan_datetime.date() == next_main_shopping.date():
+        #     # Dinner on main shopping day → use main shopping day, not fresh day
+        #     pass  # shopping_date is already set to main shopping day
+        # else:
+        # All other cases: use fresh products day
+        shopping_date = next_fresh_products.date().isoformat()
+
+    return shopping_date
+
+
+def _add_template_items_to_shopping_list(
+    session, template_name: str, weekplan_date: str, meal: str
+) -> List[Item]:
+    """Add template items to shopping list when weekplan entry matches template name.
+
+    Args:
+        session: Database session
+        template_name: Name of the template to check
+        weekplan_date: Date from weekplan entry (YYYY-MM-DD)
+        meal: Meal type ('morning', 'lunch', 'dinner')
+
+    Returns:
+        List of items that were added or modified
+    """
+    modified_items = []
+
+    # Check if weekplan date is in the past
+    weekplan_datetime = datetime.fromisoformat(weekplan_date)
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    if weekplan_datetime.date() < today.date():
+        return modified_items  # Don't add items for past dates
+
+    # Check if template exists with exact match
+    template = session.exec(
+        select(ShoppingTemplate).where(ShoppingTemplate.name == template_name)
+    ).first()
+
+    if not template:
+        return modified_items  # No matching template, nothing to do
+
+    # Get first store by sort_order
+    first_store = session.exec(
+        select(Store).order_by(Store.sort_order, Store.id)
+    ).first()
+
+    if not first_store:
+        return modified_items  # No store available
 
     # Add each template item to shopping list
     for template_item in template.template_items:
-        # Determine shopping date based on product freshness
-        shopping_date = next_main_shopping.date().isoformat()
-
-        # Check if this is a fresh product
-        # Find matching product in the first store
-        products = session.exec(
-            select(Product).where(
-                Product.store_id == first_store.id, Product.name == template_item.name
-            )
-        ).all()
-
-        is_fresh = False
-        for product in products:
-            if product.fresh:
-                is_fresh = True
-                break
-
-        # If weekplan date >= next fresh products day and item is fresh,
-        # use fresh products day instead of main shopping day
-        if weekplan_datetime.date() >= next_fresh_products.date() and is_fresh:
-            shopping_date = next_fresh_products.date().isoformat()
+        # Calculate shopping date using helper function
+        shopping_date = _calculate_shopping_date(
+            weekplan_date, template_item.name, first_store, session, meal
+        )
 
         # Add items directly with merge logic (similar to create_item endpoint)
         from ..routers.items import _find_existing_item, _find_matching_product
@@ -132,9 +217,11 @@ def _add_template_items_to_shopping_list(
             merged_menge = merge_quantities(existing_item.menge, template_item.menge)
             if merged_menge is None or merged_menge.strip() == "":
                 session.delete(existing_item)
+                # Don't add deleted items to modified_items
             else:
                 existing_item.menge = merged_menge
                 session.add(existing_item)
+                modified_items.append(existing_item)
         else:
             # Create new item
             new_item = Item(
@@ -152,13 +239,16 @@ def _add_template_items_to_shopping_list(
                 new_item.product_id = product_id
 
             session.add(new_item)
+            modified_items.append(new_item)
 
         session.commit()
 
+    return modified_items
+
 
 def _remove_template_items_from_shopping_list(
-    session, template_name: str, weekplan_date: str
-) -> None:
+    session, template_name: str, weekplan_date: str, meal: str
+) -> List[Item]:
     """Remove template items from shopping list when weekplan entry is deleted.
 
     This reverses the action of _add_template_items_to_shopping_list by
@@ -168,18 +258,26 @@ def _remove_template_items_from_shopping_list(
         session: Database session
         template_name: Name of the template to check
         weekplan_date: Date from weekplan entry (YYYY-MM-DD)
+        meal: Meal type ('morning', 'lunch', 'dinner')
+
+    Returns:
+        List of items that were modified or deleted
     """
+    modified_items = []
+
+    # Check if weekplan date is in the past
+    weekplan_datetime = datetime.fromisoformat(weekplan_date)
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    if weekplan_datetime.date() < today.date():
+        return modified_items  # Don't remove items for past dates (they weren't added)
+
     # Check if template exists with exact match
     template = session.exec(
         select(ShoppingTemplate).where(ShoppingTemplate.name == template_name)
     ).first()
 
     if not template:
-        return  # No matching template, nothing to do
-
-    # Get shopping day configuration from environment
-    main_shopping_day = int(os.getenv("MAIN_SHOPPING_DAY", "2"))  # Default: Wednesday
-    fresh_products_day = int(os.getenv("FRESH_PRODUCTS_DAY", "4"))  # Default: Friday
+        return modified_items  # No matching template, nothing to do
 
     # Get first store by sort_order
     first_store = session.exec(
@@ -187,45 +285,14 @@ def _remove_template_items_from_shopping_list(
     ).first()
 
     if not first_store:
-        return  # No store available
-
-    # Parse weekplan date
-    weekplan_datetime = datetime.fromisoformat(weekplan_date)
-
-    # Calculate next MAIN_SHOPPING_DAY from today
-    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-    next_main_shopping = _get_next_weekday(today, main_shopping_day)
-    next_fresh_products = _get_next_weekday(today, fresh_products_day)
-
-    # If shopping day is today, move to next week
-    # (we want the NEXT occurrence, not today)
-    if next_main_shopping.date() == today.date():
-        next_main_shopping = next_main_shopping + timedelta(days=7)
-    if next_fresh_products.date() == today.date():
-        next_fresh_products = next_fresh_products + timedelta(days=7)
+        return modified_items  # No store available
 
     # Remove each template item from shopping list
     for template_item in template.template_items:
-        # Determine shopping date based on product freshness (same logic as add)
-        shopping_date = next_main_shopping.date().isoformat()
-
-        # Check if this is a fresh product
-        products = session.exec(
-            select(Product).where(
-                Product.store_id == first_store.id, Product.name == template_item.name
-            )
-        ).all()
-
-        is_fresh = False
-        for product in products:
-            if product.fresh:
-                is_fresh = True
-                break
-
-        # If weekplan date >= next fresh products day and item is fresh,
-        # use fresh products day instead of main shopping day
-        if weekplan_datetime.date() >= next_fresh_products.date() and is_fresh:
-            shopping_date = next_fresh_products.date().isoformat()
+        # Calculate shopping date using helper function (same logic as add)
+        shopping_date = _calculate_shopping_date(
+            weekplan_date, template_item.name, first_store, session, meal
+        )
 
         # Subtract quantities using merge logic
         from ..routers.items import _find_existing_item
@@ -259,12 +326,16 @@ def _remove_template_items_from_shopping_list(
                     if merged_menge is None or merged_menge.strip() == "":
                         # Quantity reduced to zero or below, delete item
                         session.delete(existing_item)
+                        # Don't add deleted items to modified_items
                     else:
                         # Update with reduced quantity
                         existing_item.menge = merged_menge
                         session.add(existing_item)
+                        modified_items.append(existing_item)
 
                     session.commit()
+
+    return modified_items
 
 
 @router.get("/entries", response_model=List[WeekplanEntryResponse])
@@ -308,7 +379,7 @@ def get_weekplan_entries(
 
 
 @router.post("/entries", response_model=WeekplanEntryResponse)
-def create_weekplan_entry(
+async def create_weekplan_entry(
     entry: WeekplanEntryCreate, current_user: str = Depends(get_current_user)
 ):
     """Create a new weekplan entry (shared across all users).
@@ -337,7 +408,26 @@ def create_weekplan_entry(
         session.refresh(db_entry)
 
         # Check if entry text matches a shopping template and add items to shopping list
-        _add_template_items_to_shopping_list(session, entry.text, entry.date)
+        modified_items = _add_template_items_to_shopping_list(
+            session, entry.text, entry.date, entry.meal
+        )
+
+        # Broadcast shopping list changes to all connected clients
+        for item in modified_items:
+            await manager.broadcast(
+                {
+                    "type": "item:added",
+                    "data": {
+                        "id": item.id,
+                        "name": item.name,
+                        "menge": item.menge,
+                        "store_id": item.store_id,
+                        "product_id": item.product_id,
+                        "shopping_date": item.shopping_date,
+                        "user_id": item.user_id,
+                    },
+                }
+            )
 
         return WeekplanEntryResponse(
             id=db_entry.id, date=db_entry.date, meal=db_entry.meal, text=db_entry.text
@@ -345,7 +435,9 @@ def create_weekplan_entry(
 
 
 @router.delete("/entries/{entry_id}")
-def delete_weekplan_entry(entry_id: int, current_user: str = Depends(get_current_user)):
+async def delete_weekplan_entry(
+    entry_id: int, current_user: str = Depends(get_current_user)
+):
     """Delete a weekplan entry (shared across all users).
 
     If the entry text matches a shopping template name exactly, the template's
@@ -374,7 +466,26 @@ def delete_weekplan_entry(entry_id: int, current_user: str = Depends(get_current
         # from shopping list
         # Do this BEFORE deleting the entry so we still have access to entry.text
         # and entry.date
-        _remove_template_items_from_shopping_list(session, entry.text, entry.date)
+        modified_items = _remove_template_items_from_shopping_list(
+            session, entry.text, entry.date, entry.meal
+        )
+
+        # Broadcast shopping list changes to all connected clients
+        for item in modified_items:
+            await manager.broadcast(
+                {
+                    "type": "item:updated",
+                    "data": {
+                        "id": item.id,
+                        "name": item.name,
+                        "menge": item.menge,
+                        "store_id": item.store_id,
+                        "product_id": item.product_id,
+                        "shopping_date": item.shopping_date,
+                        "user_id": item.user_id,
+                    },
+                }
+            )
 
         # Delete entry (no ownership check - shared across all users)
         session.delete(entry)

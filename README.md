@@ -155,8 +155,18 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
     - **Template-Integration**: Automatische Einkaufslisten-Generierung aus Wochenplan
       - **Automatisches Hinzufügen**: Wenn Wochenplan-Eintrag einem Template-Namen entspricht, werden Template-Items automatisch zur Einkaufsliste hinzugefügt
       - **Intelligente Datumsberechnung**:
-        - Standard-Einkaufsdatum: Nächster MAIN_SHOPPING_DAY (konfigurierbar in .env)
-        - Frischeprodukte-Logik: Wenn Wochenplan-Datum > nächster FRESH_PRODUCTS_DAY und Produkt als "fresh" markiert → FRESH_PRODUCTS_DAY verwenden
+        - Standard-Einkaufsdatum: Nächster MAIN_SHOPPING_DAY (konfigurierbar in .env, Standard: Mittwoch)
+        - **Frischeprodukte-Logik**:
+          - **Frühstück & Mittagessen**: Frischeprodukte werden am FRESH_PRODUCTS_DAY eingekauft (Standard: Freitag), wenn dieser vor dem Essens-Tag liegt
+          - **Abendessen**: Frischeprodukte werden am MAIN_SHOPPING_DAY eingekauft, wenn dieser mit dem Essens-Tag übereinstimmt
+            - Beispiel: Abendessen am Mittwoch (= Einkaufstag) → Einkauf am Mittwoch, nicht am Freitag
+            - Nur wenn FRESH_PRODUCTS_DAY VOR dem MAIN_SHOPPING_DAY liegt, wird er für Abendessen verwendet
+        - **Wichtige Regeln**:
+          - **Mahlzeiten-spezifische Logik**:
+            - **Abendessen (dinner)**: Einkaufsdatum darf am gleichen Tag wie das Essen sein (≤ Essens-Tag)
+            - **Frühstück & Mittagessen (morning/lunch)**: Einkaufsdatum muss VOR dem Essens-Tag liegen (< Essens-Tag)
+          - **Vergangenheits-Filter**: Wochenplan-Einträge in der Vergangenheit (< heute) werden ignoriert - keine Items werden zur Einkaufsliste hinzugefügt
+          - **Fallback auf heute**: Wenn der berechnete Einkaufstag nach dem Essen liegt, wird heute als Einkaufsdatum verwendet (sofern passend für die Mahlzeit)
       - **Geschäfts-Zuordnung**: Erstes Geschäft nach sort_order wird automatisch verwendet
       - **Intelligente Mengenaddition**: Template-Items werden mit bestehenden Items zusammengeführt
         - Gleiche Einheit → Mengen werden summiert
@@ -165,6 +175,9 @@ Eine moderne Shopping-List-Anwendung mit sicherer Benutzerauthentifizierung, per
         - Negative Subtraktion reduziert Mengen intelligent
         - Items mit Menge ≤ 0 werden automatisch gelöscht
       - **Exakter Match erforderlich**: Nur bei exakter Übereinstimmung des Wochenplan-Texts mit Template-Namen
+      - **Real-time Shopping-List Updates**: Änderungen an der Einkaufsliste durch Wochenplan-Einträge werden live an alle verbundenen Clients übertragen
+        - WebSocket-Benachrichtigungen für hinzugefügte/geänderte Items
+        - Sofortige Aktualisierung auf allen Geräten
     - **Druckfunktion**: Wochenplan als Tabelle in DIN A4 Querformat drucken
       - **Optimiertes Layout**: 7 Tage-Spalten (Montag-Sonntag) mit Datum unter jedem Tag
       - **3 Zeilen**: Eine Zeile pro Mahlzeit (Morgens, Mittags, Abends)
