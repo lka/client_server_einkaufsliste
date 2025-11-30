@@ -219,7 +219,7 @@ function handlePrintWeekplan(): void {
 /**
  * Handle adding a meal entry
  */
-function handleAddMealEntry(event: Event): void {
+async function handleAddMealEntry(event: Event): Promise<void> {
   const button = event.target as HTMLButtonElement;
   const mealSection = button.closest('.meal-section');
   const mealContent = mealSection?.querySelector('.meal-content');
@@ -231,6 +231,70 @@ function handleAddMealEntry(event: Event): void {
   const dayName = dayColumn.getAttribute('data-day');
 
   if (!meal || !dayName) return;
+
+  // Check if there's already an input field
+  const existingInput = mealContent.querySelector('.meal-input') as HTMLInputElement;
+  if (existingInput) {
+    // If there's content, save it first, then create a new input
+    if (existingInput.value.trim()) {
+      const textToSave = existingInput.value.trim();
+      const existingWrapper = existingInput.closest('div');
+
+      // Disable the input to prevent double-submission
+      existingInput.disabled = true;
+
+      // Calculate full date from displayed date
+      const today = new Date();
+      const targetDate = new Date(today);
+      targetDate.setDate(today.getDate() + (weekOffset * 7));
+      const monday = getMonday(targetDate);
+
+      const dayIndex = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].indexOf(dayName);
+      const date = new Date(monday);
+      date.setDate(monday.getDate() + dayIndex);
+      const dateISO = formatISODate(date);
+
+      try {
+        const entry = await createWeekplanEntry({
+          date: dateISO,
+          meal: meal,
+          text: textToSave
+        });
+
+        // Add to store
+        if (!entriesStore.has(dateISO)) {
+          entriesStore.set(dateISO, new Map());
+        }
+        const dateMap = entriesStore.get(dateISO)!;
+        if (!dateMap.has(meal)) {
+          dateMap.set(meal, []);
+        }
+        dateMap.get(meal)!.push(entry);
+
+        // Add to DOM
+        addMealItemToDOM(mealContent, entry.text, entry.id!);
+
+        // Remove the existing input wrapper
+        if (existingWrapper) {
+          existingWrapper.remove();
+        }
+
+        // Broadcast to other users via WebSocket
+        broadcastWeekplanAdd(entry);
+
+        // Continue to create a new input below
+      } catch (error) {
+        console.error('Failed to create entry:', error);
+        existingInput.disabled = false;
+        alert('Fehler beim Speichern des Eintrags');
+        return; // Don't create a new input if save failed
+      }
+    } else {
+      // Empty input, just focus it
+      existingInput.focus();
+      return;
+    }
+  }
 
   // Create wrapper for input and autocomplete
   const inputWrapper = document.createElement('div');
