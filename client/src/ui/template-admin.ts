@@ -23,6 +23,9 @@ let currentItems: TemplateItem[] = [];
 let saveBtn: HTMLButtonElement | null = null;
 let cancelBtn: HTMLButtonElement | null = null;
 
+// Store all templates for filtering
+let allTemplates: Template[] = [];
+
 /**
  * Initialize the template admin UI.
  */
@@ -74,7 +77,8 @@ function createFormButtons(): void {
  */
 async function loadTemplates(): Promise<void> {
   const templates = await fetchTemplates();
-  renderTemplates(templates);
+  allTemplates = templates as Template[];
+  renderTemplates(allTemplates);
 }
 
 /**
@@ -170,12 +174,64 @@ function updateSaveButtonState(): void {
 }
 
 /**
+ * Filter templates based on search query.
+ */
+function filterTemplates(query: string): void {
+  const normalizedQuery = query.toLowerCase().trim();
+
+  if (!normalizedQuery) {
+    // No filter, show all templates
+    renderTemplates(allTemplates);
+    return;
+  }
+
+  // Filter templates that match the query in name or description
+  const filtered = allTemplates.filter(template => {
+    const nameMatch = template.name.toLowerCase().includes(normalizedQuery);
+    const descMatch = template.description?.toLowerCase().includes(normalizedQuery);
+
+    // Also check if any item name matches
+    const itemMatch = template.items.some(item =>
+      item.name.toLowerCase().includes(normalizedQuery)
+    );
+
+    return nameMatch || descMatch || itemMatch;
+  });
+
+  renderTemplates(filtered);
+}
+
+/**
  * Attach event listeners to template admin UI elements.
  */
 function attachTemplateAdminListeners(): void {
   // Add item button
   const addItemBtn = document.getElementById('addItemBtn');
   addItemBtn?.addEventListener('click', handleAddItem);
+
+  // Filter input
+  const filterInput = document.getElementById('templatesFilterInput') as HTMLInputElement;
+  const clearButton = document.getElementById('templatesFilterClear') as HTMLButtonElement;
+
+  filterInput?.addEventListener('input', (e) => {
+    const target = e.target as HTMLInputElement;
+    filterTemplates(target.value);
+
+    // Show/hide clear button based on input value
+    if (clearButton) {
+      clearButton.style.display = target.value ? 'block' : 'none';
+    }
+  });
+
+  // Clear button
+  clearButton?.addEventListener('click', () => {
+    if (filterInput) {
+      filterInput.value = '';
+      filterTemplates('');
+      clearButton.style.display = 'none';
+      filterInput.focus();
+    }
+  });
 
   // Event delegation for template list
   const templatesList = document.getElementById('templatesList');

@@ -40,7 +40,25 @@
 
     <!-- Templates List Section -->
     <section class="templates-list-section">
-      <h2>Vorhandene Vorlagen</h2>
+      <div class="templates-list-header">
+        <h2>Vorhandene Vorlagen</h2>
+        <div class="templates-filter-wrapper">
+          <input
+            id="templatesFilterInput"
+            type="text"
+            placeholder="🔍 Vorlagen filtern..."
+            class="templates-filter-input"
+          />
+          <button
+            id="templatesFilterClear"
+            class="templates-filter-clear"
+            title="Filter löschen"
+            style="display: none;"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
       <div id="templatesList" class="templates-list">
         <!-- Vorlagen will be rendered here -->
       </div>

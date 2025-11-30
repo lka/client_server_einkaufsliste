@@ -695,9 +695,17 @@ The shopping list client is a TypeScript application built with a **four-layer a
   - Real-time button state management (disable save when no items)
   - Template list with inline item display: "Article (Quantity)"
   - Form validation (unique template names, minimum one item)
+  - **Intelligent Template Filtering**: Real-time search for templates
+    - **Filter Input Field**: Located next to "Vorhandene Vorlagen" heading for easy access
+    - **Multi-Source Search**: Searches template names, descriptions, AND contained items
+    - **Live Filtering**: Updates instantly while typing (case-insensitive)
+    - **Clear Button**: ✕ button appears when filter has content, one-click to reset
+    - **Keyboard Optimized**: Enter key refocuses input after clearing
+    - **State Management**: Stores all templates in `allTemplates` array for filtering
 - **State Management**:
   - Local state for editing mode (`editingTemplateId`)
   - Local state for current items (`currentItems`)
+  - Local state for all templates (`allTemplates`) for filtering
   - Button references (`saveBtn`, `cancelBtn`)
 - **Event Handlers**:
   - Add item button → `handleAddItem()` → adds to currentItems array
@@ -707,6 +715,14 @@ The shopping list client is a TypeScript application built with a **four-layer a
   - Edit template button (event delegation) → `handleEditTemplate()` → load template into form
   - Delete template button (event delegation) → `handleDeleteTemplate()` → delete with confirmation
   - Enter key support for item name and quantity inputs
+  - Filter input → `filterTemplates()` → filters displayed templates in real-time
+  - Clear filter button → resets filter and refocuses input
+- **Filtering Logic**:
+  - `filterTemplates(query)`: Filters templates by name, description, or item names
+  - Normalizes query (lowercase, trimmed)
+  - Shows all templates when query is empty
+  - Uses Array.filter() with includes() for substring matching
+  - Auto-shows/hides clear button based on input value
 - **Button State Management**:
   - `updateSaveButtonState()`: Disables save button when no items present
   - Called after every add/remove operation
@@ -785,7 +801,7 @@ The shopping list client is a TypeScript application built with a **four-layer a
   - `initWeekplan()`: Initialize weekplan UI, event handlers, and WebSocket subscriptions
   - `renderWeek()`: Display week view with date calculations and entry loading
   - `navigateToPreviousWeek()`, `navigateToNextWeek()`: Week navigation
-  - `handleAddMealEntry(event)`: Handle + button click to add new meal entry
+  - `handleAddMealEntry(event)`: **Optimized + button workflow** for rapid entry (async)
   - `addMealItemToDOM(container, text, entryId)`: Create meal item DOM element with delete button
   - `handleWeekplanAdded(data)`: Handle incoming WebSocket event for new entries
   - `handleWeekplanDeleted(data)`: Handle incoming WebSocket event for deleted entries
@@ -807,6 +823,13 @@ The shopping list client is a TypeScript application built with a **four-layer a
 - **Features**:
   - Week navigation with offset tracking
   - Current day highlighting (red color in header)
+  - **Optimized + Button Workflow**: Rapid entry without mouse-keyboard switching
+    - **Single-Click**: Opens input field on first click
+    - **Smart-Save**: When input has content and + is clicked → saves entry AND opens new input
+    - **Empty Input Behavior**: Clicking + on empty input just focuses it (no action)
+    - **Autocomplete Integration**: Shows suggestions from previous weekplan entries
+    - **Error Handling**: Keeps input active if save fails (doesn't create new input)
+    - **Efficient UX**: Enables adding multiple entries using only + button (no Enter key needed)
   - Inline input for adding entries (appears on + button click)
   - Delete button (×) for each entry
   - Automatic date calculation for each day column
@@ -815,10 +838,19 @@ The shopping list client is a TypeScript application built with a **four-layer a
   - Shared entries (no user-specific filtering)
 - **Event Handlers**:
   - Previous/Next week buttons → update weekOffset and re-render
-  - Add meal button (+) → create inline input field
+  - **Add meal button (+)** → Enhanced logic:
+    - **No existing input** → create inline input field
+    - **Empty input** → just focus existing input
+    - **Filled input** → save current entry, add to DOM, broadcast via WebSocket, then create new input
   - Input Enter key → create entry via API and broadcast
   - Input Escape key → cancel and remove input
   - Delete button (×) → delete entry via API and broadcast
+- **Save and Continue Logic** (handleAddMealEntry):
+  - Checks for existing input field in meal section
+  - If input has content: disables input, saves to API, adds to local store, broadcasts, removes old input, creates new input
+  - If save fails: re-enables input, shows error alert, doesn't create new input
+  - Uses async/await for sequential operations
+  - Updates entriesStore Map to keep state synchronized
 - **Dependencies**:
   - `../data/api.js`: getWeekplanEntries, createWeekplanEntry, deleteWeekplanEntry
   - `../data/websocket.js`: onWeekplanAdded, onWeekplanDeleted, broadcastWeekplanAdd, broadcastWeekplanDelete
