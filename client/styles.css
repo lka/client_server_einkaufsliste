@@ -968,9 +968,57 @@ main{
   color:#999;
   font-style:italic;
 }
-.templates-list-section h2{
-  color:#333;
+.templates-list-header{
+  display:flex;
+  align-items:center;
+  gap:1rem;
   margin-bottom:1rem;
+  flex-wrap:wrap;
+}
+.templates-list-header h2{
+  margin:0;
+  color:#333;
+  flex-shrink:0;
+}
+.templates-filter-wrapper{
+  position:relative;
+  flex:1;
+  min-width:200px;
+  max-width:400px;
+}
+.templates-filter-input{
+  display:block;
+  width:100%;
+  padding:0.5rem 2.5rem 0.5rem 0.75rem;
+  border:1px solid #ddd;
+  border-radius:6px;
+  font-size:0.95rem;
+  background:#fff;
+  transition:border-color .2s,box-shadow .2s;
+}
+.templates-filter-input:focus{
+  outline:none;
+  border-color:#4a90e2;
+  box-shadow:0 0 0 3px rgba(74,144,226,.1);
+}
+.templates-filter-clear{
+  position:absolute;
+  right:0.5rem;
+  top:50%;
+  transform:translateY(-50%);
+  background:transparent;
+  border:none;
+  color:#999;
+  font-size:1.2rem;
+  cursor:pointer;
+  padding:0.25rem 0.5rem;
+  line-height:1;
+  border-radius:4px;
+  transition:color .2s,background .2s;
+}
+.templates-filter-clear:hover{
+  color:#333;
+  background:#f0f0f0;
 }
 .templates-list{
   display:grid;
