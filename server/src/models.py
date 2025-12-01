@@ -155,9 +155,15 @@ class WeekplanEntry(SQLModel, table=True):
         date: Date in ISO format (YYYY-MM-DD)
         meal: Meal type ('morning', 'lunch', 'dinner')
         text: Entry text content
+        deltas: JSON field storing item modifications (removed items, added items)
+                Format: {
+                    "removed_items": ["item_name1", "item_name2"],
+                    "added_items": [{"name": "item", "menge": "2 kg"}]
+                }
     """
 
     id: Optional[int] = Field(default=None, primary_key=True)
     date: str = Field(index=True)  # ISO format: YYYY-MM-DD
     meal: str = Field(index=True)  # 'morning', 'lunch', 'dinner'
     text: str
+    deltas: Optional[str] = Field(default=None)  # JSON string

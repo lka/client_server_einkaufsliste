@@ -802,7 +802,8 @@ The shopping list client is a TypeScript application built with a **four-layer a
   - `renderWeek()`: Display week view with date calculations and entry loading
   - `navigateToPreviousWeek()`, `navigateToNextWeek()`: Week navigation
   - `handleAddMealEntry(event)`: **Optimized + button workflow** for rapid entry (async)
-  - `addMealItemToDOM(container, text, entryId)`: Create meal item DOM element with delete button
+  - `addMealItemToDOM(container, text, entryId)`: Create meal item DOM element with delete button and clickable text
+  - `showTemplateDetails(templateName)`: Display template items in a modal dialog (NEW)
   - `handleWeekplanAdded(data)`: Handle incoming WebSocket event for new entries
   - `handleWeekplanDeleted(data)`: Handle incoming WebSocket event for deleted entries
 - **WebSocket Integration**:
@@ -830,6 +831,12 @@ The shopping list client is a TypeScript application built with a **four-layer a
     - **Autocomplete Integration**: Shows suggestions from previous weekplan entries
     - **Error Handling**: Keeps input active if save fails (doesn't create new input)
     - **Efficient UX**: Enables adding multiple entries using only + button (no Enter key needed)
+  - **Interactive Template Preview**: Click on any weekplan entry to view template details (NEW)
+    - **Visual Feedback**: Blue background, underline, and blue text on hover
+    - **Smart Detection**: Automatically detects if entry is a template (case-insensitive)
+    - **Modal Display**: Shows template name, description, and all items with quantities
+    - **Silent Failure**: Non-template entries don't trigger modal (no error shown)
+    - **Keyboard Support**: Modal can be closed with Escape key or backdrop click
   - Inline input for adding entries (appears on + button click)
   - Delete button (×) for each entry
   - Automatic date calculation for each day column
@@ -842,6 +849,7 @@ The shopping list client is a TypeScript application built with a **four-layer a
     - **No existing input** → create inline input field
     - **Empty input** → just focus existing input
     - **Filled input** → save current entry, add to DOM, broadcast via WebSocket, then create new input
+  - **Entry text click** → `showTemplateDetails()` → opens modal if template exists (NEW)
   - Input Enter key → create entry via API and broadcast
   - Input Escape key → cancel and remove input
   - Delete button (×) → delete entry via API and broadcast
@@ -851,9 +859,17 @@ The shopping list client is a TypeScript application built with a **four-layer a
   - If save fails: re-enables input, shows error alert, doesn't create new input
   - Uses async/await for sequential operations
   - Updates entriesStore Map to keep state synchronized
+- **Template Preview Modal** (showTemplateDetails):
+  - Fetches all templates via API
+  - Case-insensitive template name matching
+  - Modal displays: template name, description (optional), and items list
+  - Items shown with name (left) and quantity (right) in styled list
+  - Scrollable content for long templates (max-height: 400px)
+  - Empty templates show "Keine Items in dieser Vorlage"
 - **Dependencies**:
-  - `../data/api.js`: getWeekplanEntries, createWeekplanEntry, deleteWeekplanEntry
+  - `../data/api.js`: getWeekplanEntries, createWeekplanEntry, deleteWeekplanEntry, fetchTemplates
   - `../data/websocket.js`: onWeekplanAdded, onWeekplanDeleted, broadcastWeekplanAdd, broadcastWeekplanDelete
+  - `./components/modal.js`: Modal component for template preview
 
 #### print-utils.ts
 - **Responsibility**: Platform-specific print functionality with optimized layout

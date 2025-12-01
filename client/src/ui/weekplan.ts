@@ -3,10 +3,11 @@
  * Manages the weekly planning view with navigation and day columns
  */
 
-import { getWeekplanEntries, createWeekplanEntry, deleteWeekplanEntry, getWeekplanSuggestions, WeekplanEntry } from '../data/api.js';
+import { getWeekplanEntries, createWeekplanEntry, deleteWeekplanEntry, getWeekplanSuggestions, WeekplanEntry, fetchTemplates, updateWeekplanEntryDeltas, WeekplanDeltas } from '../data/api.js';
 import { onWeekplanAdded, onWeekplanDeleted, broadcastWeekplanAdd, broadcastWeekplanDelete } from '../data/websocket.js';
 import { printWeekplan } from './print-utils.js';
 import { Autocomplete } from './components/autocomplete.js';
+import { Modal } from './components/modal.js';
 
 // Store entries by date and meal
 const entriesStore: Map<string, Map<string, WeekplanEntry[]>> = new Map();
@@ -411,6 +412,212 @@ async function handleAddMealEntry(event: Event): Promise<void> {
 }
 
 /**
+ * Show template details in a modal with delta management
+ */
+async function showTemplateDetails(templateName: string, entryId: number): Promise<void> {
+  try {
+    // Fetch all templates and find matching one
+    const templates = await fetchTemplates();
+    const template = templates.find(t => t.name.toLowerCase() === templateName.toLowerCase());
+
+    if (!template) {
+      return; // Not a template, do nothing
+    }
+
+    // Get current entry to load existing deltas
+    let currentEntry: WeekplanEntry | undefined;
+    for (const dateMap of entriesStore.values()) {
+      for (const entries of dateMap.values()) {
+        currentEntry = entries.find(e => e.id === entryId);
+        if (currentEntry) break;
+      }
+      if (currentEntry) break;
+    }
+
+    // Initialize deltas from current entry or create new
+    const currentDeltas: WeekplanDeltas = currentEntry?.deltas || {
+      removed_items: [],
+      added_items: []
+    };
+
+    // Build content showing template items
+    const contentDiv = document.createElement('div');
+    contentDiv.style.cssText = 'max-height: 400px; overflow-y: auto;';
+
+    if (template.description) {
+      const description = document.createElement('p');
+      description.textContent = template.description;
+      description.style.cssText = 'color: #666; margin-bottom: 0.5rem; font-style: italic; font-size: 0.9rem;';
+      contentDiv.appendChild(description);
+    }
+
+    if (template.items.length === 0) {
+      const emptyMsg = document.createElement('p');
+      emptyMsg.textContent = 'Keine Items in dieser Vorlage.';
+      emptyMsg.style.cssText = 'color: #999;';
+      contentDiv.appendChild(emptyMsg);
+    } else {
+      // Track which items are removed (checked = removed)
+      const removedItems = new Set<string>(currentDeltas.removed_items);
+
+      const itemsList = document.createElement('ul');
+      itemsList.style.cssText = 'list-style: none; padding: 0; margin: 0;';
+
+      template.items.forEach(item => {
+        const li = document.createElement('li');
+        const isRemoved = removedItems.has(item.name);
+
+        li.style.cssText = `
+          padding: 0.25rem 0.5rem;
+          background: ${isRemoved ? '#ffe6e6' : '#f8f9fa'};
+          border-radius: 3px;
+          margin-bottom: 0.25rem;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-size: 0.9rem;
+          transition: background-color 0.2s;
+        `;
+
+        // Left side: checkbox + name
+        const leftDiv = document.createElement('div');
+        leftDiv.style.cssText = 'display: flex; align-items: center; gap: 0.5rem;';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = isRemoved;
+        checkbox.style.cssText = 'cursor: pointer; width: 16px; height: 16px;';
+        checkbox.addEventListener('change', () => {
+          if (checkbox.checked) {
+            removedItems.add(item.name);
+            li.style.backgroundColor = '#ffe6e6';
+            nameSpan.style.textDecoration = 'line-through';
+            nameSpan.style.opacity = '0.6';
+          } else {
+            removedItems.delete(item.name);
+            li.style.backgroundColor = '#f8f9fa';
+            nameSpan.style.textDecoration = 'none';
+            nameSpan.style.opacity = '1';
+          }
+        });
+
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = item.name;
+        nameSpan.style.cssText = `
+          font-weight: 500;
+          ${isRemoved ? 'text-decoration: line-through; opacity: 0.6;' : ''}
+        `;
+
+        leftDiv.appendChild(checkbox);
+        leftDiv.appendChild(nameSpan);
+        li.appendChild(leftDiv);
+
+        if (item.menge) {
+          const mengeSpan = document.createElement('span');
+          mengeSpan.textContent = item.menge;
+          mengeSpan.style.cssText = 'color: #666; font-size: 0.85rem; margin-left: 0.5rem;';
+          li.appendChild(mengeSpan);
+        }
+
+        itemsList.appendChild(li);
+      });
+
+      contentDiv.appendChild(itemsList);
+    }
+
+    // Create and show modal FIRST so we can reference it in event handlers
+    const modal = new Modal({
+      title: `📋 ${template.name}`,
+      content: contentDiv,
+      size: 'medium'
+    });
+
+    // Add save button after modal is created (if there are items)
+    if (template.items.length > 0) {
+      const saveButtonDiv = document.createElement('div');
+      saveButtonDiv.style.cssText = 'margin-top: 1rem; display: flex; justify-content: flex-end;';
+
+      const saveButton = document.createElement('button');
+      saveButton.textContent = 'Änderungen speichern';
+      saveButton.style.cssText = `
+        background: #4a90e2;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: background-color 0.2s;
+      `;
+      saveButton.addEventListener('mouseover', () => {
+        saveButton.style.backgroundColor = '#357abd';
+      });
+      saveButton.addEventListener('mouseout', () => {
+        saveButton.style.backgroundColor = '#4a90e2';
+      });
+
+      const removedItems = new Set<string>(currentDeltas.removed_items);
+
+      // Collect checkbox states from DOM
+      const collectCheckboxStates = () => {
+        removedItems.clear();
+        const checkboxes = contentDiv.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach((cb, index) => {
+          const checkbox = cb as HTMLInputElement;
+          if (checkbox.checked && template.items[index]) {
+            removedItems.add(template.items[index].name);
+          }
+        });
+      };
+
+      saveButton.addEventListener('click', async () => {
+        try {
+          saveButton.disabled = true;
+          saveButton.textContent = 'Speichere...';
+
+          collectCheckboxStates();
+
+          const newDeltas: WeekplanDeltas = {
+            removed_items: Array.from(removedItems),
+            added_items: currentDeltas.added_items // Keep existing added items
+          };
+
+          await updateWeekplanEntryDeltas(entryId, newDeltas);
+
+          // Update local store
+          if (currentEntry) {
+            currentEntry.deltas = newDeltas;
+          }
+
+          saveButton.textContent = '✓ Gespeichert';
+          saveButton.style.backgroundColor = '#5cb85c';
+
+          setTimeout(() => {
+            modal.close();
+          }, 500);
+        } catch (error) {
+          console.error('Failed to save deltas:', error);
+          saveButton.disabled = false;
+          saveButton.textContent = 'Fehler - Nochmal versuchen';
+          saveButton.style.backgroundColor = '#d9534f';
+          setTimeout(() => {
+            saveButton.textContent = 'Änderungen speichern';
+            saveButton.style.backgroundColor = '#4a90e2';
+          }, 2000);
+        }
+      });
+
+      saveButtonDiv.appendChild(saveButton);
+      contentDiv.appendChild(saveButtonDiv);
+    }
+
+    modal.open();
+  } catch (error) {
+    console.error('Failed to load template details:', error);
+  }
+}
+
+/**
  * Add a meal item to the DOM
  */
 function addMealItemToDOM(container: Element, text: string, entryId: number): void {
@@ -430,7 +637,34 @@ function addMealItemToDOM(container: Element, text: string, entryId: number): vo
 
   const span = document.createElement('span');
   span.textContent = text;
-  span.style.cssText = 'flex: 1; font-size: 0.9rem;';
+  span.style.cssText = `
+    flex: 1;
+    font-size: 0.9rem;
+    cursor: pointer;
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
+    transition: all 0.2s;
+    user-select: none;
+  `;
+
+  // Make text clickable to show template details
+  span.addEventListener('click', async (e) => {
+    e.stopPropagation(); // Prevent event bubbling
+    e.preventDefault(); // Prevent default action
+    await showTemplateDetails(text, entryId);
+  });
+
+  span.addEventListener('mouseover', () => {
+    span.style.backgroundColor = '#e8f4fd';
+    span.style.textDecoration = 'underline';
+    span.style.color = '#0066cc';
+  });
+
+  span.addEventListener('mouseout', () => {
+    span.style.backgroundColor = 'transparent';
+    span.style.textDecoration = 'none';
+    span.style.color = 'inherit';
+  });
 
   const deleteBtn = document.createElement('button');
   deleteBtn.textContent = '🗑️';

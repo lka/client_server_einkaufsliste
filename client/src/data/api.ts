@@ -62,11 +62,22 @@ export interface Template {
   items: TemplateItem[];
 }
 
+export interface DeltaItem {
+  name: string;
+  menge?: string;
+}
+
+export interface WeekplanDeltas {
+  removed_items: string[];
+  added_items: DeltaItem[];
+}
+
 export interface WeekplanEntry {
   id?: number;
   date: string;  // ISO format: YYYY-MM-DD
   meal: string;  // 'morning', 'lunch', 'dinner'
   text: string;
+  deltas?: WeekplanDeltas;
 }
 
 export interface BackupData {
@@ -1347,6 +1358,44 @@ export async function deleteWeekplanEntry(entryId: number): Promise<void> {
     }
   } catch (error) {
     console.error('Error deleting weekplan entry:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update the deltas for a weekplan entry.
+ */
+export async function updateWeekplanEntryDeltas(
+  entryId: number,
+  deltas: WeekplanDeltas
+): Promise<WeekplanEntry> {
+  const token = getToken();
+  if (!token) {
+    throw new Error('Not authenticated');
+  }
+
+  try {
+    const res = await fetch(`/api/weekplan/entries/${entryId}/deltas`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(deltas),
+    });
+
+    if (res.status === 401) {
+      clearToken();
+      throw new Error('Session expired');
+    }
+
+    if (!res.ok) {
+      throw new Error(`Failed to update weekplan entry deltas: ${res.statusText}`);
+    }
+
+    return await res.json();
+  } catch (error) {
+    console.error('Error updating weekplan entry deltas:', error);
     throw error;
   }
 }

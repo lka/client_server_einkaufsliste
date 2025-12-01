@@ -272,13 +272,13 @@ export function injectModalStyles(): void {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 1.5rem;
+      padding: 0.75rem 1rem;
       border-bottom: 1px solid #e5e5e5;
     }
 
     .modal-title {
       margin: 0;
-      font-size: 1.25rem;
+      font-size: 1.1rem;
       font-weight: 600;
       color: #333;
     }
@@ -286,13 +286,13 @@ export function injectModalStyles(): void {
     .modal-close {
       background: none;
       border: none;
-      font-size: 2rem;
+      font-size: 1.75rem;
       line-height: 1;
       color: #666;
       cursor: pointer;
       padding: 0;
-      width: 2rem;
-      height: 2rem;
+      width: 1.75rem;
+      height: 1.75rem;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -307,7 +307,7 @@ export function injectModalStyles(): void {
 
     /* Modal Content */
     .modal-content {
-      padding: 1.5rem;
+      padding: 0.75rem 1rem 1rem 1rem;
       overflow-y: auto;
       flex: 1;
     }

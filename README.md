@@ -164,6 +164,20 @@ Python FastAPI Server + TypeScript Client mit JWT-Authentifizierung.
     - **Wochennavigation**: Vor/Zurück-Buttons zum Durchblättern der Wochen
     - **Aktuelle Woche hervorgehoben**: Heutiger Tag wird farblich markiert
     - **KW-Anzeige**: Kalenderwoche und Datumsbereich werden im Header angezeigt
+    - **Interactive Template Preview mit Delta-Management**: Klick auf Wochenplan-Eintrag öffnet Template-Details mit Anpassungsmöglichkeiten
+      - **Visual Feedback**: Blaue Hintergrundfarbe, Unterstrich und blauer Text beim Hover
+      - **Smart Detection**: Erkennt automatisch ob Eintrag ein Template ist (case-insensitive)
+      - **Modal-Anzeige**: Zeigt Template-Name, Beschreibung und alle Items mit Mengen
+      - **Delta-Management**: Items können als "nicht benötigt" markiert werden
+        - **Checkbox-Steuerung**: Jedes Item hat eine Checkbox zum Deaktivieren
+        - **Visuelles Feedback**: Markierte Items werden rot hinterlegt und durchgestrichen
+        - **Persistente Speicherung**: Deltas werden mit dem WeekplanEntry gespeichert
+        - **Einkaufslisten-Synchronisation**: Änderungen werden sofort auf die Einkaufsliste angewendet
+          - Item als "nicht benötigt" markieren → Item wird aus Einkaufsliste entfernt (Menge abgezogen)
+          - Item wieder aktivieren → Item wird zur Einkaufsliste hinzugefügt (Menge addiert)
+          - Beim Löschen des Eintrags werden nur tatsächlich hinzugefügte Items entfernt
+        - **WebSocket-Broadcasting**: Alle Einkaufslisten-Änderungen werden live an verbundene Clients gesendet
+      - **Keyboard Support**: Modal kann mit Escape-Taste oder Backdrop-Klick geschlossen werden
     - **Template-Integration**: Automatische Einkaufslisten-Generierung aus Wochenplan
       - **Automatisches Hinzufügen**: Wenn Wochenplan-Eintrag einem Template-Namen entspricht, werden Template-Items automatisch zur Einkaufsliste hinzugefügt
       - **Intelligente Datumsberechnung**:

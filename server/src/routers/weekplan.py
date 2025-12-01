@@ -1,7 +1,8 @@
 """Weekly meal plan endpoints."""
 
 import os
-from typing import List
+import json
+from typing import List, Optional
 from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, Depends
 from sqlmodel import select
@@ -16,12 +17,27 @@ from ..websocket_manager import manager
 router = APIRouter(prefix="/api/weekplan", tags=["weekplan"])
 
 
+class DeltaItem(BaseModel):
+    """Schema for a delta item."""
+
+    name: str
+    menge: Optional[str] = None
+
+
+class WeekplanDeltas(BaseModel):
+    """Schema for weekplan entry deltas."""
+
+    removed_items: List[str] = []
+    added_items: List[DeltaItem] = []
+
+
 class WeekplanEntryCreate(BaseModel):
     """Schema for creating a weekplan entry."""
 
     date: str  # ISO format: YYYY-MM-DD
     meal: str  # 'morning', 'lunch', 'dinner'
     text: str
+    deltas: Optional[WeekplanDeltas] = None
 
 
 class WeekplanEntryResponse(BaseModel):
@@ -31,6 +47,7 @@ class WeekplanEntryResponse(BaseModel):
     date: str
     meal: str
     text: str
+    deltas: Optional[WeekplanDeltas] = None
 
 
 def _get_next_weekday(from_date: datetime, target_weekday: int) -> datetime:
@@ -158,7 +175,11 @@ def _calculate_shopping_date(
 
 
 def _add_template_items_to_shopping_list(
-    session, template_name: str, weekplan_date: str, meal: str
+    session,
+    template_name: str,
+    weekplan_date: str,
+    meal: str,
+    deltas: Optional[WeekplanDeltas] = None,
 ) -> List[Item]:
     """Add template items to shopping list when weekplan entry matches template name.
 
@@ -167,10 +188,15 @@ def _add_template_items_to_shopping_list(
         template_name: Name of the template to check
         weekplan_date: Date from weekplan entry (YYYY-MM-DD)
         meal: Meal type ('morning', 'lunch', 'dinner')
+        deltas: Optional deltas to apply (removed items, added items)
 
     Returns:
         List of items that were added or modified
     """
+    import uuid
+    from ..routers.items import _find_existing_item, _find_matching_product
+    from ..utils import merge_quantities
+
     modified_items = []
 
     # Check if weekplan date is in the past
@@ -195,18 +221,20 @@ def _add_template_items_to_shopping_list(
     if not first_store:
         return modified_items  # No store available
 
-    # Add each template item to shopping list
+    # Create set of removed items for fast lookup
+    removed_items = set(deltas.removed_items) if deltas else set()
+
+    # Add each template item to shopping list (unless removed in deltas)
     for template_item in template.template_items:
+        # Skip items that are marked as removed in deltas
+        if template_item.name in removed_items:
+            continue
         # Calculate shopping date using helper function
         shopping_date = _calculate_shopping_date(
             weekplan_date, template_item.name, first_store, session, meal
         )
 
         # Add items directly with merge logic (similar to create_item endpoint)
-        from ..routers.items import _find_existing_item, _find_matching_product
-        from ..utils import merge_quantities
-        import uuid
-
         # Find existing item with same name, date, and store
         existing_item = _find_existing_item(
             session, template_item.name, shopping_date, first_store.id
@@ -243,11 +271,58 @@ def _add_template_items_to_shopping_list(
 
         session.commit()
 
+    # Add items from deltas.added_items
+    if deltas and deltas.added_items:
+        for delta_item in deltas.added_items:
+            # Calculate shopping date
+            shopping_date = _calculate_shopping_date(
+                weekplan_date, delta_item.name, first_store, session, meal
+            )
+
+            # Find existing item
+            existing_item = _find_existing_item(
+                session, delta_item.name, shopping_date, first_store.id
+            )
+
+            if existing_item:
+                # Merge quantities
+                merged_menge = merge_quantities(existing_item.menge, delta_item.menge)
+                if merged_menge is None or merged_menge.strip() == "":
+                    session.delete(existing_item)
+                else:
+                    existing_item.menge = merged_menge
+                    session.add(existing_item)
+                    modified_items.append(existing_item)
+            else:
+                # Create new item
+                new_item = Item(
+                    id=str(uuid.uuid4()),
+                    name=delta_item.name,
+                    menge=delta_item.menge,
+                    store_id=first_store.id,
+                    shopping_date=shopping_date,
+                    user_id=None,
+                )
+
+                # Find matching product
+                product_id = _find_matching_product(session, new_item)
+                if product_id:
+                    new_item.product_id = product_id
+
+                session.add(new_item)
+                modified_items.append(new_item)
+
+        session.commit()
+
     return modified_items
 
 
 def _remove_template_items_from_shopping_list(
-    session, template_name: str, weekplan_date: str, meal: str
+    session,
+    template_name: str,
+    weekplan_date: str,
+    meal: str,
+    deltas: Optional[WeekplanDeltas] = None,
 ) -> List[Item]:
     """Remove template items from shopping list when weekplan entry is deleted.
 
@@ -259,10 +334,14 @@ def _remove_template_items_from_shopping_list(
         template_name: Name of the template to check
         weekplan_date: Date from weekplan entry (YYYY-MM-DD)
         meal: Meal type ('morning', 'lunch', 'dinner')
+        deltas: Optional deltas to apply (removed items, added items)
 
     Returns:
         List of items that were modified or deleted
     """
+    from ..routers.items import _find_existing_item
+    from ..utils import merge_quantities, parse_quantity
+
     modified_items = []
 
     # Check if weekplan date is in the past
@@ -287,17 +366,20 @@ def _remove_template_items_from_shopping_list(
     if not first_store:
         return modified_items  # No store available
 
-    # Remove each template item from shopping list
+    # Create set of removed items for fast lookup
+    removed_items = set(deltas.removed_items) if deltas else set()
+
+    # Remove each template item from shopping list (unless it was removed in deltas)
     for template_item in template.template_items:
+        # Skip items that were marked as removed in deltas (they were never added)
+        if template_item.name in removed_items:
+            continue
         # Calculate shopping date using helper function (same logic as add)
         shopping_date = _calculate_shopping_date(
             weekplan_date, template_item.name, first_store, session, meal
         )
 
         # Subtract quantities using merge logic
-        from ..routers.items import _find_existing_item
-        from ..utils import merge_quantities
-
         # Find existing item with same name, date, and store
         existing_item = _find_existing_item(
             session, template_item.name, shopping_date, first_store.id
@@ -308,8 +390,47 @@ def _remove_template_items_from_shopping_list(
             negative_menge = template_item.menge
             if negative_menge:
                 # Parse and negate the quantity
-                from ..utils import parse_quantity
+                parsed_num, unit = parse_quantity(negative_menge)
+                if parsed_num is not None:
+                    # Create negative version
+                    if parsed_num == int(parsed_num):
+                        negative_menge = f"-{int(parsed_num)}"
+                    else:
+                        negative_menge = f"-{parsed_num}"
+                    if unit:
+                        negative_menge = f"{negative_menge} {unit}"
 
+                    # Merge with negative quantity (subtraction)
+                    merged_menge = merge_quantities(existing_item.menge, negative_menge)
+
+                    if merged_menge is None or merged_menge.strip() == "":
+                        # Quantity reduced to zero or below, delete item
+                        session.delete(existing_item)
+                        # Don't add deleted items to modified_items
+                    else:
+                        # Update with reduced quantity
+                        existing_item.menge = merged_menge
+                        session.add(existing_item)
+                        modified_items.append(existing_item)
+
+                    session.commit()
+
+    # Remove items from deltas.added_items
+    if deltas and deltas.added_items:
+        for delta_item in deltas.added_items:
+            # Calculate shopping date
+            shopping_date = _calculate_shopping_date(
+                weekplan_date, delta_item.name, first_store, session, meal
+            )
+
+            # Find existing item
+            existing_item = _find_existing_item(
+                session, delta_item.name, shopping_date, first_store.id
+            )
+
+            if existing_item and delta_item.menge:
+                # Create negative quantity for subtraction
+                negative_menge = delta_item.menge
                 parsed_num, unit = parse_quantity(negative_menge)
                 if parsed_num is not None:
                     # Create negative version
@@ -372,7 +493,13 @@ def get_weekplan_entries(
 
         return [
             WeekplanEntryResponse(
-                id=entry.id, date=entry.date, meal=entry.meal, text=entry.text
+                id=entry.id,
+                date=entry.date,
+                meal=entry.meal,
+                text=entry.text,
+                deltas=(
+                    WeekplanDeltas(**json.loads(entry.deltas)) if entry.deltas else None
+                ),
             )
             for entry in entries
         ]
@@ -401,15 +528,22 @@ async def create_weekplan_entry(
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
+        # Serialize deltas to JSON if provided
+        deltas_json = None
+        if entry.deltas:
+            deltas_json = json.dumps(entry.deltas.model_dump())
+
         # Create entry (shared, no user_id)
-        db_entry = WeekplanEntry(date=entry.date, meal=entry.meal, text=entry.text)
+        db_entry = WeekplanEntry(
+            date=entry.date, meal=entry.meal, text=entry.text, deltas=deltas_json
+        )
         session.add(db_entry)
         session.commit()
         session.refresh(db_entry)
 
         # Check if entry text matches a shopping template and add items to shopping list
         modified_items = _add_template_items_to_shopping_list(
-            session, entry.text, entry.date, entry.meal
+            session, entry.text, entry.date, entry.meal, entry.deltas
         )
 
         # Broadcast shopping list changes to all connected clients
@@ -430,7 +564,11 @@ async def create_weekplan_entry(
             )
 
         return WeekplanEntryResponse(
-            id=db_entry.id, date=db_entry.date, meal=db_entry.meal, text=db_entry.text
+            id=db_entry.id,
+            date=db_entry.date,
+            meal=db_entry.meal,
+            text=db_entry.text,
+            deltas=entry.deltas,
         )
 
 
@@ -462,12 +600,17 @@ async def delete_weekplan_entry(
         if not entry:
             raise HTTPException(status_code=404, detail="Entry not found")
 
+        # Parse deltas from entry
+        entry_deltas = None
+        if entry.deltas:
+            entry_deltas = WeekplanDeltas(**json.loads(entry.deltas))
+
         # Check if entry text matches a shopping template and remove items
         # from shopping list
         # Do this BEFORE deleting the entry so we still have access to entry.text
         # and entry.date
         modified_items = _remove_template_items_from_shopping_list(
-            session, entry.text, entry.date, entry.meal
+            session, entry.text, entry.date, entry.meal, entry_deltas
         )
 
         # Broadcast shopping list changes to all connected clients
@@ -492,3 +635,204 @@ async def delete_weekplan_entry(
         session.commit()
 
         return {"message": "Entry deleted successfully"}
+
+
+@router.patch("/entries/{entry_id}/deltas", response_model=WeekplanEntryResponse)
+async def update_weekplan_entry_deltas(
+    entry_id: int,
+    deltas: WeekplanDeltas,
+    current_user: str = Depends(get_current_user),
+):
+    """Update the deltas for a weekplan entry.
+
+    Args:
+        entry_id: Entry ID
+        deltas: Delta modifications (removed items, added items)
+        current_user: Current authenticated username from JWT (for authentication only)
+
+    Returns:
+        Updated weekplan entry
+    """
+    with get_session() as session:
+        # Verify user is authenticated
+        user = session.exec(select(User).where(User.username == current_user)).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Get entry
+        entry = session.get(WeekplanEntry, entry_id)
+        if not entry:
+            raise HTTPException(status_code=404, detail="Weekplan entry not found")
+
+        # Parse old deltas to detect changes
+        old_deltas = None
+        if entry.deltas:
+            old_deltas = WeekplanDeltas(**json.loads(entry.deltas))
+
+        # Check if entry text matches a template
+        template = session.exec(
+            select(ShoppingTemplate).where(ShoppingTemplate.name == entry.text)
+        ).first()
+
+        modified_items = []
+
+        if template:
+            # Calculate which items were newly marked as removed
+            old_removed = set(old_deltas.removed_items) if old_deltas else set()
+            new_removed = set(deltas.removed_items)
+            newly_removed = new_removed - old_removed
+
+            # Calculate which items were unmarked (no longer removed)
+            newly_added_back = old_removed - new_removed
+
+            # Get first store
+            first_store = session.exec(
+                select(Store).order_by(Store.sort_order, Store.id)
+            ).first()
+
+            if first_store:
+                import uuid
+                from ..routers.items import _find_existing_item, _find_matching_product
+                from ..utils import merge_quantities, parse_quantity
+
+                # Remove newly marked items from shopping list
+                for item_name in newly_removed:
+                    # Find the template item to get its quantity
+                    template_item = next(
+                        (ti for ti in template.template_items if ti.name == item_name),
+                        None,
+                    )
+                    if not template_item:
+                        continue
+
+                    # Calculate shopping date
+                    shopping_date = _calculate_shopping_date(
+                        entry.date, item_name, first_store, session, entry.meal
+                    )
+
+                    # Find and remove/reduce quantity
+                    existing_item = _find_existing_item(
+                        session, item_name, shopping_date, first_store.id
+                    )
+
+                    if existing_item and template_item.menge:
+                        # Create negative quantity for subtraction
+                        parsed_num, unit = parse_quantity(template_item.menge)
+                        if parsed_num is not None:
+                            if parsed_num == int(parsed_num):
+                                negative_menge = f"-{int(parsed_num)}"
+                            else:
+                                negative_menge = f"-{parsed_num}"
+                            if unit:
+                                negative_menge = f"{negative_menge} {unit}"
+
+                            # Merge with negative quantity
+                            merged_menge = merge_quantities(
+                                existing_item.menge, negative_menge
+                            )
+
+                            if merged_menge is None or merged_menge.strip() == "":
+                                session.delete(existing_item)
+                            else:
+                                existing_item.menge = merged_menge
+                                session.add(existing_item)
+                                modified_items.append(existing_item)
+
+                            session.commit()
+
+                # Add back items that were unmarked
+                for item_name in newly_added_back:
+                    # Find the template item to get its quantity
+                    template_item = next(
+                        (ti for ti in template.template_items if ti.name == item_name),
+                        None,
+                    )
+                    if not template_item:
+                        continue
+
+                    # Calculate shopping date
+                    shopping_date = _calculate_shopping_date(
+                        entry.date, item_name, first_store, session, entry.meal
+                    )
+
+                    # Find or create item
+                    existing_item = _find_existing_item(
+                        session, item_name, shopping_date, first_store.id
+                    )
+
+                    if existing_item:
+                        # Merge quantities
+                        merged_menge = merge_quantities(
+                            existing_item.menge, template_item.menge
+                        )
+                        if merged_menge is None or merged_menge.strip() == "":
+                            session.delete(existing_item)
+                        else:
+                            existing_item.menge = merged_menge
+                            session.add(existing_item)
+                            modified_items.append(existing_item)
+                    else:
+                        # Create new item
+                        new_item = Item(
+                            id=str(uuid.uuid4()),
+                            name=item_name,
+                            menge=template_item.menge,
+                            store_id=first_store.id,
+                            shopping_date=shopping_date,
+                            user_id=None,
+                        )
+
+                        # Find matching product
+                        product_id = _find_matching_product(session, new_item)
+                        if product_id:
+                            new_item.product_id = product_id
+
+                        session.add(new_item)
+                        modified_items.append(new_item)
+
+                    session.commit()
+
+        # Update deltas
+        entry.deltas = json.dumps(deltas.model_dump())
+        session.add(entry)
+        session.commit()
+        session.refresh(entry)
+
+        # Broadcast shopping list changes
+        for item in modified_items:
+            await manager.broadcast(
+                {
+                    "type": "item:updated",
+                    "data": {
+                        "id": item.id,
+                        "name": item.name,
+                        "menge": item.menge,
+                        "store_id": item.store_id,
+                        "product_id": item.product_id,
+                        "shopping_date": item.shopping_date,
+                        "user_id": item.user_id,
+                    },
+                }
+            )
+
+        # Broadcast update to all connected clients
+        await manager.broadcast(
+            {
+                "type": "weekplan:deltas_updated",
+                "data": {
+                    "id": entry.id,
+                    "date": entry.date,
+                    "meal": entry.meal,
+                    "text": entry.text,
+                    "deltas": deltas.model_dump(),
+                },
+            }
+        )
+
+        return WeekplanEntryResponse(
+            id=entry.id,
+            date=entry.date,
+            meal=entry.meal,
+            text=entry.text,
+            deltas=deltas,
+        )
