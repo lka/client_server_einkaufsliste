@@ -3,7 +3,7 @@
  * Manages the weekly planning view with navigation and day columns
  */
 
-import { getWeekplanEntries, createWeekplanEntry, deleteWeekplanEntry, getWeekplanSuggestions, WeekplanEntry, fetchTemplates, updateWeekplanEntryDeltas, WeekplanDeltas } from '../data/api.js';
+import { getWeekplanEntries, createWeekplanEntry, deleteWeekplanEntry, getWeekplanSuggestions, WeekplanEntry, fetchTemplates, updateWeekplanEntryDeltas, WeekplanDeltas, DeltaItem } from '../data/api.js';
 import { onWeekplanAdded, onWeekplanDeleted, broadcastWeekplanAdd, broadcastWeekplanDelete } from '../data/websocket.js';
 import { printWeekplan } from './print-utils.js';
 import { Autocomplete } from './components/autocomplete.js';
@@ -525,6 +525,190 @@ async function showTemplateDetails(templateName: string, entryId: number): Promi
       contentDiv.appendChild(itemsList);
     }
 
+    // Add section for adding new items
+    const addItemSection = document.createElement('div');
+    addItemSection.style.cssText = `
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid #e0e0e0;
+    `;
+
+    const addItemHeading = document.createElement('h4');
+    addItemHeading.textContent = 'Artikel hinzufügen';
+    addItemHeading.style.cssText = 'margin: 0 0 0.5rem 0; font-size: 0.95rem; color: #333;';
+    addItemSection.appendChild(addItemHeading);
+
+    // Track added items
+    const addedItems = new Map<string, DeltaItem>(
+      currentDeltas.added_items.map(item => [item.name, item])
+    );
+
+    // Container for added items list
+    const addedItemsList = document.createElement('div');
+    addedItemsList.style.cssText = 'margin-bottom: 0.75rem;';
+
+    const renderAddedItems = () => {
+      addedItemsList.innerHTML = '';
+      if (addedItems.size === 0) {
+        const emptyMsg = document.createElement('p');
+        emptyMsg.textContent = 'Keine zusätzlichen Artikel';
+        emptyMsg.style.cssText = 'color: #999; font-size: 0.85rem; font-style: italic; margin: 0;';
+        addedItemsList.appendChild(emptyMsg);
+      } else {
+        const list = document.createElement('ul');
+        list.style.cssText = 'list-style: none; padding: 0; margin: 0;';
+
+        addedItems.forEach((item, name) => {
+          const li = document.createElement('li');
+          li.style.cssText = `
+            padding: 0.25rem 0.5rem;
+            background: #e8f5e9;
+            border-radius: 3px;
+            margin-bottom: 0.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+          `;
+
+          const leftDiv = document.createElement('div');
+          leftDiv.style.cssText = 'display: flex; align-items: center; gap: 0.5rem;';
+
+          const nameSpan = document.createElement('span');
+          nameSpan.textContent = name;
+          nameSpan.style.cssText = 'font-weight: 500; color: #2e7d32;';
+          leftDiv.appendChild(nameSpan);
+
+          if (item.menge) {
+            const mengeSpan = document.createElement('span');
+            mengeSpan.textContent = item.menge;
+            mengeSpan.style.cssText = 'color: #666; font-size: 0.85rem;';
+            leftDiv.appendChild(mengeSpan);
+          }
+
+          li.appendChild(leftDiv);
+
+          // Remove button
+          const removeBtn = document.createElement('button');
+          removeBtn.textContent = '×';
+          removeBtn.style.cssText = `
+            background: none;
+            border: none;
+            color: #d32f2f;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0 0.25rem;
+            line-height: 1;
+          `;
+          removeBtn.addEventListener('click', () => {
+            addedItems.delete(name);
+            renderAddedItems();
+          });
+          li.appendChild(removeBtn);
+
+          list.appendChild(li);
+        });
+
+        addedItemsList.appendChild(list);
+      }
+    };
+
+    renderAddedItems();
+    addItemSection.appendChild(addedItemsList);
+
+    // Input form for adding items
+    const addForm = document.createElement('div');
+    addForm.style.cssText = 'display: flex; gap: 0.5rem; align-items: flex-end;';
+
+    const nameGroup = document.createElement('div');
+    nameGroup.style.cssText = 'flex: 1;';
+    const nameLabel = document.createElement('label');
+    nameLabel.textContent = 'Artikel';
+    nameLabel.style.cssText = 'display: block; font-size: 0.85rem; margin-bottom: 0.25rem; color: #666;';
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.placeholder = 'Artikelname';
+    nameInput.style.cssText = `
+      width: 100%;
+      padding: 0.4rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    `;
+    nameGroup.appendChild(nameLabel);
+    nameGroup.appendChild(nameInput);
+
+    const mengeGroup = document.createElement('div');
+    mengeGroup.style.cssText = 'width: 100px;';
+    const mengeLabel = document.createElement('label');
+    mengeLabel.textContent = 'Menge';
+    mengeLabel.style.cssText = 'display: block; font-size: 0.85rem; margin-bottom: 0.25rem; color: #666;';
+    const mengeInput = document.createElement('input');
+    mengeInput.type = 'text';
+    mengeInput.placeholder = 'z.B. 2 kg';
+    mengeInput.style.cssText = `
+      width: 100%;
+      padding: 0.4rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    `;
+    mengeGroup.appendChild(mengeLabel);
+    mengeGroup.appendChild(mengeInput);
+
+    const addBtn = document.createElement('button');
+    addBtn.textContent = '+';
+    addBtn.style.cssText = `
+      background: #4caf50;
+      color: white;
+      border: none;
+      padding: 0.4rem 0.75rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1.1rem;
+      font-weight: bold;
+      transition: background-color 0.2s;
+    `;
+    addBtn.addEventListener('mouseover', () => {
+      addBtn.style.backgroundColor = '#45a049';
+    });
+    addBtn.addEventListener('mouseout', () => {
+      addBtn.style.backgroundColor = '#4caf50';
+    });
+    addBtn.addEventListener('click', () => {
+      const name = nameInput.value.trim();
+      const menge = mengeInput.value.trim();
+
+      if (!name) {
+        nameInput.focus();
+        return;
+      }
+
+      // Check if item already in template
+      const isInTemplate = template.items.some(item =>
+        item.name.toLowerCase() === name.toLowerCase()
+      );
+      if (isInTemplate) {
+        alert('Dieser Artikel ist bereits in der Vorlage enthalten. Nutze die Checkbox zum Aktivieren/Deaktivieren.');
+        nameInput.value = '';
+        nameInput.focus();
+        return;
+      }
+
+      addedItems.set(name, { name, menge: menge || undefined });
+      renderAddedItems();
+      nameInput.value = '';
+      mengeInput.value = '';
+      nameInput.focus();
+    });
+
+    addForm.appendChild(nameGroup);
+    addForm.appendChild(mengeGroup);
+    addForm.appendChild(addBtn);
+    addItemSection.appendChild(addForm);
+
+    contentDiv.appendChild(addItemSection);
+
     // Create and show modal FIRST so we can reference it in event handlers
     const modal = new Modal({
       title: `📋 ${template.name}`,
@@ -532,84 +716,82 @@ async function showTemplateDetails(templateName: string, entryId: number): Promi
       size: 'medium'
     });
 
-    // Add save button after modal is created (if there are items)
-    if (template.items.length > 0) {
-      const saveButtonDiv = document.createElement('div');
-      saveButtonDiv.style.cssText = 'margin-top: 1rem; display: flex; justify-content: flex-end;';
+    // Add save button (always show it now)
+    const saveButtonDiv = document.createElement('div');
+    saveButtonDiv.style.cssText = 'margin-top: 1rem; display: flex; justify-content: flex-end;';
 
-      const saveButton = document.createElement('button');
-      saveButton.textContent = 'Änderungen speichern';
-      saveButton.style.cssText = `
-        background: #4a90e2;
-        color: white;
-        border: none;
-        padding: 0.5rem 1rem;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 0.9rem;
-        transition: background-color 0.2s;
-      `;
-      saveButton.addEventListener('mouseover', () => {
-        saveButton.style.backgroundColor = '#357abd';
-      });
-      saveButton.addEventListener('mouseout', () => {
-        saveButton.style.backgroundColor = '#4a90e2';
-      });
+    const saveButton = document.createElement('button');
+    saveButton.textContent = 'Änderungen speichern';
+    saveButton.style.cssText = `
+      background: #4a90e2;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background-color 0.2s;
+    `;
+    saveButton.addEventListener('mouseover', () => {
+      saveButton.style.backgroundColor = '#357abd';
+    });
+    saveButton.addEventListener('mouseout', () => {
+      saveButton.style.backgroundColor = '#4a90e2';
+    });
 
-      const removedItems = new Set<string>(currentDeltas.removed_items);
+    const removedItems = new Set<string>(currentDeltas.removed_items);
 
-      // Collect checkbox states from DOM
-      const collectCheckboxStates = () => {
-        removedItems.clear();
-        const checkboxes = contentDiv.querySelectorAll('input[type="checkbox"]');
-        checkboxes.forEach((cb, index) => {
-          const checkbox = cb as HTMLInputElement;
-          if (checkbox.checked && template.items[index]) {
-            removedItems.add(template.items[index].name);
-          }
-        });
-      };
-
-      saveButton.addEventListener('click', async () => {
-        try {
-          saveButton.disabled = true;
-          saveButton.textContent = 'Speichere...';
-
-          collectCheckboxStates();
-
-          const newDeltas: WeekplanDeltas = {
-            removed_items: Array.from(removedItems),
-            added_items: currentDeltas.added_items // Keep existing added items
-          };
-
-          await updateWeekplanEntryDeltas(entryId, newDeltas);
-
-          // Update local store
-          if (currentEntry) {
-            currentEntry.deltas = newDeltas;
-          }
-
-          saveButton.textContent = '✓ Gespeichert';
-          saveButton.style.backgroundColor = '#5cb85c';
-
-          setTimeout(() => {
-            modal.close();
-          }, 500);
-        } catch (error) {
-          console.error('Failed to save deltas:', error);
-          saveButton.disabled = false;
-          saveButton.textContent = 'Fehler - Nochmal versuchen';
-          saveButton.style.backgroundColor = '#d9534f';
-          setTimeout(() => {
-            saveButton.textContent = 'Änderungen speichern';
-            saveButton.style.backgroundColor = '#4a90e2';
-          }, 2000);
+    // Collect checkbox states from DOM
+    const collectCheckboxStates = () => {
+      removedItems.clear();
+      const checkboxes = contentDiv.querySelectorAll('input[type="checkbox"]');
+      checkboxes.forEach((cb, index) => {
+        const checkbox = cb as HTMLInputElement;
+        if (checkbox.checked && template.items[index]) {
+          removedItems.add(template.items[index].name);
         }
       });
+    };
 
-      saveButtonDiv.appendChild(saveButton);
-      contentDiv.appendChild(saveButtonDiv);
-    }
+    saveButton.addEventListener('click', async () => {
+      try {
+        saveButton.disabled = true;
+        saveButton.textContent = 'Speichere...';
+
+        collectCheckboxStates();
+
+        const newDeltas: WeekplanDeltas = {
+          removed_items: Array.from(removedItems),
+          added_items: Array.from(addedItems.values())
+        };
+
+        await updateWeekplanEntryDeltas(entryId, newDeltas);
+
+        // Update local store
+        if (currentEntry) {
+          currentEntry.deltas = newDeltas;
+        }
+
+        saveButton.textContent = '✓ Gespeichert';
+        saveButton.style.backgroundColor = '#5cb85c';
+
+        setTimeout(() => {
+          modal.close();
+        }, 500);
+      } catch (error) {
+        console.error('Failed to save deltas:', error);
+        saveButton.disabled = false;
+        saveButton.textContent = 'Fehler - Nochmal versuchen';
+        saveButton.style.backgroundColor = '#d9534f';
+        setTimeout(() => {
+          saveButton.textContent = 'Änderungen speichern';
+          saveButton.style.backgroundColor = '#4a90e2';
+        }, 2000);
+      }
+    });
+
+    saveButtonDiv.appendChild(saveButton);
+    contentDiv.appendChild(saveButtonDiv);
 
     modal.open();
   } catch (error) {
