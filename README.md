@@ -6,6 +6,7 @@ Python FastAPI Server + TypeScript Client mit JWT-Authentifizierung.
 
 ## Release
 
+ - Release 2.0.0: Wochenplaneinträge zeigen einen Preview
  - Release 1.5.0: WebSocket-Notifications hinzugefügt
  - Release 1.4.0: Wochenplaner integriert
  - Release 1.0.0: Erste stabile Version
