@@ -47,6 +47,7 @@ class TemplateCreate(BaseModel):
 
     name: str
     description: Optional[str] = None
+    person_count: int = 2
     items: list[TemplateItemCreate]
 
 
@@ -55,6 +56,7 @@ class TemplateUpdate(BaseModel):
 
     name: Optional[str] = None
     description: Optional[str] = None
+    person_count: Optional[int] = None
     items: Optional[list[TemplateItemCreate]] = None
 
 
@@ -64,6 +66,7 @@ class TemplateResponse(BaseModel):
     id: int
     name: str
     description: Optional[str] = None
+    person_count: int
     items: list[TemplateItemResponse]
 
 
@@ -92,6 +95,7 @@ def get_templates(
                 id=template.id,
                 name=template.name,
                 description=template.description,
+                person_count=template.person_count,
                 items=items,
             )
         )
@@ -129,6 +133,7 @@ def get_template(
         id=template.id,
         name=template.name,
         description=template.description,
+        person_count=template.person_count,
         items=items,
     )
 
@@ -161,7 +166,9 @@ def create_template(
 
     # Create template
     template = ShoppingTemplate(
-        name=template_data.name, description=template_data.description
+        name=template_data.name,
+        description=template_data.description,
+        person_count=template_data.person_count,
     )
     session.add(template)
     session.commit()
@@ -187,6 +194,7 @@ def create_template(
         id=template.id,
         name=template.name,
         description=template.description,
+        person_count=template.person_count,
         items=items,
     )
 
@@ -234,6 +242,10 @@ def update_template(
     if template_data.description is not None:
         template.description = template_data.description
 
+    # Update person_count if provided
+    if template_data.person_count is not None:
+        template.person_count = template_data.person_count
+
     # Update items if provided (replace all items)
     if template_data.items is not None:
         # Delete existing items (cascade handles this automatically)
@@ -260,6 +272,7 @@ def update_template(
         id=template.id,
         name=template.name,
         description=template.description,
+        person_count=template.person_count,
         items=items,
     )
 

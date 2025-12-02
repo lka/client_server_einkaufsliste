@@ -286,7 +286,7 @@ def _add_template_items_to_shopping_list(
         item_menge = template_item.menge
         if person_count is not None:
             item_menge = _adjust_quantity_by_person_count(
-                template_item.menge, person_count
+                template_item.menge, person_count, template.person_count
             )
 
         # Add items directly with merge logic (similar to create_item endpoint)
@@ -441,7 +441,7 @@ def _remove_template_items_from_shopping_list(
         item_menge = template_item.menge
         if person_count is not None:
             item_menge = _adjust_quantity_by_person_count(
-                template_item.menge, person_count
+                template_item.menge, person_count, template.person_count
             )
 
         # Subtract quantities using merge logic
@@ -820,7 +820,7 @@ def _remove_newly_marked_items(
             item_menge = template_item.menge
             if person_count is not None:
                 item_menge = _adjust_quantity_by_person_count(
-                    template_item.menge, person_count
+                    template_item.menge, person_count, template.person_count
                 )
 
             # Create negative quantity for subtraction
@@ -869,7 +869,7 @@ def _add_back_unmarked_items(
         item_menge = template_item.menge
         if person_count is not None:
             item_menge = _adjust_quantity_by_person_count(
-                template_item.menge, person_count
+                template_item.menge, person_count, template.person_count
             )
 
         # Find or create item
@@ -980,7 +980,7 @@ def _handle_person_count_change(
         # If old_person_count is None, use original template quantity
         if old_person_count is not None:
             old_menge = _adjust_quantity_by_person_count(
-                template_item.menge, old_person_count
+                template_item.menge, old_person_count, template.person_count
             )
         else:
             old_menge = template_item.menge
@@ -1006,7 +1006,7 @@ def _handle_person_count_change(
             )
 
             new_menge = _adjust_quantity_by_person_count(
-                template_item.menge, new_person_count
+                template_item.menge, new_person_count, template.person_count
             )
 
             existing_item = _find_existing_item(

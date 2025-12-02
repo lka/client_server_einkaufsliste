@@ -6,6 +6,7 @@ Python FastAPI Server + TypeScript Client mit JWT-Authentifizierung.
 
 ## Release
 
+ - Release 2.3.0: Personenanzahl in Vorlagen konfigurierbar + automatische Integration im Wochenplan
  - Release 2.2.0: Personenanzahl-Anpassung im Wochenplan-Modal + Shopping-Day-Bugfix
  - Release 2.1.0: Template-Items mit Mengenanpassung
  - Release 2.0.0: Wochenplaneinträge zeigen einen Preview
@@ -118,7 +119,13 @@ Python FastAPI Server + TypeScript Client mit JWT-Authentifizierung.
     - Items werden mit `user_id=None` erstellt (gehören nicht zu einem spezifischen Benutzer)
     - Ideal für Haushalts-Einkaufslisten, bei denen alle Familienmitglieder die gleiche Liste sehen und bearbeiten
   - **Shopping-Vorlagen**: Wiederverwendbare Einkaufslisten-Vorlagen
-    - Vorlagen mit Name, Beschreibung und Artikeln (inkl. Mengenangaben) erstellen
+    - Vorlagen mit Name, Beschreibung, **Personenanzahl** und Artikeln (inkl. Mengenangaben) erstellen
+    - **Personenanzahl-Konfiguration**: Jede Vorlage speichert, für wie viele Personen sie ausgelegt ist (Standard: 2)
+      - Eingabefeld "Personenanzahl" beim Erstellen/Bearbeiten von Vorlagen
+      - Anzeige in der Vorlagen-Liste: "👥 2 Personen" oder "👥 4 Personen"
+      - **Automatische Mengenanpassung im Wochenplan**: Wenn Vorlage im Wochenplan verwendet wird, werden Mengen automatisch basierend auf der gespeicherten Personenanzahl angepasst
+      - **Intelligente Skalierung**: `neue_menge = original_menge × (gewünschte_personen / vorlagen_personen)`
+        - Beispiel: Vorlage für 4 Personen (500g Nudeln) → Wochenplan für 2 Personen = 250g Nudeln
     - Dedizierte Verwaltungsseite unter `/templates`
     - Vorlagen-Name in Shopping-List eingeben → alle Artikel werden automatisch hinzugefügt
     - Artikel erben ausgewähltes Geschäft und Datum
@@ -172,8 +179,9 @@ Python FastAPI Server + TypeScript Client mit JWT-Authentifizierung.
       - **Smart Detection**: Erkennt automatisch ob Eintrag ein Template ist (case-insensitive)
       - **Modal-Anzeige**: Zeigt Template-Name, Beschreibung und alle Items mit Mengen
       - **Personenanzahl-Anpassung**: Mengen können für beliebige Personenanzahl skaliert werden
-        - **Eingabefeld für Personenanzahl**: Zeigt aktuelle oder originale Personenanzahl (Standard: 2)
-        - **Automatische Mengenberechnung**: Alle Mengen werden mit Faktor `person_count / original_person_count` angepasst
+        - **Eingabefeld für Personenanzahl**: Zeigt aktuelle oder **gespeicherte Personenanzahl der Vorlage** als Ausgangswert
+        - **Automatische Mengenberechnung**: Alle Mengen werden mit Faktor `person_count / template_person_count` angepasst
+        - **Template-Integration**: Verwendet automatisch die in der Vorlage gespeicherte Personenanzahl als Ausgangswert
         - **Live-Vorschau**: Angepasste Mengen werden sofort in der Template-Liste angezeigt
         - **Persistente Speicherung**: `person_count` wird mit dem WeekplanEntry gespeichert
         - **Automatische Wiederherstellung**: Beim erneuten Öffnen werden gespeicherte Personenanzahl und angepasste Mengen geladen
@@ -484,7 +492,12 @@ Nach dem Login können Sie die Einkaufsliste verwenden:
 1. Klicken Sie auf das Menü (⋮) im Header
 2. Wählen Sie **"📋 Vorlagen"**
 3. Erstellen Sie Vorlagen mit wiederkehrenden Einkaufslisten-Items
+   - **Name**: z.B. "Pasta Carbonara"
+   - **Beschreibung** (optional): Details zum Rezept
+   - **Personenanzahl**: Für wie viele Personen ist die Vorlage gedacht? (Standard: 2)
+   - **Artikel**: Fügen Sie Artikel mit Mengenangaben hinzu
 4. In der Shopping-Liste: Geben Sie den Vorlagen-Namen ein → alle Items werden automatisch hinzugefügt
+5. Im Wochenplan: Vorlage als Eintrag verwenden → Mengen können für andere Personenanzahl angepasst werden
 
 ### Wochenplan nutzen
 

@@ -115,11 +115,13 @@ class ShoppingTemplate(SQLModel, table=True):
         id: Primary key (auto-generated integer)
         name: Template name (e.g., "Wochenend-Einkauf", "Backzutaten")
         description: Optional description of the template
+        person_count: Number of persons this template is designed for (default: 2)
     """
 
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(index=True, unique=True)
     description: Optional[str] = None
+    person_count: int = Field(default=2)
 
     # Relationships
     template_items: list["TemplateItem"] = Relationship(
