@@ -59,6 +59,7 @@ export interface Template {
   id?: number;
   name: string;
   description?: string;
+  person_count: number;
   items: TemplateItem[];
 }
 
@@ -1036,6 +1037,7 @@ export async function fetchTemplate(templateId: number): Promise<Template | null
 export async function createTemplate(
   name: string,
   description: string | undefined,
+  personCount: number,
   items: TemplateItem[]
 ): Promise<Template | null> {
   const tokenRefreshed = await ensureFreshToken();
@@ -1048,7 +1050,7 @@ export async function createTemplate(
     const res = await fetch(API_TEMPLATES, {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: JSON.stringify({ name, description, items }),
+      body: JSON.stringify({ name, description, person_count: personCount, items }),
     });
     if (res.status === 401) {
       handleUnauthorized();
@@ -1074,6 +1076,7 @@ export async function updateTemplate(
   templateId: number,
   name?: string,
   description?: string,
+  personCount?: number,
   items?: TemplateItem[]
 ): Promise<Template | null> {
   const tokenRefreshed = await ensureFreshToken();
@@ -1085,6 +1088,7 @@ export async function updateTemplate(
   const body: any = {};
   if (name !== undefined) body.name = name;
   if (description !== undefined) body.description = description;
+  if (personCount !== undefined) body.person_count = personCount;
   if (items !== undefined) body.items = items;
 
   try {

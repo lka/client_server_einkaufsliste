@@ -101,6 +101,7 @@ function renderTemplates(templates: readonly Template[]): void {
         <div class="template-info">
           <h3>${template.name}</h3>
           ${template.description ? `<p class="template-description">${template.description}</p>` : ''}
+          <p class="template-person-count">👥 ${template.person_count} ${template.person_count === 1 ? 'Person' : 'Personen'}</p>
         </div>
         <div class="template-controls">
           <button class="edit-template-btn" data-template-id="${template.id}" title="Bearbeiten">
@@ -343,11 +344,13 @@ function handleRemoveItem(index: number): void {
 async function handleSaveTemplate(): Promise<void> {
   const nameInput = document.getElementById('templateNameInput') as HTMLInputElement;
   const descriptionInput = document.getElementById('templateDescriptionInput') as HTMLTextAreaElement;
+  const personCountInput = document.getElementById('templatePersonCountInput') as HTMLInputElement;
 
-  if (!nameInput || !descriptionInput) return;
+  if (!nameInput || !descriptionInput || !personCountInput) return;
 
   const name = nameInput.value.trim();
   const description = descriptionInput.value.trim() || undefined;
+  const personCount = parseInt(personCountInput.value) || 2;
 
   // Validation
   if (!name) {
@@ -394,14 +397,14 @@ async function handleSaveTemplate(): Promise<void> {
   let success = false;
   if (editingTemplateId !== null) {
     // Update existing template
-    const result = await updateTemplate(editingTemplateId, name, description, currentItems);
+    const result = await updateTemplate(editingTemplateId, name, description, personCount, currentItems);
     success = result !== null;
     if (success) {
       showSuccess('Template aktualisiert!');
     }
   } else {
     // Create new template
-    const result = await createTemplate(name, description, currentItems);
+    const result = await createTemplate(name, description, personCount, currentItems);
     success = result !== null;
     if (success) {
       showSuccess('Template erstellt!');
@@ -436,10 +439,12 @@ async function handleEditTemplate(templateId: number): Promise<void> {
   // Fill form
   const nameInput = document.getElementById('templateNameInput') as HTMLInputElement;
   const descriptionInput = document.getElementById('templateDescriptionInput') as HTMLTextAreaElement;
+  const personCountInput = document.getElementById('templatePersonCountInput') as HTMLInputElement;
   const formTitle = document.getElementById('formTitle');
 
   if (nameInput) nameInput.value = template.name;
   if (descriptionInput) descriptionInput.value = template.description || '';
+  if (personCountInput) personCountInput.value = String(template.person_count);
   if (formTitle) formTitle.textContent = 'Template bearbeiten';
   if (cancelBtn) cancelBtn.style.display = 'inline-block';
 
@@ -496,12 +501,14 @@ function resetForm(): void {
 
   const nameInput = document.getElementById('templateNameInput') as HTMLInputElement;
   const descriptionInput = document.getElementById('templateDescriptionInput') as HTMLTextAreaElement;
+  const personCountInput = document.getElementById('templatePersonCountInput') as HTMLInputElement;
   const itemNameInput = document.getElementById('itemNameInput') as HTMLInputElement;
   const itemMengeInput = document.getElementById('itemMengeInput') as HTMLInputElement;
   const formTitle = document.getElementById('formTitle');
 
   if (nameInput) nameInput.value = '';
   if (descriptionInput) descriptionInput.value = '';
+  if (personCountInput) personCountInput.value = '';
   if (itemNameInput) itemNameInput.value = '';
   if (itemMengeInput) itemMengeInput.value = '';
   if (formTitle) formTitle.textContent = 'Neues Template erstellen';

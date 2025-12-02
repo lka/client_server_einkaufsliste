@@ -548,8 +548,8 @@ async function showTemplateDetails(templateName: string, entryId: number): Promi
       return itemsList;
     };
 
-    // TODO: Later fetch from database
-    const originalPersonCount = 2;
+    // Use template's person_count as the original value
+    const originalPersonCount = template.person_count;
     let adjustedPersonCount: number | null = currentDeltas.person_count || null;
 
     // If person_count is set in deltas, apply the adjustment automatically
