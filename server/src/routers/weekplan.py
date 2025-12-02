@@ -29,6 +29,7 @@ class WeekplanDeltas(BaseModel):
 
     removed_items: List[str] = []
     added_items: List[DeltaItem] = []
+    person_count: Optional[int] = None
 
 
 class WeekplanEntryCreate(BaseModel):
@@ -64,6 +65,50 @@ def _get_next_weekday(from_date: datetime, target_weekday: int) -> datetime:
     if days_ahead < 0:  # Target day already passed this week
         days_ahead += 7
     return from_date + timedelta(days=days_ahead)
+
+
+def _adjust_quantity_by_person_count(
+    original_menge: Optional[str], person_count: int, original_person_count: int = 2
+) -> Optional[str]:
+    """Adjust quantity based on person count.
+
+    Args:
+        original_menge: Original quantity string (e.g., "2 kg", "500 g")
+        person_count: Target person count
+        original_person_count: Original person count the template was designed for
+
+    Returns:
+        Adjusted quantity string or None if input is None
+    """
+    if not original_menge:
+        return original_menge
+
+    import re
+
+    # Extract numeric value and unit from menge (e.g., "2 kg" -> 2 and "kg")
+    match = re.match(r"^(\d+(?:[.,]\d+)?)\s*(.*)$", original_menge)
+    if not match:
+        return original_menge  # Can't parse, return original
+
+    value_str = match.group(1).replace(",", ".")
+    unit = match.group(2)
+
+    try:
+        value = float(value_str)
+    except ValueError:
+        return original_menge  # Can't convert to float, return original
+
+    # Calculate factor and apply
+    factor = person_count / original_person_count
+    adjusted_value = value * factor
+
+    # Format the result
+    if adjusted_value % 1 == 0:
+        formatted_value = str(int(adjusted_value))
+    else:
+        formatted_value = f"{adjusted_value:.2f}".rstrip("0").rstrip(".")
+
+    return f"{formatted_value} {unit}" if unit else formatted_value
 
 
 def _calculate_shopping_date(
@@ -224,6 +269,9 @@ def _add_template_items_to_shopping_list(
     # Create set of removed items for fast lookup
     removed_items = set(deltas.removed_items) if deltas else set()
 
+    # Get person_count from deltas if available
+    person_count = deltas.person_count if deltas else None
+
     # Add each template item to shopping list (unless removed in deltas)
     for template_item in template.template_items:
         # Skip items that are marked as removed in deltas
@@ -234,6 +282,13 @@ def _add_template_items_to_shopping_list(
             weekplan_date, template_item.name, first_store, session, meal
         )
 
+        # Adjust quantity based on person_count if provided
+        item_menge = template_item.menge
+        if person_count is not None:
+            item_menge = _adjust_quantity_by_person_count(
+                template_item.menge, person_count
+            )
+
         # Add items directly with merge logic (similar to create_item endpoint)
         # Find existing item with same name, date, and store
         existing_item = _find_existing_item(
@@ -242,7 +297,7 @@ def _add_template_items_to_shopping_list(
 
         if existing_item:
             # Merge quantities
-            merged_menge = merge_quantities(existing_item.menge, template_item.menge)
+            merged_menge = merge_quantities(existing_item.menge, item_menge)
             if merged_menge is None or merged_menge.strip() == "":
                 session.delete(existing_item)
                 # Don't add deleted items to modified_items
@@ -255,7 +310,7 @@ def _add_template_items_to_shopping_list(
             new_item = Item(
                 id=str(uuid.uuid4()),
                 name=template_item.name,
-                menge=template_item.menge,
+                menge=item_menge,
                 store_id=first_store.id,
                 shopping_date=shopping_date,
                 user_id=None,
@@ -369,6 +424,9 @@ def _remove_template_items_from_shopping_list(
     # Create set of removed items for fast lookup
     removed_items = set(deltas.removed_items) if deltas else set()
 
+    # Get person_count from deltas if available
+    person_count = deltas.person_count if deltas else None
+
     # Remove each template item from shopping list (unless it was removed in deltas)
     for template_item in template.template_items:
         # Skip items that were marked as removed in deltas (they were never added)
@@ -379,16 +437,23 @@ def _remove_template_items_from_shopping_list(
             weekplan_date, template_item.name, first_store, session, meal
         )
 
+        # Adjust quantity based on person_count if provided
+        item_menge = template_item.menge
+        if person_count is not None:
+            item_menge = _adjust_quantity_by_person_count(
+                template_item.menge, person_count
+            )
+
         # Subtract quantities using merge logic
         # Find existing item with same name, date, and store
         existing_item = _find_existing_item(
             session, template_item.name, shopping_date, first_store.id
         )
 
-        if existing_item and template_item.menge:
+        if existing_item and item_menge:
             _subtract_item_quantity(
                 existing_item,
-                template_item.menge,
+                item_menge,
                 session,
                 modified_items,
                 deleted_items,
@@ -725,6 +790,7 @@ def _remove_newly_marked_items(
     first_store: Store | None,
     session: get_session,
     modified_items: list,
+    person_count: Optional[int] = None,
 ):
     """Remove newly marked items from shopping list (helper function).
 
@@ -735,6 +801,7 @@ def _remove_newly_marked_items(
         first_store (Store | None): Store instance
         session (get_session): function to get DB session
         modified_items (list): list to append modified items to
+        person_count (Optional[int]): person count for quantity adjustment
     """
 
     # Remove newly marked items from shopping list
@@ -749,8 +816,15 @@ def _remove_newly_marked_items(
         # Find and remove/reduce quantity
         existing_item, _ = _find_item_to_modify(item_name, entry, first_store, session)
         if existing_item and template_item.menge:
+            # Adjust quantity by person_count if provided
+            item_menge = template_item.menge
+            if person_count is not None:
+                item_menge = _adjust_quantity_by_person_count(
+                    template_item.menge, person_count
+                )
+
             # Create negative quantity for subtraction
-            negative_menge = _create_negative_quantity(template_item.menge)
+            negative_menge = _create_negative_quantity(item_menge)
             if negative_menge:
                 # Merge with negative quantity
                 _handle_merged_items(
@@ -766,6 +840,7 @@ def _add_back_unmarked_items(
     first_store: Store | None,
     session: get_session,
     modified_items: list,
+    person_count: Optional[int] = None,
 ):
     """Add back items that were unmarked (no longer removed).
 
@@ -776,6 +851,7 @@ def _add_back_unmarked_items(
         first_store (Store | None): Store instance
         session (get_session): function to get DB session
         modified_items (list): list to append modified items to
+        person_count (Optional[int]): person count for quantity adjustment
     """
     import uuid
     from ..routers.items import _find_matching_product
@@ -789,6 +865,13 @@ def _add_back_unmarked_items(
         if not template_item:
             continue
 
+        # Adjust quantity by person_count if provided
+        item_menge = template_item.menge
+        if person_count is not None:
+            item_menge = _adjust_quantity_by_person_count(
+                template_item.menge, person_count
+            )
+
         # Find or create item
         existing_item, shopping_date = _find_item_to_modify(
             item_name, entry, first_store, session
@@ -796,15 +879,13 @@ def _add_back_unmarked_items(
 
         if existing_item:
             # Merge quantities
-            _handle_merged_items(
-                existing_item, template_item.menge, session, modified_items
-            )
+            _handle_merged_items(existing_item, item_menge, session, modified_items)
         else:
             # Create new item
             new_item = Item(
                 id=str(uuid.uuid4()),
                 name=item_name,
-                menge=template_item.menge,
+                menge=item_menge,
                 store_id=first_store.id,
                 shopping_date=shopping_date,
                 user_id=None,
@@ -963,15 +1044,119 @@ async def update_weekplan_entry_deltas(
             # Calculate which items were unmarked (no longer removed)
             newly_added_back = old_removed - new_removed
 
+            # Check if person_count has changed
+            old_person_count = old_deltas.person_count if old_deltas else None
+            new_person_count = deltas.person_count
+            person_count_changed = old_person_count != new_person_count
+
             # Get first store
             first_store = session.exec(
                 select(Store).order_by(Store.sort_order, Store.id)
             ).first()
 
             if first_store:
+                # Import needed functions once at the top
+                from ..routers.items import _find_existing_item, _find_matching_product
+                from ..utils import merge_quantities
+                import uuid
+
+                # If person_count changed, we need to remove old quantities
+                # and add new ones
+                if person_count_changed:
+                    # Remove items with old person_count (or original if old was None)
+                    for template_item in template.template_items:
+                        if template_item.name in old_removed:
+                            continue  # Skip items that were already removed
+
+                        shopping_date = _calculate_shopping_date(
+                            entry.date,
+                            template_item.name,
+                            first_store,
+                            session,
+                            entry.meal,
+                        )
+
+                        # If old_person_count is None, use original template quantity
+                        if old_person_count is not None:
+                            old_menge = _adjust_quantity_by_person_count(
+                                template_item.menge, old_person_count
+                            )
+                        else:
+                            old_menge = template_item.menge
+
+                        existing_item = _find_existing_item(
+                            session, template_item.name, shopping_date, first_store.id
+                        )
+
+                        if existing_item and old_menge:
+                            deleted_items = []
+                            _subtract_item_quantity(
+                                existing_item,
+                                old_menge,
+                                session,
+                                modified_items,
+                                deleted_items,
+                            )
+
+                    # Add items with new person_count
+                    if new_person_count is not None:
+                        for template_item in template.template_items:
+                            if template_item.name in new_removed:
+                                continue  # Skip items that are marked as removed
+
+                            shopping_date = _calculate_shopping_date(
+                                entry.date,
+                                template_item.name,
+                                first_store,
+                                session,
+                                entry.meal,
+                            )
+
+                            new_menge = _adjust_quantity_by_person_count(
+                                template_item.menge, new_person_count
+                            )
+
+                            existing_item = _find_existing_item(
+                                session,
+                                template_item.name,
+                                shopping_date,
+                                first_store.id,
+                            )
+
+                            if existing_item:
+                                merged_menge = merge_quantities(
+                                    existing_item.menge, new_menge
+                                )
+                                if merged_menge and merged_menge.strip():
+                                    existing_item.menge = merged_menge
+                                    session.add(existing_item)
+                                    modified_items.append(existing_item)
+                            else:
+                                new_item = Item(
+                                    id=str(uuid.uuid4()),
+                                    name=template_item.name,
+                                    menge=new_menge,
+                                    store_id=first_store.id,
+                                    shopping_date=shopping_date,
+                                    user_id=None,
+                                )
+                                product_id = _find_matching_product(session, new_item)
+                                if product_id:
+                                    new_item.product_id = product_id
+                                session.add(new_item)
+                                modified_items.append(new_item)
+
+                            session.commit()
+
                 # Remove newly marked items from shopping list
                 _remove_newly_marked_items(
-                    newly_removed, template, entry, first_store, session, modified_items
+                    newly_removed,
+                    template,
+                    entry,
+                    first_store,
+                    session,
+                    modified_items,
+                    new_person_count,
                 )
 
                 # Add back items that were unmarked
@@ -982,6 +1167,7 @@ async def update_weekplan_entry_deltas(
                     first_store,
                     session,
                     modified_items,
+                    new_person_count,
                 )
 
                 # Handle newly added items (compare old vs new added_items)
