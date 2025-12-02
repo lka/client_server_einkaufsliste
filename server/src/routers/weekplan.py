@@ -940,6 +940,103 @@ def _remove_items_from_added(
                 session.commit()
 
 
+def _handle_person_count_change(
+    old_person_count: Optional[int],
+    new_person_count: Optional[int],
+    template: ShoppingTemplate | None,
+    entry: WeekplanEntry | None,
+    first_store: Store | None,
+    old_removed: set,
+    new_removed: set,
+    session: get_session,
+    modified_items: list,
+):
+    """Handle person_count changes by removing old quantities and adding new ones.
+
+    Args:
+        old_person_count (Optional[int]): Previous person count (None if not set)
+        new_person_count (Optional[int]): New person count
+        template (ShoppingTemplate | None): ShoppingTemplate instance
+        entry (WeekplanEntry | None): WeekplanEntry instance
+        first_store (Store | None): Store instance
+        old_removed (set): Set of previously removed item names
+        new_removed (set): Set of currently removed item names
+        session (get_session): Database session
+        modified_items (list): List to append modified items to
+    """
+    from ..routers.items import _find_existing_item, _find_matching_product
+    from ..utils import merge_quantities
+    import uuid
+
+    # Remove items with old person_count (or original if old was None)
+    for template_item in template.template_items:
+        if template_item.name in old_removed:
+            continue  # Skip items that were already removed
+
+        shopping_date = _calculate_shopping_date(
+            entry.date, template_item.name, first_store, session, entry.meal
+        )
+
+        # If old_person_count is None, use original template quantity
+        if old_person_count is not None:
+            old_menge = _adjust_quantity_by_person_count(
+                template_item.menge, old_person_count
+            )
+        else:
+            old_menge = template_item.menge
+
+        existing_item = _find_existing_item(
+            session, template_item.name, shopping_date, first_store.id
+        )
+
+        if existing_item and old_menge:
+            deleted_items = []
+            _subtract_item_quantity(
+                existing_item, old_menge, session, modified_items, deleted_items
+            )
+
+    # Add items with new person_count
+    if new_person_count is not None:
+        for template_item in template.template_items:
+            if template_item.name in new_removed:
+                continue  # Skip items that are marked as removed
+
+            shopping_date = _calculate_shopping_date(
+                entry.date, template_item.name, first_store, session, entry.meal
+            )
+
+            new_menge = _adjust_quantity_by_person_count(
+                template_item.menge, new_person_count
+            )
+
+            existing_item = _find_existing_item(
+                session, template_item.name, shopping_date, first_store.id
+            )
+
+            if existing_item:
+                merged_menge = merge_quantities(existing_item.menge, new_menge)
+                if merged_menge and merged_menge.strip():
+                    existing_item.menge = merged_menge
+                    session.add(existing_item)
+                    modified_items.append(existing_item)
+            else:
+                new_item = Item(
+                    id=str(uuid.uuid4()),
+                    name=template_item.name,
+                    menge=new_menge,
+                    store_id=first_store.id,
+                    shopping_date=shopping_date,
+                    user_id=None,
+                )
+                product_id = _find_matching_product(session, new_item)
+                if product_id:
+                    new_item.product_id = product_id
+                session.add(new_item)
+                modified_items.append(new_item)
+
+            session.commit()
+
+
 def _add_newly_added_items(
     newly_added_item_names: set,
     new_added_items: dict,
@@ -1055,98 +1152,19 @@ async def update_weekplan_entry_deltas(
             ).first()
 
             if first_store:
-                # Import needed functions once at the top
-                from ..routers.items import _find_existing_item, _find_matching_product
-                from ..utils import merge_quantities
-                import uuid
-
-                # If person_count changed, we need to remove old quantities
-                # and add new ones
+                # If person_count changed, delegate to helper function
                 if person_count_changed:
-                    # Remove items with old person_count (or original if old was None)
-                    for template_item in template.template_items:
-                        if template_item.name in old_removed:
-                            continue  # Skip items that were already removed
-
-                        shopping_date = _calculate_shopping_date(
-                            entry.date,
-                            template_item.name,
-                            first_store,
-                            session,
-                            entry.meal,
-                        )
-
-                        # If old_person_count is None, use original template quantity
-                        if old_person_count is not None:
-                            old_menge = _adjust_quantity_by_person_count(
-                                template_item.menge, old_person_count
-                            )
-                        else:
-                            old_menge = template_item.menge
-
-                        existing_item = _find_existing_item(
-                            session, template_item.name, shopping_date, first_store.id
-                        )
-
-                        if existing_item and old_menge:
-                            deleted_items = []
-                            _subtract_item_quantity(
-                                existing_item,
-                                old_menge,
-                                session,
-                                modified_items,
-                                deleted_items,
-                            )
-
-                    # Add items with new person_count
-                    if new_person_count is not None:
-                        for template_item in template.template_items:
-                            if template_item.name in new_removed:
-                                continue  # Skip items that are marked as removed
-
-                            shopping_date = _calculate_shopping_date(
-                                entry.date,
-                                template_item.name,
-                                first_store,
-                                session,
-                                entry.meal,
-                            )
-
-                            new_menge = _adjust_quantity_by_person_count(
-                                template_item.menge, new_person_count
-                            )
-
-                            existing_item = _find_existing_item(
-                                session,
-                                template_item.name,
-                                shopping_date,
-                                first_store.id,
-                            )
-
-                            if existing_item:
-                                merged_menge = merge_quantities(
-                                    existing_item.menge, new_menge
-                                )
-                                if merged_menge and merged_menge.strip():
-                                    existing_item.menge = merged_menge
-                                    session.add(existing_item)
-                                    modified_items.append(existing_item)
-                            else:
-                                new_item = Item(
-                                    id=str(uuid.uuid4()),
-                                    name=template_item.name,
-                                    menge=new_menge,
-                                    store_id=first_store.id,
-                                    shopping_date=shopping_date,
-                                    user_id=None,
-                                )
-                                product_id = _find_matching_product(session, new_item)
-                                if product_id:
-                                    new_item.product_id = product_id
-                                session.add(new_item)
-                                modified_items.append(new_item)
-
-                            session.commit()
+                    _handle_person_count_change(
+                        old_person_count,
+                        new_person_count,
+                        template,
+                        entry,
+                        first_store,
+                        old_removed,
+                        new_removed,
+                        session,
+                        modified_items,
+                    )
 
                 # Remove newly marked items from shopping list
                 _remove_newly_marked_items(
