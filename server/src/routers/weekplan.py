@@ -340,7 +340,6 @@ def _remove_template_items_from_shopping_list(
         Tuple of (modified_items, deleted_items)
     """
     from ..routers.items import _find_existing_item
-    from ..utils import merge_quantities, parse_quantity
 
     modified_items = []
     deleted_items = []
@@ -387,34 +386,13 @@ def _remove_template_items_from_shopping_list(
         )
 
         if existing_item and template_item.menge:
-            # Create negative quantity for subtraction
-            negative_menge = template_item.menge
-            if negative_menge:
-                # Parse and negate the quantity
-                parsed_num, unit = parse_quantity(negative_menge)
-                if parsed_num is not None:
-                    # Create negative version
-                    if parsed_num == int(parsed_num):
-                        negative_menge = f"-{int(parsed_num)}"
-                    else:
-                        negative_menge = f"-{parsed_num}"
-                    if unit:
-                        negative_menge = f"{negative_menge} {unit}"
-
-                    # Merge with negative quantity (subtraction)
-                    merged_menge = merge_quantities(existing_item.menge, negative_menge)
-
-                    if merged_menge is None or merged_menge.strip() == "":
-                        # Quantity reduced to zero or below, delete item
-                        deleted_items.append(existing_item)
-                        session.delete(existing_item)
-                    else:
-                        # Update with reduced quantity
-                        existing_item.menge = merged_menge
-                        session.add(existing_item)
-                        modified_items.append(existing_item)
-
-                    session.commit()
+            _subtract_item_quantity(
+                existing_item,
+                template_item.menge,
+                session,
+                modified_items,
+                deleted_items,
+            )
 
     # Remove items from deltas.added_items
     if deltas and deltas.added_items:
@@ -430,32 +408,13 @@ def _remove_template_items_from_shopping_list(
             )
 
             if existing_item and delta_item.menge:
-                # Create negative quantity for subtraction
-                negative_menge = delta_item.menge
-                parsed_num, unit = parse_quantity(negative_menge)
-                if parsed_num is not None:
-                    # Create negative version
-                    if parsed_num == int(parsed_num):
-                        negative_menge = f"-{int(parsed_num)}"
-                    else:
-                        negative_menge = f"-{parsed_num}"
-                    if unit:
-                        negative_menge = f"{negative_menge} {unit}"
-
-                    # Merge with negative quantity (subtraction)
-                    merged_menge = merge_quantities(existing_item.menge, negative_menge)
-
-                    if merged_menge is None or merged_menge.strip() == "":
-                        # Quantity reduced to zero or below, delete item
-                        deleted_items.append(existing_item)
-                        session.delete(existing_item)
-                    else:
-                        # Update with reduced quantity
-                        existing_item.menge = merged_menge
-                        session.add(existing_item)
-                        modified_items.append(existing_item)
-
-                    session.commit()
+                _subtract_item_quantity(
+                    existing_item,
+                    delta_item.menge,
+                    session,
+                    modified_items,
+                    deleted_items,
+                )
 
     return modified_items, deleted_items
 
@@ -647,6 +606,315 @@ async def delete_weekplan_entry(
         return {"message": "Entry deleted successfully"}
 
 
+def _handle_merged_items(
+    existing_item: any, menge: str, session: get_session, modified_items: list
+):
+    """Handle merging of existing item with quantity (helper function).
+
+    Args:
+        existing_item: Existing Item instance
+        menge: quantity string
+        session: Database session
+        modified_items: list to append modified items to
+    """
+    from ..utils import merge_quantities
+
+    merged_menge = merge_quantities(existing_item.menge, menge)
+    if merged_menge is None or merged_menge.strip() == "":
+        session.delete(existing_item)
+    else:
+        existing_item.menge = merged_menge
+        session.add(existing_item)
+        modified_items.append(existing_item)
+
+
+def _create_negative_quantity(menge: str) -> str:
+    """Create negative quantity string from given quantity.
+
+    Args:
+        menge: quantity string
+    Returns:
+        Negative quantity string
+    """
+    from ..utils import parse_quantity
+
+    parsed_num, unit = parse_quantity(menge)
+    if parsed_num is not None:
+        if parsed_num == int(parsed_num):
+            negative_menge = f"-{int(parsed_num)}"
+        else:
+            negative_menge = f"-{parsed_num}"
+        if unit:
+            negative_menge = f"{negative_menge} {unit}"
+        return negative_menge
+    return ""
+
+
+def _subtract_item_quantity(
+    existing_item: Item,
+    quantity_to_subtract: str,
+    session,
+    modified_items: list,
+    deleted_items: list,
+) -> None:
+    """Subtract quantity from an existing item, delete if quantity reaches zero.
+
+    Args:
+        existing_item: Existing Item instance
+        quantity_to_subtract: Quantity string to subtract
+        session: Database session
+        modified_items: List to append modified items to
+        deleted_items: List to append deleted items to
+    """
+    from ..utils import merge_quantities
+
+    negative_menge = _create_negative_quantity(quantity_to_subtract)
+    if not negative_menge:
+        return
+
+    merged_menge = merge_quantities(existing_item.menge, negative_menge)
+
+    if merged_menge is None or merged_menge.strip() == "":
+        # Quantity reduced to zero or below, delete item
+        deleted_items.append(existing_item)
+        session.delete(existing_item)
+    else:
+        # Update with reduced quantity
+        existing_item.menge = merged_menge
+        session.add(existing_item)
+        modified_items.append(existing_item)
+
+    session.commit()
+
+
+def _find_item_to_modify(
+    item_name: str,
+    entry: WeekplanEntry,
+    first_store: Store,
+    session: get_session,
+) -> tuple:
+    """Find item to modify in shopping list (helper function).
+
+    Args:
+        item_name: Name of the item
+        entry: WeekplanEntry instance
+        first_store: Store instance
+        session: Database session
+    Returns:
+        Tuple of (existing_item, shopping_date) where:
+            existing_item: Existing Item instance or None
+            shopping_date: Calculated shopping date (str)
+    """
+    from ..routers.items import _find_existing_item
+
+    # Calculate shopping date
+    shopping_date = _calculate_shopping_date(
+        entry.date, item_name, first_store, session, entry.meal
+    )
+    # Find and remove/reduce quantity
+    existing_item = _find_existing_item(
+        session, item_name, shopping_date, first_store.id
+    )
+    return existing_item, shopping_date
+
+
+def _remove_newly_marked_items(
+    newly_removed: set,
+    template: ShoppingTemplate | None,
+    entry: WeekplanEntry | None,
+    first_store: Store | None,
+    session: get_session,
+    modified_items: list,
+):
+    """Remove newly marked items from shopping list (helper function).
+
+    Args:
+        newly_removed (set): set of newly removed item names
+        template (ShoppingTemplate| None): ShoppingTemplate instance
+        entry (WeekplanEntry | None): WeekplanEntry instance
+        first_store (Store | None): Store instance
+        session (get_session): function to get DB session
+        modified_items (list): list to append modified items to
+    """
+
+    # Remove newly marked items from shopping list
+    for item_name in newly_removed:
+        # Find the template item to get its quantity
+        template_item = next(
+            (ti for ti in template.template_items if ti.name == item_name),
+            None,
+        )
+        if not template_item:
+            continue
+        # Find and remove/reduce quantity
+        existing_item, _ = _find_item_to_modify(item_name, entry, first_store, session)
+        if existing_item and template_item.menge:
+            # Create negative quantity for subtraction
+            negative_menge = _create_negative_quantity(template_item.menge)
+            if negative_menge:
+                # Merge with negative quantity
+                _handle_merged_items(
+                    existing_item, negative_menge, session, modified_items
+                )
+                session.commit()
+
+
+def _add_back_unmarked_items(
+    newly_added_back: set,
+    template: ShoppingTemplate | None,
+    entry: WeekplanEntry | None,
+    first_store: Store | None,
+    session: get_session,
+    modified_items: list,
+):
+    """Add back items that were unmarked (no longer removed).
+
+    Args:
+        newly_added_back (set): set of item names that are no longer removed
+        template (ShoppingTemplate| None): ShoppingTemplate instance
+        entry (WeekplanEntry | None): WeekplanEntry instance
+        first_store (Store | None): Store instance
+        session (get_session): function to get DB session
+        modified_items (list): list to append modified items to
+    """
+    import uuid
+    from ..routers.items import _find_matching_product
+
+    for item_name in newly_added_back:
+        # Find the template item to get its quantity
+        template_item = next(
+            (ti for ti in template.template_items if ti.name == item_name),
+            None,
+        )
+        if not template_item:
+            continue
+
+        # Find or create item
+        existing_item, shopping_date = _find_item_to_modify(
+            item_name, entry, first_store, session
+        )
+
+        if existing_item:
+            # Merge quantities
+            _handle_merged_items(
+                existing_item, template_item.menge, session, modified_items
+            )
+        else:
+            # Create new item
+            new_item = Item(
+                id=str(uuid.uuid4()),
+                name=item_name,
+                menge=template_item.menge,
+                store_id=first_store.id,
+                shopping_date=shopping_date,
+                user_id=None,
+            )
+
+            # Find matching product
+            product_id = _find_matching_product(session, new_item)
+            if product_id:
+                new_item.product_id = product_id
+
+            session.add(new_item)
+            modified_items.append(new_item)
+
+        session.commit()
+
+
+def _remove_items_from_added(
+    removed_from_added: set,
+    old_added_items: dict,
+    entry: WeekplanEntry | None,
+    first_store: Store | None,
+    session: get_session,
+    modified_items: list,
+):
+    """Remove items that were deleted from added_items.
+
+    Args:
+        removed_from_added (set): set of item names removed from added_items
+        old_added_items (dict): dict mapping item names to delta items
+        entry (WeekplanEntry | None): WeekplanEntry instance
+        first_store (Store | None): Store instance
+        session (get_session): function to get DB session
+        modified_items (list): list to append modified items to
+    """
+    for item_name in removed_from_added:
+        delta_item = old_added_items[item_name]
+
+        # Find and remove item
+        existing_item, _ = _find_item_to_modify(
+            delta_item.name, entry, first_store, session
+        )
+
+        if existing_item and delta_item.menge:
+            # Create negative quantity for subtraction
+            negative_menge = _create_negative_quantity(delta_item.menge)
+            if negative_menge:
+                # Merge with negative quantity
+                _handle_merged_items(
+                    existing_item, negative_menge, session, modified_items
+                )
+
+                session.commit()
+
+
+def _add_newly_added_items(
+    newly_added_item_names: set,
+    new_added_items: dict,
+    entry: WeekplanEntry | None,
+    first_store: Store | None,
+    session: get_session,
+    modified_items: list,
+):
+    """Add newly added items to the shopping list.
+
+    Args:
+        newly_added_item_names (set): set of newly added item names
+        new_added_items (dict): dict mapping item names to delta items
+        entry (WeekplanEntry | None): WeekplanEntry instance
+        first_store (Store | None): Store instance
+        session (get_session): function to get DB session
+        modified_items (list): list to append modified items to
+    """
+    import uuid
+    from ..routers.items import _find_matching_product
+
+    for item_name in newly_added_item_names:
+        delta_item = new_added_items[item_name]
+
+        # Calculate shopping date
+        existing_item, shopping_date = _find_item_to_modify(
+            delta_item.name, entry, first_store, session
+        )
+
+        if existing_item:
+            # Merge quantities
+            _handle_merged_items(
+                existing_item, delta_item.menge, session, modified_items
+            )
+        else:
+            # Create new item
+            new_item = Item(
+                id=str(uuid.uuid4()),
+                name=delta_item.name,
+                menge=delta_item.menge,
+                store_id=first_store.id,
+                shopping_date=shopping_date,
+                user_id=None,
+            )
+
+            # Find matching product
+            product_id = _find_matching_product(session, new_item)
+            if product_id:
+                new_item.product_id = product_id
+
+            session.add(new_item)
+            modified_items.append(new_item)
+
+        session.commit()
+
+
 @router.patch("/entries/{entry_id}/deltas", response_model=WeekplanEntryResponse)
 async def update_weekplan_entry_deltas(
     entry_id: int,
@@ -701,106 +969,20 @@ async def update_weekplan_entry_deltas(
             ).first()
 
             if first_store:
-                import uuid
-                from ..routers.items import _find_existing_item, _find_matching_product
-                from ..utils import merge_quantities, parse_quantity
-
                 # Remove newly marked items from shopping list
-                for item_name in newly_removed:
-                    # Find the template item to get its quantity
-                    template_item = next(
-                        (ti for ti in template.template_items if ti.name == item_name),
-                        None,
-                    )
-                    if not template_item:
-                        continue
-
-                    # Calculate shopping date
-                    shopping_date = _calculate_shopping_date(
-                        entry.date, item_name, first_store, session, entry.meal
-                    )
-
-                    # Find and remove/reduce quantity
-                    existing_item = _find_existing_item(
-                        session, item_name, shopping_date, first_store.id
-                    )
-
-                    if existing_item and template_item.menge:
-                        # Create negative quantity for subtraction
-                        parsed_num, unit = parse_quantity(template_item.menge)
-                        if parsed_num is not None:
-                            if parsed_num == int(parsed_num):
-                                negative_menge = f"-{int(parsed_num)}"
-                            else:
-                                negative_menge = f"-{parsed_num}"
-                            if unit:
-                                negative_menge = f"{negative_menge} {unit}"
-
-                            # Merge with negative quantity
-                            merged_menge = merge_quantities(
-                                existing_item.menge, negative_menge
-                            )
-
-                            if merged_menge is None or merged_menge.strip() == "":
-                                session.delete(existing_item)
-                            else:
-                                existing_item.menge = merged_menge
-                                session.add(existing_item)
-                                modified_items.append(existing_item)
-
-                            session.commit()
+                _remove_newly_marked_items(
+                    newly_removed, template, entry, first_store, session, modified_items
+                )
 
                 # Add back items that were unmarked
-                for item_name in newly_added_back:
-                    # Find the template item to get its quantity
-                    template_item = next(
-                        (ti for ti in template.template_items if ti.name == item_name),
-                        None,
-                    )
-                    if not template_item:
-                        continue
-
-                    # Calculate shopping date
-                    shopping_date = _calculate_shopping_date(
-                        entry.date, item_name, first_store, session, entry.meal
-                    )
-
-                    # Find or create item
-                    existing_item = _find_existing_item(
-                        session, item_name, shopping_date, first_store.id
-                    )
-
-                    if existing_item:
-                        # Merge quantities
-                        merged_menge = merge_quantities(
-                            existing_item.menge, template_item.menge
-                        )
-                        if merged_menge is None or merged_menge.strip() == "":
-                            session.delete(existing_item)
-                        else:
-                            existing_item.menge = merged_menge
-                            session.add(existing_item)
-                            modified_items.append(existing_item)
-                    else:
-                        # Create new item
-                        new_item = Item(
-                            id=str(uuid.uuid4()),
-                            name=item_name,
-                            menge=template_item.menge,
-                            store_id=first_store.id,
-                            shopping_date=shopping_date,
-                            user_id=None,
-                        )
-
-                        # Find matching product
-                        product_id = _find_matching_product(session, new_item)
-                        if product_id:
-                            new_item.product_id = product_id
-
-                        session.add(new_item)
-                        modified_items.append(new_item)
-
-                    session.commit()
+                _add_back_unmarked_items(
+                    newly_added_back,
+                    template,
+                    entry,
+                    first_store,
+                    session,
+                    modified_items,
+                )
 
                 # Handle newly added items (compare old vs new added_items)
                 old_added_list = old_deltas.added_items if old_deltas else []
@@ -818,89 +1000,24 @@ async def update_weekplan_entry_deltas(
                 )
 
                 # Remove items that were deleted from added_items
-                for item_name in removed_from_added:
-                    delta_item = old_added_items[item_name]
-
-                    # Calculate shopping date
-                    shopping_date = _calculate_shopping_date(
-                        entry.date, delta_item.name, first_store, session, entry.meal
-                    )
-
-                    # Find and remove item
-                    existing_item = _find_existing_item(
-                        session, item_name, shopping_date, first_store.id
-                    )
-
-                    if existing_item and delta_item.menge:
-                        # Create negative quantity for subtraction
-                        parsed_num, unit = parse_quantity(delta_item.menge)
-                        if parsed_num is not None:
-                            if parsed_num == int(parsed_num):
-                                negative_menge = f"-{int(parsed_num)}"
-                            else:
-                                negative_menge = f"-{parsed_num}"
-                            if unit:
-                                negative_menge = f"{negative_menge} {unit}"
-
-                            # Merge with negative quantity
-                            merged_menge = merge_quantities(
-                                existing_item.menge, negative_menge
-                            )
-
-                            if merged_menge is None or merged_menge.strip() == "":
-                                session.delete(existing_item)
-                            else:
-                                existing_item.menge = merged_menge
-                                session.add(existing_item)
-                                modified_items.append(existing_item)
-
-                            session.commit()
+                _remove_items_from_added(
+                    removed_from_added,
+                    old_added_items,
+                    entry,
+                    first_store,
+                    session,
+                    modified_items,
+                )
 
                 # Add newly added items
-                for item_name in newly_added_item_names:
-                    delta_item = new_added_items[item_name]
-
-                    # Calculate shopping date
-                    shopping_date = _calculate_shopping_date(
-                        entry.date, delta_item.name, first_store, session, entry.meal
-                    )
-
-                    # Find or create item
-                    existing_item = _find_existing_item(
-                        session, delta_item.name, shopping_date, first_store.id
-                    )
-
-                    if existing_item:
-                        # Merge quantities
-                        merged_menge = merge_quantities(
-                            existing_item.menge, delta_item.menge
-                        )
-                        if merged_menge is None or merged_menge.strip() == "":
-                            session.delete(existing_item)
-                        else:
-                            existing_item.menge = merged_menge
-                            session.add(existing_item)
-                            modified_items.append(existing_item)
-                    else:
-                        # Create new item
-                        new_item = Item(
-                            id=str(uuid.uuid4()),
-                            name=delta_item.name,
-                            menge=delta_item.menge,
-                            store_id=first_store.id,
-                            shopping_date=shopping_date,
-                            user_id=None,
-                        )
-
-                        # Find matching product
-                        product_id = _find_matching_product(session, new_item)
-                        if product_id:
-                            new_item.product_id = product_id
-
-                        session.add(new_item)
-                        modified_items.append(new_item)
-
-                    session.commit()
+                _add_newly_added_items(
+                    newly_added_item_names,
+                    new_added_items,
+                    entry,
+                    first_store,
+                    session,
+                    modified_items,
+                )
 
         # Update deltas
         entry.deltas = json.dumps(deltas.model_dump())
