@@ -169,6 +169,16 @@ Python FastAPI Server + TypeScript Client mit JWT-Authentifizierung.
       - **Visual Feedback**: Blaue Hintergrundfarbe, Unterstrich und blauer Text beim Hover
       - **Smart Detection**: Erkennt automatisch ob Eintrag ein Template ist (case-insensitive)
       - **Modal-Anzeige**: Zeigt Template-Name, Beschreibung und alle Items mit Mengen
+      - **Personenanzahl-Anpassung**: Mengen können für beliebige Personenanzahl skaliert werden
+        - **Eingabefeld für Personenanzahl**: Zeigt aktuelle oder originale Personenanzahl (Standard: 2)
+        - **Automatische Mengenberechnung**: Alle Mengen werden mit Faktor `person_count / original_person_count` angepasst
+        - **Live-Vorschau**: Angepasste Mengen werden sofort in der Template-Liste angezeigt
+        - **Persistente Speicherung**: `person_count` wird mit dem WeekplanEntry gespeichert
+        - **Automatische Wiederherstellung**: Beim erneuten Öffnen werden gespeicherte Personenanzahl und angepasste Mengen geladen
+        - **Einkaufslisten-Synchronisation**: Mengenänderungen werden in der Einkaufsliste korrekt aktualisiert
+          - Alte Mengen werden entfernt (mit alter `person_count`)
+          - Neue Mengen werden hinzugefügt (mit neuer `person_count`)
+        - **Intelligente Einheit-Beibehaltung**: "500 g" × 2 = "1000 g", "2 kg" ÷ 2 = "1 kg"
       - **Delta-Management**: Items können als "nicht benötigt" markiert werden
         - **Checkbox-Steuerung**: Jedes Item hat eine Checkbox zum Deaktivieren
         - **Visuelles Feedback**: Markierte Items werden rot hinterlegt und durchgestrichen
@@ -178,6 +188,7 @@ Python FastAPI Server + TypeScript Client mit JWT-Authentifizierung.
           - Item wieder aktivieren → Item wird zur Einkaufsliste hinzugefügt (Menge addiert)
           - Beim Löschen des Eintrags werden nur tatsächlich hinzugefügte Items entfernt
         - **WebSocket-Broadcasting**: Alle Einkaufslisten-Änderungen werden live an verbundene Clients gesendet
+      - **Scrollbares Modal-Layout**: Template-Items und hinzugefügte Artikel scrollen, Eingabefelder bleiben fixiert
       - **Keyboard Support**: Modal kann mit Escape-Taste oder Backdrop-Klick geschlossen werden
     - **Template-Integration**: Automatische Einkaufslisten-Generierung aus Wochenplan
       - **Automatisches Hinzufügen**: Wenn Wochenplan-Eintrag einem Template-Namen entspricht, werden Template-Items automatisch zur Einkaufsliste hinzugefügt

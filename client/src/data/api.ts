@@ -70,6 +70,7 @@ export interface DeltaItem {
 export interface WeekplanDeltas {
   removed_items: string[];
   added_items: DeltaItem[];
+  person_count?: number;
 }
 
 export interface WeekplanEntry {

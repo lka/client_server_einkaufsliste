@@ -446,7 +446,7 @@ async function showTemplateDetails(templateName: string, entryId: number): Promi
 
     // Scrollable section for template items
     const scrollableSection = document.createElement('div');
-    scrollableSection.style.cssText = 'flex: 1; overflow-y: auto; margin-bottom: 1rem;';
+    scrollableSection.style.cssText = 'flex: 1; overflow-y: auto; padding-bottom: 0.5rem;';
 
     if (template.description) {
       const description = document.createElement('p');
@@ -455,15 +455,32 @@ async function showTemplateDetails(templateName: string, entryId: number): Promi
       scrollableSection.appendChild(description);
     }
 
-    if (template.items.length === 0) {
-      const emptyMsg = document.createElement('p');
-      emptyMsg.textContent = 'Keine Items in dieser Vorlage.';
-      emptyMsg.style.cssText = 'color: #999;';
-      scrollableSection.appendChild(emptyMsg);
-    } else {
-      // Track which items are removed (checked = removed)
-      const removedItems = new Set<string>(currentDeltas.removed_items);
+    // Track which items are removed (checked = removed)
+    const removedItems = new Set<string>(currentDeltas.removed_items);
 
+    // Store adjusted quantities for template items
+    const adjustedQuantities = new Map<string, string>();
+
+    // Helper function to adjust a quantity by a factor
+    const adjustQuantityByFactor = (originalMenge: string, factor: number): string => {
+      if (isNaN(factor) || factor <= 0) return originalMenge;
+
+      // Extract numeric value and unit from menge (e.g., "2 kg" -> 2 and "kg")
+      const mengeMatch = originalMenge.match(/^(\d+(?:[.,]\d+)?)\s*(.*)$/);
+      if (!mengeMatch) return originalMenge;
+
+      let value = parseFloat(mengeMatch[1].replace(',', '.'));
+      const unit = mengeMatch[2];
+
+      // Apply factor
+      value *= factor;
+
+      // Format the result
+      const formattedValue = value % 1 === 0 ? value.toString() : value.toFixed(2).replace(/\.?0+$/, '');
+      return unit ? `${formattedValue} ${unit}` : formattedValue;
+    };
+
+    const renderTemplateItems = () => {
       const itemsList = document.createElement('ul');
       itemsList.style.cssText = 'list-style: none; padding: 0; margin: 0;';
 
@@ -518,7 +535,9 @@ async function showTemplateDetails(templateName: string, entryId: number): Promi
 
         if (item.menge) {
           const mengeSpan = document.createElement('span');
-          mengeSpan.textContent = item.menge;
+          // Use adjusted quantity if available, otherwise use original
+          const displayMenge = adjustedQuantities.get(item.name) || item.menge;
+          mengeSpan.textContent = displayMenge;
           mengeSpan.style.cssText = 'color: #666; font-size: 0.85rem; margin-left: 0.5rem;';
           li.appendChild(mengeSpan);
         }
@@ -526,30 +545,130 @@ async function showTemplateDetails(templateName: string, entryId: number): Promi
         itemsList.appendChild(li);
       });
 
-      scrollableSection.appendChild(itemsList);
+      return itemsList;
+    };
+
+    // TODO: Later fetch from database
+    const originalPersonCount = 2;
+    let adjustedPersonCount: number | null = currentDeltas.person_count || null;
+
+    // If person_count is set in deltas, apply the adjustment automatically
+    if (adjustedPersonCount !== null) {
+      const factor = adjustedPersonCount / originalPersonCount;
+      template.items.forEach(item => {
+        if (item.menge) {
+          const adjusted = adjustQuantityByFactor(item.menge, factor);
+          adjustedQuantities.set(item.name, adjusted);
+        }
+      });
     }
 
-    contentDiv.appendChild(scrollableSection);
+    if (template.items.length === 0) {
+      const emptyMsg = document.createElement('p');
+      emptyMsg.textContent = 'Keine Items in dieser Vorlage.';
+      emptyMsg.style.cssText = 'color: #999;';
+      scrollableSection.appendChild(emptyMsg);
+    } else {
+      // Quantity adjustment section based on person count
+      const adjustSection = document.createElement('div');
+      adjustSection.style.cssText = 'margin-bottom: 0.75rem; padding: 0.5rem; background: #fff9e6; border-radius: 4px;';
 
-    // Fixed section for adding new items (always visible at bottom)
-    const addItemSection = document.createElement('div');
-    addItemSection.style.cssText = `
-      padding-top: 1rem;
-      border-top: 1px solid #e0e0e0;
-      background: white;
-    `;
+      const adjustLabel = document.createElement('label');
+      adjustLabel.textContent = `Mengen anpassen (Vorlage für ${originalPersonCount} Personen):`;
+      adjustLabel.style.cssText = 'display: block; font-size: 0.85rem; margin-bottom: 0.25rem; color: #666; font-weight: 500;';
+
+      const adjustForm = document.createElement('div');
+      adjustForm.style.cssText = 'display: flex; gap: 0.5rem; align-items: center;';
+
+      const adjustInput = document.createElement('input');
+      adjustInput.type = 'number';
+      adjustInput.min = '1';
+      adjustInput.step = '1';
+      adjustInput.placeholder = 'Anzahl Personen';
+      adjustInput.value = String(adjustedPersonCount !== null ? adjustedPersonCount : originalPersonCount);
+      adjustInput.style.cssText = `
+        width: 120px;
+        padding: 0.4rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 0.9rem;
+      `;
+
+      const adjustBtn = document.createElement('button');
+      adjustBtn.textContent = 'Anpassen';
+      adjustBtn.style.cssText = `
+        background: #ff9800;
+        color: white;
+        border: none;
+        padding: 0.4rem 0.75rem;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: background-color 0.2s;
+      `;
+      adjustBtn.addEventListener('mouseover', () => {
+        adjustBtn.style.backgroundColor = '#f57c00';
+      });
+      adjustBtn.addEventListener('mouseout', () => {
+        adjustBtn.style.backgroundColor = '#ff9800';
+      });
+      adjustBtn.addEventListener('click', () => {
+        const targetPersonCount = parseInt(adjustInput.value.trim());
+        if (!targetPersonCount || targetPersonCount < 1) {
+          alert('Bitte gültige Personenanzahl eingeben (mindestens 1)');
+          return;
+        }
+
+        // Store the adjusted person count
+        adjustedPersonCount = targetPersonCount;
+
+        // Calculate the factor based on person count
+        const factor = targetPersonCount / originalPersonCount;
+
+        // Apply adjustment to all items with quantities
+        template.items.forEach(item => {
+          if (item.menge) {
+            const adjusted = adjustQuantityByFactor(item.menge, factor);
+            adjustedQuantities.set(item.name, adjusted);
+          }
+        });
+
+        // Re-render the list
+        const oldList = scrollableSection.querySelector('ul');
+        if (oldList) {
+          const newList = renderTemplateItems();
+          scrollableSection.replaceChild(newList, oldList);
+        }
+
+        adjustInput.value = '';
+      });
+
+      adjustForm.appendChild(adjustInput);
+      adjustForm.appendChild(adjustBtn);
+      adjustSection.appendChild(adjustLabel);
+      adjustSection.appendChild(adjustForm);
+
+      scrollableSection.appendChild(adjustSection);
+      scrollableSection.appendChild(renderTemplateItems());
+    }
 
     // Track added items
     const addedItems = new Map<string, DeltaItem>(
       currentDeltas.added_items.map(item => [item.name, item])
     );
 
-    // Container for added items list
+    // Container for added items list (in scrollable section)
     const addedItemsList = document.createElement('div');
-    addedItemsList.style.cssText = 'margin-bottom: 0.75rem;';
+    addedItemsList.style.cssText = 'margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e0e0e0;';
 
     const renderAddedItems = () => {
       addedItemsList.innerHTML = '';
+
+      const heading = document.createElement('h4');
+      heading.textContent = 'Hinzugefügte Artikel';
+      heading.style.cssText = 'margin: 0 0 0.5rem 0; font-size: 0.9rem; color: #666; font-weight: 600;';
+      addedItemsList.appendChild(heading);
+
       if (addedItems.size === 0) {
         const emptyMsg = document.createElement('p');
         emptyMsg.textContent = 'Keine zusätzlichen Artikel';
@@ -615,7 +734,17 @@ async function showTemplateDetails(templateName: string, entryId: number): Promi
     };
 
     renderAddedItems();
-    addItemSection.appendChild(addedItemsList);
+    scrollableSection.appendChild(addedItemsList);
+
+    contentDiv.appendChild(scrollableSection);
+
+    // Fixed section for adding new items (always visible at bottom)
+    const addItemSection = document.createElement('div');
+    addItemSection.style.cssText = `
+      padding-top: 1rem;
+      border-top: 1px solid #e0e0e0;
+      background: white;
+    `;
 
     // Input form for adding items
     const addForm = document.createElement('div');
@@ -709,8 +838,6 @@ async function showTemplateDetails(templateName: string, entryId: number): Promi
     addItemSection.appendChild(addForm);
 
     // Add save button to the fixed section
-    const removedItems = new Set<string>(currentDeltas.removed_items);
-
     const saveButtonDiv = document.createElement('div');
     saveButtonDiv.style.cssText = 'margin-top: 0.75rem; display: flex; justify-content: flex-end;';
 
@@ -752,10 +879,17 @@ async function showTemplateDetails(templateName: string, entryId: number): Promi
 
         collectCheckboxStates();
 
+        // Collect only manually added items (not adjusted template items)
+        const allAddedItems = new Map(addedItems);
+
         const newDeltas: WeekplanDeltas = {
           removed_items: Array.from(removedItems),
-          added_items: Array.from(addedItems.values())
+          added_items: Array.from(allAddedItems.values()),
+          person_count: adjustedPersonCount !== null ? adjustedPersonCount : undefined
         };
+
+        // When person_count is saved, the backend can calculate adjusted quantities
+        // from the original template items using: adjusted = original * (person_count / template.person_count)
 
         await updateWeekplanEntryDeltas(entryId, newDeltas);
 
