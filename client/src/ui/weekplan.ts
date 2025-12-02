@@ -440,22 +440,26 @@ async function showTemplateDetails(templateName: string, entryId: number): Promi
       added_items: []
     };
 
-    // Build content showing template items
+    // Build content with scrollable template items section
     const contentDiv = document.createElement('div');
-    contentDiv.style.cssText = 'max-height: 400px; overflow-y: auto;';
+    contentDiv.style.cssText = 'display: flex; flex-direction: column; max-height: 500px;';
+
+    // Scrollable section for template items
+    const scrollableSection = document.createElement('div');
+    scrollableSection.style.cssText = 'flex: 1; overflow-y: auto; margin-bottom: 1rem;';
 
     if (template.description) {
       const description = document.createElement('p');
       description.textContent = template.description;
       description.style.cssText = 'color: #666; margin-bottom: 0.5rem; font-style: italic; font-size: 0.9rem;';
-      contentDiv.appendChild(description);
+      scrollableSection.appendChild(description);
     }
 
     if (template.items.length === 0) {
       const emptyMsg = document.createElement('p');
       emptyMsg.textContent = 'Keine Items in dieser Vorlage.';
       emptyMsg.style.cssText = 'color: #999;';
-      contentDiv.appendChild(emptyMsg);
+      scrollableSection.appendChild(emptyMsg);
     } else {
       // Track which items are removed (checked = removed)
       const removedItems = new Set<string>(currentDeltas.removed_items);
@@ -522,21 +526,18 @@ async function showTemplateDetails(templateName: string, entryId: number): Promi
         itemsList.appendChild(li);
       });
 
-      contentDiv.appendChild(itemsList);
+      scrollableSection.appendChild(itemsList);
     }
 
-    // Add section for adding new items
+    contentDiv.appendChild(scrollableSection);
+
+    // Fixed section for adding new items (always visible at bottom)
     const addItemSection = document.createElement('div');
     addItemSection.style.cssText = `
-      margin-top: 1rem;
       padding-top: 1rem;
       border-top: 1px solid #e0e0e0;
+      background: white;
     `;
-
-    const addItemHeading = document.createElement('h4');
-    addItemHeading.textContent = 'Artikel hinzufügen';
-    addItemHeading.style.cssText = 'margin: 0 0 0.5rem 0; font-size: 0.95rem; color: #333;';
-    addItemSection.appendChild(addItemHeading);
 
     // Track added items
     const addedItems = new Map<string, DeltaItem>(
@@ -707,18 +708,11 @@ async function showTemplateDetails(templateName: string, entryId: number): Promi
     addForm.appendChild(addBtn);
     addItemSection.appendChild(addForm);
 
-    contentDiv.appendChild(addItemSection);
+    // Add save button to the fixed section
+    const removedItems = new Set<string>(currentDeltas.removed_items);
 
-    // Create and show modal FIRST so we can reference it in event handlers
-    const modal = new Modal({
-      title: `📋 ${template.name}`,
-      content: contentDiv,
-      size: 'medium'
-    });
-
-    // Add save button (always show it now)
     const saveButtonDiv = document.createElement('div');
-    saveButtonDiv.style.cssText = 'margin-top: 1rem; display: flex; justify-content: flex-end;';
+    saveButtonDiv.style.cssText = 'margin-top: 0.75rem; display: flex; justify-content: flex-end;';
 
     const saveButton = document.createElement('button');
     saveButton.textContent = 'Änderungen speichern';
@@ -738,8 +732,6 @@ async function showTemplateDetails(templateName: string, entryId: number): Promi
     saveButton.addEventListener('mouseout', () => {
       saveButton.style.backgroundColor = '#4a90e2';
     });
-
-    const removedItems = new Set<string>(currentDeltas.removed_items);
 
     // Collect checkbox states from DOM
     const collectCheckboxStates = () => {
@@ -791,7 +783,16 @@ async function showTemplateDetails(templateName: string, entryId: number): Promi
     });
 
     saveButtonDiv.appendChild(saveButton);
-    contentDiv.appendChild(saveButtonDiv);
+    addItemSection.appendChild(saveButtonDiv);
+
+    contentDiv.appendChild(addItemSection);
+
+    // Create and show modal
+    const modal = new Modal({
+      title: `📋 ${template.name}`,
+      content: contentDiv,
+      size: 'medium'
+    });
 
     modal.open();
   } catch (error) {
