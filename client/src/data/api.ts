@@ -113,8 +113,8 @@ export interface VersionInfo {
 }
 
 export interface Config {
-  main_shopping_day: number;  // 0=Sunday, 1=Monday, ..., 6=Saturday
-  fresh_products_day: number;  // 0=Sunday, 1=Monday, ..., 6=Saturday
+  main_shopping_day: number;  // Python convention: 0=Monday, 1=Tuesday, ..., 6=Sunday
+  fresh_products_day: number;  // Python convention: 0=Monday, 1=Tuesday, ..., 6=Sunday
 }
 
 export const API_BASE = '/api/items';

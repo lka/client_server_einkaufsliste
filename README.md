@@ -6,6 +6,8 @@ Python FastAPI Server + TypeScript Client mit JWT-Authentifizierung.
 
 ## Release
 
+ - Release 2.2.0: Personenanzahl-Anpassung im Wochenplan-Modal + Shopping-Day-Bugfix
+ - Release 2.1.0: Template-Items mit Mengenanpassung
  - Release 2.0.0: Wochenplaneinträge zeigen einen Preview
  - Release 1.5.0: WebSocket-Notifications hinzugefügt
  - Release 1.4.0: Wochenplaner integriert
@@ -394,9 +396,9 @@ Python FastAPI Server + TypeScript Client mit JWT-Authentifizierung.
    # Datenbank-Konfiguration
    DATABASE_URL=sqlite:///./data.db
 
-   # Shopping Day Configuration (0=Monday, 6=Sunday)
-   MAIN_SHOPPING_DAY=2        # Wednesday
-   FRESH_PRODUCTS_DAY=4       # Friday
+   # Shopping Day Configuration (Python convention: 0=Monday, 6=Sunday)
+   MAIN_SHOPPING_DAY=2        # Wednesday (2)
+   FRESH_PRODUCTS_DAY=4       # Friday (4)
    ```
 
 5. **Client Build (TypeScript)**
