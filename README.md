@@ -154,7 +154,7 @@ Python FastAPI Server + TypeScript Client mit JWT-Authentifizierung.
     - **Kompakte Darstellung**: Datumsangaben aus Item-Liste entfernt (Datum ist im DatePicker ausgewählt)
   - **Datenbank-Backup & Restore**: Vollständige Datensicherung und Wiederherstellung
     - **JSON-basiertes Backup**: Strukturunabhängig, funktioniert über Software-Updates hinweg
-    - **Vollständige Datensicherung**: Alle Datenbank-Inhalte (Benutzer, Geschäfte, Produkte, Vorlagen, Einkaufsliste, Wochenplan)
+    - **Vollständige Datensicherung**: Alle Datenbank-Inhalte (Benutzer, Geschäfte, Produkte, Vorlagen mit Personenanzahl, Einkaufsliste, Wochenplan)
     - **Einfacher Download**: Backup wird als JSON-Datei heruntergeladen
     - **Validierte Wiederherstellung**: Automatische Format-Validierung vor Restore
     - **Dedizierte Verwaltungsseite**: Unter `/backup` mit Information und Best Practices
@@ -301,6 +301,13 @@ Python FastAPI Server + TypeScript Client mit JWT-Authentifizierung.
   - **CRUD-Operationen**: Erstellen, Bearbeiten und Löschen von Produkten
   - **Store- und Department-Zuordnung**: Jedes Produkt ist einem Store und einer Abteilung zugeordnet
   - **Frische-Kennzeichnung**: Optionale Markierung für frische/verderbliche Produkte
+  - **Intelligenter Filter**: Live-Suche mit schnellem Debouncing (50ms)
+    - Suche in Produktnamen, Abteilungsnamen und "frisch"-Keyword
+    - Counter-Anzeige: "X von Y" Produkten gefunden
+    - Clear-Button (✕) zum schnellen Löschen des Filters
+  - **Alphabetische Sortierung**: Produkte werden innerhalb jeder Abteilung alphabetisch sortiert
+    - Deutsche Locale für korrekte Umlaute (ä, ö, ü)
+    - Case-insensitive Sortierung
   - Navigation über Benutzermenü: "📦 Produkte verwalten"
 - ✅ **Mengenangaben mit Smart-Merging & Fuzzy Matching**: Optionale Mengenangaben für jeden Artikel (z.B. "500 g", "2 Stück")
   - **Default-Wert "1"**: Mengenfeld ist standardmäßig auf "1" vorausgefüllt für schnelleres Hinzufügen

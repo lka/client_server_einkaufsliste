@@ -19,7 +19,10 @@ let stores: Store[] = [];
 let selectedStoreId: number | null = null;
 let departments: Department[] = [];
 let products: Product[] = [];
+let filteredProducts: Product[] = [];
 let editingProductId: number | null = null;
+let filterQuery: string = '';
+let filterTimeout: number | null = null;
 
 /**
  * Initialize the product admin UI
@@ -67,6 +70,38 @@ async function loadDepartments(storeId: number): Promise<void> {
  */
 async function loadProducts(storeId: number): Promise<void> {
   products = await fetchStoreProducts(storeId);
+  applyFilter();
+}
+
+/**
+ * Apply filter to products list
+ */
+function applyFilter(): void {
+  if (!filterQuery.trim()) {
+    filteredProducts = [...products];
+    return;
+  }
+
+  const query = filterQuery.toLowerCase();
+  filteredProducts = products.filter(product => {
+    // Search in product name
+    if (product.name.toLowerCase().includes(query)) {
+      return true;
+    }
+
+    // Search in department name
+    const dept = departments.find(d => d.id === product.department_id);
+    if (dept && dept.name.toLowerCase().includes(query)) {
+      return true;
+    }
+
+    // Search for "frisch" keyword
+    if (product.fresh && 'frisch'.includes(query)) {
+      return true;
+    }
+
+    return false;
+  });
 }
 
 /**
@@ -150,39 +185,66 @@ function renderProductManagement(): string {
 
     <!-- Product List -->
     <section class="product-list-section">
-      <h3>Produkte (${products.length})</h3>
+      <div class="product-list-header">
+        <h3>Produkte (${filteredProducts.length}${filterQuery ? ` von ${products.length}` : ''})</h3>
+        <div class="product-filter-wrapper">
+          <input
+            id="productFilterInput"
+            type="text"
+            placeholder="🔍 Produkte filtern..."
+            class="product-filter-input"
+            value="${filterQuery}"
+          />
+          <button
+            id="productFilterClear"
+            class="product-filter-clear"
+            title="Filter löschen"
+            style="display: ${filterQuery ? 'block' : 'none'};"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
       ${renderProductList()}
     </section>
   `;
 }
 
 /**
- * Render the list of products
+ * Render the list of products (inner content only, no wrapper)
  */
-function renderProductList(): string {
-  if (products.length === 0) {
+function renderProductListContent(): string {
+  if (filteredProducts.length === 0) {
+    if (filterQuery) {
+      return '<p class="no-products">Keine Produkte gefunden.</p>';
+    }
     return '<p class="no-products">Keine Produkte vorhanden.</p>';
   }
 
   // Group products by department
   const productsByDept = new Map<number, Product[]>();
-  products.forEach(product => {
+  filteredProducts.forEach(product => {
     if (!productsByDept.has(product.department_id)) {
       productsByDept.set(product.department_id, []);
     }
     productsByDept.get(product.department_id)!.push(product);
   });
 
-  let html = '<div class="products-by-department">';
+  let html = '';
 
   departments.forEach(dept => {
     const deptProducts = productsByDept.get(dept.id) || [];
     if (deptProducts.length > 0) {
+      // Sort products alphabetically by name
+      const sortedProducts = [...deptProducts].sort((a, b) =>
+        a.name.localeCompare(b.name, 'de', { sensitivity: 'base' })
+      );
+
       html += `
         <div class="department-group">
           <h4>${dept.name}</h4>
           <div class="product-items">
-            ${deptProducts.map(product => `
+            ${sortedProducts.map(product => `
               <div class="product-item ${editingProductId === product.id ? 'editing' : ''}">
                 <div class="product-info">
                   <span class="product-name">${product.name}</span>
@@ -200,8 +262,14 @@ function renderProductList(): string {
     }
   });
 
-  html += '</div>';
   return html;
+}
+
+/**
+ * Render the list of products with wrapper (for initial render)
+ */
+function renderProductList(): string {
+  return `<div class="products-by-department">${renderProductListContent()}</div>`;
 }
 
 /**
@@ -230,27 +298,25 @@ function attachEventListeners(): void {
     cancelBtn.addEventListener('click', handleCancelEdit);
   }
 
-  // Edit buttons
-  document.querySelectorAll('.btn-edit').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const target = e.target as HTMLElement;
-      const productId = target.dataset.productId;
-      if (productId) {
-        handleEditProduct(parseInt(productId, 10));
-      }
-    });
-  });
+  // Edit and delete buttons
+  attachProductActionListeners();
 
-  // Delete buttons
-  document.querySelectorAll('.btn-delete').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const target = e.target as HTMLElement;
-      const productId = target.dataset.productId;
-      if (productId) {
-        handleDeleteProduct(parseInt(productId, 10));
+  // Filter input
+  const filterInput = document.getElementById('productFilterInput') as HTMLInputElement;
+  if (filterInput) {
+    filterInput.addEventListener('input', handleFilterInput);
+    filterInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        filterInput.blur();
       }
     });
-  });
+  }
+
+  // Filter clear button
+  const filterClear = document.getElementById('productFilterClear');
+  if (filterClear) {
+    filterClear.addEventListener('click', handleFilterClear);
+  }
 }
 
 /**
@@ -264,13 +330,16 @@ async function handleStoreChange(e: Event): Promise<void> {
     selectedStoreId = null;
     departments = [];
     products = [];
+    filteredProducts = [];
     editingProductId = null;
+    filterQuery = '';
     renderUI();
     return;
   }
 
   selectedStoreId = parseInt(storeId, 10);
   editingProductId = null;
+  filterQuery = '';
 
   await Promise.all([
     loadDepartments(selectedStoreId),
@@ -278,6 +347,91 @@ async function handleStoreChange(e: Event): Promise<void> {
   ]);
 
   renderUI();
+}
+
+/**
+ * Handle filter input change (with debouncing)
+ */
+function handleFilterInput(e: Event): void {
+  const input = e.target as HTMLInputElement;
+  filterQuery = input.value;
+
+  // Clear previous timeout
+  if (filterTimeout !== null) {
+    window.clearTimeout(filterTimeout);
+  }
+
+  // Set new timeout for debouncing (50ms for faster feedback)
+  filterTimeout = window.setTimeout(() => {
+    applyFilter();
+    updateProductListDisplay();
+    filterTimeout = null;
+  }, 50);
+}
+
+/**
+ * Handle filter clear button
+ */
+function handleFilterClear(): void {
+  filterQuery = '';
+  const filterInput = document.getElementById('productFilterInput') as HTMLInputElement;
+  if (filterInput) {
+    filterInput.value = '';
+    filterInput.focus();
+  }
+  applyFilter();
+  updateProductListDisplay();
+}
+
+/**
+ * Update product list display efficiently (only updates what changed)
+ */
+function updateProductListDisplay(): void {
+  // Update counter in header
+  const counterElement = document.querySelector('.product-list-header h3');
+  if (counterElement) {
+    counterElement.textContent = `Produkte (${filteredProducts.length}${filterQuery ? ` von ${products.length}` : ''})`;
+  }
+
+  // Update clear button visibility
+  const filterClear = document.getElementById('productFilterClear') as HTMLButtonElement;
+  if (filterClear) {
+    filterClear.style.display = filterQuery ? 'block' : 'none';
+  }
+
+  // Update only the products container (using inner content only)
+  const productsContainer = document.querySelector('.products-by-department');
+  if (productsContainer) {
+    productsContainer.innerHTML = renderProductListContent();
+
+    // Re-attach edit and delete buttons only
+    attachProductActionListeners();
+  }
+}
+
+/**
+ * Attach event listeners to product action buttons
+ */
+function attachProductActionListeners(): void {
+  document.querySelectorAll('.btn-edit').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      const productId = target.dataset.productId;
+      if (productId) {
+        handleEditProduct(parseInt(productId, 10));
+      }
+    });
+  });
+
+  document.querySelectorAll('.btn-delete').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      const productId = target.dataset.productId;
+      if (productId) {
+        handleDeleteProduct(parseInt(productId, 10));
+      }
+    });
+  });
 }
 
 /**

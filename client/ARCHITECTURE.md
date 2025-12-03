@@ -764,7 +764,22 @@ The shopping list client is a TypeScript application built with a **four-layer a
   - Product deletion with confirmation modal
   - Products grouped by department
   - Fresh product indicator
+  - **Intelligent Filter**: Live search with 50ms debouncing
+    - Multi-field search: Product names, department names, "frisch" keyword
+    - Counter display: "X von Y" products found
+    - Clear button (✕) for quick filter reset
+    - Optimized rendering: Only updates changed DOM elements
+  - **Alphabetical Sorting**: Products sorted by name within each department
+    - German locale support (`localeCompare('de')`)
+    - Case-insensitive sorting
   - Success/error toast notifications for all operations
+- **Performance Optimizations**:
+  - **Efficient Rendering**: `updateProductListDisplay()` only updates changed elements
+    - Counter updated via `textContent` (not innerHTML)
+    - Clear button visibility toggled via `style.display`
+    - Products container updated separately from filter UI
+  - **Debouncing**: 50ms timeout prevents excessive re-rendering during fast typing
+  - **Preserved Input State**: Filter input is not destroyed/recreated during updates
 - **Dependencies**:
   - `../data/api.js`: Product CRUD operations
   - `./components/modal.js`, `./components/button.js`, `./components/toast.js`: UI components
