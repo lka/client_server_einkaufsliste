@@ -104,6 +104,7 @@ export async function initUserMenu(): Promise<void> {
   const manageTemplatesBtn = document.getElementById('manageTemplatesBtn');
   const manageUsersBtn = document.getElementById('manageUsersBtn');
   const manageBackupBtn = document.getElementById('manageBackupBtn');
+  const manageWebDAVBtn = document.getElementById('manageWebDAVBtn');
   const toggleWebSocketBtn = document.getElementById('toggleWebSocketBtn');
   const copyWebSocketLinkBtn = document.getElementById('copyWebSocketLinkBtn');
   const clearByDateBtn = document.getElementById('clearByDateBtn');
@@ -209,6 +210,13 @@ export async function initUserMenu(): Promise<void> {
   if (manageBackupBtn) {
     manageBackupBtn.addEventListener('click', () => {
       window.location.href = '/backup';
+    });
+  }
+
+  // Manage WebDAV button handler
+  if (manageWebDAVBtn) {
+    manageWebDAVBtn.addEventListener('click', () => {
+      window.location.href = '/webdav';
     });
   }
 

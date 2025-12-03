@@ -74,3 +74,23 @@ class ItemWithDepartment(BaseModel):
     department_id: int | None = None
     department_name: str | None = None
     department_sort_order: int | None = None
+
+
+# WebDAV settings schemas
+class WebDAVSettingsCreate(BaseModel):
+    """Schema for creating WebDAV settings."""
+
+    url: str
+    username: str
+    password: str
+    filename: str
+
+
+class WebDAVSettingsUpdate(BaseModel):
+    """Schema for updating WebDAV settings."""
+
+    url: Optional[str] = None
+    username: Optional[str] = None
+    password: Optional[str] = None
+    filename: Optional[str] = None
+    enabled: Optional[bool] = None
