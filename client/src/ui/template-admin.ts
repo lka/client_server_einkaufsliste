@@ -350,7 +350,7 @@ async function handleSaveTemplate(): Promise<void> {
 
   const name = nameInput.value.trim();
   const description = descriptionInput.value.trim() || undefined;
-  const personCount = parseInt(personCountInput.value) || 2;
+  const personCount = parseInt(personCountInput.value, 10) || 2;
 
   // Validation
   if (!name) {
@@ -445,7 +445,7 @@ async function handleEditTemplate(templateId: number): Promise<void> {
   if (nameInput) nameInput.value = template.name;
   if (descriptionInput) descriptionInput.value = template.description || '';
   if (personCountInput) personCountInput.value = String(template.person_count);
-  if (formTitle) formTitle.textContent = 'Template bearbeiten';
+  if (formTitle) formTitle.textContent = 'Vorlage bearbeiten';
   if (cancelBtn) cancelBtn.style.display = 'inline-block';
 
   // Render items
@@ -508,10 +508,10 @@ function resetForm(): void {
 
   if (nameInput) nameInput.value = '';
   if (descriptionInput) descriptionInput.value = '';
-  if (personCountInput) personCountInput.value = '';
+  if (personCountInput) personCountInput.value = '2';
   if (itemNameInput) itemNameInput.value = '';
   if (itemMengeInput) itemMengeInput.value = '';
-  if (formTitle) formTitle.textContent = 'Neues Template erstellen';
+  if (formTitle) formTitle.textContent = 'Neue Vorlage erstellen';
   if (cancelBtn) cancelBtn.style.display = 'none';
 
   renderTemplateItems();
