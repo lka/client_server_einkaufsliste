@@ -23,6 +23,7 @@ from .routers import (
     backup,
     weekplan,
     config,
+    webdav,
 )
 from .routers.stores import departments_router
 from .version import get_version
@@ -45,7 +46,12 @@ async def lifespan(app: FastAPI):
     """
     # Import models to register them with SQLModel
     from .user_models import User  # noqa: F401
-    from .models import Store, Department, Product, WeekplanEntry  # noqa: F401
+    from .models import Store  # noqa: F401
+    from .models import Department  # noqa: F401
+    from .models import Product  # noqa: F401
+    from .models import Item  # noqa: F401
+    from .models import WeekplanEntry  # noqa: F401
+    from .models import WebDAVSettings  # noqa: F401
 
     engine = get_engine()
     create_db_and_tables(engine)
@@ -96,6 +102,7 @@ app.include_router(templates.router)
 app.include_router(backup.router)
 app.include_router(weekplan.router)
 app.include_router(config.router)
+app.include_router(webdav.router)
 app.include_router(pages.router)
 
 

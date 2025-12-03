@@ -60,6 +60,13 @@ def serve_weekplan_page():
     return FileResponse(weekplan_file)
 
 
+@router.get("/webdav")
+def serve_webdav_page():
+    """Serve the WebDAV settings page."""
+    webdav_file = os.path.join(CLIENT_DIR, "index-webdav.html")
+    return FileResponse(webdav_file)
+
+
 @router.get("/favicon.{ext}")
 def serve_favicon(ext: str):
     """Serve the favicon file (svg or ico)."""

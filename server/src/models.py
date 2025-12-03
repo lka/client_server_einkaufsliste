@@ -171,3 +171,23 @@ class WeekplanEntry(SQLModel, table=True):
     meal: str = Field(index=True)  # 'morning', 'lunch', 'dinner'
     text: str
     deltas: Optional[str] = Field(default=None)  # JSON string
+
+
+class WebDAVSettings(SQLModel, table=True):
+    """WebDAV configuration for recipe import.
+
+    Attributes:
+        id: Primary key (auto-generated integer)
+        url: WebDAV server URL
+        username: WebDAV username for authentication
+        password: WebDAV password (stored encrypted/hashed in production)
+        filename: Name of the recipe file on the WebDAV server
+        enabled: Whether this configuration is active
+    """
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    url: str
+    username: str
+    password: str
+    filename: str
+    enabled: bool = Field(default=True)

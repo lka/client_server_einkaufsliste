@@ -1,0 +1,33 @@
+<header>
+  <h1>WebDAV Einstellungen</h1>
+  <div class="header-actions">
+    <button id="backToAppBtn" class="back-btn" aria-label="Zurück zur Einkaufsliste">← Zurück</button>
+    <div class="user-menu">
+      <button id="menuBtn" class="menu-btn" aria-label="Benutzermenü">⋮</button>
+      <div id="menuDropdown" class="menu-dropdown">
+        <!-- Menu items loaded dynamically from menu-dropdown.html -->
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="webdav-admin-container">
+    <!-- WebDAV Settings Form Section -->
+    <section class="webdav-settings-section">
+      <h2>WebDAV Konfiguration</h2>
+      <p class="section-description">Konfiguriere den Zugriff auf deine Rezeptdatei über WebDAV.</p>
+      <div id="webdavForm" class="webdav-form">
+        <!-- Form will be rendered here by TypeScript -->
+      </div>
+    </section>
+
+    <!-- Existing Settings Section -->
+    <section class="webdav-list-section">
+      <h2>Gespeicherte Konfigurationen</h2>
+      <div id="webdavList" class="webdav-list">
+        <!-- Existing WebDAV settings will be rendered here -->
+      </div>
+    </section>
+  </div>
+</main>
