@@ -80,6 +80,40 @@ The shopping list client is a TypeScript application built with a **four-layer a
 
 #### api.ts
 - **Responsibility**: Shopping list API operations
+- **Recipe Functions**:
+  - `searchRecipes(query: string, limit?: number)`: Suche Rezepte nach Namen
+    - Returns: `Promise<Array<{id: number, name: string}>>`
+    - Limit default: 10
+  - `fetchRecipeByName(name: string)`: Hole Rezept nach exaktem Namen
+    - Case-insensitive Suche
+    - Returns: `Promise<Recipe>` mit vollständigen Rezeptdaten
+  - `fetchRecipe(id: number)`: Hole Rezept nach ID
+    - Returns: `Promise<Recipe>`
+  - `fetchRecipes(skip?: number, limit?: number)`: Paginated Rezeptliste
+    - Returns: `Promise<Array<{id: number, name: string, category: string}>>`
+  - `importRecipesFromWebDAV(settingsId: number)`: Trigger Rezept-Import
+    - Returns: `Promise<{message: string, imported: number, skipped: number, errors: string[]}>`
+- **Interfaces**:
+  ```typescript
+  interface Recipe {
+    id: number;
+    external_id: string;
+    name: string;
+    category: string;
+    tags: string;
+    data: string; // JSON string with full recipe data
+    imported_at: string;
+  }
+
+  interface RecipeData {
+    title: string;
+    quantity: number; // Persons
+    ingredients: string; // Newline-separated text
+    instructions: string;
+    totalTime?: string;
+    categories?: string[];
+    tags?: string[];
+  }
 - **Functions**:
   - `fetchItems()`: Get all shopping list items
   - `addItem(name, menge?, storeId?, shoppingDate?)`: Add a new item with optional shopping date
@@ -96,6 +130,20 @@ The shopping list client is a TypeScript application built with a **four-layer a
   - `ensureFreshToken()`: Refresh JWT before API calls
 - **Dependencies**: auth.ts (for token management)
 - **Interfaces**: `Item` (with shopping_date?: string), `Store`, `Department`, `Product`, `Template`, `TemplateItem`
+
+#### webdav-admin.ts (ERWEITERT)
+- **Responsibility**: WebDAV-Einstellungen mit Rezept-Import-Funktion
+- **Rezept-Import Features**:
+  - **Import-Button**: "📥 Rezepte importieren" Button pro WebDAV-Konfiguration
+    - Nur aktiv wenn WebDAV-Einstellung enabled ist
+    - Öffnet Bestätigungs-Modal mit Warnung über lange Dauer
+  - **Import-Modal**: `handleImportRecipes(settingsId)`
+    - Zeigt Hinweis: "Dies kann einige Sekunden dauern"
+    - Deaktiviert Button während Import: "⏳ Importiere..."
+    - Zeigt Erfolg mit Anzahl importierter Rezepte
+    - Zeigt Warnung bei Fehlern mit Fehleranzahl
+    - Error-Handling mit Toast-Benachrichtigungen
+  - **Button-Status**: Import-Button ist nur bei aktiver Konfiguration klickbar
 
 #### auth.ts
 - **Responsibility**: Authentication and user management with inactivity tracking
@@ -812,6 +860,32 @@ The shopping list client is a TypeScript application built with a **four-layer a
 
 #### weekplan.ts
 - **Responsibility**: Weekly meal plan UI for managing shared meal entries
+- **Rezept-Features**:
+  - **Rezept-Autocomplete**: Integration mit `/api/recipes/search` Endpunkt
+    - Rezepte erscheinen in Autocomplete nach Vorlagen (Templates haben Priorität)
+    - Fuzzy-Suche mit case-insensitive Matching
+    - Limit: Maximal 10 Vorschläge (Vorlagen + Rezepte kombiniert)
+  - **Rezept-Modal mit Personenanzahl**: `showRecipeDetails(recipeName)` zeigt Rezeptdetails
+    - Lädt vollständige Rezeptdaten via `fetchRecipeByName()`
+    - Zeigt Metadaten: Name, Kategorie, Tags, Zubereitungszeit, Personenanzahl
+    - Zutaten-Liste mit Parsing von Mengen und Einheiten
+    - **Personenanzahl-Eingabefeld**: Live-Skalierung aller Mengen
+    - **Delta-Management**: Checkboxen zum Deaktivieren einzelner Zutaten
+    - **Zusätzliche Items**: Eingabefeld für eigene Zutaten
+    - **Scrollbares Layout**: Zutaten-Liste scrollt, Eingabefelder bleiben fixiert
+  - **Rezept vs. Vorlage Erkennung**: Prüft zuerst Templates, dann Rezepte
+    - Template gefunden → `showTemplateDetails()`
+    - Rezept gefunden → `showRecipeDetails()`
+    - Nichts gefunden → Stiller Fehler (kein Modal)
+- **Delta-Struktur**: `WeekplanDeltas` mit Rezept-Unterstützung
+  - `person_count?: number`: Gewünschte Personenanzahl
+  - `removed_items?: string[]`: Liste deaktivierter Zutatennamen
+  - `added_items?: Array<{name: string, menge: string}>`: Zusätzliche Items
+- **Server-Integration**:
+  - `POST /api/weekplan`: Speichert Einträge mit `recipe_id` und `deltas`
+  - `_add_recipe_items_to_shopping_list()`: Server-seitige Zutaten-Verarbeitung
+  - `_remove_recipe_items_from_shopping_list()`: Intelligente Mengensubtraktion beim Löschen
+  - `_handle_recipe_person_count_change()`: Re-Berechnung bei Personenanzahl-Änderung
 - **Functions**:
   - `initWeekplan()`: Initialize weekplan UI, event handlers, and WebSocket subscriptions
   - `renderWeek()`: Display week view with date calculations and entry loading

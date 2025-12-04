@@ -79,6 +79,7 @@ export interface WeekplanEntry {
   date: string;  // ISO format: YYYY-MM-DD
   meal: string;  // 'morning', 'lunch', 'dinner'
   text: string;
+  recipe_id?: number;  // Optional recipe reference
   deltas?: WeekplanDeltas;
 }
 
@@ -1565,6 +1566,95 @@ export async function deleteWebDAVSettings(id: number): Promise<void> {
     }
   } catch (error) {
     console.error('Error deleting WebDAV settings:', error);
+    throw error;
+  }
+}
+
+/**
+ * Import recipes from WebDAV using specified settings (requires authentication).
+ */
+export async function importRecipesFromWebDAV(settingsId: number): Promise<{ success: boolean; imported: number; deleted: number; errors: string[]; message: string }> {
+  const token = getToken();
+  if (!token) {
+    throw new Error('Not authenticated');
+  }
+
+  try {
+    const res = await fetch(`${API_WEBDAV}/${settingsId}/import`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (res.status === 401) {
+      clearToken();
+      throw new Error('Session expired');
+    }
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({ detail: res.statusText }));
+      throw new Error(errorData.detail || `Failed to import recipes: ${res.statusText}`);
+    }
+
+    return await res.json();
+  } catch (error) {
+    console.error('Error importing recipes from WebDAV:', error);
+    throw error;
+  }
+}
+
+/**
+ * Search recipes by name.
+ *
+ * @param query - Search query string
+ * @param limit - Maximum number of results (default: 10)
+ * @returns Promise resolving to array of recipe matches
+ */
+export async function searchRecipes(
+  query: string,
+  limit: number = 10
+): Promise<readonly { id: number; name: string }[]> {
+  try {
+    const response = await fetch(
+      `/api/recipes/search?query=${encodeURIComponent(query)}&limit=${limit}`,
+      {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to search recipes: ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error searching recipes:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get recipe details by ID.
+ *
+ * @param recipeId - Recipe ID
+ * @returns Promise resolving to recipe details
+ */
+export async function getRecipe(recipeId: number): Promise<any> {
+  try {
+    const response = await fetch(`/api/recipes/${recipeId}`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to get recipe: ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error getting recipe:', error);
     throw error;
   }
 }

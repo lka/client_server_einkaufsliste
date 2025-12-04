@@ -8,7 +8,14 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlmodel import select
 from pydantic import BaseModel
 
-from ..models import WeekplanEntry, ShoppingTemplate, Store, Product, Item
+from ..models import (
+    WeekplanEntry,
+    ShoppingTemplate,
+    Store,
+    Product,
+    Item,
+    Recipe,
+)
 from ..user_models import User
 from ..db import get_session
 from ..auth import get_current_user
@@ -38,6 +45,7 @@ class WeekplanEntryCreate(BaseModel):
     date: str  # ISO format: YYYY-MM-DD
     meal: str  # 'morning', 'lunch', 'dinner'
     text: str
+    recipe_id: Optional[int] = None
     deltas: Optional[WeekplanDeltas] = None
 
 
@@ -48,6 +56,7 @@ class WeekplanEntryResponse(BaseModel):
     date: str
     meal: str
     text: str
+    recipe_id: Optional[int] = None
     deltas: Optional[WeekplanDeltas] = None
 
 
@@ -97,6 +106,10 @@ def _adjust_quantity_by_person_count(
         value = float(value_str)
     except ValueError:
         return original_menge  # Can't convert to float, return original
+
+    # Prevent division by zero
+    if not original_person_count or original_person_count == 0:
+        return original_menge  # Can't calculate without valid original count
 
     # Calculate factor and apply
     factor = person_count / original_person_count
@@ -372,6 +385,377 @@ def _add_template_items_to_shopping_list(
     return modified_items
 
 
+def _get_known_units() -> list[str]:
+    """Return list of known measurement units for ingredient parsing."""
+    return [
+        "g",
+        "kg",
+        "ml",
+        "l",
+        "EL",
+        "TL",
+        "Prise",
+        "Prisen",
+        "Stück",
+        "Stk",
+        "Bund",
+        "Becher",
+        "Dose",
+        "Dosen",
+        "Pck",
+        "Päckchen",
+        "Tasse",
+        "Tassen",
+        "Stiel",
+        "Stiele",
+        "Zweig",
+        "Zweige",
+    ]
+
+
+def _parse_recipe_data(recipe: Recipe) -> tuple[str, int, list[str]]:
+    """Parse recipe data and return ingredients text, original quantity, and lines.
+
+    Args:
+        recipe: Recipe instance
+
+    Returns:
+        Tuple of (ingredients_text, original_quantity, ingredient_lines)
+    """
+    import json
+
+    recipe_data = json.loads(recipe.data)
+    ingredients_text = recipe_data.get("ingredients", "")
+
+    # Ensure original_quantity is an integer (fallback to 1 person)
+    quantity = recipe_data.get("quantity", 1)
+    try:
+        original_quantity = int(quantity) if quantity else 1
+    except (ValueError, TypeError):
+        original_quantity = 1
+
+    ingredient_lines = [
+        line.strip() for line in ingredients_text.split("\n") if line.strip()
+    ]
+
+    return ingredients_text, original_quantity, ingredient_lines
+
+
+def _create_ingredient_pattern():
+    """Create regex pattern for parsing ingredients with known units.
+
+    Returns:
+        Compiled regex pattern
+    """
+    import re
+
+    known_units = _get_known_units()
+    units_pattern = "|".join(known_units)
+    return re.compile(rf"^([\d\/\.,]+(?:\s*(?:{units_pattern}))?)\s+(.+)$")
+
+
+def _parse_ingredient_line(line: str, pattern) -> tuple[str | None, str]:
+    """Parse a single ingredient line into quantity and name.
+
+    Args:
+        line: Ingredient line to parse
+        pattern: Regex pattern for parsing
+
+    Returns:
+        Tuple of (quantity_str, name)
+    """
+    match = pattern.match(line)
+    if match:
+        quantity_str = match.group(1).strip()
+        name = match.group(2).strip()
+    else:
+        quantity_str = None
+        name = line.strip()
+
+    return quantity_str, name
+
+
+def _add_recipe_items_to_shopping_list(
+    session,
+    recipe_id: int,
+    weekplan_date: str,
+    meal: str,
+    deltas: Optional[WeekplanDeltas] = None,
+) -> List[Item]:
+    """Add recipe ingredients to shopping list.
+
+    Args:
+        session: Database session
+        recipe_id: ID of the recipe
+        weekplan_date: Date from weekplan entry (YYYY-MM-DD)
+        meal: Meal type ('morning', 'lunch', 'dinner')
+        deltas: Optional deltas to apply (removed items, added items, person_count)
+
+    Returns:
+        List of items that were added or modified
+    """
+    import uuid
+    from ..routers.items import _find_existing_item, _find_matching_product
+    from ..utils import merge_quantities
+
+    modified_items = []
+
+    # Check if weekplan date is in the past
+    weekplan_datetime = datetime.fromisoformat(weekplan_date)
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    if weekplan_datetime.date() < today.date():
+        return modified_items  # Don't add items for past dates
+
+    # Get recipe
+    recipe = session.get(Recipe, recipe_id)
+    if not recipe:
+        return modified_items  # No recipe found
+
+    # Parse recipe data using helper
+    ingredients_text, original_quantity, ingredient_lines = _parse_recipe_data(recipe)
+    if not ingredients_text:
+        return modified_items
+
+    # Get first store by sort_order
+    first_store = session.exec(
+        select(Store).order_by(Store.sort_order, Store.id)
+    ).first()
+
+    if not first_store:
+        return modified_items  # No store available
+
+    # Create set of removed items for fast lookup
+    removed_items = set(deltas.removed_items) if deltas else set()
+
+    # Get person_count from deltas if available
+    person_count = deltas.person_count if deltas else None
+
+    # Create ingredient pattern
+    pattern = _create_ingredient_pattern()
+
+    # Process each ingredient
+    for line in ingredient_lines:
+        quantity_str, name = _parse_ingredient_line(line, pattern)
+
+        # Skip items that are marked as removed in deltas
+        if name in removed_items:
+            continue
+
+        # Adjust quantity based on person_count if provided
+        item_menge = quantity_str
+        if person_count is not None and quantity_str:
+            item_menge = _adjust_quantity_by_person_count(
+                quantity_str, person_count, original_quantity
+            )
+
+        # Calculate shopping date
+        shopping_date = _calculate_shopping_date(
+            weekplan_date, name, first_store, session, meal
+        )
+
+        # Find existing item
+        existing_item = _find_existing_item(
+            session, name, shopping_date, first_store.id
+        )
+
+        if existing_item:
+            # Merge quantities
+            merged_menge = merge_quantities(existing_item.menge, item_menge)
+            if merged_menge is None or merged_menge.strip() == "":
+                session.delete(existing_item)
+            else:
+                existing_item.menge = merged_menge
+                session.add(existing_item)
+                modified_items.append(existing_item)
+        else:
+            # Create new item
+            new_item = Item(
+                id=str(uuid.uuid4()),
+                name=name,
+                menge=item_menge,
+                store_id=first_store.id,
+                shopping_date=shopping_date,
+                user_id=None,
+            )
+
+            # Find matching product
+            product_id = _find_matching_product(session, new_item)
+            if product_id:
+                new_item.product_id = product_id
+
+            session.add(new_item)
+            modified_items.append(new_item)
+
+    # Commit all ingredient items at once
+    session.commit()
+
+    # Add items from deltas.added_items
+    if deltas and deltas.added_items:
+        for delta_item in deltas.added_items:
+            # Calculate shopping date
+            shopping_date = _calculate_shopping_date(
+                weekplan_date, delta_item.name, first_store, session, meal
+            )
+
+            # Find existing item
+            existing_item = _find_existing_item(
+                session, delta_item.name, shopping_date, first_store.id
+            )
+
+            if existing_item:
+                # Merge quantities
+                merged_menge = merge_quantities(existing_item.menge, delta_item.menge)
+                if merged_menge is None or merged_menge.strip() == "":
+                    session.delete(existing_item)
+                else:
+                    existing_item.menge = merged_menge
+                    session.add(existing_item)
+                    modified_items.append(existing_item)
+            else:
+                # Create new item
+                new_item = Item(
+                    id=str(uuid.uuid4()),
+                    name=delta_item.name,
+                    menge=delta_item.menge,
+                    store_id=first_store.id,
+                    shopping_date=shopping_date,
+                    user_id=None,
+                )
+
+                # Find matching product
+                product_id = _find_matching_product(session, new_item)
+                if product_id:
+                    new_item.product_id = product_id
+
+                session.add(new_item)
+                modified_items.append(new_item)
+
+        # Commit all added items at once
+        session.commit()
+
+    return modified_items
+
+
+def _remove_recipe_items_from_shopping_list(
+    session,
+    recipe_id: int,
+    weekplan_date: str,
+    meal: str,
+    deltas: Optional[WeekplanDeltas] = None,
+) -> tuple[List[Item], List[Item]]:
+    """Remove recipe items from shopping list when weekplan entry is deleted.
+
+    This reverses the action of _add_recipe_items_to_shopping_list by
+    subtracting the recipe ingredient quantities from the shopping list.
+
+    Args:
+        session: Database session
+        recipe_id: ID of the recipe
+        weekplan_date: Date from weekplan entry (YYYY-MM-DD)
+        meal: Meal type ('morning', 'lunch', 'dinner')
+        deltas: Optional deltas to apply (removed items, added items)
+
+    Returns:
+        Tuple of (modified_items, deleted_items)
+    """
+    from ..routers.items import _find_existing_item
+
+    modified_items = []
+    deleted_items = []
+
+    # Check if weekplan date is in the past
+    weekplan_datetime = datetime.fromisoformat(weekplan_date)
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    if weekplan_datetime.date() < today.date():
+        return modified_items, deleted_items  # Don't remove items for past dates
+
+    # Get recipe from database
+    recipe = session.get(Recipe, recipe_id)
+    if not recipe:
+        return modified_items, deleted_items  # Recipe not found
+
+    # Parse recipe data using helper
+    ingredients_text, original_quantity, ingredient_lines = _parse_recipe_data(recipe)
+    if not ingredients_text:
+        return modified_items, deleted_items
+
+    # Get first store by sort_order
+    first_store = session.exec(
+        select(Store).order_by(Store.sort_order, Store.id)
+    ).first()
+
+    if not first_store:
+        return modified_items, deleted_items  # No store available
+
+    # Create set of removed items for fast lookup
+    removed_items = set(deltas.removed_items) if deltas else set()
+
+    # Get person_count from deltas if available
+    person_count = deltas.person_count if deltas else None
+
+    # Create ingredient pattern
+    pattern = _create_ingredient_pattern()
+
+    # Process each ingredient
+    for line in ingredient_lines:
+        quantity_str, name = _parse_ingredient_line(line, pattern)
+
+        # Skip items that were marked as removed in deltas (they were never added)
+        if name in removed_items:
+            continue
+
+        # Calculate shopping date using helper function
+        shopping_date = _calculate_shopping_date(
+            weekplan_date, name, first_store, session, meal
+        )
+
+        # Adjust quantity based on person_count if provided
+        item_menge = quantity_str
+        if person_count is not None and quantity_str:
+            item_menge = _adjust_quantity_by_person_count(
+                quantity_str, person_count, original_quantity
+            )
+
+        # Subtract quantities using merge logic
+        # Find existing item with same name, date, and store
+        existing_item = _find_existing_item(
+            session, name, shopping_date, first_store.id
+        )
+
+        if existing_item and item_menge:
+            _subtract_item_quantity(
+                existing_item,
+                item_menge,
+                session,
+                modified_items,
+                deleted_items,
+            )
+
+    # Remove items from deltas.added_items
+    if deltas and deltas.added_items:
+        for delta_item in deltas.added_items:
+            # Calculate shopping date
+            shopping_date = _calculate_shopping_date(
+                weekplan_date, delta_item.name, first_store, session, meal
+            )
+
+            # Find existing item
+            existing_item = _find_existing_item(
+                session, delta_item.name, shopping_date, first_store.id
+            )
+
+            if existing_item and delta_item.menge:
+                _subtract_item_quantity(
+                    existing_item,
+                    delta_item.menge,
+                    session,
+                    modified_items,
+                    deleted_items,
+                )
+
+    return modified_items, deleted_items
+
+
 def _remove_template_items_from_shopping_list(
     session,
     template_name: str,
@@ -522,6 +906,7 @@ def get_weekplan_entries(
                 date=entry.date,
                 meal=entry.meal,
                 text=entry.text,
+                recipe_id=entry.recipe_id,
                 deltas=(
                     WeekplanDeltas(**json.loads(entry.deltas)) if entry.deltas else None
                 ),
@@ -560,16 +945,27 @@ async def create_weekplan_entry(
 
         # Create entry (shared, no user_id)
         db_entry = WeekplanEntry(
-            date=entry.date, meal=entry.meal, text=entry.text, deltas=deltas_json
+            date=entry.date,
+            meal=entry.meal,
+            text=entry.text,
+            recipe_id=entry.recipe_id,
+            deltas=deltas_json,
         )
         session.add(db_entry)
         session.commit()
         session.refresh(db_entry)
 
-        # Check if entry text matches a shopping template and add items to shopping list
-        modified_items = _add_template_items_to_shopping_list(
-            session, entry.text, entry.date, entry.meal, entry.deltas
-        )
+        # Check if entry has a recipe_id and add recipe items to shopping list
+        modified_items = []
+        if entry.recipe_id:
+            modified_items = _add_recipe_items_to_shopping_list(
+                session, entry.recipe_id, entry.date, entry.meal, entry.deltas
+            )
+        else:
+            # Check if entry text matches a shopping template
+            modified_items = _add_template_items_to_shopping_list(
+                session, entry.text, entry.date, entry.meal, entry.deltas
+            )
 
         # Broadcast shopping list changes to all connected clients
         for item in modified_items:
@@ -593,6 +989,7 @@ async def create_weekplan_entry(
             date=db_entry.date,
             meal=db_entry.meal,
             text=db_entry.text,
+            recipe_id=db_entry.recipe_id,
             deltas=entry.deltas,
         )
 
@@ -630,13 +1027,18 @@ async def delete_weekplan_entry(
         if entry.deltas:
             entry_deltas = WeekplanDeltas(**json.loads(entry.deltas))
 
-        # Check if entry text matches a shopping template and remove items
-        # from shopping list
-        # Do this BEFORE deleting the entry so we still have access to entry.text
-        # and entry.date
-        modified_items, deleted_items = _remove_template_items_from_shopping_list(
-            session, entry.text, entry.date, entry.meal, entry_deltas
-        )
+        # Remove items from shopping list based on entry type
+        # Do this BEFORE deleting the entry so we still have access to entry data
+        if entry.recipe_id:
+            # Entry is a recipe - remove recipe ingredients
+            modified_items, deleted_items = _remove_recipe_items_from_shopping_list(
+                session, entry.recipe_id, entry.date, entry.meal, entry_deltas
+            )
+        else:
+            # Entry is a template - remove template items
+            modified_items, deleted_items = _remove_template_items_from_shopping_list(
+                session, entry.text, entry.date, entry.meal, entry_deltas
+            )
 
         # Broadcast shopping list changes to all connected clients
         for item in modified_items:
@@ -940,6 +1342,202 @@ def _remove_items_from_added(
                 session.commit()
 
 
+def _handle_recipe_person_count_change(
+    old_person_count: Optional[int],
+    new_person_count: Optional[int],
+    recipe: Recipe,
+    entry: WeekplanEntry,
+    first_store: Store,
+    old_removed: set,
+    new_removed: set,
+    session,
+    modified_items: list,
+):
+    """Handle person_count changes for recipes."""
+    from ..routers.items import _find_existing_item, _find_matching_product
+    from ..utils import merge_quantities
+    import uuid
+
+    # Parse recipe data using helper
+    _, original_quantity, ingredient_lines = _parse_recipe_data(recipe)
+
+    # Create ingredient pattern
+    pattern = _create_ingredient_pattern()
+
+    # Remove items with old person_count
+    for line in ingredient_lines:
+        quantity_str, name = _parse_ingredient_line(line, pattern)
+
+        if name in old_removed:
+            continue
+
+        shopping_date = _calculate_shopping_date(
+            entry.date, name, first_store, session, entry.meal
+        )
+
+        # Calculate old quantity
+        if old_person_count is not None and quantity_str:
+            old_menge = _adjust_quantity_by_person_count(
+                quantity_str, old_person_count, original_quantity
+            )
+        else:
+            old_menge = quantity_str
+
+        existing_item = _find_existing_item(
+            session, name, shopping_date, first_store.id
+        )
+
+        if existing_item and old_menge:
+            deleted_items = []
+            _subtract_item_quantity(
+                existing_item, old_menge, session, modified_items, deleted_items
+            )
+
+    # Add items with new person_count
+    if new_person_count is not None:
+        for line in ingredient_lines:
+            quantity_str, name = _parse_ingredient_line(line, pattern)
+
+            if name in new_removed:
+                continue
+
+            shopping_date = _calculate_shopping_date(
+                entry.date, name, first_store, session, entry.meal
+            )
+
+            new_menge = (
+                _adjust_quantity_by_person_count(
+                    quantity_str, new_person_count, original_quantity
+                )
+                if quantity_str
+                else None
+            )
+
+            existing_item = _find_existing_item(
+                session, name, shopping_date, first_store.id
+            )
+
+            if existing_item and new_menge:
+                merged_menge = merge_quantities(existing_item.menge, new_menge)
+                if merged_menge and merged_menge.strip():
+                    existing_item.menge = merged_menge
+                    session.add(existing_item)
+                    modified_items.append(existing_item)
+            elif new_menge:
+                new_item = Item(
+                    id=str(uuid.uuid4()),
+                    name=name,
+                    menge=new_menge,
+                    store_id=first_store.id,
+                    shopping_date=shopping_date,
+                    user_id=None,
+                )
+                product_id = _find_matching_product(session, new_item)
+                if product_id:
+                    new_item.product_id = product_id
+                session.add(new_item)
+                modified_items.append(new_item)
+
+
+def _remove_newly_marked_recipe_items(
+    newly_removed: set,
+    recipe: Recipe,
+    entry: WeekplanEntry,
+    first_store: Store,
+    session,
+    modified_items: list,
+    person_count: Optional[int] = None,
+):
+    """Remove newly marked recipe items from shopping list."""
+    from ..routers.items import _find_existing_item
+
+    # Parse recipe data using helper
+    _, original_quantity, ingredient_lines = _parse_recipe_data(recipe)
+
+    # Create ingredient pattern
+    pattern = _create_ingredient_pattern()
+
+    for line in ingredient_lines:
+        quantity_str, name = _parse_ingredient_line(line, pattern)
+
+        if name not in newly_removed:
+            continue
+
+        shopping_date = _calculate_shopping_date(
+            entry.date, name, first_store, session, entry.meal
+        )
+
+        item_menge = quantity_str
+        if person_count is not None and quantity_str:
+            item_menge = _adjust_quantity_by_person_count(
+                quantity_str, person_count, original_quantity
+            )
+
+        existing_item = _find_existing_item(
+            session, name, shopping_date, first_store.id
+        )
+
+        if existing_item and item_menge:
+            negative_menge = _create_negative_quantity(item_menge)
+            if negative_menge:
+                _handle_merged_items(
+                    existing_item, negative_menge, session, modified_items
+                )
+
+
+def _add_back_unmarked_recipe_items(
+    newly_added_back: set,
+    recipe: Recipe,
+    entry: WeekplanEntry,
+    first_store: Store,
+    session,
+    modified_items: list,
+    person_count: Optional[int] = None,
+):
+    """Add back recipe items that were unmarked."""
+    import uuid
+    from ..routers.items import _find_matching_product
+
+    # Parse recipe data using helper
+    _, original_quantity, ingredient_lines = _parse_recipe_data(recipe)
+
+    # Create ingredient pattern
+    pattern = _create_ingredient_pattern()
+
+    for line in ingredient_lines:
+        quantity_str, name = _parse_ingredient_line(line, pattern)
+
+        if name not in newly_added_back:
+            continue
+
+        item_menge = quantity_str
+        if person_count is not None and quantity_str:
+            item_menge = _adjust_quantity_by_person_count(
+                quantity_str, person_count, original_quantity
+            )
+
+        existing_item, shopping_date = _find_item_to_modify(
+            name, entry, first_store, session
+        )
+
+        if existing_item and item_menge:
+            _handle_merged_items(existing_item, item_menge, session, modified_items)
+        elif item_menge:
+            new_item = Item(
+                id=str(uuid.uuid4()),
+                name=name,
+                menge=item_menge,
+                store_id=first_store.id,
+                shopping_date=shopping_date,
+                user_id=None,
+            )
+            product_id = _find_matching_product(session, new_item)
+            if product_id:
+                new_item.product_id = product_id
+            session.add(new_item)
+            modified_items.append(new_item)
+
+
 def _handle_person_count_change(
     old_person_count: Optional[int],
     new_person_count: Optional[int],
@@ -1125,103 +1723,200 @@ async def update_weekplan_entry_deltas(
         if entry.deltas:
             old_deltas = WeekplanDeltas(**json.loads(entry.deltas))
 
-        # Check if entry text matches a template
-        template = session.exec(
-            select(ShoppingTemplate).where(ShoppingTemplate.name == entry.text)
-        ).first()
-
         modified_items = []
 
-        if template:
-            # Calculate which items were newly marked as removed
-            old_removed = set(old_deltas.removed_items) if old_deltas else set()
-            new_removed = set(deltas.removed_items)
-            newly_removed = new_removed - old_removed
+        # Handle recipes
+        if entry.recipe_id:
+            # Get recipe from database
+            recipe = session.get(Recipe, entry.recipe_id)
+            if recipe:
+                # For recipes, we need to handle deltas similarly to templates
+                # Calculate which items were newly marked as removed
+                old_removed = set(old_deltas.removed_items) if old_deltas else set()
+                new_removed = set(deltas.removed_items)
+                newly_removed = new_removed - old_removed
 
-            # Calculate which items were unmarked (no longer removed)
-            newly_added_back = old_removed - new_removed
+                # Calculate which items were unmarked (no longer removed)
+                newly_added_back = old_removed - new_removed
 
-            # Check if person_count has changed
-            old_person_count = old_deltas.person_count if old_deltas else None
-            new_person_count = deltas.person_count
-            person_count_changed = old_person_count != new_person_count
+                # Check if person_count has changed
+                old_person_count = old_deltas.person_count if old_deltas else None
+                new_person_count = deltas.person_count
+                person_count_changed = old_person_count != new_person_count
 
-            # Get first store
-            first_store = session.exec(
-                select(Store).order_by(Store.sort_order, Store.id)
-            ).first()
+                # Get first store
+                first_store = session.exec(
+                    select(Store).order_by(Store.sort_order, Store.id)
+                ).first()
 
-            if first_store:
-                # If person_count changed, delegate to helper function
-                if person_count_changed:
-                    _handle_person_count_change(
-                        old_person_count,
-                        new_person_count,
-                        template,
+                if first_store:
+                    # If person_count changed, recalculate all recipe items
+                    if person_count_changed:
+                        _handle_recipe_person_count_change(
+                            old_person_count,
+                            new_person_count,
+                            recipe,
+                            entry,
+                            first_store,
+                            old_removed,
+                            new_removed,
+                            session,
+                            modified_items,
+                        )
+
+                    # Remove newly marked items from shopping list
+                    _remove_newly_marked_recipe_items(
+                        newly_removed,
+                        recipe,
                         entry,
                         first_store,
-                        old_removed,
-                        new_removed,
+                        session,
+                        modified_items,
+                        new_person_count,
+                    )
+
+                    # Add back items that were unmarked
+                    _add_back_unmarked_recipe_items(
+                        newly_added_back,
+                        recipe,
+                        entry,
+                        first_store,
+                        session,
+                        modified_items,
+                        new_person_count,
+                    )
+
+                    # Handle newly added items (compare old vs new added_items)
+                    old_added_list = old_deltas.added_items if old_deltas else []
+                    old_added_items = {item.name: item for item in old_added_list}
+                    new_added_items = {item.name: item for item in deltas.added_items}
+
+                    # Find items that were newly added
+                    newly_added_item_names = set(new_added_items.keys()) - set(
+                        old_added_items.keys()
+                    )
+
+                    # Find items that were removed from added_items
+                    removed_from_added = set(old_added_items.keys()) - set(
+                        new_added_items.keys()
+                    )
+
+                    # Remove items that were deleted from added_items
+                    _remove_items_from_added(
+                        removed_from_added,
+                        old_added_items,
+                        entry,
+                        first_store,
                         session,
                         modified_items,
                     )
 
-                # Remove newly marked items from shopping list
-                _remove_newly_marked_items(
-                    newly_removed,
-                    template,
-                    entry,
-                    first_store,
-                    session,
-                    modified_items,
-                    new_person_count,
-                )
+                    # Add newly added items
+                    _add_newly_added_items(
+                        newly_added_item_names,
+                        new_added_items,
+                        entry,
+                        first_store,
+                        session,
+                        modified_items,
+                    )
+        else:
+            # Handle templates
+            # Check if entry text matches a template
+            template = session.exec(
+                select(ShoppingTemplate).where(ShoppingTemplate.name == entry.text)
+            ).first()
 
-                # Add back items that were unmarked
-                _add_back_unmarked_items(
-                    newly_added_back,
-                    template,
-                    entry,
-                    first_store,
-                    session,
-                    modified_items,
-                    new_person_count,
-                )
+            if template:
+                # Calculate which items were newly marked as removed
+                old_removed = set(old_deltas.removed_items) if old_deltas else set()
+                new_removed = set(deltas.removed_items)
+                newly_removed = new_removed - old_removed
 
-                # Handle newly added items (compare old vs new added_items)
-                old_added_list = old_deltas.added_items if old_deltas else []
-                old_added_items = {item.name: item for item in old_added_list}
-                new_added_items = {item.name: item for item in deltas.added_items}
+                # Calculate which items were unmarked (no longer removed)
+                newly_added_back = old_removed - new_removed
 
-                # Find items that were newly added
-                newly_added_item_names = set(new_added_items.keys()) - set(
-                    old_added_items.keys()
-                )
+                # Check if person_count has changed
+                old_person_count = old_deltas.person_count if old_deltas else None
+                new_person_count = deltas.person_count
+                person_count_changed = old_person_count != new_person_count
 
-                # Find items that were removed from added_items
-                removed_from_added = set(old_added_items.keys()) - set(
-                    new_added_items.keys()
-                )
+                # Get first store
+                first_store = session.exec(
+                    select(Store).order_by(Store.sort_order, Store.id)
+                ).first()
 
-                # Remove items that were deleted from added_items
-                _remove_items_from_added(
-                    removed_from_added,
-                    old_added_items,
-                    entry,
-                    first_store,
-                    session,
-                    modified_items,
-                )
+                if first_store:
+                    # If person_count changed, delegate to helper function
+                    if person_count_changed:
+                        _handle_person_count_change(
+                            old_person_count,
+                            new_person_count,
+                            template,
+                            entry,
+                            first_store,
+                            old_removed,
+                            new_removed,
+                            session,
+                            modified_items,
+                        )
 
-                # Add newly added items
-                _add_newly_added_items(
-                    newly_added_item_names,
-                    new_added_items,
-                    entry,
-                    first_store,
-                    session,
-                    modified_items,
-                )
+                    # Remove newly marked items from shopping list
+                    _remove_newly_marked_items(
+                        newly_removed,
+                        template,
+                        entry,
+                        first_store,
+                        session,
+                        modified_items,
+                        new_person_count,
+                    )
+
+                    # Add back items that were unmarked
+                    _add_back_unmarked_items(
+                        newly_added_back,
+                        template,
+                        entry,
+                        first_store,
+                        session,
+                        modified_items,
+                        new_person_count,
+                    )
+
+                    # Handle newly added items (compare old vs new added_items)
+                    old_added_list = old_deltas.added_items if old_deltas else []
+                    old_added_items = {item.name: item for item in old_added_list}
+                    new_added_items = {item.name: item for item in deltas.added_items}
+
+                    # Find items that were newly added
+                    newly_added_item_names = set(new_added_items.keys()) - set(
+                        old_added_items.keys()
+                    )
+
+                    # Find items that were removed from added_items
+                    removed_from_added = set(old_added_items.keys()) - set(
+                        new_added_items.keys()
+                    )
+
+                    # Remove items that were deleted from added_items
+                    _remove_items_from_added(
+                        removed_from_added,
+                        old_added_items,
+                        entry,
+                        first_store,
+                        session,
+                        modified_items,
+                    )
+
+                    # Add newly added items
+                    _add_newly_added_items(
+                        newly_added_item_names,
+                        new_added_items,
+                        entry,
+                        first_store,
+                        session,
+                        modified_items,
+                    )
 
         # Update deltas
         entry.deltas = json.dumps(deltas.model_dump())

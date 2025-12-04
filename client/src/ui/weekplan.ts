@@ -3,7 +3,7 @@
  * Manages the weekly planning view with navigation and day columns
  */
 
-import { getWeekplanEntries, createWeekplanEntry, deleteWeekplanEntry, getWeekplanSuggestions, WeekplanEntry, fetchTemplates, updateWeekplanEntryDeltas, WeekplanDeltas, DeltaItem } from '../data/api.js';
+import { getWeekplanEntries, createWeekplanEntry, deleteWeekplanEntry, getWeekplanSuggestions, WeekplanEntry, fetchTemplates, updateWeekplanEntryDeltas, WeekplanDeltas, DeltaItem, searchRecipes, getRecipe } from '../data/api.js';
 import { onWeekplanAdded, onWeekplanDeleted, broadcastWeekplanAdd, broadcastWeekplanDelete } from '../data/websocket.js';
 import { printWeekplan } from './print-utils.js';
 import { Autocomplete } from './components/autocomplete.js';
@@ -147,7 +147,7 @@ async function renderWeek(): Promise<void> {
               const mealEntries = dateEntries.get(meal);
               if (mealEntries) {
                 mealEntries.forEach(entry => {
-                  addMealItemToDOM(mealContent, entry.text, entry.id!);
+                  addMealItemToDOM(mealContent, entry.text, entry.id!, entry.recipe_id);
                 });
               }
             }
@@ -320,7 +320,7 @@ async function handleAddMealEntry(event: Event): Promise<void> {
   inputWrapper.appendChild(input);
 
   // Function to save the entry
-  const saveEntry = async (text: string) => {
+  const saveEntry = async (text: string, recipeId?: number) => {
     if (!text.trim()) return;
 
     input.disabled = true;
@@ -340,7 +340,8 @@ async function handleAddMealEntry(event: Event): Promise<void> {
       const entry = await createWeekplanEntry({
         date: dateISO,
         meal: meal,
-        text: text.trim()
+        text: text.trim(),
+        recipe_id: recipeId
       });
 
       // Add to store
@@ -354,7 +355,7 @@ async function handleAddMealEntry(event: Event): Promise<void> {
       dateMap.get(meal)!.push(entry);
 
       // Add to DOM
-      addMealItemToDOM(mealContent, entry.text, entry.id!);
+      addMealItemToDOM(mealContent, entry.text, entry.id!, recipeId);
       autocomplete.destroy();
       inputWrapper.remove();
 
@@ -367,20 +368,41 @@ async function handleAddMealEntry(event: Event): Promise<void> {
     }
   };
 
-  // Initialize Autocomplete for entry suggestions
+  // Initialize Autocomplete for entry suggestions (including recipes)
   const autocomplete = new Autocomplete({
     input,
     onSearch: async (query: string) => {
-      const suggestions = await getWeekplanSuggestions(query, 5);
-      return suggestions.map(text => ({
-        id: text,
-        label: text,
-        data: text,
-      }));
+      // Fetch both weekplan suggestions and recipe suggestions in parallel
+      const [weekplanSuggestions, recipeSuggestions] = await Promise.all([
+        getWeekplanSuggestions(query, 5),
+        searchRecipes(query, 5).catch(() => []) // Fallback to empty array on error
+      ]);
+
+      // Combine both suggestion types - templates/weekplan first, then recipes
+      const combined = [
+        ...weekplanSuggestions.map(text => ({
+          id: text,
+          label: text,
+          data: text,
+        })),
+        ...recipeSuggestions.map(recipe => ({
+          id: `recipe-${recipe.id}`,
+          label: `🍳 ${recipe.name}`,
+          data: recipe.name,
+        }))
+      ];
+
+      // Limit to maxSuggestions
+      return combined.slice(0, 5);
     },
     onSelect: (suggestion) => {
       // Save entry immediately when suggestion is selected
-      saveEntry(suggestion.label);
+      // Extract recipe ID if it's a recipe (id starts with "recipe-")
+      const id = String(suggestion.id);
+      const recipeId = id.startsWith('recipe-')
+        ? parseInt(id.replace('recipe-', ''))
+        : undefined;
+      saveEntry(suggestion.data, recipeId);
     },
     debounceMs: 300,
     minChars: 2,
@@ -421,7 +443,9 @@ async function showTemplateDetails(templateName: string, entryId: number): Promi
     const template = templates.find(t => t.name.toLowerCase() === templateName.toLowerCase());
 
     if (!template) {
-      return; // Not a template, do nothing
+      // Not a template, try to find recipe
+      await showRecipeDetails(templateName);
+      return;
     }
 
     // Get current entry to load existing deltas
@@ -937,10 +961,13 @@ async function showTemplateDetails(templateName: string, entryId: number): Promi
 /**
  * Add a meal item to the DOM
  */
-function addMealItemToDOM(container: Element, text: string, entryId: number): void {
+function addMealItemToDOM(container: Element, text: string, entryId: number, recipeId?: number): void {
   const item = document.createElement('div');
   item.className = 'meal-item';
   item.dataset.entryId = String(entryId);
+  if (recipeId !== undefined) {
+    item.dataset.recipeId = String(recipeId);
+  }
   item.style.cssText = `
     display: flex;
     justify-content: space-between;
@@ -964,11 +991,21 @@ function addMealItemToDOM(container: Element, text: string, entryId: number): vo
     user-select: none;
   `;
 
-  // Make text clickable to show template details
+  // Make text clickable to show template or recipe details
   span.addEventListener('click', async (e) => {
     e.stopPropagation(); // Prevent event bubbling
     e.preventDefault(); // Prevent default action
-    await showTemplateDetails(text, entryId);
+
+    // Check if this is a recipe
+    if (recipeId !== undefined) {
+      // Show recipe details directly by ID
+      await showRecipeDetailsById(recipeId, entryId);
+    } else {
+      // Try to show template details first
+      await showTemplateDetails(text, entryId);
+      // If not a template, try recipe by name
+      // This will be handled in showTemplateDetails which returns early if not found
+    }
   });
 
   span.addEventListener('mouseover', () => {
@@ -1071,7 +1108,7 @@ function handleWeekplanAdded(data: WeekplanEntry): void {
     if (mealSection) {
       const mealContent = mealSection.querySelector('.meal-content');
       if (mealContent) {
-        addMealItemToDOM(mealContent, data.text, data.id!);
+        addMealItemToDOM(mealContent, data.text, data.id!, data.recipe_id);
       }
     }
   }
@@ -1097,6 +1134,593 @@ function handleWeekplanDeleted(data: { id: number }): void {
   if (item) {
     item.remove();
   }
+}
+
+/**
+ * Show recipe details in a modal by recipe ID
+ */
+async function showRecipeDetailsById(recipeId: number, entryId: number): Promise<void> {
+  try {
+    // Fetch full recipe details
+    const recipe = await getRecipe(recipeId);
+
+    // Parse the JSON data
+    const recipeData = typeof recipe.data === 'string' ? JSON.parse(recipe.data) : recipe.data;
+
+    displayRecipeModal(recipe.name, recipeData, entryId);
+  } catch (error) {
+    console.error('Error showing recipe details:', error);
+  }
+}
+
+/**
+ * Show recipe details in a modal by recipe name
+ */
+async function showRecipeDetails(recipeName: string): Promise<void> {
+  try {
+    // Search for recipe by name
+    const recipes = await searchRecipes(recipeName, 10);
+    const matchingRecipe = recipes.find(r => r.name.toLowerCase() === recipeName.toLowerCase());
+
+    if (!matchingRecipe) {
+      return; // Not a recipe, do nothing
+    }
+
+    // Fetch full recipe details
+    const recipe = await getRecipe(matchingRecipe.id);
+
+    // Parse the JSON data
+    const recipeData = typeof recipe.data === 'string' ? JSON.parse(recipe.data) : recipe.data;
+
+    displayRecipeModal(recipe.name, recipeData);
+  } catch (error) {
+    console.error('Error showing recipe details:', error);
+  }
+}
+
+/**
+ * Display recipe modal with given data
+ */
+function displayRecipeModal(recipeName: string, recipeData: any, entryId?: number): void {
+    // Build content
+    const contentDiv = document.createElement('div');
+    contentDiv.style.cssText = 'display: flex; flex-direction: column; max-height: 600px;';
+
+    // Scrollable section for recipe details
+    const scrollableSection = document.createElement('div');
+    scrollableSection.style.cssText = 'flex: 1; overflow-y: auto; padding-bottom: 0.5rem;';
+
+    // Description
+    if (recipeData.description) {
+      const description = document.createElement('p');
+      description.textContent = recipeData.description;
+      description.style.cssText = 'color: #666; margin-bottom: 1rem; font-style: italic;';
+      scrollableSection.appendChild(description);
+    }
+
+    // Get current entry to load existing deltas
+    let currentEntry: WeekplanEntry | undefined;
+    if (entryId) {
+      for (const dateMap of entriesStore.values()) {
+        for (const entries of dateMap.values()) {
+          currentEntry = entries.find(e => e.id === entryId);
+          if (currentEntry) break;
+        }
+        if (currentEntry) break;
+      }
+    }
+
+    const currentDeltas: WeekplanDeltas = currentEntry?.deltas || {
+      removed_items: [],
+      added_items: [],
+    };
+
+    // Track removed items
+    const removedItems = new Set<string>(currentDeltas.removed_items);
+
+    // Track added items
+    const addedItems = new Map<string, DeltaItem>(
+      currentDeltas.added_items.map(item => [item.name, item])
+    );
+
+    // Store adjusted quantities for recipe items
+    const adjustedQuantities = new Map<string, string>();
+    const originalQuantity = recipeData.quantity || 4; // Default to 4 portions if not specified
+    let adjustedQuantity = currentDeltas.person_count || originalQuantity;
+
+    // Helper function to adjust a quantity by a factor
+    const adjustQuantityByFactor = (originalMenge: string, factor: number): string => {
+      if (isNaN(factor) || factor <= 0) return originalMenge;
+
+      // Extract numeric value and unit from menge (e.g., "2 kg" -> 2 and "kg")
+      const mengeMatch = originalMenge.match(/^([\d]+(?:[.,\/]\d+)?)\s*(.*)$/);
+      if (!mengeMatch) return originalMenge;
+
+      // Handle fractions (e.g., "1/2")
+      let value: number;
+      const numericPart = mengeMatch[1];
+      if (numericPart.includes('/')) {
+        const [numerator, denominator] = numericPart.split('/').map(n => parseFloat(n));
+        value = numerator / denominator;
+      } else {
+        value = parseFloat(numericPart.replace(',', '.'));
+      }
+
+      const unit = mengeMatch[2];
+
+      // Apply factor
+      value *= factor;
+
+      // Format the result
+      const formattedValue = value % 1 === 0 ? value.toString() : value.toFixed(2).replace(/\.?0+$/, '');
+      return unit ? `${formattedValue} ${unit}` : formattedValue;
+    };
+
+    // Parse ingredients string into structured data
+    const ingredientsText = recipeData.ingredients || '';
+    const ingredientLines = ingredientsText.split('\n').filter((line: string) => line.trim());
+
+    // Common units for ingredients
+    const knownUnits = ['g', 'kg', 'ml', 'l', 'EL', 'TL', 'Prise', 'Prisen', 'Stück', 'Stk', 'Bund', 'Becher', 'Dose', 'Dosen', 'Pck', 'Päckchen', 'Tasse', 'Tassen'];
+    const unitsPattern = knownUnits.join('|');
+
+    // Parse each line into {quantity, name, originalLine}
+    const parsedIngredients = ingredientLines.map((line: string) => {
+      // Match: number (with optional fraction/decimal) + optional unit + rest
+      const match = line.match(new RegExp(`^([\\d\\/\\.,]+(?:\\s*(?:${unitsPattern}))?)\\s+(.+)$`));
+      if (match) {
+        return {
+          quantity: match[1].trim(),
+          name: match[2].trim(),
+          originalLine: line
+        };
+      } else {
+        return {
+          quantity: null,
+          name: line.trim(),
+          originalLine: line
+        };
+      }
+    });
+
+    // If person_count is set in deltas, apply the adjustment automatically
+    if (currentDeltas.person_count !== undefined) {
+      const factor = currentDeltas.person_count / originalQuantity;
+      parsedIngredients.forEach((ingredient: { quantity: string | null; name: string; originalLine: string }) => {
+        if (ingredient.quantity) {
+          const adjusted = adjustQuantityByFactor(ingredient.quantity, factor);
+          adjustedQuantities.set(ingredient.originalLine, adjusted);
+        }
+      });
+    }
+
+    const renderIngredientsList = () => {
+      const ingredientsList = document.createElement('ul');
+      ingredientsList.style.cssText = 'list-style: none; padding: 0; margin: 0;';
+
+      parsedIngredients.forEach((ingredient: { quantity: string | null; name: string; originalLine: string }) => {
+        const isRemoved = removedItems.has(ingredient.name);
+
+        const li = document.createElement('li');
+        li.style.cssText = `
+          padding: 0.25rem 0.5rem;
+          background: ${isRemoved ? '#ffe6e6' : '#f8f9fa'};
+          border-radius: 3px;
+          margin-bottom: 0.25rem;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-size: 0.9rem;
+        `;
+
+        const leftDiv = document.createElement('div');
+        leftDiv.style.cssText = 'display: flex; align-items: center; gap: 0.5rem;';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = isRemoved;
+        checkbox.style.cssText = 'cursor: pointer; width: 16px; height: 16px;';
+        checkbox.addEventListener('change', () => {
+          if (checkbox.checked) {
+            removedItems.add(ingredient.name);
+            li.style.backgroundColor = '#ffe6e6';
+            nameSpan.style.textDecoration = 'line-through';
+            nameSpan.style.opacity = '0.6';
+          } else {
+            removedItems.delete(ingredient.name);
+            li.style.backgroundColor = '#f8f9fa';
+            nameSpan.style.textDecoration = 'none';
+            nameSpan.style.opacity = '1';
+          }
+        });
+
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = ingredient.name;
+        nameSpan.style.cssText = `
+          font-weight: 500;
+          ${isRemoved ? 'text-decoration: line-through; opacity: 0.6;' : ''}
+        `;
+
+        leftDiv.appendChild(checkbox);
+        leftDiv.appendChild(nameSpan);
+        li.appendChild(leftDiv);
+
+        if (ingredient.quantity) {
+          const quantitySpan = document.createElement('span');
+          // Use adjusted quantity if available, otherwise use original
+          const displayQuantity = adjustedQuantities.get(ingredient.originalLine) || ingredient.quantity;
+          quantitySpan.textContent = displayQuantity;
+          quantitySpan.style.cssText = 'color: #666; font-size: 0.85rem; margin-left: 0.5rem;';
+          li.appendChild(quantitySpan);
+        }
+
+        ingredientsList.appendChild(li);
+      });
+
+      return ingredientsList;
+    };
+
+    // Ingredients section with quantity adjustment
+    if (recipeData.ingredients) {
+      // Quantity adjustment section
+      const adjustSection = document.createElement('div');
+      adjustSection.style.cssText = 'margin-bottom: 0.75rem; padding: 0.5rem; background: #fff9e6; border-radius: 4px;';
+
+      const adjustLabel = document.createElement('label');
+      adjustLabel.textContent = `Mengen anpassen (Rezept für ${originalQuantity} Portionen):`;
+      adjustLabel.style.cssText = 'display: block; font-size: 0.85rem; margin-bottom: 0.25rem; color: #666; font-weight: 500;';
+
+      const adjustForm = document.createElement('div');
+      adjustForm.style.cssText = 'display: flex; gap: 0.5rem; align-items: center;';
+
+      const adjustInput = document.createElement('input');
+      adjustInput.type = 'number';
+      adjustInput.min = '1';
+      adjustInput.step = '1';
+      adjustInput.placeholder = 'Anzahl Portionen';
+      adjustInput.value = String(adjustedQuantity);
+      adjustInput.style.cssText = `
+        width: 120px;
+        padding: 0.4rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 0.9rem;
+      `;
+
+      const adjustBtn = document.createElement('button');
+      adjustBtn.textContent = 'Anpassen';
+      adjustBtn.style.cssText = `
+        background: #ff9800;
+        color: white;
+        border: none;
+        padding: 0.4rem 0.75rem;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: background-color 0.2s;
+      `;
+      adjustBtn.addEventListener('mouseover', () => {
+        adjustBtn.style.backgroundColor = '#f57c00';
+      });
+      adjustBtn.addEventListener('mouseout', () => {
+        adjustBtn.style.backgroundColor = '#ff9800';
+      });
+
+      let ingredientsListElement = renderIngredientsList();
+
+      adjustBtn.addEventListener('click', () => {
+        const targetQuantity = parseInt(adjustInput.value.trim());
+        if (!targetQuantity || targetQuantity < 1) {
+          alert('Bitte gültige Portionenanzahl eingeben (mindestens 1)');
+          return;
+        }
+
+        // Store the adjusted quantity
+        adjustedQuantity = targetQuantity;
+
+        // Calculate the factor
+        const factor = targetQuantity / originalQuantity;
+
+        // Clear previous adjustments
+        adjustedQuantities.clear();
+
+        // Apply adjustment to all ingredients with quantities
+        parsedIngredients.forEach((ingredient: { quantity: string | null; name: string; originalLine: string }) => {
+          if (ingredient.quantity) {
+            const adjusted = adjustQuantityByFactor(ingredient.quantity, factor);
+            adjustedQuantities.set(ingredient.originalLine, adjusted);
+          }
+        });
+
+        // Re-render the ingredients list
+        const oldList = ingredientsListElement;
+        ingredientsListElement = renderIngredientsList();
+        if (oldList.parentNode) {
+          oldList.parentNode.replaceChild(ingredientsListElement, oldList);
+        }
+      });
+
+      adjustForm.appendChild(adjustInput);
+      adjustForm.appendChild(adjustBtn);
+      adjustSection.appendChild(adjustLabel);
+      adjustSection.appendChild(adjustForm);
+      scrollableSection.appendChild(adjustSection);
+
+      // Initial render of ingredients list
+      scrollableSection.appendChild(ingredientsListElement);
+    }
+
+    // Added items section (outside the ingredients block, always shown)
+    const addedItemsList = document.createElement('div');
+    addedItemsList.style.cssText = 'margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e0e0e0;';
+
+    const renderAddedItems = () => {
+        addedItemsList.innerHTML = '';
+
+        const heading = document.createElement('h4');
+        heading.textContent = 'Hinzugefügte Artikel';
+        heading.style.cssText = 'margin: 0 0 0.5rem 0; font-size: 0.9rem; color: #666; font-weight: 600;';
+        addedItemsList.appendChild(heading);
+
+        if (addedItems.size === 0) {
+          const emptyMsg = document.createElement('p');
+          emptyMsg.textContent = 'Keine zusätzlichen Artikel';
+          emptyMsg.style.cssText = 'color: #999; font-size: 0.85rem; font-style: italic; margin: 0;';
+          addedItemsList.appendChild(emptyMsg);
+        } else {
+          const list = document.createElement('ul');
+          list.style.cssText = 'list-style: none; padding: 0; margin: 0;';
+
+          addedItems.forEach((item, name) => {
+            const li = document.createElement('li');
+            li.style.cssText = `
+              padding: 0.25rem 0.5rem;
+              background: #e8f5e9;
+              border-radius: 3px;
+              margin-bottom: 0.25rem;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              font-size: 0.9rem;
+            `;
+
+            const leftDiv = document.createElement('div');
+            leftDiv.style.cssText = 'display: flex; align-items: center; gap: 0.5rem;';
+
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = name;
+            nameSpan.style.cssText = 'font-weight: 500; color: #2e7d32;';
+            leftDiv.appendChild(nameSpan);
+
+            if (item.menge) {
+              const mengeSpan = document.createElement('span');
+              mengeSpan.textContent = item.menge;
+              mengeSpan.style.cssText = 'color: #666; font-size: 0.85rem;';
+              leftDiv.appendChild(mengeSpan);
+            }
+
+            li.appendChild(leftDiv);
+
+            // Remove button
+            const removeBtn = document.createElement('button');
+            removeBtn.textContent = '×';
+            removeBtn.style.cssText = `
+              background: none;
+              border: none;
+              color: #d32f2f;
+              font-size: 1.2rem;
+              cursor: pointer;
+              padding: 0 0.25rem;
+              line-height: 1;
+            `;
+            removeBtn.addEventListener('click', () => {
+              addedItems.delete(name);
+              renderAddedItems();
+            });
+            li.appendChild(removeBtn);
+
+            list.appendChild(li);
+          });
+
+          addedItemsList.appendChild(list);
+        }
+      };
+
+    renderAddedItems();
+    scrollableSection.appendChild(addedItemsList);
+
+    contentDiv.appendChild(scrollableSection);
+
+    // Fixed section for adding new items (always visible at bottom)
+    const addItemSection = document.createElement('div');
+    addItemSection.style.cssText = `
+      padding-top: 1rem;
+      border-top: 1px solid #e0e0e0;
+      background: white;
+    `;
+
+    // Input form for adding items
+    const addForm = document.createElement('div');
+    addForm.style.cssText = 'display: flex; gap: 0.5rem; align-items: flex-end;';
+
+    const nameGroup = document.createElement('div');
+    nameGroup.style.cssText = 'flex: 1;';
+    const nameLabel = document.createElement('label');
+    nameLabel.textContent = 'Artikel';
+    nameLabel.style.cssText = 'display: block; font-size: 0.85rem; margin-bottom: 0.25rem; color: #666;';
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.placeholder = 'Artikelname';
+    nameInput.style.cssText = `
+      width: 100%;
+      padding: 0.4rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    `;
+    nameGroup.appendChild(nameLabel);
+    nameGroup.appendChild(nameInput);
+
+    const mengeGroup = document.createElement('div');
+    mengeGroup.style.cssText = 'width: 100px;';
+    const mengeLabel = document.createElement('label');
+    mengeLabel.textContent = 'Menge';
+    mengeLabel.style.cssText = 'display: block; font-size: 0.85rem; margin-bottom: 0.25rem; color: #666;';
+    const mengeInput = document.createElement('input');
+    mengeInput.type = 'text';
+    mengeInput.placeholder = 'z.B. 2 kg';
+    mengeInput.style.cssText = `
+      width: 100%;
+      padding: 0.4rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    `;
+    mengeGroup.appendChild(mengeLabel);
+    mengeGroup.appendChild(mengeInput);
+
+    const addBtn = document.createElement('button');
+    addBtn.textContent = '+';
+    addBtn.style.cssText = `
+      background: #4caf50;
+      color: white;
+      border: none;
+      padding: 0.4rem 0.75rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1.1rem;
+      font-weight: bold;
+      transition: background-color 0.2s;
+    `;
+    addBtn.addEventListener('mouseover', () => {
+      addBtn.style.backgroundColor = '#45a049';
+    });
+    addBtn.addEventListener('mouseout', () => {
+      addBtn.style.backgroundColor = '#4caf50';
+    });
+    addBtn.addEventListener('click', () => {
+      const name = nameInput.value.trim();
+      const menge = mengeInput.value.trim();
+
+      if (!name) {
+        nameInput.focus();
+        return;
+      }
+
+      // Check if item already in recipe
+      const isInRecipe = parsedIngredients.some((ingredient: { quantity: string | null; name: string; originalLine: string }) =>
+        ingredient.name.toLowerCase() === name.toLowerCase()
+      );
+      if (isInRecipe) {
+        alert('Dieser Artikel ist bereits im Rezept enthalten. Nutze die Checkbox zum Aktivieren/Deaktivieren.');
+        nameInput.value = '';
+        nameInput.focus();
+        return;
+      }
+
+      addedItems.set(name, { name, menge: menge || undefined });
+      renderAddedItems();
+      nameInput.value = '';
+      mengeInput.value = '';
+      nameInput.focus();
+    });
+
+    addForm.appendChild(nameGroup);
+    addForm.appendChild(mengeGroup);
+    addForm.appendChild(addBtn);
+    addItemSection.appendChild(addForm);
+
+    // Add save button to the fixed section
+    const saveButtonDiv = document.createElement('div');
+    saveButtonDiv.style.cssText = 'margin-top: 0.75rem; display: flex; justify-content: flex-end;';
+
+    const saveButton = document.createElement('button');
+    saveButton.textContent = 'Änderungen speichern';
+    saveButton.style.cssText = `
+      background: #4a90e2;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background-color 0.2s;
+    `;
+    saveButton.addEventListener('mouseover', () => {
+      saveButton.style.backgroundColor = '#357abd';
+    });
+    saveButton.addEventListener('mouseout', () => {
+      saveButton.style.backgroundColor = '#4a90e2';
+    });
+
+    // Collect checkbox states from DOM
+    const collectCheckboxStates = () => {
+      removedItems.clear();
+      const checkboxes = contentDiv.querySelectorAll('input[type="checkbox"]');
+      checkboxes.forEach((cb, index) => {
+        const checkbox = cb as HTMLInputElement;
+        if (checkbox.checked && parsedIngredients[index]) {
+          removedItems.add(parsedIngredients[index].name);
+        }
+      });
+    };
+
+    saveButton.addEventListener('click', async () => {
+      if (!entryId) {
+        alert('Kann Änderungen nicht speichern: Kein Wochenplan-Eintrag gefunden.');
+        return;
+      }
+
+      try {
+        saveButton.disabled = true;
+        saveButton.textContent = 'Speichere...';
+
+        collectCheckboxStates();
+
+        const newDeltas: WeekplanDeltas = {
+          removed_items: Array.from(removedItems),
+          added_items: Array.from(addedItems.values()),
+          person_count: adjustedQuantity !== originalQuantity ? adjustedQuantity : undefined
+        };
+
+        await updateWeekplanEntryDeltas(entryId, newDeltas);
+
+        // Update local store
+        if (currentEntry) {
+          currentEntry.deltas = newDeltas;
+        }
+
+        saveButton.textContent = '✓ Gespeichert';
+        saveButton.style.backgroundColor = '#5cb85c';
+
+        setTimeout(() => {
+          modal.close();
+        }, 500);
+      } catch (error) {
+        console.error('Failed to save deltas:', error);
+        saveButton.disabled = false;
+        saveButton.textContent = 'Fehler - Nochmal versuchen';
+        saveButton.style.backgroundColor = '#d9534f';
+        setTimeout(() => {
+          saveButton.textContent = 'Änderungen speichern';
+          saveButton.style.backgroundColor = '#4a90e2';
+        }, 2000);
+      }
+    });
+
+    saveButtonDiv.appendChild(saveButton);
+    addItemSection.appendChild(saveButtonDiv);
+
+    contentDiv.appendChild(addItemSection);
+
+    // Create and show modal
+    const modal = new Modal({
+      title: `🍳 ${recipeName}`,
+      content: contentDiv,
+      size: 'large',
+    });
+
+    modal.open();
 }
 
 /**
