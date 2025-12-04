@@ -9,11 +9,12 @@ import {
   createWebDAVSettings,
   updateWebDAVSettings,
   deleteWebDAVSettings,
+  importRecipesFromWebDAV,
 } from '../data/api.js';
 import type { WebDAVSettings } from '../data/api.js';
 import { createButton, createInput } from './components/index.js';
 import { Modal } from './components/modal.js';
-import { showError, showSuccess } from './components/toast.js';
+import { showError, showSuccess, showWarning } from './components/toast.js';
 
 /**
  * Initialize the WebDAV settings admin UI.
@@ -152,6 +153,9 @@ async function renderWebDAVSettings(settings: readonly WebDAVSettings[]): Promis
         </div>
       </div>
       <div class="webdav-controls">
+        <button class="import-recipes-btn" data-settings-id="${setting.id}" title="Rezepte importieren" ${!setting.enabled ? 'disabled' : ''}>
+          📥 Rezepte importieren
+        </button>
         <button class="toggle-webdav-btn" data-settings-id="${setting.id}" data-enabled="${setting.enabled}" title="${setting.enabled ? 'Deaktivieren' : 'Aktivieren'}">
           ${setting.enabled ? '⏸' : '▶'}
         </button>
@@ -212,6 +216,16 @@ function attachDynamicListeners(): void {
       const target = e.currentTarget as HTMLElement;
       const settingsId = parseInt(target.dataset.settingsId || '0');
       await handleEditSettings(settingsId);
+    });
+  });
+
+  // Import recipes buttons
+  const importButtons = document.querySelectorAll('.import-recipes-btn');
+  importButtons.forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      const target = e.currentTarget as HTMLElement;
+      const settingsId = parseInt(target.dataset.settingsId || '0');
+      await handleImportRecipes(settingsId);
     });
   });
 }
@@ -383,4 +397,68 @@ async function handleEditSettings(settingsId: number): Promise<void> {
     showError('Fehler beim Laden der Konfiguration');
     console.error('Error loading WebDAV settings:', error);
   }
+}
+
+/**
+ * Handle importing recipes from WebDAV.
+ */
+async function handleImportRecipes(settingsId: number): Promise<void> {
+  const modalContent = document.createElement('div');
+  modalContent.innerHTML = '<p>Möchtest du jetzt die Rezepte von WebDAV importieren? Dies kann einige Sekunden dauern.</p>';
+
+  const modal = new Modal({
+    title: 'Rezepte importieren',
+    content: modalContent,
+    size: 'small',
+  });
+
+  const buttonContainer = document.createElement('div');
+  buttonContainer.style.display = 'flex';
+  buttonContainer.style.gap = '10px';
+  buttonContainer.style.justifyContent = 'flex-end';
+  buttonContainer.style.marginTop = '20px';
+
+  const cancelBtn = createButton({
+    label: 'Abbrechen',
+    variant: 'secondary',
+    onClick: () => modal.close(),
+  });
+
+  const importBtn = createButton({
+    label: '📥 Importieren',
+    variant: 'primary',
+    onClick: async () => {
+      importBtn.disabled = true;
+      importBtn.textContent = '⏳ Importiere...';
+
+      try {
+        const result = await importRecipesFromWebDAV(settingsId);
+
+        modal.close();
+
+        if (result.errors && result.errors.length > 0) {
+          showWarning(`${result.message}. Es gab ${result.errors.length} Fehler.`);
+          console.warn('Import errors:', result.errors);
+        } else {
+          showSuccess(result.message);
+        }
+      } catch (error) {
+        importBtn.disabled = false;
+        importBtn.textContent = '📥 Importieren';
+
+        if (error instanceof Error) {
+          showError(`Import fehlgeschlagen: ${error.message}`);
+        } else {
+          showError('Import fehlgeschlagen');
+        }
+        console.error('Error importing recipes:', error);
+      }
+    },
+  });
+
+  buttonContainer.appendChild(cancelBtn);
+  buttonContainer.appendChild(importBtn);
+  modalContent.appendChild(buttonContainer);
+
+  modal.open();
 }

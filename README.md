@@ -6,6 +6,7 @@ Python FastAPI Server + TypeScript Client mit JWT-Authentifizierung.
 
 ## Release
 
+- Release 3.0.0: Rezept-Integration - WebDAV-Import, Rezeptsuche und automatische Einkaufslisten-Generierung
  - Release 2.3.0: Personenanzahl in Vorlagen konfigurierbar + automatische Integration im Wochenplan
  - Release 2.2.0: Personenanzahl-Anpassung im Wochenplan-Modal + Shopping-Day-Bugfix
  - Release 2.1.0: Template-Items mit Mengenanpassung
@@ -281,6 +282,61 @@ Python FastAPI Server + TypeScript Client mit JWT-Authentifizierung.
   - **Graceful Degradation**: Bei fehlender WebSocket-Unterstützung funktioniert die App weiterhin über HTTP
   - **Multi-User Support**: Mehrere Benutzer können gleichzeitig die gleiche Liste bearbeiten
   - **Vollständig getestet**: 12 Tests mit Mock-WebSocket für umfassende Abdeckung
+- ✅ **Rezept-Integration**: Vollständige Rezeptverwaltung mit WebDAV-Import und Wochenplan-Integration
+  - **WebDAV-Rezept-Import**: Importiere Rezepte direkt von deinem WebDAV-Server
+    - Unterstützt Nextcloud Cookbook Format (JSON)
+    - Massenimport: Verarbeitet tausende Rezepte in einem Durchgang
+    - Deduplizierung: Verhindert doppelte Importe basierend auf `external_id`
+    - Fehlertoleranz: Import läuft weiter auch bei einzelnen fehlerhaften Rezepten
+    - Fortschrittsanzeige: Zeigt Anzahl importierter, übersprungener und fehlerhafter Rezepte
+    - Metadaten-Speicherung: Name, Kategorie, Tags, Zutaten, Personenanzahl, Zubereitungszeit
+    - Einmalige Konfiguration: WebDAV-Zugangsdaten werden sicher gespeichert
+    - Trigger über UI: "📥 Rezepte importieren" Button in WebDAV-Einstellungen
+  - **Rezeptsuche im Wochenplan**: Intelligente Suche mit Echtzeit-Vorschlägen
+    - **Autocomplete-Integration**: Rezepte erscheinen automatisch in Vorlagen-Vorschlägen
+    - **Vorlagenpriorität**: Vorlagen (Templates) werden vor Rezepten angezeigt
+    - **Fuzzy-Matching**: Findet Rezepte auch bei Tippfehlern (case-insensitive)
+    - **Limit 10**: Maximal 10 Vorschläge für schnelle Auswahl
+    - **Rezept-Modal**: Klick auf Rezeptname im Wochenplan zeigt alle Details
+      - Rezeptname, Kategorie, Tags, Zubereitungszeit
+      - Vollständige Zutatenliste mit Mengen
+      - Personenanzahl-Anpassung mit Live-Mengenberechnung
+      - Delta-Management: Zutaten als "nicht benötigt" markieren
+      - Zusätzliche Items hinzufügen
+  - **Automatische Einkaufslisten-Generierung**: Rezeptzutaten werden automatisch zur Einkaufsliste hinzugefügt
+    - **Intelligente Zutatenerkennung**: Parst Mengenangaben und Einheiten aus Freitext-Zutaten
+    - **Bekannte Einheiten**: g, kg, ml, l, EL, TL, Prise, Stück, Bund, Becher, Dose, Päckchen, Tasse, Stiel, Zweig
+    - **Regex-basiertes Parsing**: Erkennt Muster wie "500 g Mehl" oder "2 EL Öl"
+    - **Personenanzahl-Skalierung**: Mengen werden automatisch angepasst (Fallback: 1 Person)
+      - `neue_menge = original_menge × (gewünschte_personen / rezept_personen)`
+      - Beispiel: Rezept für 4 Personen (500g) → 2 Personen = 250g
+    - **Intelligente Mengenaddition**: Zutaten werden mit bestehenden Items zusammengeführt
+      - Gleiche Einheit → Mengen werden summiert
+      - Verschiedene Einheiten → Als semikolon-getrennte Liste
+    - **Einkaufstag-Berechnung**: Automatische Zuweisung zum passenden Einkaufsdatum
+      - Berücksichtigt MAIN_SHOPPING_DAY und FRESH_PRODUCTS_DAY
+      - Frischeprodukte-Logik für optimale Frische
+    - **WebSocket-Synchronisation**: Änderungen werden live an alle Clients übertragen
+  - **Rezept-Deltamanagement**: Flexible Anpassung von Rezeptzutaten
+    - **Checkbox-System**: Einzelne Zutaten als "nicht benötigt" markieren
+    - **Visuelles Feedback**: Markierte Items werden rot durchgestrichen
+    - **Persistente Speicherung**: Deltas werden mit Wochenplan-Eintrag gespeichert
+    - **Einkaufslisten-Sync**: Markierte Items werden automatisch von Einkaufsliste entfernt
+    - **Personenanzahl-Änderung**: Bei Anpassung werden alte Items entfernt und neue mit korrekten Mengen hinzugefügt
+    - **Zusätzliche Items**: Freies Hinzufügen weiterer Zutaten über Eingabefeld
+  - **Recipe-Modell**: Strukturierte Speicherung in SQLite-Datenbank
+    - `external_id`: Eindeutige ID vom WebDAV-Server (z.B. "recipe_123")
+    - `name`: Rezeptname (indiziert für schnelle Suche)
+    - `category`: Kategorie (z.B. "Hauptgericht", "Dessert")
+    - `tags`: Komma-getrennte Tags
+    - `data`: JSON-Feld mit vollständigen Rezeptdaten (Zutaten, Anleitung, etc.)
+    - `imported_at`: Zeitstempel des Imports
+  - **API-Endpunkte**: RESTful API für Rezeptverwaltung
+    - `GET /api/recipes/search?query=...`: Suche Rezepte nach Namen (max 10 Ergebnisse)
+    - `GET /api/recipes/{id}`: Hole einzelnes Rezept mit allen Details
+    - `GET /api/recipes?skip=0&limit=50`: Paginated Liste aller Rezepte
+    - `POST /api/webdav/import-recipes`: Trigger manuellen Rezept-Import von WebDAV
+    - Alle Endpunkte erfordern JWT-Authentifizierung
 - ✅ **Semantic Versioning**: Automatische Versionsverwaltung mit Git Tags und Conventional Commits
   - **GitHub als Single Source of Truth**: Versionsnummern werden aus Git Tags extrahiert
   - **Conventional Commits**: Commit-Format bestimmt automatisch Version-Bumps
@@ -478,6 +534,39 @@ Nach dem Login können Sie die Einkaufsliste verwenden:
    - Klicken Sie auf das Bearbeiten-Icon (✏️) neben einem Item in "Sonstiges"
    - Wählen Sie eine Abteilung aus dem Dialog
    - Das Produkt wird automatisch dem Katalog hinzugefügt
+
+### Rezepte verwenden
+
+1. **WebDAV-Einstellungen konfigurieren** (einmalig):
+   - Klicken Sie auf das Menü (⋮) im Header
+   - Wählen Sie **"☁️ WebDAV Einstellungen"**
+   - Erstellen Sie eine neue WebDAV-Konfiguration mit Ihren Nextcloud-Zugangsdaten
+   - Geben Sie den Pfad zur recipes.json an (z.B. `/remote.php/dav/files/USERNAME/Recipes/recipes.json`)
+
+2. **Rezepte importieren**:
+   - In den WebDAV-Einstellungen, klicken Sie auf **"📥 Rezepte importieren"**
+   - Der Import läuft im Hintergrund und zeigt Fortschritt an
+   - Erfolgsmeldung zeigt Anzahl importierter Rezepte
+
+3. **Rezepte im Wochenplan verwenden**:
+   - Gehen Sie zum **"🗓️ Wochenplan"**
+   - Geben Sie Rezeptname in ein Essensfeld ein
+   - Rezepte erscheinen in Autocomplete-Vorschlägen (nach Vorlagen)
+   - Wählen Sie ein Rezept aus
+
+4. **Rezeptdetails und Anpassungen**:
+   - Klicken Sie auf den Rezeptnamen im Wochenplan
+   - Modal zeigt alle Zutaten mit Mengen
+   - **Personenanzahl anpassen**: Eingabefeld ändert alle Mengen proportional
+   - **Zutaten deaktivieren**: Checkboxen zum Abwählen nicht benötigter Items
+   - **Zusätzliche Items**: Fügen Sie eigene Zutaten hinzu
+   - Alle Änderungen werden automatisch in der Einkaufsliste übernommen
+
+5. **Automatische Einkaufsliste**:
+   - Rezeptzutaten werden automatisch zur Einkaufsliste hinzugefügt
+   - Mengen werden basierend auf Personenanzahl berechnet
+   - Passende Einkaufstage werden automatisch zugewiesen
+   - Items werden mit bestehenden Einträgen intelligent zusammengeführt
 
 ### Geschäfte und Produkte verwalten
 

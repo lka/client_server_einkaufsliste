@@ -157,6 +157,7 @@ class WeekplanEntry(SQLModel, table=True):
         date: Date in ISO format (YYYY-MM-DD)
         meal: Meal type ('morning', 'lunch', 'dinner')
         text: Entry text content
+        recipe_id: Optional recipe ID reference
         deltas: JSON field storing item modifications
                 (removed items, added items, person count)
                 Format: {
@@ -170,6 +171,7 @@ class WeekplanEntry(SQLModel, table=True):
     date: str = Field(index=True)  # ISO format: YYYY-MM-DD
     meal: str = Field(index=True)  # 'morning', 'lunch', 'dinner'
     text: str
+    recipe_id: Optional[int] = Field(default=None)  # Optional recipe reference
     deltas: Optional[str] = Field(default=None)  # JSON string
 
 
@@ -191,3 +193,25 @@ class WebDAVSettings(SQLModel, table=True):
     password: str
     filename: str
     enabled: bool = Field(default=True)
+
+
+class Recipe(SQLModel, table=True):
+    """Recipe imported from WebDAV.
+
+    Attributes:
+        id: Primary key (auto-generated integer)
+        external_id: Original ID from the imported data
+        name: Recipe name
+        data: Complete recipe data as JSON string
+        category: Recipe category (optional)
+        tags: Recipe tags as JSON array string (optional)
+        imported_at: Timestamp when recipe was imported
+    """
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    external_id: Optional[str] = Field(default=None, index=True)
+    name: str = Field(index=True)
+    data: str  # JSON string with complete recipe data
+    category: Optional[str] = None
+    tags: Optional[str] = None  # JSON array string
+    imported_at: Optional[str] = None  # ISO format timestamp

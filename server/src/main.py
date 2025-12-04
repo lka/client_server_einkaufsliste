@@ -24,6 +24,7 @@ from .routers import (
     weekplan,
     config,
     webdav,
+    recipes,
 )
 from .routers.stores import departments_router
 from .version import get_version
@@ -52,6 +53,7 @@ async def lifespan(app: FastAPI):
     from .models import Item  # noqa: F401
     from .models import WeekplanEntry  # noqa: F401
     from .models import WebDAVSettings  # noqa: F401
+    from .models import Recipe  # noqa: F401
 
     engine = get_engine()
     create_db_and_tables(engine)
@@ -103,6 +105,7 @@ app.include_router(backup.router)
 app.include_router(weekplan.router)
 app.include_router(config.router)
 app.include_router(webdav.router)
+app.include_router(recipes.router)
 app.include_router(pages.router)
 
 
