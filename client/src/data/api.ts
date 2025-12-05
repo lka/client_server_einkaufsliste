@@ -136,6 +136,12 @@ export const API_BACKUP = '/api/backup';
 export const API_VERSION = '/api/version';
 export const API_CONFIG = '/api/config';
 export const API_WEBDAV = '/api/webdav';
+export const API_WEEKPLAN = '/api/weekplan';
+
+/**
+ * Cache for known units
+ */
+let knownUnitsCache: string[] = [];
 
 /**
  * Get authorization headers with JWT token.
@@ -1657,4 +1663,60 @@ export async function getRecipe(recipeId: number): Promise<any> {
     console.error('Error getting recipe:', error);
     throw error;
   }
+}
+
+/**
+ * Fetch known measurement units from the server.
+ * Uses a cache to avoid repeated requests.
+ *
+ * @returns Promise resolving to array of known units
+ */
+export async function fetchKnownUnits(): Promise<string[]> {
+  // Return from cache if already loaded
+  if (knownUnitsCache.length > 0) {
+    return knownUnitsCache;
+  }
+
+  try {
+    const response = await fetch(`${API_WEEKPLAN}/known-units`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    });
+
+    if (response.status === 401) {
+      handleUnauthorized();
+      return [];
+    }
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch known units: ${response.statusText}`);
+    }
+
+    const units = await response.json();
+    knownUnitsCache = units || [];
+    return knownUnitsCache;
+  } catch (error) {
+    console.error('Error fetching known units:', error);
+    // Return fallback if fetch fails
+    knownUnitsCache = [];
+    return [];
+  }
+}
+
+/**
+ * Get known units from cache or fetch if not yet loaded.
+ * This is the main function to use for getting known units.
+ *
+ * @returns Array of known units (from cache or freshly fetched)
+ */
+export function getKnownUnits(): string[] {
+  return knownUnitsCache;
+}
+
+/**
+ * Initialize the known units cache.
+ * Should be called after successful login.
+ */
+export async function initializeKnownUnits(): Promise<void> {
+  await fetchKnownUnits();
 }

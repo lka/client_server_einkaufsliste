@@ -392,12 +392,16 @@ def _get_known_units() -> list[str]:
         "kg",
         "ml",
         "l",
+        "L",
         "EL",
+        "El",
         "TL",
+        "Tl",
         "Prise",
         "Prisen",
         "Stück",
         "Stk",
+        "Stk.",
         "Bund",
         "Becher",
         "Dose",
@@ -410,7 +414,29 @@ def _get_known_units() -> list[str]:
         "Stiele",
         "Zweig",
         "Zweige",
+        "rote",
+        "grüne",
+        "gelbe",
     ]
+
+
+@router.get("/known-units", response_model=List[str])
+def get_known_units(current_user: str = Depends(get_current_user)):
+    """Get list of known measurement units for ingredient parsing.
+
+    Args:
+        current_user: Current authenticated username from JWT (for authentication only)
+
+    Returns:
+        List of known measurement units
+    """
+    with get_session() as session:
+        # Verify user is authenticated
+        user = session.exec(select(User).where(User.username == current_user)).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        return _get_known_units()
 
 
 def _parse_recipe_data(recipe: Recipe) -> tuple[str, int, list[str]]:
@@ -423,6 +449,7 @@ def _parse_recipe_data(recipe: Recipe) -> tuple[str, int, list[str]]:
         Tuple of (ingredients_text, original_quantity, ingredient_lines)
     """
     import json
+    import re
 
     recipe_data = json.loads(recipe.data)
     ingredients_text = recipe_data.get("ingredients", "")
@@ -434,8 +461,11 @@ def _parse_recipe_data(recipe: Recipe) -> tuple[str, int, list[str]]:
     except (ValueError, TypeError):
         original_quantity = 1
 
+    # Filter out empty lines and lines containing HTML tags
     ingredient_lines = [
-        line.strip() for line in ingredients_text.split("\n") if line.strip()
+        line.strip()
+        for line in ingredients_text.split("\n")
+        if line.strip() and not re.search(r"<[^>]+>", line.strip())
     ]
 
     return ingredients_text, original_quantity, ingredient_lines

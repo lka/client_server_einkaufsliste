@@ -9,7 +9,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "complexity": "npx cr src/**/*.ts --format markdown > complexity-report.md"
+    "complexity": "node run-complexity.js"
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",

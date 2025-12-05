@@ -3,6 +3,7 @@ import { isAuthenticated } from './data/auth.js';
 import { initWeekplan } from './ui/weekplan.js';
 import { initUserMenu, updateUserDisplay } from './ui/user-menu.js';
 import { initializeComponents } from './ui/components/index.js';
+import { initializeKnownUnits } from './data/api.js';
 import * as websocket from './data/websocket.js';
 
 window.addEventListener('DOMContentLoaded', async () => {
@@ -24,6 +25,9 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   // Update user display
   await updateUserDisplay();
+
+  // Initialize known units cache from server
+  await initializeKnownUnits();
 
   // Initialize weekplan functionality
   initWeekplan();

@@ -1897,9 +1897,76 @@ if (ENABLE_WEBSOCKETS) {
 
 ---
 
+## Code Quality Metrics
+
+### Complexity Analysis
+
+A detailed complexity analysis is available in [complexity-report.md](complexity-report.md), generated using the command:
+
+```bash
+npm run complexity
+```
+
+The report includes:
+- **Lines of Code**: Count of non-comment, non-empty lines per file
+- **Function Count**: Total number of functions per file
+- **Complexity Score**: Basic complexity metric based on control structures
+- **Cyclomatic Complexity**: Measure of independent paths through code (decision points)
+- **McCabe Complexity**: Extended cyclomatic complexity including function count
+
+### Complexity Metrics Summary
+
+- **Total files analyzed**: 42 TypeScript files
+- **Total lines of code**: 12,618 lines
+- **Total functions**: 606 functions
+- **Average complexity**: 33.31
+- **Average cyclomatic complexity**: 35.17
+- **Average McCabe complexity**: 49.60
+
+### Complexity Ratings
+
+According to McCabe Complexity thresholds:
+- **1-10**: Simple, low risk
+- **11-20**: More complex, moderate risk
+- **21-50**: Complex, high risk
+- **51+**: Very complex, very high risk
+
+**Current distribution**:
+- Files with very high complexity (>50): 13
+- Files with high complexity (21-50): 15
+
+### Top 3 Most Complex Files
+
+1. **[src/data/api.ts](src/data/api.ts)**: McCabe 317, Cyclomatic 265, 1550 lines
+   - Core API operations with extensive error handling and token management
+
+2. **[src/ui/weekplan.ts](src/ui/weekplan.ts)**: McCabe 251, Cyclomatic 165, 1401 lines
+   - Complex weekly meal planning UI with recipe integration and delta management
+
+3. **[src/ui/shopping-list-ui.ts](src/ui/shopping-list-ui.ts)**: McCabe 199, Cyclomatic 134, 1037 lines
+   - Shopping list feature with event handling, state management, and modal dialogs
+
+### Refactoring Opportunities
+
+The complexity analysis identifies potential refactoring candidates:
+- Files with McCabe complexity >50 may benefit from decomposition into smaller modules
+- Functions with high cyclomatic complexity (>10) should be candidates for simplification
+- Consider extracting common patterns into reusable helper functions
+
+### Maintaining Code Quality
+
+To monitor code quality over time:
+1. Run `npm run complexity` after significant changes
+2. Compare metrics with previous reports
+3. Address increases in complexity before they accumulate
+4. Consider breaking down files with McCabe >100
+
+---
+
 ## References
 
 - [TypeScript Configuration](tsconfig.json)
 - [Jest Configuration](jest.config.js)
+- [Complexity Report](complexity-report.md)
 - [Main README](README.md)
 - [Project Root README](../README.md)

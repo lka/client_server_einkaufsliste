@@ -3,7 +3,7 @@
  * Manages the weekly planning view with navigation and day columns
  */
 
-import { getWeekplanEntries, createWeekplanEntry, deleteWeekplanEntry, getWeekplanSuggestions, WeekplanEntry, fetchTemplates, updateWeekplanEntryDeltas, WeekplanDeltas, DeltaItem, searchRecipes, getRecipe } from '../data/api.js';
+import { getWeekplanEntries, createWeekplanEntry, deleteWeekplanEntry, getWeekplanSuggestions, WeekplanEntry, fetchTemplates, updateWeekplanEntryDeltas, WeekplanDeltas, DeltaItem, searchRecipes, getRecipe, fetchKnownUnits } from '../data/api.js';
 import { onWeekplanAdded, onWeekplanDeleted, broadcastWeekplanAdd, broadcastWeekplanDelete } from '../data/websocket.js';
 import { printWeekplan } from './print-utils.js';
 import { Autocomplete } from './components/autocomplete.js';
@@ -11,6 +11,33 @@ import { Modal } from './components/modal.js';
 
 // Store entries by date and meal
 const entriesStore: Map<string, Map<string, WeekplanEntry[]>> = new Map();
+
+/**
+ * Parse ingredient lines into structured data using known units from server
+ */
+async function parseIngredients(ingredientLines: string[]): Promise<Array<{quantity: string | null; name: string; originalLine: string}>> {
+  // Fetch known units from server
+  const knownUnits = await fetchKnownUnits();
+  const unitsPattern = knownUnits.join('|');
+
+  return ingredientLines.map((line: string) => {
+    // Match: number (with optional fraction/decimal) + optional unit + rest
+    const match = line.match(new RegExp(`^([\\d\\/\\.,]+(?:\\s*(?:${unitsPattern}))?)\\s+(.+)$`));
+    if (match) {
+      return {
+        quantity: match[1].trim(),
+        name: match[2].trim(),
+        originalLine: line
+      };
+    } else {
+      return {
+        quantity: null,
+        name: line.trim(),
+        originalLine: line
+      };
+    }
+  });
+}
 
 /**
  * Get the ISO week number for a given date
@@ -1147,7 +1174,7 @@ async function showRecipeDetailsById(recipeId: number, entryId: number): Promise
     // Parse the JSON data
     const recipeData = typeof recipe.data === 'string' ? JSON.parse(recipe.data) : recipe.data;
 
-    displayRecipeModal(recipe.name, recipeData, entryId);
+    await displayRecipeModal(recipe.name, recipeData, entryId);
   } catch (error) {
     console.error('Error showing recipe details:', error);
   }
@@ -1172,7 +1199,7 @@ async function showRecipeDetails(recipeName: string): Promise<void> {
     // Parse the JSON data
     const recipeData = typeof recipe.data === 'string' ? JSON.parse(recipe.data) : recipe.data;
 
-    displayRecipeModal(recipe.name, recipeData);
+    await displayRecipeModal(recipe.name, recipeData);
   } catch (error) {
     console.error('Error showing recipe details:', error);
   }
@@ -1181,7 +1208,7 @@ async function showRecipeDetails(recipeName: string): Promise<void> {
 /**
  * Display recipe modal with given data
  */
-function displayRecipeModal(recipeName: string, recipeData: any, entryId?: number): void {
+async function displayRecipeModal(recipeName: string, recipeData: any, entryId?: number): Promise<void> {
     // Build content
     const contentDiv = document.createElement('div');
     contentDiv.style.cssText = 'display: flex; flex-direction: column; max-height: 600px;';
@@ -1225,8 +1252,18 @@ function displayRecipeModal(recipeName: string, recipeData: any, entryId?: numbe
 
     // Store adjusted quantities for recipe items
     const adjustedQuantities = new Map<string, string>();
-    const originalQuantity = recipeData.quantity || 4; // Default to 4 portions if not specified
-    let adjustedQuantity = currentDeltas.person_count || originalQuantity;
+    // Parse original quantity, default to 1 if not recognized
+    let originalQuantity = 1;
+    if (recipeData.quantity) {
+      const parsed = parseInt(String(recipeData.quantity));
+      if (!isNaN(parsed) && parsed > 0) {
+        originalQuantity = parsed;
+      }
+    }
+    // Use person_count from deltas if available, otherwise use originalQuantity
+    let adjustedQuantity = (currentDeltas.person_count !== undefined && currentDeltas.person_count > 0)
+      ? currentDeltas.person_count
+      : originalQuantity;
 
     // Helper function to adjust a quantity by a factor
     const adjustQuantityByFactor = (originalMenge: string, factor: number): string => {
@@ -1258,30 +1295,14 @@ function displayRecipeModal(recipeName: string, recipeData: any, entryId?: numbe
 
     // Parse ingredients string into structured data
     const ingredientsText = recipeData.ingredients || '';
-    const ingredientLines = ingredientsText.split('\n').filter((line: string) => line.trim());
-
-    // Common units for ingredients
-    const knownUnits = ['g', 'kg', 'ml', 'l', 'EL', 'TL', 'Prise', 'Prisen', 'Stück', 'Stk', 'Bund', 'Becher', 'Dose', 'Dosen', 'Pck', 'Päckchen', 'Tasse', 'Tassen'];
-    const unitsPattern = knownUnits.join('|');
+    const ingredientLines = ingredientsText.split('\n').filter((line: string) => {
+      const trimmed = line.trim();
+      // Filter out empty lines and lines that contain HTML tags
+      return trimmed && !/<[^>]+>/.test(trimmed);
+    });
 
     // Parse each line into {quantity, name, originalLine}
-    const parsedIngredients = ingredientLines.map((line: string) => {
-      // Match: number (with optional fraction/decimal) + optional unit + rest
-      const match = line.match(new RegExp(`^([\\d\\/\\.,]+(?:\\s*(?:${unitsPattern}))?)\\s+(.+)$`));
-      if (match) {
-        return {
-          quantity: match[1].trim(),
-          name: match[2].trim(),
-          originalLine: line
-        };
-      } else {
-        return {
-          quantity: null,
-          name: line.trim(),
-          originalLine: line
-        };
-      }
-    });
+    const parsedIngredients = await parseIngredients(ingredientLines);
 
     // If person_count is set in deltas, apply the adjustment automatically
     if (currentDeltas.person_count !== undefined) {
@@ -1378,7 +1399,8 @@ function displayRecipeModal(recipeName: string, recipeData: any, entryId?: numbe
       adjustInput.min = '1';
       adjustInput.step = '1';
       adjustInput.placeholder = 'Anzahl Portionen';
-      adjustInput.value = String(adjustedQuantity);
+      // Ensure we always have a valid number to display
+      adjustInput.value = String(adjustedQuantity > 0 ? adjustedQuantity : originalQuantity);
       adjustInput.style.cssText = `
         width: 120px;
         padding: 0.4rem;
