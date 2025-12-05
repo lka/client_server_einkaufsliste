@@ -51,22 +51,29 @@ The shopping list client is a TypeScript application built with a **four-layer a
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                      Data Layer                              │
-│   ┌──────────────┬──────────────┬────────────────────┐      │
-│   │   api.ts     │   auth.ts    │    dom.ts          │      │
-│   │              │              │                    │      │
-│   │  API calls   │  JWT auth    │  DOM utilities     │      │
-│   │  Token       │  localStorage│  Template loading  │      │
-│   │  refresh     │  management  │  Rendering         │      │
-│   │              │  expires_in  │                    │      │
-│   ├──────────────┼──────────────┼────────────────────┤      │
-│   │ websocket.ts │ inactivity-  │                    │      │
-│   │              │ tracker.ts   │                    │      │
-│   │  Real-time   │  Auto logout │                    │      │
-│   │  connection  │  on timeout  │                    │      │
-│   └──────────────┴──────────────┴────────────────────┘      │
+│   ┌──────────────────────────────────────────────────────┐  │
+│   │  api/ (Modular)  │   auth.ts    │    dom.ts         │  │
+│   │  ┌────────────┐  │              │                   │  │
+│   │  │ types.ts   │  │  JWT auth    │  DOM utilities    │  │
+│   │  │ utils.ts   │  │  localStorage│  Template loading │  │
+│   │  │ items-api  │  │  management  │  Rendering        │  │
+│   │  │ stores-api │  │  expires_in  │                   │  │
+│   │  │ products   │  │──────────────┤───────────────────│  │
+│   │  │ users      │  │ websocket.ts │ inactivity-       │  │
+│   │  │ templates  │  │              │ tracker.ts        │  │
+│   │  │ weekplan   │  │  Real-time   │  Auto logout      │  │
+│   │  │ recipes    │  │  connection  │  on timeout       │  │
+│   │  │ backup     │  │              │                   │  │
+│   │  │ webdav     │  │              │                   │  │
+│   │  │ config     │  │              │                   │  │
+│   │  └────────────┘  │              │                   │  │
+│   │  13 modules      │              │                   │  │
+│   │  McCabe: 6-50    │              │                   │  │
+│   └──────────────────────────────────────────────────────┘  │
 │         - Pure data operations                               │
 │         - No UI knowledge                                    │
 │         - Reusable utilities                                 │
+│         - Modular, focused responsibilities                  │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -78,58 +85,155 @@ The shopping list client is a TypeScript application built with a **four-layer a
 
 **Modules**:
 
-#### api.ts
-- **Responsibility**: Shopping list API operations
-- **Recipe Functions**:
-  - `searchRecipes(query: string, limit?: number)`: Suche Rezepte nach Namen
-    - Returns: `Promise<Array<{id: number, name: string}>>`
-    - Limit default: 10
-  - `fetchRecipeByName(name: string)`: Hole Rezept nach exaktem Namen
-    - Case-insensitive Suche
-    - Returns: `Promise<Recipe>` mit vollständigen Rezeptdaten
-  - `fetchRecipe(id: number)`: Hole Rezept nach ID
-    - Returns: `Promise<Recipe>`
-  - `fetchRecipes(skip?: number, limit?: number)`: Paginated Rezeptliste
-    - Returns: `Promise<Array<{id: number, name: string, category: string}>>`
-  - `importRecipesFromWebDAV(settingsId: number)`: Trigger Rezept-Import
-    - Returns: `Promise<{message: string, imported: number, skipped: number, errors: string[]}>`
-- **Interfaces**:
-  ```typescript
-  interface Recipe {
-    id: number;
-    external_id: string;
-    name: string;
-    category: string;
-    tags: string;
-    data: string; // JSON string with full recipe data
-    imported_at: string;
-  }
+#### api.ts (Refactored - Modular Architecture)
+- **Status**: ✨ **REFACTORED** - Reduced from 1,722 lines (McCabe: 317) to modular structure
+- **Responsibility**: Barrel file that re-exports all API functionality from modular `api/` directory
+- **Architecture**: All API operations split into focused modules for better maintainability
+- **Backward Compatibility**: Existing imports continue to work without changes
 
-  interface RecipeData {
-    title: string;
-    quantity: number; // Persons
-    ingredients: string; // Newline-separated text
-    instructions: string;
-    totalTime?: string;
-    categories?: string[];
-    tags?: string[];
-  }
+**Modular Structure** (`src/data/api/`):
+
+##### api/types.ts
+- **Lines**: 125 | **McCabe**: 22
+- **Responsibility**: Shared TypeScript interfaces and constants
+- **Exports**: All type definitions and API endpoint constants
+- **Interfaces**: `Item`, `Store`, `Department`, `Product`, `User`, `Template`, `TemplateItem`, `DeltaItem`, `WeekplanDeltas`, `WeekplanEntry`, `BackupData`, `RestoreResult`, `VersionInfo`, `Config`, `WebDAVSettings`, `ProductSuggestion`
+- **Constants**: API endpoint URLs (API_BASE, API_STORES, API_USERS, API_TEMPLATES, etc.)
+
+##### api/utils.ts
+- **Lines**: 40 | **McCabe**: 6
+- **Responsibility**: Shared authentication and HTTP utilities
+- **Functions**:
+  - `getAuthHeaders()`: Generate auth headers with JWT token
+  - `handleUnauthorized()`: Clear token and redirect to login
+  - `ensureFreshToken()`: Refresh token before API calls
+
+##### api/items-api.ts
+- **Lines**: 198 | **McCabe**: 43
+- **Responsibility**: Shopping list items operations
 - **Functions**:
   - `fetchItems()`: Get all shopping list items
-  - `addItem(name, menge?, storeId?, shoppingDate?)`: Add a new item with optional shopping date
+  - `fetchItemsByDate(shoppingDate)`: Get items for specific date
+  - `addItem(name, menge?, storeId?, shoppingDate?)`: Add new item
   - `deleteItem(id)`: Remove an item
-  - `deleteItemsBeforeDate(beforeDate, storeId?)`: Delete items before a specific date, optionally filtered by store
-  - `convertItemToProduct(itemId, departmentId)`: Convert item to product with department assignment
+  - `deleteItemsBeforeDate(beforeDate, storeId?)`: Bulk delete by date
+  - `convertItemToProduct(itemId, departmentId)`: Convert to product
+
+##### api/stores-api.ts
+- **Lines**: 239 | **McCabe**: 50
+- **Responsibility**: Stores and departments management
+- **Functions**:
   - `fetchStores()`: Get all stores
-  - `fetchDepartments(storeId)`: Get departments for a store
-  - `fetchTemplates()`: Get all shopping templates
-  - `fetchTemplate(id)`: Get a specific template with items
-  - `createTemplate(name, description?, items)`: Create a new template
-  - `updateTemplate(id, name?, description?, items?)`: Update a template (partial update)
-  - `deleteTemplate(id)`: Delete a template
-  - `ensureFreshToken()`: Refresh JWT before API calls
-- **Dependencies**: auth.ts (for token management)
-- **Interfaces**: `Item` (with shopping_date?: string), `Store`, `Department`, `Product`, `Template`, `TemplateItem`
+  - `createStore(name, location?)`: Create new store
+  - `updateStore(storeId, name?, location?, sortOrder?)`: Update store
+  - `deleteStore(storeId)`: Delete store
+  - `fetchDepartments(storeId)`: Get store departments
+  - `createDepartment(storeId, name, sortOrder?)`: Create department
+  - `updateDepartment(departmentId, name?, sortOrder?)`: Update department
+  - `deleteDepartment(departmentId)`: Delete department
+
+##### api/products-api.ts
+- **Lines**: 205 | **McCabe**: 39
+- **Responsibility**: Product catalog operations
+- **Functions**:
+  - `getProductSuggestions(storeId, query, limit?)`: Autocomplete suggestions
+  - `fetchStoreProducts(storeId)`: Get all products for store
+  - `fetchDepartmentProducts(departmentId)`: Get products by department
+  - `createProduct(name, storeId, departmentId, fresh?)`: Create product
+  - `updateProduct(productId, updates)`: Update product
+  - `deleteProduct(productId)`: Delete product
+
+##### api/users-api.ts
+- **Lines**: 114 | **McCabe**: 23
+- **Responsibility**: User management operations
+- **Functions**:
+  - `fetchAllUsers()`: Get all users
+  - `fetchPendingUsers()`: Get unapproved users
+  - `approveUser(userId)`: Approve pending user
+  - `deleteUser(userId)`: Delete user account
+
+##### api/templates-api.ts
+- **Lines**: 168 | **McCabe**: 42
+- **Responsibility**: Shopping template operations
+- **Functions**:
+  - `fetchTemplates()`: Get all templates
+  - `fetchTemplate(templateId)`: Get specific template
+  - `createTemplate(name, description?, personCount, items)`: Create template
+  - `updateTemplate(templateId, name?, description?, personCount?, items?)`: Update template
+  - `deleteTemplate(templateId)`: Delete template
+
+##### api/weekplan-api.ts
+- **Lines**: 200 | **McCabe**: 35
+- **Responsibility**: Weekplan and known units operations
+- **Functions**:
+  - `getWeekplanEntries(weekStart)`: Get entries for week
+  - `createWeekplanEntry(entry)`: Create new entry
+  - `deleteWeekplanEntry(entryId)`: Delete entry
+  - `updateWeekplanEntryDeltas(entryId, deltas)`: Update entry deltas
+  - `getWeekplanSuggestions(query, maxSuggestions?)`: Get template suggestions
+  - `fetchKnownUnits()`: Get measurement units with caching
+  - `getKnownUnits()`: Get cached units
+  - `initializeKnownUnits()`: Initialize units cache
+
+##### api/recipes-api.ts
+- **Lines**: 53 | **McCabe**: 7
+- **Responsibility**: Recipe search and retrieval
+- **Functions**:
+  - `searchRecipes(query, limit?)`: Search recipes by name
+    - Returns: `Promise<Array<{id: number, name: string}>>`
+    - Limit default: 10
+  - `getRecipe(recipeId)`: Get recipe details by ID
+    - Returns: `Promise<Recipe>` with full recipe data
+
+##### api/backup-api.ts
+- **Lines**: 74 | **McCabe**: 17
+- **Responsibility**: Database backup and restore
+- **Functions**:
+  - `createBackup()`: Create database backup (returns JSON)
+  - `restoreBackup(backupData, clearExisting?)`: Restore from backup
+
+##### api/webdav-api.ts
+- **Lines**: 150 | **McCabe**: 27
+- **Responsibility**: WebDAV settings and recipe import
+- **Functions**:
+  - `fetchWebDAVSettings()`: Get all WebDAV settings
+  - `createWebDAVSettings(settings)`: Create new settings
+  - `updateWebDAVSettings(id, settings)`: Update settings
+  - `deleteWebDAVSettings(id)`: Delete settings
+  - `importRecipesFromWebDAV(settingsId)`: Trigger recipe import
+    - Returns: `Promise<{success: boolean, imported: number, deleted: number, errors: string[], message: string}>`
+
+##### api/config-api.ts
+- **Lines**: 43 | **McCabe**: 6
+- **Responsibility**: Server configuration and version info
+- **Functions**:
+  - `getVersion()`: Get application version (no auth required)
+  - `getConfig()`: Get server configuration (no auth required)
+
+##### api/index.ts
+- **Lines**: 15 | **McCabe**: 0
+- **Responsibility**: Barrel file that re-exports all API modules
+- **Purpose**: Single entry point for importing API functionality
+
+**Migration Guide**:
+```typescript
+// Old (still works - backward compatible)
+import { fetchItems, Store, Item } from './data/api.js';
+
+// New (preferred - direct module imports)
+import { fetchItems } from './data/api/items-api.js';
+import type { Store, Item } from './data/api/types.js';
+
+// New (using barrel file)
+import { fetchItems, Store, Item } from './data/api/index.js';
+```
+
+**Benefits of Refactoring**:
+- **Complexity Reduction**: From single 317 McCabe file to modules averaging ~25 McCabe
+- **Better Organization**: Related functions grouped by domain
+- **Easier Maintenance**: Single responsibility per module
+- **Improved Navigation**: Clear file structure makes code easy to find
+- **No Breaking Changes**: Full backward compatibility maintained
 
 #### webdav-admin.ts (ERWEITERT)
 - **Responsibility**: WebDAV-Einstellungen mit Rezept-Import-Funktion
@@ -1916,12 +2020,12 @@ The report includes:
 
 ### Complexity Metrics Summary
 
-- **Total files analyzed**: 42 TypeScript files
-- **Total lines of code**: 12,618 lines
+- **Total files analyzed**: 55 TypeScript files (includes 13 new API modules)
+- **Total lines of code**: 12,706 lines
 - **Total functions**: 606 functions
-- **Average complexity**: 33.31
-- **Average cyclomatic complexity**: 35.17
-- **Average McCabe complexity**: 49.60
+- **Average complexity**: 25.44 ⬇️ (was 33.31)
+- **Average cyclomatic complexity**: 26.85 ⬇️ (was 35.17)
+- **Average McCabe complexity**: 37.87 ⬇️ (was 49.60)
 
 ### Complexity Ratings
 
@@ -1932,26 +2036,46 @@ According to McCabe Complexity thresholds:
 - **51+**: Very complex, very high risk
 
 **Current distribution**:
-- Files with very high complexity (>50): 13
-- Files with high complexity (21-50): 15
+- Files with very high complexity (>50): 12 ⬇️ (was 13)
+- Files with high complexity (21-50): 23 ⬆️ (was 15, but includes 13 new modular files)
 
 ### Top 3 Most Complex Files
 
-1. **[src/data/api.ts](src/data/api.ts)**: McCabe 317, Cyclomatic 265, 1550 lines
-   - Core API operations with extensive error handling and token management
-
-2. **[src/ui/weekplan.ts](src/ui/weekplan.ts)**: McCabe 251, Cyclomatic 165, 1401 lines
+1. **[src/ui/weekplan.ts](src/ui/weekplan.ts)**: McCabe 251, Cyclomatic 165, 1401 lines
    - Complex weekly meal planning UI with recipe integration and delta management
 
-3. **[src/ui/shopping-list-ui.ts](src/ui/shopping-list-ui.ts)**: McCabe 199, Cyclomatic 134, 1037 lines
+2. **[src/ui/shopping-list-ui.ts](src/ui/shopping-list-ui.ts)**: McCabe 199, Cyclomatic 134, 1037 lines
    - Shopping list feature with event handling, state management, and modal dialogs
+
+3. **[src/ui/template-admin.ts](src/ui/template-admin.ts)**: McCabe 95, Cyclomatic 73, 394 lines
+   - Template administration UI with CRUD operations
+
+**Note**: ✨ api.ts successfully refactored from McCabe 317 → 0 (now just re-exports)
+
+### Recent Refactoring Success
+
+**api.ts Modular Refactoring** (Completed):
+- **Before**: Single file with 1,722 lines, McCabe 317, Cyclomatic 265
+- **After**: 13 focused modules with McCabe ranging from 6-50
+- **Result**:
+  - Eliminated the highest complexity file in the codebase
+  - Average module complexity: ~25 McCabe (manageable range)
+  - Maintained full backward compatibility
+  - Improved code organization and maintainability
+
+**API Modules** (all McCabe < 51):
+- types.ts (22), utils.ts (6), items-api.ts (43), stores-api.ts (50)
+- products-api.ts (39), users-api.ts (23), templates-api.ts (42)
+- weekplan-api.ts (35), recipes-api.ts (7), backup-api.ts (17)
+- webdav-api.ts (27), config-api.ts (6), index.ts (0)
 
 ### Refactoring Opportunities
 
-The complexity analysis identifies potential refactoring candidates:
-- Files with McCabe complexity >50 may benefit from decomposition into smaller modules
-- Functions with high cyclomatic complexity (>10) should be candidates for simplification
-- Consider extracting common patterns into reusable helper functions
+Remaining refactoring candidates:
+- **weekplan.ts** (McCabe 251): Consider splitting UI rendering from business logic
+- **shopping-list-ui.ts** (McCabe 199): Extract modal dialogs and event handlers
+- Files with McCabe >50: Continue to monitor for complexity growth
+- Functions with cyclomatic complexity >10 should be candidates for simplification
 
 ### Maintaining Code Quality
 
