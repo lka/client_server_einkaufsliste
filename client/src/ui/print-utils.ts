@@ -337,24 +337,191 @@ function convertColumnsToSideBySide(htmlContent: string): string {
 
     if (allChildren.length === 0) return;
 
-    // Split children at midpoint
-    const midpoint = Math.ceil(allChildren.length / 2);
-    const leftChildren = allChildren.slice(0, midpoint);
-    const rightChildren = allChildren.slice(midpoint);
+    // Build a flat list of elements with their line estimates
+    interface ElementWithLines {
+      element: HTMLElement;
+      lines: number;
+      isDepartmentHeader: boolean;
+      isStoreHeader: boolean;
+      departmentName?: string;
+      storeName?: string;
+    }
 
-    // Create left column div (no inline styles - use CSS classes)
-    const leftColumn = document.createElement('div');
-    leftChildren.forEach((child) => {
-      const clonedChild = child.cloneNode(true) as HTMLElement;
-      leftColumn.appendChild(clonedChild);
+    const flatElements: ElementWithLines[] = [];
+
+    allChildren.forEach(child => {
+      const childEl = child as HTMLElement;
+
+      // Check if this is a department section
+      const isDepartmentSection = childEl.classList.contains('department-section');
+      // Check if this is a store header (h3 element)
+      const isStoreHeader = childEl.tagName === 'H3';
+
+      if (isDepartmentSection) {
+        // Extract department header and items separately
+        const header = childEl.querySelector('h3, h4');
+        const itemList = childEl.querySelector('ul');
+
+        if (header) {
+          const departmentName = header.textContent || '';
+
+          // Add department header as separate element
+          const headerClone = header.cloneNode(true) as HTMLElement;
+          flatElements.push({
+            element: headerClone,
+            lines: 2, // Header takes ~2 lines
+            isDepartmentHeader: true,
+            isStoreHeader: false,
+            departmentName: departmentName
+          });
+
+          // Add each item as separate element
+          if (itemList) {
+            const items = itemList.querySelectorAll('li');
+            items.forEach(item => {
+              const itemClone = item.cloneNode(true) as HTMLElement;
+
+              // Estimate lines based on text length
+              // Assume ~40 characters per line in a narrow column (conservative estimate)
+              const textContent = item.textContent || '';
+              const estimatedLines = Math.max(1, Math.ceil(textContent.length / 40));
+
+              flatElements.push({
+                element: itemClone,
+                lines: estimatedLines,
+                isDepartmentHeader: false,
+                isStoreHeader: false,
+                departmentName: departmentName
+              });
+            });
+          }
+        }
+      } else if (isStoreHeader) {
+        // Store header - track for better splitting
+        const storeName = childEl.textContent || '';
+        flatElements.push({
+          element: childEl.cloneNode(true) as HTMLElement,
+          lines: 2, // Store header takes ~2 lines
+          isDepartmentHeader: false,
+          isStoreHeader: true,
+          storeName: storeName
+        });
+      } else {
+        // Other element
+        flatElements.push({
+          element: childEl.cloneNode(true) as HTMLElement,
+          lines: 1,
+          isDepartmentHeader: false,
+          isStoreHeader: false
+        });
+      }
     });
 
-    // Create right column div (no inline styles - use CSS classes)
-    const rightColumn = document.createElement('div');
-    rightChildren.forEach((child) => {
-      const clonedChild = child.cloneNode(true) as HTMLElement;
-      rightColumn.appendChild(clonedChild);
-    });
+    // Find best split point that balances columns and respects header rules
+    let bestSplitIndex = Math.ceil(flatElements.length / 2);
+    let bestImbalance = Infinity;
+
+    for (let i = 1; i < flatElements.length; i++) {
+      // Don't split right after a department header
+      if (i > 0 && flatElements[i - 1].isDepartmentHeader) {
+        continue;
+      }
+      // Don't split right after a store header
+      if (i > 0 && flatElements[i - 1].isStoreHeader) {
+        continue;
+      }
+
+      const leftLines = flatElements.slice(0, i).reduce((sum, el) => sum + el.lines, 0);
+      const rightLines = flatElements.slice(i).reduce((sum, el) => sum + el.lines, 0);
+      const imbalance = Math.abs(leftLines - rightLines);
+
+      if (imbalance < bestImbalance) {
+        bestImbalance = imbalance;
+        bestSplitIndex = i;
+      }
+    }
+
+    const splitIndex = bestSplitIndex;
+
+    const leftElements = flatElements.slice(0, splitIndex);
+    const rightElements = flatElements.slice(splitIndex);
+
+    // Rebuild department sections from flat elements
+    function rebuildDepartmentSections(elements: ElementWithLines[]): HTMLElement {
+      const column = document.createElement('div');
+      let currentDepartment: HTMLElement | null = null;
+      let currentDepartmentList: HTMLElement | null = null;
+      let currentDepartmentName: string | null = null;
+
+      elements.forEach(({ element, isDepartmentHeader, isStoreHeader, departmentName }) => {
+        if (isStoreHeader) {
+          // Store header - add directly to column and reset department tracking
+          column.appendChild(element);
+          currentDepartment = null;
+          currentDepartmentList = null;
+          currentDepartmentName = null;
+        } else if (isDepartmentHeader) {
+          // Start new department section
+          currentDepartment = document.createElement('div');
+          currentDepartment.className = 'department-section';
+          currentDepartment.style.cssText = 'margin-bottom: 0.4rem;';
+
+          currentDepartment.appendChild(element);
+
+          // Create empty ul for items
+          currentDepartmentList = document.createElement('ul');
+          currentDepartmentList.style.cssText = 'margin: 0; padding-left: 0; list-style: none;';
+          currentDepartment.appendChild(currentDepartmentList);
+
+          column.appendChild(currentDepartment);
+          currentDepartmentName = departmentName || null;
+        } else if (element.tagName === 'LI') {
+          // Item belongs to current or previous department
+          if (currentDepartmentList && departmentName === currentDepartmentName) {
+            // Add to current department
+            currentDepartmentList.appendChild(element);
+          } else {
+            // Item from a split department - create continuation
+            if (!currentDepartment || departmentName !== currentDepartmentName) {
+              // Create new department section for continuation
+              currentDepartment = document.createElement('div');
+              currentDepartment.className = 'department-section';
+              currentDepartment.style.cssText = 'margin-bottom: 0.4rem;';
+
+              // Add department header
+              const continueHeader = document.createElement('h4');
+              continueHeader.textContent = departmentName || '';
+              continueHeader.style.cssText = 'margin: 0.6rem 0 0.2rem 0; color: #333; font-size: 0.9rem; font-weight: bold;';
+              continueHeader.className = 'department-title';
+              currentDepartment.appendChild(continueHeader);
+
+              // Create ul for items
+              currentDepartmentList = document.createElement('ul');
+              currentDepartmentList.style.cssText = 'margin: 0; padding-left: 0; list-style: none;';
+              currentDepartment.appendChild(currentDepartmentList);
+
+              column.appendChild(currentDepartment);
+              currentDepartmentName = departmentName || null;
+            }
+
+            if (currentDepartmentList) {
+              currentDepartmentList.appendChild(element);
+            }
+          }
+        } else {
+          // Store header or other element
+          column.appendChild(element);
+          currentDepartment = null;
+          currentDepartmentList = null;
+          currentDepartmentName = null;
+        }
+      });
+
+      return column;
+    }
+
+    const leftColumn = rebuildDepartmentSections(leftElements);
+    const rightColumn = rebuildDepartmentSections(rightElements);
 
     // Clear the layout first, then append columns
     layout.innerHTML = '';
