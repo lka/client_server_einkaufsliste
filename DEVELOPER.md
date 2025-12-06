@@ -55,8 +55,21 @@ Technische Dokumentation für Entwickler der Client/Server Einkaufsliste.
 ├── client/
 │   ├── src/
 │   │   ├── data/                 # Data layer (API, auth, DOM utilities, WebSocket, Inactivity)
-│   │   │   ├── api.ts            # API client functions (items, stores, departments, products, templates, weekplan)
-│   │   │   ├── api.test.ts       # API tests
+│   │   │   ├── api.ts            # API barrel file (re-exports from api/ modules)
+│   │   │   ├── api/              # Modular API client (13 modules)
+│   │   │   │   ├── index.ts      # Barrel file - exports all API modules
+│   │   │   │   ├── types.ts      # Shared TypeScript types and API endpoints
+│   │   │   │   ├── utils.ts      # Auth headers, token refresh, error handling
+│   │   │   │   ├── items-api.ts  # Shopping list items operations
+│   │   │   │   ├── stores-api.ts # Stores and departments CRUD
+│   │   │   │   ├── products-api.ts # Product catalog operations
+│   │   │   │   ├── users-api.ts  # User management operations
+│   │   │   │   ├── templates-api.ts # Shopping template operations
+│   │   │   │   ├── weekplan-api.ts # Weekplan and known units operations
+│   │   │   │   ├── recipes-api.ts # Recipe search and retrieval
+│   │   │   │   ├── backup-api.ts # Database backup and restore
+│   │   │   │   ├── webdav-api.ts # WebDAV settings and recipe import
+│   │   │   │   └── config-api.ts # Server configuration and version
 │   │   │   ├── auth.ts           # Authentication utilities (with expires_in handling)
 │   │   │   ├── dom.ts            # DOM utilities
 │   │   │   ├── dom.test.ts       # DOM tests
@@ -85,7 +98,21 @@ Technische Dokumentation für Entwickler der Client/Server Einkaufsliste.
 │   │   │   ├── product-admin.ts      # Product administration UI (CRUD)
 │   │   │   ├── user-admin.ts         # User administration UI (approval)
 │   │   │   ├── template-admin.ts     # Template administration UI (CRUD)
-│   │   │   ├── weekplan.ts           # Weekplan UI module
+│   │   │   ├── weekplan.ts           # Weekplan UI module (228 lines, refactored - uses weekplan/ modules)
+│   │   │   ├── weekplan/             # Weekplan modular components (13 modules)
+│   │   │   │   ├── index.ts          # Barrel file - exports all modules
+│   │   │   │   ├── types.ts          # Shared TypeScript types
+│   │   │   │   ├── weekplan-state.ts # State management with Observer pattern
+│   │   │   │   ├── weekplan-utils.ts # Date utility functions
+│   │   │   │   ├── weekplan-navigation.ts # Week navigation logic
+│   │   │   │   ├── weekplan-websocket.ts # WebSocket integration
+│   │   │   │   ├── weekplan-print.ts # Print functionality
+│   │   │   │   ├── weekplan-rendering.ts # DOM rendering
+│   │   │   │   ├── entry-input.ts    # Entry input with autocomplete
+│   │   │   │   ├── ingredient-parser.ts # Quantity parsing
+│   │   │   │   ├── template-modal.ts # Template details modal
+│   │   │   │   ├── recipe-modal.ts   # Recipe details modal
+│   │   │   │   └── modal-shared.ts   # Shared modal components
 │   │   │   └── user-menu.ts          # User menu module
 │   │   ├── state/                # State layer (state management)
 │   │   │   ├── shopping-list-state.ts      # Shopping list state manager
@@ -486,7 +513,21 @@ Modulare Organisation der API-Endpunkte:
 
 #### **Data Layer** (`src/data/`)
 Kümmert sich um externe Datenquellen:
-- **api.ts** - Fetch API wrapper für Backend-Kommunikation
+- **api.ts** - API barrel file (re-exports from api/ modules for backward compatibility)
+- **api/** - Modular API client (13 modules):
+  - **index.ts** - Barrel file for all API exports
+  - **types.ts** - Shared TypeScript interfaces and API endpoint constants
+  - **utils.ts** - Authentication headers, token refresh, error handling utilities
+  - **items-api.ts** - Shopping list items operations (fetch, add, delete, convert)
+  - **stores-api.ts** - Stores and departments CRUD + sorting operations
+  - **products-api.ts** - Product catalog operations (CRUD, autocomplete, search)
+  - **users-api.ts** - User management operations (list, approve, delete)
+  - **templates-api.ts** - Shopping template operations (CRUD)
+  - **weekplan-api.ts** - Weekplan entries and known units operations
+  - **recipes-api.ts** - Recipe search and retrieval operations
+  - **backup-api.ts** - Database backup creation and restore
+  - **webdav-api.ts** - WebDAV settings and recipe import operations
+  - **config-api.ts** - Server configuration and version info
 - **auth.ts** - Token management, login/logout/register
 - **websocket.ts** - WebSocket connection manager mit Auto-Reconnect
 - **dom.ts** - DOM manipulation utilities
@@ -506,7 +547,21 @@ UI-Module und Komponenten:
 - **product-admin.ts** - Product admin UI
 - **user-admin.ts** - User approval UI
 - **template-admin.ts** - Template CRUD UI
-- **weekplan.ts** - Weekplan UI
+- **weekplan.ts** - Weekplan UI (228 lines, refactored)
+- **weekplan/** - Modular weekplan components (13 modules):
+  - **index.ts** - Barrel file for all exports
+  - **types.ts** - Shared types and constants
+  - **weekplan-state.ts** - State management with Observer pattern
+  - **weekplan-utils.ts** - Date utility functions
+  - **weekplan-navigation.ts** - Week navigation logic
+  - **weekplan-websocket.ts** - WebSocket integration
+  - **weekplan-print.ts** - Print functionality
+  - **weekplan-rendering.ts** - DOM rendering
+  - **entry-input.ts** - Entry input with autocomplete
+  - **ingredient-parser.ts** - Quantity parsing and scaling
+  - **template-modal.ts** - Template details with delta management
+  - **recipe-modal.ts** - Recipe details with ingredient management
+  - **modal-shared.ts** - Shared modal UI components
 - **print-utils.ts** - Print functionality
 
 #### **Pages Layer** (`src/pages/`)
@@ -526,6 +581,39 @@ Page controllers und HTML templates:
 - **Wiederverwendbarkeit**: Components können in verschiedenen UI-Modulen genutzt werden
 - **Maintainability**: Änderungen an einer Schicht beeinflussen andere nicht
 - **Type Safety**: TypeScript in allen Schichten
+
+### Refactoring-Erfolge
+
+Das Projekt hat zwei große Refactorings durchlaufen, um die Code-Komplexität zu reduzieren:
+
+#### 1. API Modular Refactoring (Abgeschlossen)
+- **Vorher**: Eine Datei (api.ts) mit 1,722 Zeilen, McCabe 317
+- **Nachher**: 13 fokussierte Module in `client/src/data/api/`
+- **Ergebnis**:
+  - Durchschnittliche Modul-Komplexität: ~25 McCabe (manageable)
+  - Vollständige Rückwärtskompatibilität
+  - Bessere Organisation und Wartbarkeit
+- **Module**: types.ts, utils.ts, items-api.ts, stores-api.ts, products-api.ts, users-api.ts, templates-api.ts, weekplan-api.ts, recipes-api.ts, backup-api.ts, webdav-api.ts, config-api.ts, index.ts
+
+#### 2. Weekplan Modular Refactoring (Abgeschlossen)
+- **Vorher**: Eine Datei (weekplan.ts) mit ~850 Zeilen, McCabe 251
+- **Nachher**: Hauptdatei 228 Zeilen (McCabe 35) + 13 fokussierte Module in `client/src/ui/weekplan/`
+- **Ergebnis**:
+  - **73% Reduzierung** der Hauptdatei
+  - Von "sehr hoher Komplexität" zu "hoher Komplexität" (manageable)
+  - Durchschnittliche Modul-Komplexität: ~20 McCabe
+  - Vollständige Rückwärtskompatibilität
+  - Alle Features durch modulare Komposition erhalten
+- **Module**: types.ts, weekplan-state.ts, weekplan-utils.ts, weekplan-navigation.ts, weekplan-websocket.ts, weekplan-print.ts, weekplan-rendering.ts, entry-input.ts, ingredient-parser.ts, template-modal.ts, recipe-modal.ts, modal-shared.ts, index.ts
+
+**Gesamt-Verbesserungen**:
+- **68 TypeScript-Dateien** analysiert
+- **13,071 Zeilen Code** insgesamt
+- **Durchschnittliche Komplexität**: 20.94 McCabe (war 33.31)
+- **Durchschnittliche zyklomatische Komplexität**: 21.84 (war 35.17)
+- **Durchschnittliche McCabe-Komplexität**: 31.07 (war 49.60)
+
+Weitere Details siehe [client/ARCHITECTURE.md](client/ARCHITECTURE.md) und [client/src/ui/weekplan/README.md](client/src/ui/weekplan/README.md).
 
 ### Entwickler-Notizen
 

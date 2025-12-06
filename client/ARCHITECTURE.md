@@ -962,107 +962,258 @@ import { fetchItems, Store, Item } from './data/api/index.js';
 - **Dependencies**:
   - `../data/api.js`: User management operations
 
-#### weekplan.ts
-- **Responsibility**: Weekly meal plan UI for managing shared meal entries
-- **Rezept-Features**:
-  - **Rezept-Autocomplete**: Integration mit `/api/recipes/search` Endpunkt
-    - Rezepte erscheinen in Autocomplete nach Vorlagen (Templates haben Priorität)
-    - Fuzzy-Suche mit case-insensitive Matching
-    - Limit: Maximal 10 Vorschläge (Vorlagen + Rezepte kombiniert)
-  - **Rezept-Modal mit Personenanzahl**: `showRecipeDetails(recipeName)` zeigt Rezeptdetails
-    - Lädt vollständige Rezeptdaten via `fetchRecipeByName()`
-    - Zeigt Metadaten: Name, Kategorie, Tags, Zubereitungszeit, Personenanzahl
-    - Zutaten-Liste mit Parsing von Mengen und Einheiten
-    - **Personenanzahl-Eingabefeld**: Live-Skalierung aller Mengen
-    - **Delta-Management**: Checkboxen zum Deaktivieren einzelner Zutaten
-    - **Zusätzliche Items**: Eingabefeld für eigene Zutaten
-    - **Scrollbares Layout**: Zutaten-Liste scrollt, Eingabefelder bleiben fixiert
-  - **Rezept vs. Vorlage Erkennung**: Prüft zuerst Templates, dann Rezepte
-    - Template gefunden → `showTemplateDetails()`
-    - Rezept gefunden → `showRecipeDetails()`
-    - Nichts gefunden → Stiller Fehler (kein Modal)
-- **Delta-Struktur**: `WeekplanDeltas` mit Rezept-Unterstützung
-  - `person_count?: number`: Gewünschte Personenanzahl
-  - `removed_items?: string[]`: Liste deaktivierter Zutatennamen
-  - `added_items?: Array<{name: string, menge: string}>`: Zusätzliche Items
-- **Server-Integration**:
-  - `POST /api/weekplan`: Speichert Einträge mit `recipe_id` und `deltas`
-  - `_add_recipe_items_to_shopping_list()`: Server-seitige Zutaten-Verarbeitung
-  - `_remove_recipe_items_from_shopping_list()`: Intelligente Mengensubtraktion beim Löschen
-  - `_handle_recipe_person_count_change()`: Re-Berechnung bei Personenanzahl-Änderung
-- **Functions**:
+#### weekplan.ts ✨ REFACTORED
+- **Status**: ✨ **REFACTORED** - Reduced from ~850 lines to 228 lines by extracting modular components
+- **Responsibility**: Main weekplan UI orchestration and rendering
+- **Complexity Reduction**:
+  - **Before**: ~850 lines, very high complexity
+  - **After**: 228 lines, McCabe 35, Cyclomatic 22 (moved to "high complexity" range)
+  - **Reduction**: ~73% smaller
+- **Modular Architecture** (`src/ui/weekplan/`):
+  - **Extracted Modules**: 13 focused modules handling specific responsibilities
+  - **Re-exports**: Uses barrel file (`weekplan/index.ts`) for clean imports
+  - **Maintained Functionality**: All features preserved through modular composition
+- **Core Functions** (remaining in main file):
   - `initWeekplan()`: Initialize weekplan UI, event handlers, and WebSocket subscriptions
-  - `renderWeek()`: Display week view with date calculations and entry loading
-  - `navigateToPreviousWeek()`, `navigateToNextWeek()`: Week navigation
-  - `handleAddMealEntry(event)`: **Optimized + button workflow** for rapid entry (async)
-  - `addMealItemToDOM(container, text, entryId)`: Create meal item DOM element with delete button and clickable text
-  - `showTemplateDetails(templateName)`: Display template items in a modal dialog (NEW)
+  - `renderWeek()`: Display week view with date calculations and entry loading (now uses weekplanState)
+  - `navigateToPreviousWeekLocal()`, `navigateToNextWeekLocal()`: Week navigation wrappers
   - `handleWeekplanAdded(data)`: Handle incoming WebSocket event for new entries
   - `handleWeekplanDeleted(data)`: Handle incoming WebSocket event for deleted entries
-- **WebSocket Integration**:
-  - Subscribes to `weekplan:added` events from other users
-  - Subscribes to `weekplan:deleted` events from other users
-  - Broadcasts `weekplan:add` when creating new entries
-  - Broadcasts `weekplan:delete` when deleting entries
-  - Real-time synchronization keeps all users in sync
-- **State Management**:
-  - Local `entriesStore` Map for caching entries by date and meal
-  - Loads entries from API on week change
-  - Updates store when entries are added/deleted locally or via WebSocket
-- **Date Handling**:
+- **Delegated to Modules**:
+  - Date utilities → `weekplan/weekplan-utils.ts`
+  - State management → `weekplan/weekplan-state.ts`
+  - Navigation → `weekplan/weekplan-navigation.ts`
+  - Entry input → `weekplan/entry-input.ts`
+  - Rendering → `weekplan/weekplan-rendering.ts`
+  - WebSocket integration → `weekplan/weekplan-websocket.ts`
+  - Print functionality → `weekplan/weekplan-print.ts`
+  - Ingredient parsing → `weekplan/ingredient-parser.ts`
+  - Template modal → `weekplan/template-modal.ts`
+  - Recipe modal → `weekplan/recipe-modal.ts`
+  - Modal shared utilities → `weekplan/modal-shared.ts`
+  - Types → `weekplan/types.ts`
+- **Dependencies**:
+  - `../data/api.js`: getWeekplanEntries (minimal API usage)
+  - `../data/websocket.js`: onWeekplanAdded, onWeekplanDeleted
+  - `./weekplan/index.js`: All weekplan modules
+
+#### Weekplan Modules (`src/ui/weekplan/`)
+
+**Purpose**: Modular weekplan components for weekly meal planning with recipe and template support.
+
+##### weekplan/types.ts
+- **Lines**: 39 | **McCabe**: 0
+- **Responsibility**: Shared TypeScript types for weekplan modules
+- **Exports**:
+  - Re-exports from API: `WeekplanEntry`, `WeekplanDeltas`, `DeltaItem`
+  - `ParsedIngredient`: Ingredient with quantity and name
+  - `WeekplanState`: State structure for entries and offset
+  - `DAY_NAMES`, `MEAL_TYPES`: Constants for day/meal configuration
+  - `DayName`, `MealType`: Type definitions
+  - `WeekInfo`: Week metadata structure
+
+##### weekplan/weekplan-state.ts
+- **Lines**: 181 | **McCabe**: 26
+- **Responsibility**: Centralized state management for weekplan entries
+- **Pattern**: Observer pattern with reactive updates
+- **State**:
+  - `entriesStore`: Map<dateISO, Map<meal, WeekplanEntry[]>>
+  - `weekOffset`: Number (0 = current week, -1 = previous, +1 = next)
+  - `listeners`: Set of state change callbacks
+- **Functions**:
+  - `getEntries(date, meal)`: Get entries for specific date and meal
+  - `getDateEntries(date)`: Get all entries for a date
+  - `getAllEntries()`: Get complete entries store (read-only copy)
+  - `addEntry(entry)`: Add entry to state
+  - `removeEntry(entryId)`: Remove entry by ID
+  - `updateEntry(entry)`: Update existing entry
+  - `clearEntries()`: Clear all entries
+  - `setEntries(entries)`: Bulk set entries from API
+  - `getWeekOffset()`, `setWeekOffset(offset)`: Week navigation state
+  - `incrementWeekOffset()`, `decrementWeekOffset()`: Week navigation helpers
+  - `subscribe(listener)`: Subscribe to state changes
+- **Benefits**:
+  - Single source of truth for weekplan data
+  - Automatic UI updates via subscriptions
+  - Immutable state (returns copies)
+
+##### weekplan/weekplan-utils.ts
+- **Lines**: 60 | **McCabe**: 11
+- **Responsibility**: Date utility functions for weekplan
+- **Functions**:
   - `getISOWeek(date)`: Calculate ISO week number
   - `getMonday(date)`: Get Monday of the week for a date
   - `formatShortDate(date)`: Format as DD.MM. for display
   - `formatISODate(date)`: Format as YYYY-MM-DD for API
+  - `getWeekDates(mondayDate)`: Get array of dates for a week
+  - `isToday(date)`: Check if a date is today
+
+##### weekplan/weekplan-navigation.ts
+- **Lines**: 60 | **McCabe**: 6
+- **Responsibility**: Week navigation functionality
+- **Functions**:
+  - `getCurrentWeekInfo()`: Get week metadata based on offset
+  - `getWeekDisplayString()`: Format week display string (e.g., "KW 47 · 18.11. - 24.11.2024")
+  - `navigateToPreviousWeek()`: Navigate to previous week
+  - `navigateToNextWeek()`: Navigate to next week
+  - `navigateToCurrentWeek()`: Reset to current week
+  - `navigateToWeekOffset(offset)`: Navigate to specific offset
+
+##### weekplan/weekplan-websocket.ts
+- **Lines**: 47 | **McCabe**: 10
+- **Responsibility**: WebSocket integration for real-time weekplan updates
+- **Functions**:
+  - `initializeWeekplanWebSocket()`: Initialize WebSocket listeners
+  - `handleWeekplanAdded(data)`: Handle weekplan entry added event
+  - `handleWeekplanDeleted(data)`: Handle weekplan entry deleted event
 - **Features**:
-  - Week navigation with offset tracking
-  - Current day highlighting (red color in header)
+  - Updates weekplanState on incoming events
+  - Dynamically adds/removes entries from DOM
+  - Real-time synchronization across users
+
+##### weekplan/weekplan-print.ts
+- **Lines**: 28 | **McCabe**: 6
+- **Responsibility**: Print functionality for weekplan
+- **Functions**:
+  - `handlePrintWeekplan()`: Generate and print current week's plan
+- **Features**:
+  - Builds entries map for all 7 days
+  - Uses print-utils for platform-specific printing
+  - Includes week number and year in output
+
+##### weekplan/weekplan-rendering.ts
+- **Lines**: 108 | **McCabe**: 10
+- **Responsibility**: DOM rendering for weekplan entries
+- **Functions**:
+  - `addMealItemToDOM(container, text, entryId, recipeId?)`: Create meal item element
+- **Features**:
+  - Clickable entry text with hover effects
+  - Delete button with confirmation
+  - Dispatches custom `weekplan:show-details` event for template/recipe modals
+  - Handles delete via API and broadcasts WebSocket event
+
+##### weekplan/entry-input.ts
+- **Lines**: 169 | **McCabe**: 29
+- **Responsibility**: Entry input field with autocomplete
+- **Functions**:
+  - `handleAddMealEntry(event)`: Create/manage entry input fields
+  - `calculateDateForDay(dayName)`: Convert day name to ISO date
+  - `createEntryInput(mealContent, meal, dayName)`: Create input field with autocomplete
+- **Features**:
   - **Optimized + Button Workflow**: Rapid entry without mouse-keyboard switching
-    - **Single-Click**: Opens input field on first click
-    - **Smart-Save**: When input has content and + is clicked → saves entry AND opens new input
-    - **Empty Input Behavior**: Clicking + on empty input just focuses it (no action)
-    - **Autocomplete Integration**: Shows suggestions from previous weekplan entries
-    - **Error Handling**: Keeps input active if save fails (doesn't create new input)
-    - **Efficient UX**: Enables adding multiple entries using only + button (no Enter key needed)
-  - **Interactive Template Preview**: Click on any weekplan entry to view template details (NEW)
-    - **Visual Feedback**: Blue background, underline, and blue text on hover
-    - **Smart Detection**: Automatically detects if entry is a template (case-insensitive)
-    - **Modal Display**: Shows template name, description, and all items with quantities
-    - **Silent Failure**: Non-template entries don't trigger modal (no error shown)
-    - **Keyboard Support**: Modal can be closed with Escape key or backdrop click
-  - Inline input for adding entries (appears on + button click)
-  - Delete button (×) for each entry
-  - Automatic date calculation for each day column
-  - KW (calendar week) display with date range
-  - 3 meal sections per day: morning, lunch, dinner
-  - Shared entries (no user-specific filtering)
-- **Event Handlers**:
-  - Previous/Next week buttons → update weekOffset and re-render
-  - **Add meal button (+)** → Enhanced logic:
-    - **No existing input** → create inline input field
-    - **Empty input** → just focus existing input
-    - **Filled input** → save current entry, add to DOM, broadcast via WebSocket, then create new input
-  - **Entry text click** → `showTemplateDetails()` → opens modal if template exists (NEW)
-  - Input Enter key → create entry via API and broadcast
-  - Input Escape key → cancel and remove input
-  - Delete button (×) → delete entry via API and broadcast
-- **Save and Continue Logic** (handleAddMealEntry):
-  - Checks for existing input field in meal section
-  - If input has content: disables input, saves to API, adds to local store, broadcasts, removes old input, creates new input
-  - If save fails: re-enables input, shows error alert, doesn't create new input
-  - Uses async/await for sequential operations
-  - Updates entriesStore Map to keep state synchronized
-- **Template Preview Modal** (showTemplateDetails):
-  - Fetches all templates via API
-  - Case-insensitive template name matching
-  - Modal displays: template name, description (optional), and items list
-  - Items shown with name (left) and quantity (right) in styled list
-  - Scrollable content for long templates (max-height: 400px)
-  - Empty templates show "Keine Items in dieser Vorlage"
-- **Dependencies**:
-  - `../data/api.js`: getWeekplanEntries, createWeekplanEntry, deleteWeekplanEntry, fetchTemplates
-  - `../data/websocket.js`: onWeekplanAdded, onWeekplanDeleted, broadcastWeekplanAdd, broadcastWeekplanDelete
-  - `./components/modal.js`: Modal component for template preview
+    - **Smart-Save**: Saves existing input and creates new one on + click
+    - **Empty Input Behavior**: Focuses empty input instead of creating new one
+    - **Error Handling**: Keeps input active if save fails
+  - **Autocomplete Integration**: Shows suggestions from templates and recipes
+    - Templates and weekplan suggestions first
+    - Recipes marked with 🍳 emoji
+    - Combined limit of 5 suggestions
+  - Escape key to cancel
+  - Enter key to save
+  - Auto-remove on blur if empty
+
+##### weekplan/ingredient-parser.ts
+- **Lines**: 64 | **McCabe**: 23
+- **Responsibility**: Parse and adjust ingredient quantities
+- **Functions**:
+  - `parseIngredients(ingredientLines)`: Parse ingredient lines using known units from server
+  - `adjustQuantityByFactor(originalMenge, factor)`: Scale quantity by factor
+  - `parseQuantity(quantityStr)`: Parse numeric quantity from string (handles fractions)
+- **Features**:
+  - Fetches known units from server for accurate parsing
+  - Handles fractions (e.g., "1/2")
+  - Handles decimals with comma or dot
+  - Extracts quantity and name from ingredient lines
+
+##### weekplan/template-modal.ts
+- **Lines**: 250 | **McCabe**: 42
+- **Responsibility**: Template details modal with delta management
+- **Functions**:
+  - `showTemplateDetails(templateName, entryId)`: Display template modal
+  - `findEntryById(entryId)`: Find entry in weekplan state
+- **Features**:
+  - **Delta Management**: Checkboxes to remove individual items
+  - **Quantity Adjustment**: Live-scaling for person count
+  - **Additional Items**: Add custom items with quantities
+  - **Scrollable Layout**: Template items scroll, input form stays fixed
+  - **Save Changes**: Persist deltas via API
+  - Loads existing deltas from entry
+  - Validates items against template list
+
+##### weekplan/recipe-modal.ts
+- **Lines**: 270 | **McCabe**: 53
+- **Responsibility**: Recipe details modal with ingredient management
+- **Functions**:
+  - `showRecipeDetailsById(recipeId, entryId)`: Show recipe by ID
+  - `showRecipeDetails(recipeName)`: Show recipe by name (search first)
+  - `displayRecipeModal(recipeName, recipeData, entryId?)`: Display modal
+  - `findEntryById(entryId)`: Find entry in weekplan state
+- **Features**:
+  - **Rezept-Parsing**: Parses ingredients with quantities and units
+  - **Personenanzahl-Anpassung**: Live-scaling for portion count
+  - **Delta-Management**: Checkboxes to disable individual ingredients
+  - **Zusätzliche Items**: Add custom ingredients
+  - **Scrollbares Layout**: Ingredients scroll, input form fixed
+  - **Save Changes**: Persist deltas via API
+  - Description, quantity, and full ingredient list display
+
+##### weekplan/modal-shared.ts
+- **Lines**: 257 | **McCabe**: 28
+- **Responsibility**: Shared modal UI components
+- **Functions**:
+  - `createQuantityAdjustmentSection(originalPersonCount, currentPersonCount, onAdjust)`: Person count adjuster
+  - `createAddItemForm(onAddItem, existingItems?)`: Add item form with validation
+  - `createAddedItemsList(addedItems, onRemove)`: Display added items with remove buttons
+  - `createScrollableSection()`: Scrollable content container
+  - `createFixedFormSection()`: Fixed form container at bottom
+- **Features**:
+  - Reusable UI components for both template and recipe modals
+  - Consistent styling and behavior
+  - Input validation and duplicate detection
+
+##### weekplan/index.ts
+- **Lines**: 63 | **McCabe**: 2
+- **Responsibility**: Barrel file for weekplan modules
+- **Exports**: All weekplan functions, types, and utilities
+- **Functions**:
+  - `initWeekplanModule()`: Initialize WebSocket and state subscriptions
+- **Benefits**:
+  - Single import point for all weekplan functionality
+  - Clean module boundaries
+  - Easy to extend and maintain
+
+**Weekplan Features**:
+- **Rezept-Autocomplete**: Integration with `/api/recipes/search` endpoint
+  - Recipes appear in autocomplete after templates (templates have priority)
+  - Fuzzy search with case-insensitive matching
+  - Limit: Maximum 10 suggestions (templates + recipes combined)
+- **Template Preview**: Click on entry to view template details
+  - Visual feedback (blue background, underline, blue text on hover)
+  - Smart detection (case-insensitive template matching)
+  - Modal display with items and quantities
+- **Recipe Modal mit Personenanzahl**: Full recipe details
+  - Loads complete recipe data via API
+  - Shows metadata: name, category, tags, preparation time, person count
+  - Ingredient list with quantity parsing
+  - **Person count input**: Live-scaling of all quantities
+  - **Delta management**: Checkboxes to disable individual ingredients
+  - **Additional items**: Input field for custom ingredients
+  - **Scrollable layout**: Ingredients scroll, input fields stay fixed
+- **Delta-Struktur**: `WeekplanDeltas` with recipe support
+  - `person_count?: number`: Desired person count
+  - `removed_items?: string[]`: List of disabled ingredient names
+  - `added_items?: Array<{name: string, menge: string}>`: Additional items
+- **Server-Integration**:
+  - `POST /api/weekplan`: Saves entries with `recipe_id` and `deltas`
+  - Server-side ingredient processing and quantity calculations
+
+**Benefits of Modular Refactoring**:
+- **Complexity Reduction**: From very high to high complexity (manageable)
+- **Better Organization**: Each module has single responsibility
+- **Easier Maintenance**: Changes isolated to specific modules
+- **Improved Testability**: Individual modules easier to test
+- **No Breaking Changes**: Full backward compatibility maintained
+- **Reusable Components**: Modal utilities, state management, parsing logic
 
 #### print-utils.ts
 - **Responsibility**: Platform-specific print functionality with optimized layout
@@ -2020,12 +2171,12 @@ The report includes:
 
 ### Complexity Metrics Summary
 
-- **Total files analyzed**: 55 TypeScript files (includes 13 new API modules)
-- **Total lines of code**: 12,706 lines
-- **Total functions**: 606 functions
-- **Average complexity**: 25.44 ⬇️ (was 33.31)
-- **Average cyclomatic complexity**: 26.85 ⬇️ (was 35.17)
-- **Average McCabe complexity**: 37.87 ⬇️ (was 49.60)
+- **Total files analyzed**: 68 TypeScript files (includes 13 API modules + 13 weekplan modules)
+- **Total lines of code**: 13,071 lines
+- **Total functions**: 628 functions
+- **Average complexity**: 20.94 ⬇️ (was 25.44, originally 33.31)
+- **Average cyclomatic complexity**: 21.84 ⬇️ (was 26.85, originally 35.17)
+- **Average McCabe complexity**: 31.07 ⬇️ (was 37.87, originally 49.60)
 
 ### Complexity Ratings
 
@@ -2036,25 +2187,27 @@ According to McCabe Complexity thresholds:
 - **51+**: Very complex, very high risk
 
 **Current distribution**:
-- Files with very high complexity (>50): 12 ⬇️ (was 13)
-- Files with high complexity (21-50): 23 ⬆️ (was 15, but includes 13 new modular files)
+- Files with very high complexity (>50): 12 (stable)
+- Files with high complexity (21-50): 29 ⬆️ (was 23, includes modular files)
 
 ### Top 3 Most Complex Files
 
-1. **[src/ui/weekplan.ts](src/ui/weekplan.ts)**: McCabe 251, Cyclomatic 165, 1401 lines
-   - Complex weekly meal planning UI with recipe integration and delta management
-
-2. **[src/ui/shopping-list-ui.ts](src/ui/shopping-list-ui.ts)**: McCabe 199, Cyclomatic 134, 1037 lines
+1. **[src/ui/shopping-list-ui.ts](src/ui/shopping-list-ui.ts)**: McCabe 199, Cyclomatic 134, 1037 lines
    - Shopping list feature with event handling, state management, and modal dialogs
 
-3. **[src/ui/template-admin.ts](src/ui/template-admin.ts)**: McCabe 95, Cyclomatic 73, 394 lines
+2. **[src/ui/template-admin.ts](src/ui/template-admin.ts)**: McCabe 95, Cyclomatic 73, 394 lines
    - Template administration UI with CRUD operations
 
-**Note**: ✨ api.ts successfully refactored from McCabe 317 → 0 (now just re-exports)
+3. **[src/ui/product-admin.ts](src/ui/product-admin.ts)**: McCabe 94, Cyclomatic 63, 486 lines
+   - Product administration UI with CRUD operations
 
-### Recent Refactoring Success
+**Recent Refactoring Success**:
+- ✨ **api.ts** refactored from McCabe 317 → 0 (now just re-exports, 13 focused modules)
+- ✨ **weekplan.ts** refactored from McCabe 251 → 35 (now 228 lines, 13 focused modules)
 
-**api.ts Modular Refactoring** (Completed):
+### Refactoring Success Stories
+
+#### 1. api.ts Modular Refactoring (Completed)
 - **Before**: Single file with 1,722 lines, McCabe 317, Cyclomatic 265
 - **After**: 13 focused modules with McCabe ranging from 6-50
 - **Result**:
@@ -2069,13 +2222,35 @@ According to McCabe Complexity thresholds:
 - weekplan-api.ts (35), recipes-api.ts (7), backup-api.ts (17)
 - webdav-api.ts (27), config-api.ts (6), index.ts (0)
 
+#### 2. weekplan.ts Modular Refactoring (Completed)
+- **Before**: Single file with ~850 lines, McCabe 251, Cyclomatic 165
+- **After**: Main file 228 lines (McCabe 35, Cyclomatic 22) + 13 focused modules
+- **Result**:
+  - Reduced main file by 73%
+  - Moved from "very high complexity" to "high complexity" (manageable)
+  - Average module complexity: ~20 McCabe (moderate range)
+  - Maintained full backward compatibility
+  - All features preserved through modular composition
+
+**Weekplan Modules** (all McCabe < 54):
+- types.ts (0), weekplan-state.ts (26), weekplan-utils.ts (11)
+- weekplan-navigation.ts (6), weekplan-websocket.ts (10), weekplan-print.ts (6)
+- weekplan-rendering.ts (10), entry-input.ts (29), ingredient-parser.ts (23)
+- template-modal.ts (42), recipe-modal.ts (53), modal-shared.ts (28)
+- index.ts (2)
+
 ### Refactoring Opportunities
 
-Remaining refactoring candidates:
-- **weekplan.ts** (McCabe 251): Consider splitting UI rendering from business logic
-- **shopping-list-ui.ts** (McCabe 199): Extract modal dialogs and event handlers
+Remaining refactoring candidates (by priority):
+- **shopping-list-ui.ts** (McCabe 199): Extract modal dialogs and event handlers into separate modules
+- **template-admin.ts** (McCabe 95): Consider splitting form management from rendering logic
+- **product-admin.ts** (McCabe 94): Extract filter logic and CRUD operations
 - Files with McCabe >50: Continue to monitor for complexity growth
 - Functions with cyclomatic complexity >10 should be candidates for simplification
+
+**Completed**:
+- ~~**api.ts** (McCabe 317)~~ ✅ Refactored into 13 modules
+- ~~**weekplan.ts** (McCabe 251)~~ ✅ Refactored into 13 modules
 
 ### Maintaining Code Quality
 
