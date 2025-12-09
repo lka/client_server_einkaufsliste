@@ -1,1 +1,2 @@
-Wenn im UI des Clients z.B. Buttons oder Inputs verwendet werden, dann benutze die aus client/ui/components.
+- Wenn im UI des Clients z.B. Buttons oder Inputs verwendet werden, dann benutze die aus client/ui/components.
+- Das Drucken der Einkaufsliste soll auf DIN A4 quer erfolgen. Die Aufteilung des Inhalts soll in 4 Spalten erfolgen. Die DIN A4 Seite soll aussen einen Rand von 1 cm haben. Die Spalten sollen 1 cm voneinander entfernt sein. Wenn mehr als eine DIN A4 Seite gefüllt wird, soll auf der Rückseite fortgefahren werden mit wenden über die kurze Seite.
