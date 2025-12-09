@@ -2,7 +2,6 @@
 
 | File | Lines | Functions | Complexity | Cyclomatic | McCabe |
 |------|-------|-----------|------------|------------|--------|
-| src\ui\components\datepicker.ts | 631 | 29 | 61 | 62 | 91 |
 | src\ui\store-admin.ts | 398 | 24 | 44 | 52 | 76 |
 | src\ui\user-menu.ts | 291 | 28 | 62 | 46 | 74 |
 | src\data\websocket.ts | 319 | 41 | 59 | 30 | 71 |
@@ -19,6 +18,7 @@
 | src\data\api\templates-api.ts | 168 | 5 | 24 | 37 | 42 |
 | src\ui\weekplan\template-modal.ts | 250 | 18 | 32 | 24 | 42 |
 | src\data\auth.ts | 245 | 14 | 32 | 27 | 41 |
+| src\ui\components\datepicker\create-date-picker.ts | 160 | 10 | 22 | 31 | 41 |
 | src\ui\template-admin\render-templates.ts | 185 | 9 | 31 | 32 | 41 |
 | src\data\api\products-api.ts | 205 | 6 | 28 | 33 | 39 |
 | src\ui\print-utils\convert-to-four-columns.ts | 167 | 7 | 22 | 32 | 39 |
@@ -40,12 +40,14 @@
 | src\data\api\webdav-api.ts | 150 | 5 | 20 | 22 | 27 |
 | src\state\shopping-list-state.ts | 201 | 5 | 19 | 22 | 27 |
 | src\ui\components\toast.ts | 326 | 10 | 18 | 17 | 27 |
+| src\ui\components\datepicker\create-calendar.ts | 162 | 12 | 24 | 14 | 26 |
 | src\ui\weekplan\weekplan-state.ts | 181 | 2 | 22 | 24 | 26 |
 | src\ui\shopping-list\print-controls.ts | 119 | 11 | 15 | 13 | 24 |
 | src\data\api\users-api.ts | 114 | 4 | 16 | 19 | 23 |
 | src\data\dom.ts | 159 | 6 | 20 | 17 | 23 |
 | src\ui\weekplan\ingredient-parser.ts | 64 | 4 | 11 | 19 | 23 |
 | src\data\api\types.ts | 125 | 0 | 0 | 22 | 22 |
+| src\ui\components\datepicker\date-utils.ts | 63 | 6 | 13 | 16 | 22 |
 | src\ui\components\modal.ts | 253 | 4 | 16 | 18 | 22 |
 | src\ui\template-admin\create-form-buttons.ts | 109 | 4 | 16 | 18 | 22 |
 | src\ui\components\loading.ts | 213 | 6 | 8 | 15 | 21 |
@@ -82,6 +84,7 @@
 | src\script-users.ts | 27 | 1 | 3 | 2 | 3 |
 | src\script-webdav.ts | 27 | 1 | 3 | 2 | 3 |
 | src\ui\print-utils\print-preview-content.ts | 23 | 2 | 3 | 1 | 3 |
+| src\ui\components\datepicker\inject-date-picker-styles.ts | 242 | 1 | 2 | 1 | 2 |
 | src\ui\components\index.ts | 112 | 2 | 2 | 0 | 2 |
 | src\ui\shopping-list\print-dialog.ts | 213 | 2 | 2 | 0 | 2 |
 | src\ui\weekplan\index.ts | 63 | 2 | 2 | 0 | 2 |
@@ -89,6 +92,9 @@
 | src\ui\template-admin.ts | 19 | 1 | 1 | 0 | 1 |
 | src\data\api\index.ts | 15 | 0 | 0 | 0 | 0 |
 | src\data\api.ts | 14 | 0 | 0 | 0 | 0 |
+| src\ui\components\datepicker\datepicker-types.ts | 7 | 0 | 0 | 0 | 0 |
+| src\ui\components\datepicker\index.ts | 4 | 0 | 0 | 0 | 0 |
+| src\ui\components\datepicker.ts | 10 | 0 | 0 | 0 | 0 |
 | src\ui\print-utils\index.ts | 6 | 0 | 0 | 0 | 0 |
 | src\ui\product-admin\index.ts | 4 | 0 | 0 | 0 | 0 |
 | src\ui\product-admin.ts | 6 | 0 | 0 | 0 | 0 |
@@ -98,12 +104,12 @@
 
 ## Summary
 
-- Total files: 93
-- Total lines: 13620
+- Total files: 99
+- Total lines: 13637
 - Total functions: 660
-- Average complexity: 15.75
-- Average cyclomatic complexity: 16.22
-- Average McCabe complexity: 23.31
+- Average complexity: 14.80
+- Average cyclomatic complexity: 15.23
+- Average McCabe complexity: 21.90
 
 ## Complexity Ratings
 
@@ -113,5 +119,5 @@ McCabe Complexity Thresholds:
 - 21-50: Complex, high risk
 - 51+: Very complex, very high risk
 
-Files with very high complexity (>50): 8
-Files with high complexity (21-50): 39
+Files with very high complexity (>50): 7
+Files with high complexity (21-50): 42
