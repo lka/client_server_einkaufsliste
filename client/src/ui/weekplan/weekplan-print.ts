@@ -2,7 +2,7 @@
  * Print functionality for weekplan
  */
 
-import { printWeekplan } from '../print-utils.js';
+import { printWeekplan } from '../print-utils/index.js';
 import { weekplanState } from './weekplan-state.js';
 import { getCurrentWeekInfo } from './weekplan-navigation.js';
 import { formatISODate } from './weekplan-utils.js';
