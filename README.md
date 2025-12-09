@@ -520,6 +520,7 @@ Das Benutzermenü (⋮) im Header der Anwendung ist hierarchisch organisiert:
 - **🔌 WebSocket aktivieren**: Live-Synchronisation zwischen Geräten einschalten
 - **📋 WebSocket-Link kopieren**: Link zum Teilen mit anderen Benutzern
 - **💾 Datenbank-Backup**: Datenbank sichern und wiederherstellen
+- **☁️ WebDAV Einstellungen**: Zugriff auf Rezepte konfigurieren und importieren
 
 ### Einkaufsliste verwenden
 
