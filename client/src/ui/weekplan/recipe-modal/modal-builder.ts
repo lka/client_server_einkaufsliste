@@ -1,0 +1,142 @@
+/**
+ * Modal content building logic.
+ */
+
+import type { ParsedIngredient } from '../types.js';
+import type { RecipeModalState } from './types.js';
+import { adjustQuantityByFactor } from '../ingredient-parser.js';
+import {
+  createQuantityAdjustmentSection,
+  createAddItemForm,
+  createAddedItemsList,
+  createScrollableSection,
+  createFixedFormSection
+} from '../modal-shared.js';
+import { renderIngredientsList } from './ingredient-renderer.js';
+
+/**
+ * Build modal content with recipe details.
+ */
+export function buildModalContent(
+  recipeData: any,
+  parsedIngredients: ParsedIngredient[],
+  state: RecipeModalState,
+  originalQuantity: number,
+  entryId?: number
+): { contentDiv: HTMLDivElement; saveButton?: HTMLButtonElement } {
+  const contentDiv = document.createElement('div');
+  contentDiv.style.cssText = 'display: flex; flex-direction: column; max-height: 600px;';
+
+  const scrollableSection = createScrollableSection();
+
+  // Description
+  if (recipeData.description) {
+    const description = document.createElement('p');
+    description.textContent = recipeData.description;
+    description.style.cssText = 'color: #666; margin-bottom: 1rem; font-style: italic;';
+    scrollableSection.appendChild(description);
+  }
+
+  let ingredientsListElement: HTMLUListElement | null = null;
+
+  // Ingredients section with quantity adjustment
+  if (recipeData.ingredients) {
+    ingredientsListElement = renderIngredientsList(parsedIngredients, state);
+
+    // Quantity adjustment section
+    const adjustSection = createQuantityAdjustmentSection(
+      originalQuantity,
+      state.adjustedQuantity,
+      (targetQuantity) => {
+        state.adjustedQuantity = targetQuantity;
+        const factor = targetQuantity / originalQuantity;
+
+        state.adjustedQuantities.clear();
+
+        parsedIngredients.forEach((ingredient) => {
+          if (ingredient.quantity) {
+            const adjusted = adjustQuantityByFactor(ingredient.quantity, factor);
+            state.adjustedQuantities.set(ingredient.originalLine, adjusted);
+          }
+        });
+
+        // Re-render the ingredients list
+        if (ingredientsListElement) {
+          const oldList = ingredientsListElement;
+          ingredientsListElement = renderIngredientsList(parsedIngredients, state);
+          if (oldList.parentNode) {
+            oldList.parentNode.replaceChild(ingredientsListElement, oldList);
+          }
+        }
+      }
+    );
+
+    scrollableSection.appendChild(adjustSection);
+    scrollableSection.appendChild(ingredientsListElement);
+  }
+
+  // Added items section
+  const addedItemsContainer = document.createElement('div');
+  addedItemsContainer.style.cssText = 'margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e0e0e0;';
+
+  const renderAddedItems = () => {
+    const newList = createAddedItemsList(state.addedItems, (name) => {
+      state.addedItems.delete(name);
+      renderAddedItems();
+    });
+    addedItemsContainer.innerHTML = '';
+    addedItemsContainer.appendChild(newList);
+  };
+
+  renderAddedItems();
+  scrollableSection.appendChild(addedItemsContainer);
+  contentDiv.appendChild(scrollableSection);
+
+  // Fixed section for adding new items
+  const addItemSection = createFixedFormSection();
+  const existingIngredientNames = parsedIngredients.map(ing => ing.name);
+
+  const addForm = createAddItemForm(
+    (name, menge) => {
+      state.addedItems.set(name, { name, menge });
+      renderAddedItems();
+    },
+    existingIngredientNames
+  );
+
+  addItemSection.appendChild(addForm);
+
+  let saveButton: HTMLButtonElement | undefined;
+
+  // Save button (only for entries, not for standalone recipe views)
+  if (entryId) {
+    const saveButtonDiv = document.createElement('div');
+    saveButtonDiv.style.cssText = 'margin-top: 0.75rem; display: flex; justify-content: flex-end;';
+
+    saveButton = document.createElement('button');
+    saveButton.textContent = 'Änderungen speichern';
+    saveButton.style.cssText = `
+      background: #4a90e2;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background-color 0.2s;
+    `;
+    saveButton.addEventListener('mouseover', () => {
+      saveButton!.style.backgroundColor = '#357abd';
+    });
+    saveButton.addEventListener('mouseout', () => {
+      saveButton!.style.backgroundColor = '#4a90e2';
+    });
+
+    saveButtonDiv.appendChild(saveButton);
+    addItemSection.appendChild(saveButtonDiv);
+  }
+
+  contentDiv.appendChild(addItemSection);
+
+  return { contentDiv, saveButton };
+}

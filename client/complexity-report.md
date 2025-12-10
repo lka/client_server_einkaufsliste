@@ -3,8 +3,6 @@
 | File | Lines | Functions | Complexity | Cyclomatic | McCabe |
 |------|-------|-----------|------------|------------|--------|
 | src\ui\components\dropdown.ts | 413 | 18 | 39 | 38 | 56 |
-| src\ui\webdav-admin.ts | 392 | 23 | 31 | 31 | 54 |
-| src\ui\weekplan\recipe-modal.ts | 270 | 19 | 35 | 34 | 53 |
 | src\data\api\stores-api.ts | 239 | 8 | 35 | 42 | 50 |
 | src\ui\shopping-list-ui.ts | 247 | 20 | 41 | 29 | 49 |
 | src\ui\user-admin.ts | 212 | 15 | 31 | 33 | 48 |
@@ -53,14 +51,18 @@
 | src\state\store-state\store-operations.ts | 114 | 3 | 6 | 17 | 20 |
 | src\ui\print-utils\print-weekplan.ts | 242 | 13 | 17 | 7 | 20 |
 | src\ui\store-admin\department-handlers.ts | 93 | 6 | 11 | 13 | 19 |
+| src\ui\webdav-admin\event-handlers.ts | 89 | 13 | 13 | 6 | 19 |
 | src\state\store-state\product-operations.ts | 123 | 3 | 9 | 15 | 18 |
+| src\ui\weekplan\recipe-modal.ts | 82 | 6 | 10 | 12 | 18 |
 | src\data\api\backup-api.ts | 74 | 2 | 8 | 15 | 17 |
 | src\ui\print-utils\is-android.ts | 29 | 2 | 8 | 15 | 17 |
 | src\ui\store-admin.ts | 88 | 12 | 16 | 5 | 17 |
 | src\ui\user-menu\navigation-handlers.ts | 63 | 5 | 15 | 12 | 17 |
+| src\ui\webdav-admin\modals.ts | 199 | 6 | 10 | 11 | 17 |
 | src\ui\components\card.ts | 132 | 4 | 12 | 12 | 16 |
 | src\ui\shopping-list\item-operations.ts | 86 | 3 | 12 | 13 | 16 |
 | src\ui\shopping-list\print-preview.ts | 157 | 12 | 15 | 4 | 16 |
+| src\ui\weekplan\recipe-modal\modal-builder.ts | 112 | 8 | 14 | 8 | 16 |
 | src\data\inactivity-tracker.ts | 95 | 10 | 14 | 5 | 15 |
 | src\ui\user-menu\menu-toggle-handlers.ts | 58 | 7 | 13 | 8 | 15 |
 | src\data\websocket\state.ts | 84 | 12 | 12 | 1 | 13 |
@@ -79,12 +81,16 @@
 | src\ui\store-admin\utils.ts | 43 | 1 | 5 | 11 | 12 |
 | src\state\store-state.ts | 140 | 2 | 2 | 9 | 11 |
 | src\ui\shopping-list\filters.ts | 59 | 6 | 9 | 5 | 11 |
+| src\ui\weekplan\recipe-modal\ingredient-renderer.ts | 75 | 5 | 7 | 6 | 11 |
 | src\ui\weekplan\weekplan-utils.ts | 60 | 6 | 7 | 5 | 11 |
 | src\ui\weekplan\weekplan-rendering.ts | 108 | 7 | 8 | 3 | 10 |
 | src\ui\weekplan\weekplan-websocket.ts | 47 | 4 | 8 | 6 | 10 |
 | src\data\websocket\event-system.ts | 34 | 5 | 8 | 4 | 9 |
 | src\ui\store-admin\store-handlers.ts | 47 | 3 | 5 | 6 | 9 |
+| src\ui\webdav-admin\form.ts | 83 | 3 | 5 | 6 | 9 |
+| src\ui\webdav-admin\renderer.ts | 55 | 2 | 4 | 7 | 9 |
 | src\ui\user-menu\auth-handlers.ts | 37 | 3 | 7 | 5 | 8 |
+| src\ui\weekplan\recipe-modal\utils.ts | 30 | 2 | 7 | 6 | 8 |
 | src\data\api\recipes-api.ts | 53 | 2 | 4 | 5 | 7 |
 | src\data\websocket\heartbeat.ts | 28 | 3 | 6 | 4 | 7 |
 | src\ui\user-menu\utils.ts | 37 | 2 | 5 | 5 | 7 |
@@ -97,6 +103,10 @@
 | src\data\websocket\broadcasts.ts | 37 | 5 | 5 | 0 | 5 |
 | src\script-weekplan.ts | 29 | 1 | 4 | 4 | 5 |
 | src\state\user-state.ts | 98 | 1 | 2 | 4 | 5 |
+| src\ui\weekplan\recipe-modal\delta-manager.ts | 36 | 2 | 2 | 3 | 5 |
+| src\ui\weekplan\recipe-modal\recipe-loader.ts | 25 | 2 | 3 | 3 | 5 |
+| src\ui\weekplan\recipe-modal\save-handler.ts | 42 | 3 | 4 | 2 | 5 |
+| src\ui\webdav-admin.ts | 35 | 3 | 3 | 1 | 4 |
 | src\script-backup.ts | 26 | 1 | 3 | 2 | 3 |
 | src\script-products.ts | 26 | 1 | 3 | 2 | 3 |
 | src\script-stores.ts | 27 | 1 | 3 | 2 | 3 |
@@ -124,16 +134,17 @@
 | src\ui\product-admin.ts | 6 | 0 | 0 | 0 | 0 |
 | src\ui\shopping-list\index.ts | 8 | 0 | 0 | 0 | 0 |
 | src\ui\template-admin\index.ts | 4 | 0 | 0 | 0 | 0 |
+| src\ui\weekplan\recipe-modal\types.ts | 10 | 0 | 0 | 0 | 0 |
 | src\ui\weekplan\types.ts | 39 | 0 | 0 | 0 | 0 |
 
 ## Summary
 
-- Total files: 123
-- Total lines: 14042
-- Total functions: 695
-- Average complexity: 12.18
-- Average cyclomatic complexity: 12.25
-- Average McCabe complexity: 17.90
+- Total files: 134
+- Total lines: 14253
+- Total functions: 708
+- Average complexity: 11.30
+- Average cyclomatic complexity: 11.29
+- Average McCabe complexity: 16.57
 
 ## Complexity Ratings
 
@@ -143,5 +154,5 @@ McCabe Complexity Thresholds:
 - 21-50: Complex, high risk
 - 51+: Very complex, very high risk
 
-Files with very high complexity (>50): 3
+Files with very high complexity (>50): 1
 Files with high complexity (21-50): 44
