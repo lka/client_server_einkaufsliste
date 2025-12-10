@@ -2,7 +2,6 @@
 
 | File | Lines | Functions | Complexity | Cyclomatic | McCabe |
 |------|-------|-----------|------------|------------|--------|
-| src\state\store-state.ts | 571 | 1 | 19 | 60 | 61 |
 | src\ui\components\dropdown.ts | 413 | 18 | 39 | 38 | 56 |
 | src\ui\webdav-admin.ts | 392 | 23 | 31 | 31 | 54 |
 | src\ui\weekplan\recipe-modal.ts | 270 | 19 | 35 | 34 | 53 |
@@ -48,10 +47,13 @@
 | src\ui\components\datepicker\date-utils.ts | 63 | 6 | 13 | 16 | 22 |
 | src\ui\components\modal.ts | 253 | 4 | 16 | 18 | 22 |
 | src\ui\template-admin\create-form-buttons.ts | 109 | 4 | 16 | 18 | 22 |
+| src\state\store-state\department-operations.ts | 129 | 3 | 8 | 18 | 21 |
 | src\ui\components\loading.ts | 213 | 6 | 8 | 15 | 21 |
 | src\data\websocket\connection.ts | 136 | 10 | 16 | 10 | 20 |
+| src\state\store-state\store-operations.ts | 114 | 3 | 6 | 17 | 20 |
 | src\ui\print-utils\print-weekplan.ts | 242 | 13 | 17 | 7 | 20 |
 | src\ui\store-admin\department-handlers.ts | 93 | 6 | 11 | 13 | 19 |
+| src\state\store-state\product-operations.ts | 123 | 3 | 9 | 15 | 18 |
 | src\data\api\backup-api.ts | 74 | 2 | 8 | 15 | 17 |
 | src\ui\print-utils\is-android.ts | 29 | 2 | 8 | 15 | 17 |
 | src\ui\store-admin.ts | 88 | 12 | 16 | 5 | 17 |
@@ -71,9 +73,11 @@
 | src\ui\shopping-list\store-manager.ts | 107 | 4 | 11 | 9 | 13 |
 | src\ui\store-admin\renderer.ts | 112 | 5 | 7 | 8 | 13 |
 | src\data\websocket\message-handler.ts | 57 | 3 | 10 | 9 | 12 |
+| src\state\store-state\selection.ts | 136 | 4 | 8 | 8 | 12 |
 | src\ui\print-utils\print-preview-content-popup.ts | 171 | 4 | 7 | 8 | 12 |
 | src\ui\shopping-list\print-helpers.ts | 63 | 5 | 10 | 7 | 12 |
 | src\ui\store-admin\utils.ts | 43 | 1 | 5 | 11 | 12 |
+| src\state\store-state.ts | 140 | 2 | 2 | 9 | 11 |
 | src\ui\shopping-list\filters.ts | 59 | 6 | 9 | 5 | 11 |
 | src\ui\weekplan\weekplan-utils.ts | 60 | 6 | 7 | 5 | 11 |
 | src\ui\weekplan\weekplan-rendering.ts | 108 | 7 | 8 | 3 | 10 |
@@ -111,6 +115,7 @@
 | src\data\api.ts | 14 | 0 | 0 | 0 | 0 |
 | src\data\websocket\config.ts | 7 | 0 | 0 | 0 | 0 |
 | src\data\websocket.ts | 34 | 0 | 0 | 0 | 0 |
+| src\state\store-state\types.ts | 14 | 0 | 0 | 0 | 0 |
 | src\ui\components\datepicker\datepicker-types.ts | 7 | 0 | 0 | 0 | 0 |
 | src\ui\components\datepicker\index.ts | 4 | 0 | 0 | 0 | 0 |
 | src\ui\components\datepicker.ts | 10 | 0 | 0 | 0 | 0 |
@@ -123,12 +128,12 @@
 
 ## Summary
 
-- Total files: 118
-- Total lines: 13957
-- Total functions: 681
-- Average complexity: 12.58
-- Average cyclomatic complexity: 12.71
-- Average McCabe complexity: 18.48
+- Total files: 123
+- Total lines: 14042
+- Total functions: 695
+- Average complexity: 12.18
+- Average cyclomatic complexity: 12.25
+- Average McCabe complexity: 17.90
 
 ## Complexity Ratings
 
@@ -138,5 +143,5 @@ McCabe Complexity Thresholds:
 - 21-50: Complex, high risk
 - 51+: Very complex, very high risk
 
-Files with very high complexity (>50): 4
-Files with high complexity (21-50): 43
+Files with very high complexity (>50): 3
+Files with high complexity (21-50): 44
