@@ -2,7 +2,6 @@
 
 | File | Lines | Functions | Complexity | Cyclomatic | McCabe |
 |------|-------|-----------|------------|------------|--------|
-| src\data\websocket.ts | 319 | 41 | 59 | 30 | 71 |
 | src\state\store-state.ts | 571 | 1 | 19 | 60 | 61 |
 | src\ui\components\dropdown.ts | 413 | 18 | 39 | 38 | 56 |
 | src\ui\webdav-admin.ts | 392 | 23 | 31 | 31 | 54 |
@@ -50,6 +49,7 @@
 | src\ui\components\modal.ts | 253 | 4 | 16 | 18 | 22 |
 | src\ui\template-admin\create-form-buttons.ts | 109 | 4 | 16 | 18 | 22 |
 | src\ui\components\loading.ts | 213 | 6 | 8 | 15 | 21 |
+| src\data\websocket\connection.ts | 136 | 10 | 16 | 10 | 20 |
 | src\ui\print-utils\print-weekplan.ts | 242 | 13 | 17 | 7 | 20 |
 | src\ui\store-admin\department-handlers.ts | 93 | 6 | 11 | 13 | 19 |
 | src\data\api\backup-api.ts | 74 | 2 | 8 | 15 | 17 |
@@ -61,6 +61,8 @@
 | src\ui\shopping-list\print-preview.ts | 157 | 12 | 15 | 4 | 16 |
 | src\data\inactivity-tracker.ts | 95 | 10 | 14 | 5 | 15 |
 | src\ui\user-menu\menu-toggle-handlers.ts | 58 | 7 | 13 | 8 | 15 |
+| src\data\websocket\state.ts | 84 | 12 | 12 | 1 | 13 |
+| src\data\websocket\subscriptions.ts | 44 | 13 | 13 | 0 | 13 |
 | src\script.ts | 77 | 3 | 9 | 10 | 13 |
 | src\ui\print-utils\print-debug.ts | 97 | 5 | 9 | 8 | 13 |
 | src\ui\print-utils\print-on-android.ts | 169 | 4 | 8 | 9 | 13 |
@@ -68,6 +70,7 @@
 | src\ui\product-admin\state.ts | 88 | 7 | 11 | 6 | 13 |
 | src\ui\shopping-list\store-manager.ts | 107 | 4 | 11 | 9 | 13 |
 | src\ui\store-admin\renderer.ts | 112 | 5 | 7 | 8 | 13 |
+| src\data\websocket\message-handler.ts | 57 | 3 | 10 | 9 | 12 |
 | src\ui\print-utils\print-preview-content-popup.ts | 171 | 4 | 7 | 8 | 12 |
 | src\ui\shopping-list\print-helpers.ts | 63 | 5 | 10 | 7 | 12 |
 | src\ui\store-admin\utils.ts | 43 | 1 | 5 | 11 | 12 |
@@ -75,9 +78,11 @@
 | src\ui\weekplan\weekplan-utils.ts | 60 | 6 | 7 | 5 | 11 |
 | src\ui\weekplan\weekplan-rendering.ts | 108 | 7 | 8 | 3 | 10 |
 | src\ui\weekplan\weekplan-websocket.ts | 47 | 4 | 8 | 6 | 10 |
+| src\data\websocket\event-system.ts | 34 | 5 | 8 | 4 | 9 |
 | src\ui\store-admin\store-handlers.ts | 47 | 3 | 5 | 6 | 9 |
 | src\ui\user-menu\auth-handlers.ts | 37 | 3 | 7 | 5 | 8 |
 | src\data\api\recipes-api.ts | 53 | 2 | 4 | 5 | 7 |
+| src\data\websocket\heartbeat.ts | 28 | 3 | 6 | 4 | 7 |
 | src\ui\user-menu\utils.ts | 37 | 2 | 5 | 5 | 7 |
 | src\data\api\config-api.ts | 43 | 2 | 4 | 4 | 6 |
 | src\data\api\utils.ts | 40 | 3 | 6 | 3 | 6 |
@@ -85,6 +90,7 @@
 | src\ui\user-menu.ts | 47 | 4 | 5 | 2 | 6 |
 | src\ui\weekplan\weekplan-navigation.ts | 60 | 6 | 6 | 0 | 6 |
 | src\ui\weekplan\weekplan-print.ts | 28 | 3 | 5 | 3 | 6 |
+| src\data\websocket\broadcasts.ts | 37 | 5 | 5 | 0 | 5 |
 | src\script-weekplan.ts | 29 | 1 | 4 | 4 | 5 |
 | src\state\user-state.ts | 98 | 1 | 2 | 4 | 5 |
 | src\script-backup.ts | 26 | 1 | 3 | 2 | 3 |
@@ -94,6 +100,7 @@
 | src\script-users.ts | 27 | 1 | 3 | 2 | 3 |
 | src\script-webdav.ts | 27 | 1 | 3 | 2 | 3 |
 | src\ui\print-utils\print-preview-content.ts | 23 | 2 | 3 | 1 | 3 |
+| src\data\websocket\types.ts | 18 | 0 | 0 | 2 | 2 |
 | src\ui\components\datepicker\inject-date-picker-styles.ts | 242 | 1 | 2 | 1 | 2 |
 | src\ui\components\index.ts | 112 | 2 | 2 | 0 | 2 |
 | src\ui\shopping-list\print-dialog.ts | 213 | 2 | 2 | 0 | 2 |
@@ -102,6 +109,8 @@
 | src\ui\template-admin.ts | 19 | 1 | 1 | 0 | 1 |
 | src\data\api\index.ts | 15 | 0 | 0 | 0 | 0 |
 | src\data\api.ts | 14 | 0 | 0 | 0 | 0 |
+| src\data\websocket\config.ts | 7 | 0 | 0 | 0 | 0 |
+| src\data\websocket.ts | 34 | 0 | 0 | 0 | 0 |
 | src\ui\components\datepicker\datepicker-types.ts | 7 | 0 | 0 | 0 | 0 |
 | src\ui\components\datepicker\index.ts | 4 | 0 | 0 | 0 | 0 |
 | src\ui\components\datepicker.ts | 10 | 0 | 0 | 0 | 0 |
@@ -114,12 +123,12 @@
 
 ## Summary
 
-- Total files: 109
-- Total lines: 13797
-- Total functions: 671
-- Average complexity: 13.51
-- Average cyclomatic complexity: 13.76
-- Average McCabe complexity: 19.92
+- Total files: 118
+- Total lines: 13957
+- Total functions: 681
+- Average complexity: 12.58
+- Average cyclomatic complexity: 12.71
+- Average McCabe complexity: 18.48
 
 ## Complexity Ratings
 
@@ -129,5 +138,5 @@ McCabe Complexity Thresholds:
 - 21-50: Complex, high risk
 - 51+: Very complex, very high risk
 
-Files with very high complexity (>50): 5
+Files with very high complexity (>50): 4
 Files with high complexity (21-50): 43
