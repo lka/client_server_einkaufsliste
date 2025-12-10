@@ -2,7 +2,6 @@
 
 | File | Lines | Functions | Complexity | Cyclomatic | McCabe |
 |------|-------|-----------|------------|------------|--------|
-| src\ui\user-menu.ts | 291 | 28 | 62 | 46 | 74 |
 | src\data\websocket.ts | 319 | 41 | 59 | 30 | 71 |
 | src\state\store-state.ts | 571 | 1 | 19 | 60 | 61 |
 | src\ui\components\dropdown.ts | 413 | 18 | 39 | 38 | 56 |
@@ -42,6 +41,7 @@
 | src\ui\components\datepicker\create-calendar.ts | 162 | 12 | 24 | 14 | 26 |
 | src\ui\weekplan\weekplan-state.ts | 181 | 2 | 22 | 24 | 26 |
 | src\ui\shopping-list\print-controls.ts | 119 | 11 | 15 | 13 | 24 |
+| src\ui\user-menu\websocket-handlers.ts | 126 | 10 | 19 | 14 | 24 |
 | src\data\api\users-api.ts | 114 | 4 | 16 | 19 | 23 |
 | src\data\dom.ts | 159 | 6 | 20 | 17 | 23 |
 | src\ui\weekplan\ingredient-parser.ts | 64 | 4 | 11 | 19 | 23 |
@@ -55,10 +55,12 @@
 | src\data\api\backup-api.ts | 74 | 2 | 8 | 15 | 17 |
 | src\ui\print-utils\is-android.ts | 29 | 2 | 8 | 15 | 17 |
 | src\ui\store-admin.ts | 88 | 12 | 16 | 5 | 17 |
+| src\ui\user-menu\navigation-handlers.ts | 63 | 5 | 15 | 12 | 17 |
 | src\ui\components\card.ts | 132 | 4 | 12 | 12 | 16 |
 | src\ui\shopping-list\item-operations.ts | 86 | 3 | 12 | 13 | 16 |
 | src\ui\shopping-list\print-preview.ts | 157 | 12 | 15 | 4 | 16 |
 | src\data\inactivity-tracker.ts | 95 | 10 | 14 | 5 | 15 |
+| src\ui\user-menu\menu-toggle-handlers.ts | 58 | 7 | 13 | 8 | 15 |
 | src\script.ts | 77 | 3 | 9 | 10 | 13 |
 | src\ui\print-utils\print-debug.ts | 97 | 5 | 9 | 8 | 13 |
 | src\ui\print-utils\print-on-android.ts | 169 | 4 | 8 | 9 | 13 |
@@ -74,10 +76,13 @@
 | src\ui\weekplan\weekplan-rendering.ts | 108 | 7 | 8 | 3 | 10 |
 | src\ui\weekplan\weekplan-websocket.ts | 47 | 4 | 8 | 6 | 10 |
 | src\ui\store-admin\store-handlers.ts | 47 | 3 | 5 | 6 | 9 |
+| src\ui\user-menu\auth-handlers.ts | 37 | 3 | 7 | 5 | 8 |
 | src\data\api\recipes-api.ts | 53 | 2 | 4 | 5 | 7 |
+| src\ui\user-menu\utils.ts | 37 | 2 | 5 | 5 | 7 |
 | src\data\api\config-api.ts | 43 | 2 | 4 | 4 | 6 |
 | src\data\api\utils.ts | 40 | 3 | 6 | 3 | 6 |
 | src\ui\store-admin\modals.ts | 98 | 5 | 6 | 1 | 6 |
+| src\ui\user-menu.ts | 47 | 4 | 5 | 2 | 6 |
 | src\ui\weekplan\weekplan-navigation.ts | 60 | 6 | 6 | 0 | 6 |
 | src\ui\weekplan\weekplan-print.ts | 28 | 3 | 5 | 3 | 6 |
 | src\script-weekplan.ts | 29 | 1 | 4 | 4 | 5 |
@@ -109,12 +114,12 @@
 
 ## Summary
 
-- Total files: 104
-- Total lines: 13720
-- Total functions: 668
-- Average complexity: 14.14
-- Average cyclomatic complexity: 14.42
-- Average McCabe complexity: 20.85
+- Total files: 109
+- Total lines: 13797
+- Total functions: 671
+- Average complexity: 13.51
+- Average cyclomatic complexity: 13.76
+- Average McCabe complexity: 19.92
 
 ## Complexity Ratings
 
@@ -124,5 +129,5 @@ McCabe Complexity Thresholds:
 - 21-50: Complex, high risk
 - 51+: Very complex, very high risk
 
-Files with very high complexity (>50): 6
-Files with high complexity (21-50): 42
+Files with very high complexity (>50): 5
+Files with high complexity (21-50): 43
