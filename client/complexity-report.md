@@ -6,6 +6,7 @@
 | src\ui\shopping-list-ui.ts | 247 | 20 | 41 | 29 | 49 |
 | src\ui\user-admin.ts | 212 | 15 | 31 | 33 | 48 |
 | src\ui\components\autocomplete.ts | 226 | 6 | 25 | 40 | 46 |
+| src\ui\weekplan\ingredient-parser.ts | 154 | 5 | 21 | 39 | 44 |
 | src\data\api\items-api.ts | 198 | 6 | 28 | 37 | 43 |
 | src\ui\product-admin\event-handlers.ts | 207 | 15 | 30 | 28 | 43 |
 | src\data\api\templates-api.ts | 168 | 5 | 24 | 37 | 42 |
@@ -40,7 +41,6 @@
 | src\ui\user-menu\websocket-handlers.ts | 126 | 10 | 19 | 14 | 24 |
 | src\data\api\users-api.ts | 114 | 4 | 16 | 19 | 23 |
 | src\data\dom.ts | 159 | 6 | 20 | 17 | 23 |
-| src\ui\weekplan\ingredient-parser.ts | 64 | 4 | 11 | 19 | 23 |
 | src\data\api\types.ts | 131 | 0 | 0 | 22 | 22 |
 | src\ui\components\datepicker\date-utils.ts | 63 | 6 | 13 | 16 | 22 |
 | src\ui\components\modal.ts | 253 | 4 | 16 | 18 | 22 |
@@ -156,11 +156,11 @@
 ## Summary
 
 - Total files: 150
-- Total lines: 14906
-- Total functions: 742
-- Average complexity: 10.54
-- Average cyclomatic complexity: 10.44
-- Average McCabe complexity: 15.39
+- Total lines: 14996
+- Total functions: 743
+- Average complexity: 10.61
+- Average cyclomatic complexity: 10.57
+- Average McCabe complexity: 15.53
 
 ## Complexity Ratings
 
