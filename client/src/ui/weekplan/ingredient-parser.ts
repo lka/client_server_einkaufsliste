@@ -6,7 +6,60 @@ import { fetchKnownUnits } from '../../data/api.js';
 import type { ParsedIngredient } from './types.js';
 
 /**
+ * Map of Unicode fraction characters to decimal values
+ */
+const FRACTIONS_MAP: Record<string, number> = {
+  '½': 0.5,
+  '¼': 0.25,
+  '¾': 0.75,
+  '⅓': 0.333,
+  '⅔': 0.667,
+  '⅕': 0.2,
+  '⅖': 0.4,
+  '⅗': 0.6,
+  '⅘': 0.8,
+  '⅙': 0.167,
+  '⅚': 0.833,
+  '⅐': 0.143,
+  '⅑': 0.111,
+  '⅛': 0.125,
+  '⅜': 0.375,
+  '⅝': 0.625,
+  '⅞': 0.875,
+};
+
+/**
+ * Convert Unicode fraction string to decimal
+ * Handles simple fractions (½), mixed numbers (1½), and negative values (-1½)
+ */
+function convertFractionToDecimal(fractionStr: string): number | null {
+  if (!fractionStr) return null;
+
+  // Try to match pattern like "1½" (number + fraction)
+  const mixedMatch = fractionStr.match(/^(-?\d+)([½¼¾⅓⅔⅕⅖⅗⅘⅙⅚⅐⅑⅛⅜⅝⅞])$/);
+  if (mixedMatch) {
+    const wholePart = parseInt(mixedMatch[1], 10);
+    const fractionChar = mixedMatch[2];
+    if (fractionChar in FRACTIONS_MAP) {
+      const fractionValue = FRACTIONS_MAP[fractionChar];
+      return wholePart >= 0
+        ? Math.abs(wholePart) + fractionValue
+        : -(Math.abs(wholePart) + fractionValue);
+    }
+    return null;
+  }
+
+  // Try to match just fraction (no whole number)
+  if (fractionStr in FRACTIONS_MAP) {
+    return FRACTIONS_MAP[fractionStr];
+  }
+
+  return null;
+}
+
+/**
  * Parse ingredient lines into structured data using known units from server
+ * Supports Unicode fractions (½, ¼, ¾, etc.) and mixed numbers (1½, 2¼, etc.)
  */
 export async function parseIngredients(ingredientLines: string[]): Promise<ParsedIngredient[]> {
   // Fetch known units from server
@@ -14,8 +67,15 @@ export async function parseIngredients(ingredientLines: string[]): Promise<Parse
   const unitsPattern = knownUnits.join('|');
 
   return ingredientLines.map((line: string) => {
-    // Match: number (with optional fraction/decimal) + optional unit + rest
-    const match = line.match(new RegExp(`^([\\d\\/\\.,]+(?:\\s*(?:${unitsPattern}))?)\\s+(.+)$`));
+    // Match: number OR fraction + optional unit + rest
+    // Pattern matches either:
+    // - optional digit(s) + fraction character (e.g., "½", "1½", "2¼")
+    // - regular number with optional decimal/comma (e.g., "500", "2.5", "1,5")
+    const match = line.match(
+      new RegExp(
+        `^((?:\\d*[½¼¾⅓⅔⅕⅖⅗⅘⅙⅚⅐⅑⅛⅜⅝⅞]|[\\d\\/\\.,]+)(?:\\s*(?:${unitsPattern}))?)\\s+(.+)$`
+      )
+    );
     if (match) {
       return {
         quantity: match[1].trim(),
@@ -34,14 +94,45 @@ export async function parseIngredients(ingredientLines: string[]): Promise<Parse
 
 /**
  * Adjust a quantity string by a scaling factor
- * @param originalMenge Original quantity string (e.g., "2 kg", "500g", "3")
+ * Supports Unicode fractions (½, ¼, ¾, etc.) and mixed numbers (1½, 2¼, etc.)
+ * @param originalMenge Original quantity string (e.g., "2 kg", "½ TL", "1½ kg")
  * @param factor Scaling factor (e.g., 2 for doubling, 0.5 for halving)
  * @returns Adjusted quantity string
  */
 export function adjustQuantityByFactor(originalMenge: string, factor: number): string {
   if (isNaN(factor) || factor <= 0) return originalMenge;
 
-  // Extract numeric value and unit from menge (e.g., "2 kg" -> 2 and "kg")
+  // Extract numeric value and unit from menge
+  // First try to match fractions (e.g., "½ TL", "1½ kg")
+  const fractionMatch = originalMenge.match(
+    /^(-?)(\d*)([½¼¾⅓⅔⅕⅖⅗⅘⅙⅚⅐⅑⅛⅜⅝⅞])\s*(.*)$/
+  );
+  if (fractionMatch) {
+    const minusSign = fractionMatch[1];
+    const wholePart = fractionMatch[2];
+    const fractionChar = fractionMatch[3];
+    const unit = fractionMatch[4].trim();
+
+    const fractionStr = (wholePart || '') + fractionChar;
+    let value = convertFractionToDecimal(fractionStr);
+    if (value === null) return originalMenge;
+
+    if (minusSign === '-') {
+      value = -value;
+    }
+
+    // Apply factor
+    value = value * factor;
+
+    // Format the result
+    const formattedValue =
+      value % 1 === 0
+        ? value.toString()
+        : value.toFixed(2).replace(/\.?0+$/, '').replace('.', ',');
+    return unit ? `${formattedValue} ${unit}` : formattedValue;
+  }
+
+  // Fall back to regular number parsing
   const mengeMatch = originalMenge.match(/^([\d]+(?:[.,\/]\d+)?)\s*(.*)$/);
   if (!mengeMatch) return originalMenge;
 
@@ -52,18 +143,38 @@ export function adjustQuantityByFactor(originalMenge: string, factor: number): s
   value = value * factor;
 
   // Format the result
-  const formattedValue = value % 1 === 0 ? value.toString() : value.toFixed(2).replace(/\.?0+$/, '');
+  const formattedValue =
+    value % 1 === 0
+      ? value.toString()
+      : value.toFixed(2).replace(/\.?0+$/, '').replace('.', ',');
   return unit ? `${formattedValue} ${unit}` : formattedValue;
 }
 
 /**
  * Parse a numeric quantity from a string
- * Handles fractions, decimals with comma or dot
+ * Handles Unicode fractions (½, ¼, ¾, 1½), slash fractions (1/2),
+ * and decimals with comma or dot
  */
 export function parseQuantity(quantityStr: string): number | null {
   if (!quantityStr) return null;
 
-  // Handle fractions like "1/2"
+  // First try Unicode fractions (e.g., "½", "1½", "2¼")
+  const fractionMatch = quantityStr.match(
+    /^(-?)(\d*)([½¼¾⅓⅔⅕⅖⅗⅘⅙⅚⅐⅑⅛⅜⅝⅞])$/
+  );
+  if (fractionMatch) {
+    const minusSign = fractionMatch[1];
+    const wholePart = fractionMatch[2];
+    const fractionChar = fractionMatch[3];
+    const fractionStr = (wholePart || '') + fractionChar;
+    let value = convertFractionToDecimal(fractionStr);
+    if (value !== null && minusSign === '-') {
+      value = -value;
+    }
+    return value;
+  }
+
+  // Handle slash fractions like "1/2"
   if (quantityStr.includes('/')) {
     const parts = quantityStr.split('/');
     if (parts.length === 2) {
