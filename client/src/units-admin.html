@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Einheiten verwalten - Einkaufsliste</title>
+  <link rel="stylesheet" href="/styles/main.css">
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>📏 Einheiten verwalten</h1>
+      <div id="userMenu"></div>
+    </header>
+
+    <main>
+      <div class="units-admin-container">
+        <div class="units-admin-header">
+          <button id="addUnitBtn" class="btn btn-primary">+ Neue Einheit hinzufügen</button>
+        </div>
+
+        <div class="units-admin-info">
+          <p>Verwalten Sie hier die Maßeinheiten für die Rezept-Zutatenlisten. Die Reihenfolge bestimmt die Priorität beim Parsen von Zutaten.</p>
+        </div>
+
+        <div id="unitsListContainer" class="units-list-container">
+          <!-- Units will be rendered here -->
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script type="module" src="/script-units-admin.js"></script>
+</body>
+</html>

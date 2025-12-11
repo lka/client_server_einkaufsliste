@@ -131,6 +131,12 @@ export interface ProductSuggestion {
   source: 'product' | 'template';
 }
 
+export interface Unit {
+  id: number;
+  name: string;
+  sort_order: number;
+}
+
 // API endpoint constants
 export const API_BASE = '/api/items';
 export const API_STORES = '/api/stores';
@@ -141,3 +147,4 @@ export const API_VERSION = '/api/version';
 export const API_CONFIG = '/api/config';
 export const API_WEBDAV = '/api/webdav';
 export const API_WEEKPLAN = '/api/weekplan';
+export const API_UNITS = '/api/units';

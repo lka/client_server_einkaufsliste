@@ -94,3 +94,18 @@ class WebDAVSettingsUpdate(BaseModel):
     password: Optional[str] = None
     filename: Optional[str] = None
     enabled: Optional[bool] = None
+
+
+# Unit management schemas
+class UnitCreate(BaseModel):
+    """Schema for creating a new unit."""
+
+    name: str
+    sort_order: int = 0
+
+
+class UnitUpdate(BaseModel):
+    """Schema for updating an existing unit."""
+
+    name: Optional[str] = None
+    sort_order: Optional[int] = None

@@ -32,7 +32,7 @@ describe('User Menu UI', () => {
 
     // Reset fetch mock to default implementation
     mockFetch.mockImplementation((url: string) => {
-      if (url === 'src/ui/components/menu-dropdown.html') {
+      if (url.startsWith('src/ui/components/menu-dropdown.html')) {
         return Promise.resolve({
           ok: true,
           text: () => Promise.resolve(`
@@ -41,6 +41,7 @@ describe('User Menu UI', () => {
               <button id="manageStoresBtn" class="menu-item">🏪 Geschäfte</button>
               <button id="manageProductsBtn" class="menu-item">📦 Produkte</button>
               <button id="manageTemplatesBtn" class="menu-item">📋 Vorlagen</button>
+              <button id="manageUnitsBtn" class="menu-item">📏 Einheiten</button>
               <button id="manageUsersBtn" class="menu-item">👥 Benutzer</button>
             </div>
             <button id="websocketMenuBtn" class="menu-item menu-item-submenu">⚙️ Einstellungen <span class="submenu-arrow">›</span></button>

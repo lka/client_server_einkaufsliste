@@ -5,7 +5,7 @@ departments and common products.
 """
 
 from sqlmodel import Session, select
-from .models import Store, Department, Product
+from .models import Store, Department, Product, Unit
 from .db import get_engine, get_session
 
 
@@ -242,6 +242,52 @@ def seed_common_products(session: Session, stores_data: dict[str, dict]):
     session.commit()
 
 
+def seed_units(session: Session):
+    """Create measurement units for ingredient parsing.
+
+    Args:
+        session: Database session
+    """
+    # Units list in the exact order from _get_known_units()
+    units = [
+        "g",
+        "kg",
+        "ml",
+        "l",
+        "L",
+        "EL",
+        "El",
+        "TL",
+        "Tl",
+        "Prise",
+        "Prisen",
+        "Stück",
+        "Stk",
+        "Stk.",
+        "Bund",
+        "Becher",
+        "Dose",
+        "Dosen",
+        "Pck",
+        "Päckchen",
+        "Tasse",
+        "Tassen",
+        "Stiel",
+        "Stiele",
+        "Zweig",
+        "Zweige",
+        "rote",
+        "grüne",
+        "gelbe",
+    ]
+
+    for idx, unit_name in enumerate(units):
+        unit = Unit(name=unit_name, sort_order=idx)
+        session.add(unit)
+
+    session.commit()
+
+
 def seed_database(engine=None):
     """Seed the database with initial stores, departments, and products.
 
@@ -258,7 +304,10 @@ def seed_database(engine=None):
             print("Database already seeded. Skipping.")
             return
 
-        print("Seeding database with stores, departments, and products...")
+        print("Seeding database with stores, departments, products, and units...")
+
+        # Create measurement units
+        seed_units(session)
 
         # Create stores and departments
         stores_data = seed_stores_and_departments(session)

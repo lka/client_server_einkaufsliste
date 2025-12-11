@@ -32,6 +32,13 @@ def serve_products_page():
     return FileResponse(products_file)
 
 
+@router.get("/units")
+def serve_units_page():
+    """Serve the units management page."""
+    units_file = os.path.join(CLIENT_DIR, "index-units.html")
+    return FileResponse(units_file)
+
+
 @router.get("/users")
 def serve_users_page():
     """Serve the users management page."""

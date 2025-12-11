@@ -215,3 +215,17 @@ class Recipe(SQLModel, table=True):
     category: Optional[str] = None
     tags: Optional[str] = None  # JSON array string
     imported_at: Optional[str] = None  # ISO format timestamp
+
+
+class Unit(SQLModel, table=True):
+    """Measurement unit for ingredient parsing.
+
+    Attributes:
+        id: Primary key (auto-generated integer)
+        name: Unit name/abbreviation (e.g., "kg", "g", "EL", "Prise")
+        sort_order: Display order (lower values appear first)
+    """
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field(index=True, unique=True)
+    sort_order: int = Field(default=0)

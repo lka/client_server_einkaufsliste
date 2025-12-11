@@ -15,6 +15,9 @@ export type { ConnectionState, WebSocketMessage } from './websocket/types.js';
 export { connect, disconnect, isWebSocketSupported } from './websocket/connection.js';
 export { isConnected, getConnectionState } from './websocket/state.js';
 
+// Re-export event system
+export { subscribe } from './websocket/event-system.js';
+
 // Re-export event subscriptions
 export {
   onItemAdded,

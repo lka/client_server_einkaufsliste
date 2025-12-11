@@ -1,0 +1,29 @@
+<header>
+  <h1>Einheiten verwalten</h1>
+  <div class="header-actions">
+    <button id="backToAppBtn" class="back-btn" aria-label="Zurück zur Einkaufsliste">← Zurück</button>
+    <div class="user-menu">
+      <button id="menuBtn" class="menu-btn" aria-label="Benutzermenü">⋮</button>
+      <div id="menuDropdown" class="menu-dropdown">
+        <!-- Menu items loaded dynamically from menu-dropdown.html -->
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="units-admin-container">
+    <section class="units-section">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2>📏 Maßeinheiten</h2>
+        <button id="addUnitBtn" class="btn-add">+ Einheit hinzufügen</button>
+      </div>
+      <p style="margin: 0 0 1rem 0; color: #666; font-size: 0.95rem;">
+        Verwalten Sie die Maßeinheiten für Ihre Rezepte. Die Reihenfolge können Sie per Drag & Drop ändern.
+      </p>
+      <div id="unitsListContainer" class="units-list-container">
+        <!-- Units will be rendered here -->
+      </div>
+    </section>
+  </div>
+</main>

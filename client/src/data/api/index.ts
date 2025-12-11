@@ -17,3 +17,4 @@ export * from './recipes-api.js';
 export * from './backup-api.js';
 export * from './webdav-api.js';
 export * from './config-api.js';
+export * from './units-api.js';
