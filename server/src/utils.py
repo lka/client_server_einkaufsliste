@@ -7,21 +7,109 @@ from sqlmodel import select
 from .models import Item
 
 
+def _convert_fraction_to_decimal(fraction_str: str) -> float | None:
+    """Convert unicode fraction characters to decimal.
+
+    Args:
+        fraction_str: String containing unicode fractions like ½, ¼, ¾, 1½, etc.
+
+    Returns:
+        Float value or None if conversion fails
+
+    Examples:
+        - "½" -> 0.5
+        - "¼" -> 0.25
+        - "¾" -> 0.75
+        - "1½" -> 1.5
+        - "2¼" -> 2.25
+    """
+    # Common unicode fractions
+    fractions_map = {
+        "½": 0.5,
+        "¼": 0.25,
+        "¾": 0.75,
+        "⅓": 0.333,
+        "⅔": 0.667,
+        "⅕": 0.2,
+        "⅖": 0.4,
+        "⅗": 0.6,
+        "⅘": 0.8,
+        "⅙": 0.167,
+        "⅚": 0.833,
+        "⅐": 0.143,
+        "⅑": 0.111,
+        "⅛": 0.125,
+        "⅜": 0.375,
+        "⅝": 0.625,
+        "⅞": 0.875,
+    }
+
+    # Try to match pattern like "1½" (number + fraction)
+    match = re.match(r"^(-?\d+)([½¼¾⅓⅔⅕⅖⅗⅘⅙⅚⅐⅑⅛⅜⅝⅞])$", fraction_str)
+    if match:
+        whole_part = int(match.group(1))
+        fraction_char = match.group(2)
+        if fraction_char in fractions_map:
+            return (
+                abs(whole_part) + fractions_map[fraction_char]
+                if whole_part >= 0
+                else -(abs(whole_part) + fractions_map[fraction_char])
+            )
+        return None
+
+    # Try to match just fraction (no whole number)
+    if fraction_str in fractions_map:
+        return fractions_map[fraction_str]
+
+    return None
+
+
 def parse_quantity(menge: str | None) -> tuple[float | None, str | None]:
     """Parse quantity string into number and unit.
 
     Args:
-        menge: Quantity string like "500 g", "2 Stück", or "-300 g" for subtraction
+        menge: Quantity string like "500 g", "2 Stück",
+            "½ TL", "1½ kg", or "-300 g" for subtraction
 
     Returns:
         Tuple of (number, unit) or (None, None) if parsing fails
         Number can be negative for subtraction
+
+    Examples:
+        - "500 g" -> (500.0, "g")
+        - "½ TL" -> (0.5, "TL")
+        - "1½ kg" -> (1.5, "kg")
+        - "2¼ l" -> (2.25, "l")
+        - "-300 g" -> (-300.0, "g")
     """
     if not menge:
         return None, None
 
-    # Match optional minus sign, number (int/float), optional unit
-    match = re.match(r"^(-?\d+(?:[.,]\d+)?)\s*(.*)$", menge.strip())
+    menge_stripped = menge.strip()
+
+    # First try to match fractions with optional minus sign
+    # Pattern: optional minus, optional number, fraction character, optional unit
+    fraction_match = re.match(
+        r"^(-?)(\d*)([½¼¾⅓⅔⅕⅖⅗⅘⅙⅚⅐⅑⅛⅜⅝⅞])\s*(.*)$", menge_stripped
+    )
+    if fraction_match:
+        minus_sign = fraction_match.group(1)
+        whole_part_str = fraction_match.group(2)
+        fraction_char = fraction_match.group(3)
+        unit = fraction_match.group(4).strip() if fraction_match.group(4) else None
+
+        # Build the fraction string for conversion
+        fraction_str = (whole_part_str if whole_part_str else "") + fraction_char
+        number = _convert_fraction_to_decimal(fraction_str)
+
+        if number is not None:
+            # Apply minus sign if present
+            if minus_sign == "-":
+                number = -number
+            return number, unit
+
+    # Fall back to regular number parsing (supports minus sign, int/float)
+    match = re.match(r"^(-?\d+(?:[.,]\d+)?)\s*(.*)$", menge_stripped)
     if match:
         number_str = match.group(1).replace(",", ".")
         unit = match.group(2).strip() if match.group(2) else None
@@ -30,6 +118,7 @@ def parse_quantity(menge: str | None) -> tuple[float | None, str | None]:
             return number, unit
         except ValueError:
             return None, None
+
     return None, None
 
 

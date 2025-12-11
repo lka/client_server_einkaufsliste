@@ -6,6 +6,11 @@ Python FastAPI Server + TypeScript Client mit JWT-Authentifizierung.
 
 ## Release
 
+- Release 3.1.0: Einheiten-Verwaltung + Bruchzahlen-Unterstützung
+  - Einheiten aus Datenbank statt hardcoded (CRUD-UI mit Drag & Drop)
+  - Bruchzahlen in Rezepten (½, ¼, ¾, 1½, etc.) bei Parsing, Addition und Skalierung
+  - WebSocket-Synchronisation für Einheiten-Änderungen
+  - Backup-Integration für Einheiten
 - Release 3.0.0: Rezept-Integration - WebDAV-Import, Rezeptsuche und automatische Einkaufslisten-Generierung
  - Release 2.3.0: Personenanzahl in Vorlagen konfigurierbar + automatische Integration im Wochenplan
  - Release 2.2.0: Personenanzahl-Anpassung im Wochenplan-Modal + Shopping-Day-Bugfix
@@ -306,12 +311,18 @@ Python FastAPI Server + TypeScript Client mit JWT-Authentifizierung.
   - **Automatische Einkaufslisten-Generierung**: Rezeptzutaten werden automatisch zur Einkaufsliste hinzugefügt
     - **Intelligente Zutatenerkennung**: Parst Mengenangaben und Einheiten aus Freitext-Zutaten
     - **Datenbank-gestützte Einheiten**: Verwendet konfigurierbare Einheiten aus der Datenbank (g, kg, ml, l, EL, TL, Prise, Stück, etc.)
-    - **Regex-basiertes Parsing**: Erkennt Muster wie "500 g Mehl" oder "2 EL Öl"
+    - **Bruchzahlen-Unterstützung**: Volle Unterstützung für Unicode-Brüche in Rezepten
+      - **16 Bruchzeichen**: ½, ¼, ¾, ⅓, ⅔, ⅕, ⅖, ⅗, ⅘, ⅙, ⅚, ⅐, ⅑, ⅛, ⅜, ⅝, ⅞
+      - **Gemischte Zahlen**: 1½, 2¼, 3¾ werden korrekt geparst und verarbeitet
+      - **Addition/Subtraktion**: "½ TL" + "½ TL" = "1 TL", "1 TL" - "½ TL" = "0,5 TL"
+      - **Skalierung**: "½ TL" für 2 Personen → "1 TL" für 4 Personen
+    - **Regex-basiertes Parsing**: Erkennt Muster wie "500 g Mehl", "2 EL Öl", "½ TL Salz", "1½ kg Zucker"
     - **Personenanzahl-Skalierung**: Mengen werden automatisch angepasst (Fallback: 1 Person)
       - `neue_menge = original_menge × (gewünschte_personen / rezept_personen)`
       - Beispiel: Rezept für 4 Personen (500g) → 2 Personen = 250g
+      - Bruchzahlen-Beispiel: "1½ kg" für 4 Personen → "¾ kg" für 2 Personen
     - **Intelligente Mengenaddition**: Zutaten werden mit bestehenden Items zusammengeführt
-      - Gleiche Einheit → Mengen werden summiert
+      - Gleiche Einheit → Mengen werden summiert (auch Bruchzahlen)
       - Verschiedene Einheiten → Als semikolon-getrennte Liste
     - **Einkaufstag-Berechnung**: Automatische Zuweisung zum passenden Einkaufsdatum
       - Berücksichtigt MAIN_SHOPPING_DAY und FRESH_PRODUCTS_DAY

@@ -82,31 +82,33 @@ def _adjust_quantity_by_person_count(
 ) -> Optional[str]:
     """Adjust quantity based on person count.
 
+    Supports fractions (½, ¼, ¾, etc.) and mixed numbers (1½, 2¼, etc.).
+
     Args:
-        original_menge: Original quantity string (e.g., "2 kg", "500 g")
+        original_menge: Original quantity string
+            (e.g., "2 kg", "500 g", "½ TL", "1½ kg")
         person_count: Target person count
         original_person_count: Original person count the template was designed for
 
     Returns:
         Adjusted quantity string or None if input is None
+
+    Examples:
+        - "½ TL" with person_count=4, original_person_count=2 -> "1 TL"
+        - "1½ kg" with person_count=2, original_person_count=4
+            -> "750 g" (if under 1 kg) or "0,75 kg"
+        - "2 kg" with person_count=3, original_person_count=2 -> "3 kg"
     """
     if not original_menge:
         return original_menge
 
-    import re
+    from ..utils import parse_quantity
 
-    # Extract numeric value and unit from menge (e.g., "2 kg" -> 2 and "kg")
-    match = re.match(r"^(\d+(?:[.,]\d+)?)\s*(.*)$", original_menge)
-    if not match:
+    # Parse the quantity using the enhanced parser (supports fractions)
+    value, unit = parse_quantity(original_menge)
+
+    if value is None:
         return original_menge  # Can't parse, return original
-
-    value_str = match.group(1).replace(",", ".")
-    unit = match.group(2)
-
-    try:
-        value = float(value_str)
-    except ValueError:
-        return original_menge  # Can't convert to float, return original
 
     # Prevent division by zero
     if not original_person_count or original_person_count == 0:
@@ -453,17 +455,34 @@ def _parse_recipe_data(recipe: Recipe) -> tuple[str, int, list[str]]:
 def _create_ingredient_pattern(session):
     """Create regex pattern for parsing ingredients with known units.
 
+    Supports regular numbers, fractions (½, ¼, ¾, etc.),
+    and mixed numbers (1½, 2¼, etc.).
+
     Args:
         session: Database session
 
     Returns:
         Compiled regex pattern
+
+    Examples:
+        - "500 g Mehl" -> ("500 g", "Mehl")
+        - "½ TL Salz" -> ("½ TL", "Salz")
+        - "1½ kg Zucker" -> ("1½ kg", "Zucker")
+        - "2¼ l Milch" -> ("2¼ l", "Milch")
     """
     import re
 
     known_units = _get_known_units(session)
     units_pattern = "|".join(known_units)
-    return re.compile(rf"^([\d\/\.,]+(?:\s*(?:{units_pattern}))?)\s+(.+)$")
+
+    # Pattern explanation:
+    # (?:\d*[½¼¾⅓⅔⅕⅖⅗⅘⅙⅚⅐⅑⅛⅜⅝⅞]|[\d\/\.,]+) matches either:
+    #   - optional digit(s) + fraction character (e.g., "½", "1½", "2¼")
+    #   - regular number with optional decimal/comma (e.g., "500", "2.5", "1,5")
+    # (?:\s*(?:{units_pattern}))? matches optional unit preceded by optional whitespace
+    return re.compile(
+        rf"^((?:\d*[½¼¾⅓⅔⅕⅖⅗⅘⅙⅚⅐⅑⅛⅜⅝⅞]|[\d\/\.,]+)(?:\s*(?:{units_pattern}))?)\s+(.+)$"
+    )
 
 
 def _parse_ingredient_line(line: str, pattern) -> tuple[str | None, str]:
@@ -1217,7 +1236,6 @@ def _remove_newly_marked_items(
         modified_items (list): list to append modified items to
         person_count (Optional[int]): person count for quantity adjustment
     """
-
     # Remove newly marked items from shopping list
     for item_name in newly_removed:
         # Find the template item to get its quantity
