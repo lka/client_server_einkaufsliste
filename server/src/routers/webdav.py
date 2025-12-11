@@ -161,7 +161,7 @@ def _read_deleted_recipes(zip_file: zipfile.ZipFile, errors: list) -> set:
             status_content = zip_file.read("status.json")
             status_data = json.loads(status_content)
             deleted_recipes = status_data.get("deletedRecipes", [])
-            deleted_recipe_ids = set(deleted_recipes)
+            deleted_recipe_ids = set(deleted_recipes.split(";"))
         except Exception as e:
             errors.append(f"Failed to read status.json: {str(e)}")
     return deleted_recipe_ids
@@ -310,6 +310,13 @@ def import_recipes_from_webdav(
 
                 # Read deleted recipes from status.json
                 deleted_recipe_ids = _read_deleted_recipes(zip_file, errors)
+                for drid in deleted_recipe_ids:
+                    deleted_count = _skip_deleted_recipes(
+                        str(drid),
+                        deleted_recipe_ids,
+                        session,
+                        deleted_count,
+                    )
 
                 # Read categories and tags for enrichment (future use)
                 _categories_content, _tags_content = _read_categories_and_tags(
@@ -335,6 +342,11 @@ def import_recipes_from_webdav(
 
                                 # Skip recipes that are in deletedRecipes
                                 if str(recipe_id) in deleted_recipe_ids:
+                                    print(
+                                        "Skipping deleted recipe:",
+                                        recipe_name,
+                                        recipe_id,
+                                    )
                                     deleted_count = _skip_deleted_recipes(
                                         str(recipe_id),
                                         deleted_recipe_ids,
@@ -357,6 +369,13 @@ def import_recipes_from_webdav(
                                     existing.category = category
                                     existing.tags = json.dumps(recipe_tags)
                                     existing.imported_at = datetime.utcnow().isoformat()
+                                    if recipe_name == "Asia-Fondue":
+                                        print(
+                                            "Updating existing recipe:",
+                                            recipe_name,
+                                            recipe_id,
+                                            existing.imported_at,
+                                        )
                                     session.add(existing)
                                 else:
                                     # Create new recipe
@@ -368,6 +387,13 @@ def import_recipes_from_webdav(
                                         tags=json.dumps(recipe_tags),
                                         imported_at=datetime.utcnow().isoformat(),
                                     )
+                                    if recipe_name == "Asia-Fondue":
+                                        print(
+                                            "Creating existing recipe:",
+                                            recipe_name,
+                                            recipe_id,
+                                            existing.imported_at,
+                                        )
                                     session.add(new_recipe)
 
                                 imported_count += 1
