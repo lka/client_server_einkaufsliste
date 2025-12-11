@@ -49,6 +49,12 @@ export function attachNavigationHandlers(): void {
     manageTemplatesBtn.addEventListener('click', () => navigateTo('/templates'));
   }
 
+  // Manage units button
+  const manageUnitsBtn = document.getElementById('manageUnitsBtn');
+  if (manageUnitsBtn) {
+    manageUnitsBtn.addEventListener('click', () => navigateTo('/units'));
+  }
+
   // Manage users button
   const manageUsersBtn = document.getElementById('manageUsersBtn');
   if (manageUsersBtn) {

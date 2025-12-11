@@ -25,6 +25,7 @@ from .routers import (
     config,
     webdav,
     recipes,
+    units,
 )
 from .routers.stores import departments_router
 from .version import get_version
@@ -106,6 +107,7 @@ app.include_router(weekplan.router)
 app.include_router(config.router)
 app.include_router(webdav.router)
 app.include_router(recipes.router)
+app.include_router(units.router)
 app.include_router(pages.router)
 
 

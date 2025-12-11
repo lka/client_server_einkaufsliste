@@ -15,6 +15,7 @@ from ..models import (
     Product,
     Item,
     Recipe,
+    Unit,
 )
 from ..user_models import User
 from ..db import get_session
@@ -385,39 +386,17 @@ def _add_template_items_to_shopping_list(
     return modified_items
 
 
-def _get_known_units() -> list[str]:
-    """Return list of known measurement units for ingredient parsing."""
-    return [
-        "g",
-        "kg",
-        "ml",
-        "l",
-        "L",
-        "EL",
-        "El",
-        "TL",
-        "Tl",
-        "Prise",
-        "Prisen",
-        "Stück",
-        "Stk",
-        "Stk.",
-        "Bund",
-        "Becher",
-        "Dose",
-        "Dosen",
-        "Pck",
-        "Päckchen",
-        "Tasse",
-        "Tassen",
-        "Stiel",
-        "Stiele",
-        "Zweig",
-        "Zweige",
-        "rote",
-        "grüne",
-        "gelbe",
-    ]
+def _get_known_units(session) -> list[str]:
+    """Return list of known measurement units for ingredient parsing from database.
+
+    Args:
+        session: Database session
+
+    Returns:
+        List of unit names ordered by sort_order
+    """
+    units = session.exec(select(Unit).order_by(Unit.sort_order)).all()
+    return [unit.name for unit in units]
 
 
 @router.get("/known-units", response_model=List[str])
@@ -436,7 +415,7 @@ def get_known_units(current_user: str = Depends(get_current_user)):
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
-        return _get_known_units()
+        return _get_known_units(session)
 
 
 def _parse_recipe_data(recipe: Recipe) -> tuple[str, int, list[str]]:
@@ -471,15 +450,18 @@ def _parse_recipe_data(recipe: Recipe) -> tuple[str, int, list[str]]:
     return ingredients_text, original_quantity, ingredient_lines
 
 
-def _create_ingredient_pattern():
+def _create_ingredient_pattern(session):
     """Create regex pattern for parsing ingredients with known units.
+
+    Args:
+        session: Database session
 
     Returns:
         Compiled regex pattern
     """
     import re
 
-    known_units = _get_known_units()
+    known_units = _get_known_units(session)
     units_pattern = "|".join(known_units)
     return re.compile(rf"^([\d\/\.,]+(?:\s*(?:{units_pattern}))?)\s+(.+)$")
 
@@ -561,7 +543,7 @@ def _add_recipe_items_to_shopping_list(
     person_count = deltas.person_count if deltas else None
 
     # Create ingredient pattern
-    pattern = _create_ingredient_pattern()
+    pattern = _create_ingredient_pattern(session)
 
     # Process each ingredient
     for line in ingredient_lines:
@@ -724,7 +706,7 @@ def _remove_recipe_items_from_shopping_list(
     person_count = deltas.person_count if deltas else None
 
     # Create ingredient pattern
-    pattern = _create_ingredient_pattern()
+    pattern = _create_ingredient_pattern(session)
 
     # Process each ingredient
     for line in ingredient_lines:
@@ -1392,7 +1374,7 @@ def _handle_recipe_person_count_change(
     _, original_quantity, ingredient_lines = _parse_recipe_data(recipe)
 
     # Create ingredient pattern
-    pattern = _create_ingredient_pattern()
+    pattern = _create_ingredient_pattern(session)
 
     # Remove items with old person_count
     for line in ingredient_lines:
@@ -1485,7 +1467,7 @@ def _remove_newly_marked_recipe_items(
     _, original_quantity, ingredient_lines = _parse_recipe_data(recipe)
 
     # Create ingredient pattern
-    pattern = _create_ingredient_pattern()
+    pattern = _create_ingredient_pattern(session)
 
     for line in ingredient_lines:
         quantity_str, name = _parse_ingredient_line(line, pattern)
@@ -1532,7 +1514,7 @@ def _add_back_unmarked_recipe_items(
     _, original_quantity, ingredient_lines = _parse_recipe_data(recipe)
 
     # Create ingredient pattern
-    pattern = _create_ingredient_pattern()
+    pattern = _create_ingredient_pattern(session)
 
     for line in ingredient_lines:
         quantity_str, name = _parse_ingredient_line(line, pattern)
