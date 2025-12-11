@@ -235,8 +235,14 @@ import { fetchItems, Store, Item } from './data/api/index.js';
 - **Improved Navigation**: Clear file structure makes code easy to find
 - **No Breaking Changes**: Full backward compatibility maintained
 
-#### webdav-admin.ts (ERWEITERT)
-- **Responsibility**: WebDAV-Einstellungen mit Rezept-Import-Funktion
+#### webdav-admin.ts ✨ REFACTORED (ERWEITERT)
+- **Status**: ✨ **REFACTORED** - Reduced from 465 lines to 42 lines (-91%)
+- **Responsibility**: WebDAV-Einstellungen mit Rezept-Import-Funktion orchestrator
+- **Modular Architecture** (`src/ui/webdav-admin/`):
+  - **modals.ts**: All modal dialogs (create, edit, delete, import)
+  - **form.ts**: Form rendering and WebDAV settings display
+  - **event-handlers.ts**: Event handlers for all CRUD operations
+  - **renderer.ts**: WebDAV settings list rendering
 - **Rezept-Import Features**:
   - **Import-Button**: "📥 Rezepte importieren" Button pro WebDAV-Konfiguration
     - Nur aktiv wenn WebDAV-Einstellung enabled ist
@@ -300,8 +306,19 @@ import { fetchItems, Store, Item } from './data/api/index.js';
   - All items built in memory before single DOM insertion
   - Significant performance gain for large lists (100+ items)
 
-#### websocket.ts
-- **Responsibility**: Real-time WebSocket connection management
+#### websocket.ts ✨ REFACTORED
+- **Status**: ✨ **REFACTORED** - Reduced from 401 lines to 43 lines (-90%)
+- **Responsibility**: Real-time WebSocket connection management orchestrator
+- **Modular Architecture** (`src/data/websocket/`):
+  - **types.ts**: TypeScript interfaces and types
+  - **config.ts**: Configuration constants
+  - **state.ts**: Internal state management
+  - **event-system.ts**: Observer pattern implementation
+  - **message-handler.ts**: Message processing logic
+  - **heartbeat.ts**: Ping/pong heartbeat
+  - **connection.ts**: Connection and reconnection logic
+  - **subscriptions.ts**: Event subscription handlers
+  - **broadcasts.ts**: Message broadcasting functions
 - **Functions**:
   - `connect()`: Establish WebSocket connection with JWT authentication
   - `disconnect()`: Close connection gracefully
@@ -392,8 +409,15 @@ import { fetchItems, Store, Item } from './data/api/index.js';
   - Centralized user management
   - Loading state tracking
 
-#### store-state.ts
+#### store-state.ts ✨ REFACTORED
+- **Status**: ✨ **REFACTORED** - Reduced from 662 lines to 181 lines (-73%)
 - **Responsibility**: Manage stores, departments, and products state with full CRUD operations
+- **Modular Architecture** (`src/state/store-state/`):
+  - **types.ts**: TypeScript interfaces and state types
+  - **store-operations.ts**: Store CRUD operations
+  - **department-operations.ts**: Department CRUD operations
+  - **product-operations.ts**: Product CRUD operations
+  - **selection.ts**: Store and department selection logic
 - **State Properties**:
   - `stores: Store[]`: All available stores
   - `selectedStore: Store | null`: Currently selected store
@@ -598,7 +622,16 @@ import { fetchItems, Store, Item } from './data/api/index.js';
   removeOverlay();
   ```
 
-##### dropdown.ts
+##### dropdown.ts ✨ REFACTORED
+- **Status**: ✨ **REFACTORED** - Reduced from 490 lines to 61 lines (-88%)
+- **Responsibility**: Dropdown component orchestrator
+- **Modular Architecture** (`src/ui/components/dropdown/`):
+  - **types.ts**: TypeScript interfaces (DropdownOption, DropdownOptions, DropdownInstance, SearchableDropdownState)
+  - **native-dropdown.ts**: Native HTML select dropdown implementation
+  - **searchable-dropdown.ts**: Searchable dropdown with custom UI
+  - **ui-builder.ts**: UI element builders (trigger button, panel)
+  - **option-renderer.ts**: Options list rendering logic
+  - **styles.ts**: CSS style injection
 - **Exports**:
   - `createDropdown(options)`: Create dropdown/select component
   - `injectDropdownStyles()`: Inject dropdown CSS
@@ -884,8 +917,15 @@ import { fetchItems, Store, Item } from './data/api/index.js';
   - `./components/button.js`: createButton
   - `./components/toast.js`: showError, showSuccess
 
-#### user-menu.ts
-- **Responsibility**: User menu feature UI
+#### user-menu.ts ✨ REFACTORED
+- **Status**: ✨ **REFACTORED** - Reduced from 387 lines to 60 lines (-84%)
+- **Responsibility**: User menu feature UI orchestrator
+- **Modular Architecture** (`src/ui/user-menu/`):
+  - **navigation-handlers.ts**: Navigation and page routing
+  - **websocket-handlers.ts**: WebSocket status display
+  - **menu-toggle-handlers.ts**: Menu open/close handlers
+  - **auth-handlers.ts**: Logout functionality
+  - **utils.ts**: Shared utility functions
 - **Functions**:
   - `initUserMenu()`: Initialize menu event handlers
   - `updateUserDisplay()`: Show username in header
@@ -901,6 +941,7 @@ import { fetchItems, Store, Item } from './data/api/index.js';
   - `../state/user-state.js`: User state management
   - `../state/shopping-list-state.js`: Clear items on logout
   - `../data/auth.js`: logout (token management)
+  - `./user-menu/*.js`: Modular handlers
 
 #### product-admin.ts
 - **Responsibility**: Product administration UI for creating, editing, and deleting products
@@ -936,8 +977,15 @@ import { fetchItems, Store, Item } from './data/api/index.js';
   - `../data/api.js`: Product CRUD operations
   - `./components/modal.js`, `./components/button.js`, `./components/toast.js`: UI components
 
-#### store-admin.ts
-- **Responsibility**: Store and department administration UI
+#### store-admin.ts ✨ REFACTORED
+- **Status**: ✨ **REFACTORED** - Reduced from 465 lines to 114 lines (-75%)
+- **Responsibility**: Store and department administration UI orchestrator
+- **Modular Architecture** (`src/ui/store-admin/`):
+  - **modals.ts**: Delete confirmation modals
+  - **renderer.ts**: UI rendering logic
+  - **store-handlers.ts**: Store CRUD event handlers
+  - **department-handlers.ts**: Department CRUD and reorder handlers
+  - **utils.ts**: Shared utility functions
 - **Component Integration**:
   - **Modal Component**: Delete confirmations for stores and departments
   - **Button Component**: Danger/cancel buttons with consistent styling
@@ -952,6 +1000,7 @@ import { fetchItems, Store, Item } from './data/api/index.js';
 - **Dependencies**:
   - `../data/api.js`: Store and department CRUD operations
   - `./components/modal.js`, `./components/button.js`, `./components/toast.js`: UI components
+  - `./store-admin/*.js`: Modular handlers and renderers
 
 #### user-admin.ts
 - **Responsibility**: User administration UI for managing user accounts
@@ -1140,14 +1189,22 @@ import { fetchItems, Store, Item } from './data/api/index.js';
   - Loads existing deltas from entry
   - Validates items against template list
 
-##### weekplan/recipe-modal.ts
-- **Lines**: 270 | **McCabe**: 53
-- **Responsibility**: Recipe details modal with ingredient management
+##### weekplan/recipe-modal.ts ✨ REFACTORED
+- **Status**: ✨ **REFACTORED** - Reduced from 363 lines to 99 lines (-73%)
+- **Lines**: 99 | **McCabe**: ~20 (reduced from 53)
+- **Responsibility**: Recipe details modal orchestrator with ingredient management
+- **Modular Architecture** (`src/ui/weekplan/recipe-modal/`):
+  - **types.ts**: RecipeModalState interface
+  - **recipe-loader.ts**: Recipe fetching by ID and name
+  - **ingredient-renderer.ts**: Ingredient list rendering with checkboxes
+  - **delta-manager.ts**: Delta state initialization and save logic
+  - **modal-builder.ts**: Modal content construction
+  - **save-handler.ts**: Save functionality for recipe deltas
+  - **utils.ts**: Utility functions (entry lookup, quantity parsing)
 - **Functions**:
   - `showRecipeDetailsById(recipeId, entryId)`: Show recipe by ID
   - `showRecipeDetails(recipeName)`: Show recipe by name (search first)
   - `displayRecipeModal(recipeName, recipeData, entryId?)`: Display modal
-  - `findEntryById(entryId)`: Find entry in weekplan state
 - **Features**:
   - **Rezept-Parsing**: Parses ingredients with quantities and units
   - **Personenanzahl-Anpassung**: Live-scaling for portion count
@@ -2186,24 +2243,35 @@ According to McCabe Complexity thresholds:
 - **21-50**: Complex, high risk
 - **51+**: Very complex, very high risk
 
-**Current distribution**:
-- Files with very high complexity (>50): 12 (stable)
-- Files with high complexity (21-50): 29 ⬆️ (was 23, includes modular files)
+**Current distribution** (per [complexity-report.md](complexity-report.md)):
+- **Total files**: 140
+- **Average McCabe complexity**: 15.91 (down from previous highs)
+- **Files with very high complexity (>50)**: 0 ✅ (down from 12+ before refactorings!)
+- **Files with high complexity (21-50)**: 45
+- **Files with moderate/low complexity**: 95 (68% of all files)
+- **Note**: Refactorings successfully eliminated all files with McCabe >50, significantly improving maintainability
 
-### Top 3 Most Complex Files
+### Top 3 Most Complex Files (current)
 
-1. **[src/ui/shopping-list-ui.ts](src/ui/shopping-list-ui.ts)**: McCabe 199, Cyclomatic 134, 1037 lines
+1. **[src/data/api/stores-api.ts](src/data/api/stores-api.ts)**: McCabe 50, 239 lines
+   - Store and department API operations
+
+2. **[src/ui/shopping-list-ui.ts](src/ui/shopping-list-ui.ts)**: McCabe 49, 247 lines
    - Shopping list feature with event handling, state management, and modal dialogs
 
-2. **[src/ui/template-admin.ts](src/ui/template-admin.ts)**: McCabe 95, Cyclomatic 73, 394 lines
-   - Template administration UI with CRUD operations
+3. **[src/ui/user-admin.ts](src/ui/user-admin.ts)**: McCabe 48, 212 lines
+   - User administration UI with CRUD operations
 
-3. **[src/ui/product-admin.ts](src/ui/product-admin.ts)**: McCabe 94, Cyclomatic 63, 486 lines
-   - Product administration UI with CRUD operations
-
-**Recent Refactoring Success**:
-- ✨ **api.ts** refactored from McCabe 317 → 0 (now just re-exports, 13 focused modules)
-- ✨ **weekplan.ts** refactored from McCabe 251 → 35 (now 228 lines, 13 focused modules)
+**Recent Refactoring Success** (9 files refactored):
+- ✨ **api.ts**: McCabe 317 → 0 (re-exports, 13 modules)
+- ✨ **weekplan.ts**: McCabe 251 → 35 (228 lines, 13 modules)
+- ✨ **store-admin.ts**: 465 → 114 lines (-75%, 5 modules)
+- ✨ **user-menu.ts**: 387 → 60 lines (-84%, 5 modules)
+- ✨ **websocket.ts**: 401 → 43 lines (-90%, 9 modules)
+- ✨ **store-state.ts**: 662 → 181 lines (-73%, 5 modules)
+- ✨ **webdav-admin.ts**: 465 → 42 lines (-91%, 4 modules)
+- ✨ **recipe-modal.ts**: 363 → 99 lines (-73%, 7 modules)
+- ✨ **dropdown.ts**: 490 → 61 lines (-88%, 6 modules)
 
 ### Refactoring Success Stories
 
@@ -2241,16 +2309,32 @@ According to McCabe Complexity thresholds:
 
 ### Refactoring Opportunities
 
-Remaining refactoring candidates (by priority):
-- **shopping-list-ui.ts** (McCabe 199): Extract modal dialogs and event handlers into separate modules
-- **template-admin.ts** (McCabe 95): Consider splitting form management from rendering logic
-- **product-admin.ts** (McCabe 94): Extract filter logic and CRUD operations
-- Files with McCabe >50: Continue to monitor for complexity growth
-- Functions with cyclomatic complexity >10 should be candidates for simplification
+**Current Status**: ✅ **All files now have McCabe ≤50!** Great achievement through systematic refactoring.
 
-**Completed**:
+Remaining refactoring candidates (by priority, based on current complexity-report.md):
+- **stores-api.ts** (McCabe 50, 239 lines): Right at threshold, could benefit from splitting store and department operations
+- **shopping-list-ui.ts** (McCabe 49, 247 lines): Extract modal dialogs and event handlers into separate modules
+- **user-admin.ts** (McCabe 48, 212 lines): Consider splitting form management from rendering logic
+- **items-api.ts** (McCabe 43, 198 lines): Split into smaller focused modules if it grows
+- **product-admin** modules (already refactored but event-handlers.ts has McCabe 43): Monitor for further splitting if needed
+- **template-admin** modules (already refactored but render-templates.ts has McCabe 41): Monitor for further splitting if needed
+
+**Completed Refactorings**:
 - ~~**api.ts** (McCabe 317)~~ ✅ Refactored into 13 modules
 - ~~**weekplan.ts** (McCabe 251)~~ ✅ Refactored into 13 modules
+- ~~**store-admin.ts** (465 lines)~~ ✅ Refactored into 5 modules → 114 lines (-75%)
+- ~~**user-menu.ts** (387 lines)~~ ✅ Refactored into 5 modules → 60 lines (-84%)
+- ~~**websocket.ts** (401 lines)~~ ✅ Refactored into 9 modules → 43 lines (-90%)
+- ~~**store-state.ts** (662 lines)~~ ✅ Refactored into 5 modules → 181 lines (-73%)
+- ~~**webdav-admin.ts** (465 lines)~~ ✅ Refactored into 4 modules → 42 lines (-91%)
+- ~~**recipe-modal.ts** (363 lines)~~ ✅ Refactored into 7 modules → 99 lines (-73%)
+- ~~**dropdown.ts** (490 lines)~~ ✅ Refactored into 6 modules → 61 lines (-88%)
+
+**Refactoring Summary** (7 recent refactorings):
+- **Total reduction**: 3,233 → 600 lines (-81%)
+- **Pattern**: Extract modular responsibilities into subdirectories
+- **Maintained**: Full backward compatibility and type safety
+- **Result**: Improved maintainability, reduced complexity, easier testing
 
 ### Maintaining Code Quality
 
