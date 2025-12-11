@@ -2,7 +2,6 @@
 
 | File | Lines | Functions | Complexity | Cyclomatic | McCabe |
 |------|-------|-----------|------------|------------|--------|
-| src\ui\components\dropdown.ts | 413 | 18 | 39 | 38 | 56 |
 | src\data\api\stores-api.ts | 239 | 8 | 35 | 42 | 50 |
 | src\ui\shopping-list-ui.ts | 247 | 20 | 41 | 29 | 49 |
 | src\ui\user-admin.ts | 212 | 15 | 31 | 33 | 48 |
@@ -29,6 +28,7 @@
 | src\ui\template-admin\attach-template-admin-listeners.ts | 103 | 8 | 21 | 23 | 31 |
 | src\ui\components\connection-status.ts | 250 | 9 | 19 | 21 | 30 |
 | src\ui\components\tabs.ts | 211 | 2 | 15 | 28 | 30 |
+| src\ui\components\dropdown\searchable-dropdown.ts | 116 | 12 | 20 | 17 | 29 |
 | src\ui\weekplan\entry-input.ts | 169 | 9 | 18 | 20 | 29 |
 | src\ui\weekplan\modal-shared.ts | 257 | 15 | 23 | 13 | 28 |
 | src\data\api\webdav-api.ts | 150 | 5 | 20 | 22 | 27 |
@@ -68,6 +68,7 @@
 | src\data\websocket\state.ts | 84 | 12 | 12 | 1 | 13 |
 | src\data\websocket\subscriptions.ts | 44 | 13 | 13 | 0 | 13 |
 | src\script.ts | 77 | 3 | 9 | 10 | 13 |
+| src\ui\components\dropdown\native-dropdown.ts | 81 | 6 | 13 | 7 | 13 |
 | src\ui\print-utils\print-debug.ts | 97 | 5 | 9 | 8 | 13 |
 | src\ui\print-utils\print-on-android.ts | 169 | 4 | 8 | 9 | 13 |
 | src\ui\product-admin\init.ts | 74 | 4 | 13 | 9 | 13 |
@@ -89,6 +90,7 @@
 | src\ui\store-admin\store-handlers.ts | 47 | 3 | 5 | 6 | 9 |
 | src\ui\webdav-admin\form.ts | 83 | 3 | 5 | 6 | 9 |
 | src\ui\webdav-admin\renderer.ts | 55 | 2 | 4 | 7 | 9 |
+| src\ui\components\dropdown\types.ts | 31 | 0 | 0 | 8 | 8 |
 | src\ui\user-menu\auth-handlers.ts | 37 | 3 | 7 | 5 | 8 |
 | src\ui\weekplan\recipe-modal\utils.ts | 30 | 2 | 7 | 6 | 8 |
 | src\data\api\recipes-api.ts | 53 | 2 | 4 | 5 | 7 |
@@ -103,9 +105,11 @@
 | src\data\websocket\broadcasts.ts | 37 | 5 | 5 | 0 | 5 |
 | src\script-weekplan.ts | 29 | 1 | 4 | 4 | 5 |
 | src\state\user-state.ts | 98 | 1 | 2 | 4 | 5 |
+| src\ui\components\dropdown\ui-builder.ts | 49 | 2 | 3 | 3 | 5 |
 | src\ui\weekplan\recipe-modal\delta-manager.ts | 36 | 2 | 2 | 3 | 5 |
 | src\ui\weekplan\recipe-modal\recipe-loader.ts | 25 | 2 | 3 | 3 | 5 |
 | src\ui\weekplan\recipe-modal\save-handler.ts | 42 | 3 | 4 | 2 | 5 |
+| src\ui\components\dropdown\option-renderer.ts | 34 | 2 | 4 | 2 | 4 |
 | src\ui\webdav-admin.ts | 35 | 3 | 3 | 1 | 4 |
 | src\script-backup.ts | 26 | 1 | 3 | 2 | 3 |
 | src\script-products.ts | 26 | 1 | 3 | 2 | 3 |
@@ -116,6 +120,8 @@
 | src\ui\print-utils\print-preview-content.ts | 23 | 2 | 3 | 1 | 3 |
 | src\data\websocket\types.ts | 18 | 0 | 0 | 2 | 2 |
 | src\ui\components\datepicker\inject-date-picker-styles.ts | 242 | 1 | 2 | 1 | 2 |
+| src\ui\components\dropdown\styles.ts | 148 | 1 | 2 | 1 | 2 |
+| src\ui\components\dropdown.ts | 55 | 1 | 2 | 1 | 2 |
 | src\ui\components\index.ts | 112 | 2 | 2 | 0 | 2 |
 | src\ui\shopping-list\print-dialog.ts | 213 | 2 | 2 | 0 | 2 |
 | src\ui\weekplan\index.ts | 63 | 2 | 2 | 0 | 2 |
@@ -139,12 +145,12 @@
 
 ## Summary
 
-- Total files: 134
-- Total lines: 14253
-- Total functions: 708
-- Average complexity: 11.30
-- Average cyclomatic complexity: 11.29
-- Average McCabe complexity: 16.57
+- Total files: 140
+- Total lines: 14354
+- Total functions: 714
+- Average complexity: 10.85
+- Average cyclomatic complexity: 10.81
+- Average McCabe complexity: 15.91
 
 ## Complexity Ratings
 
@@ -154,5 +160,5 @@ McCabe Complexity Thresholds:
 - 21-50: Complex, high risk
 - 51+: Very complex, very high risk
 
-Files with very high complexity (>50): 1
-Files with high complexity (21-50): 44
+Files with very high complexity (>50): 0
+Files with high complexity (21-50): 45
