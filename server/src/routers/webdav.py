@@ -145,6 +145,110 @@ def delete_webdav_settings(
         return None
 
 
+def _read_deleted_recipes(zip_file: zipfile.ZipFile, errors: list) -> set:
+    """Read deleted recipes from status.json (Helper Function).
+
+    Args:
+        zip_file (zipfile.ZipFile): Opened ZIP file
+        errors (list): List to append error messages
+
+    Returns:
+        set: Set of deleted recipe IDs from status.json
+    """
+    deleted_recipe_ids = set()
+    if "status.json" in zip_file.namelist():
+        try:
+            status_content = zip_file.read("status.json")
+            status_data = json.loads(status_content)
+            deleted_recipes = status_data.get("deletedRecipes", [])
+            deleted_recipe_ids = set(deleted_recipes)
+        except Exception as e:
+            errors.append(f"Failed to read status.json: {str(e)}")
+    return deleted_recipe_ids
+
+
+# Read categories and tags for enrichment (future use)
+def _read_categories_and_tags(zip_file: zipfile.ZipFile, errors: list) -> tuple:
+    """Read categories and tags from ZIP file (Helper Function).
+
+    Args:
+        zip_file (zipfile.ZipFile): Opened ZIP file
+        errors (list): List to append error messages
+    Returns:
+        tuple: (categories, tags) as lists
+    """
+    categories = []
+    tags = []
+
+    if "categories.json" in zip_file.namelist():
+        try:
+            categories_content = zip_file.read("categories.json")
+            categories = json.loads(categories_content)
+        except Exception as e:
+            errors.append(f"Failed to read categories: {str(e)}")
+
+    if "tags.json" in zip_file.namelist():
+        try:
+            tags_content = zip_file.read("tags.json")
+            tags = json.loads(tags_content)
+        except Exception as e:
+            errors.append(f"Failed to read tags: {str(e)}")
+
+    return categories, tags
+
+
+# Skip recipes that are in deletedRecipes
+def _skip_deleted_recipes(
+    recipe_id: str, deleted_recipe_ids: set, session, deleted_count: int
+) -> int:
+    """Skip and delete recipes that are in deletedRecipes (Helper Function).
+
+    Args:
+        recipe_id (str): Recipe external ID
+        deleted_recipe_ids (set): Set of deleted recipe IDs
+        session: Database session
+        deleted_count (int): Current count of deleted recipes
+    Returns:
+        int: Updated count of deleted recipes
+    """
+    if recipe_id in deleted_recipe_ids:
+        existing = session.exec(
+            select(Recipe).where(Recipe.external_id == recipe_id)
+        ).first()
+        if existing:
+            session.delete(existing)
+            deleted_count += 1
+    return deleted_count
+
+
+# Extract recipe information
+def _extract_recipe_info(recipe_data: dict) -> tuple:
+    """Extract recipe information from recipe data (Helper Function).
+
+    Args:
+        recipe_data (dict): Recipe data dictionary
+    Returns:
+        tuple: (recipe_id, recipe_name, category, recipe_tags)
+    """
+    # Use uuid or id as external identifier
+    recipe_id = recipe_data.get("uuid", recipe_data.get("id", ""))
+
+    # Use title or name as recipe name
+    recipe_name = recipe_data.get("title", recipe_data.get("name", "Unnamed Recipe"))
+
+    # Extract category (can be string or array)
+    category_data = recipe_data.get("categories", recipe_data.get("category", ""))
+    if isinstance(category_data, list) and len(category_data) > 0:
+        category = category_data[0] if isinstance(category_data[0], str) else ""
+    else:
+        category = category_data if isinstance(category_data, str) else ""
+
+    # Extract tags
+    recipe_tags = recipe_data.get("tags", [])
+
+    return recipe_id, recipe_name, category, recipe_tags
+
+
 @router.post("/{settings_id}/import", status_code=200)
 def import_recipes_from_webdav(
     settings_id: int, current_user: str = Depends(get_current_user)
@@ -205,30 +309,12 @@ def import_recipes_from_webdav(
                 ]
 
                 # Read deleted recipes from status.json
-                deleted_recipe_ids = set()
-                if "status.json" in zip_file.namelist():
-                    try:
-                        status_content = zip_file.read("status.json")
-                        status_data = json.loads(status_content)
-                        deleted_recipes = status_data.get("deletedRecipes", [])
-                        deleted_recipe_ids = set(deleted_recipes)
-                    except Exception as e:
-                        errors.append(f"Failed to read status.json: {str(e)}")
+                deleted_recipe_ids = _read_deleted_recipes(zip_file, errors)
 
                 # Read categories and tags for enrichment (future use)
-                if "categories.json" in zip_file.namelist():
-                    try:
-                        categories_content = zip_file.read("categories.json")
-                        json.loads(categories_content)  # noqa: F841
-                    except Exception as e:
-                        errors.append(f"Failed to read categories: {str(e)}")
-
-                if "tags.json" in zip_file.namelist():
-                    try:
-                        tags_content = zip_file.read("tags.json")
-                        json.loads(tags_content)  # noqa: F841
-                    except Exception as e:
-                        errors.append(f"Failed to read tags: {str(e)}")
+                _categories_content, _tags_content = _read_categories_and_tags(
+                    zip_file, errors
+                )
 
                 # Import recipes from all recipe files
                 for recipe_file in recipe_files:
@@ -243,49 +329,19 @@ def import_recipes_from_webdav(
                         for recipe_data in recipes_list:
                             try:
                                 # Extract recipe information
-                                # Use uuid or id as external identifier
-                                recipe_id = recipe_data.get(
-                                    "uuid", recipe_data.get("id", "")
+                                recipe_id, recipe_name, category, recipe_tags = (
+                                    _extract_recipe_info(recipe_data)
                                 )
 
                                 # Skip recipes that are in deletedRecipes
                                 if str(recipe_id) in deleted_recipe_ids:
-                                    # Check if recipe exists in database and delete it
-                                    existing = session.exec(
-                                        select(Recipe).where(
-                                            Recipe.external_id == str(recipe_id)
-                                        )
-                                    ).first()
-                                    if existing:
-                                        session.delete(existing)
-                                        deleted_count += 1
+                                    deleted_count = _skip_deleted_recipes(
+                                        str(recipe_id),
+                                        deleted_recipe_ids,
+                                        session,
+                                        deleted_count,
+                                    )
                                     continue
-
-                                # Use title or name as recipe name
-                                recipe_name = recipe_data.get(
-                                    "title", recipe_data.get("name", "Unnamed Recipe")
-                                )
-                                # Extract category (can be string or array)
-                                category_data = recipe_data.get(
-                                    "categories", recipe_data.get("category", "")
-                                )
-                                if (
-                                    isinstance(category_data, list)
-                                    and len(category_data) > 0
-                                ):
-                                    category = (
-                                        category_data[0]
-                                        if isinstance(category_data[0], str)
-                                        else ""
-                                    )
-                                else:
-                                    category = (
-                                        category_data
-                                        if isinstance(category_data, str)
-                                        else ""
-                                    )
-                                # Extract tags
-                                recipe_tags = recipe_data.get("tags", [])
 
                                 # Check if recipe already exists
                                 existing = session.exec(

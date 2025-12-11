@@ -3,7 +3,7 @@
 This module provides endpoints for backing up and restoring the entire database:
 - JSON-based backup format that is structure-independent
 - Full export of all data (users, stores, departments, products, items, templates,
-                           weekplan entries)
+                           weekplan entries, units)
 - Restore with validation and error handling
 - Version information for compatibility checking
 """
@@ -25,6 +25,7 @@ from ..models import (
     ShoppingTemplate,
     TemplateItem,
     WeekplanEntry,
+    Unit,
 )
 from ..auth import get_current_user
 from ..version import get_version
@@ -109,6 +110,7 @@ class BackupData(BaseModel):
     templates: list[dict[str, Any]]
     template_items: list[dict[str, Any]]
     weekplan_entries: list[dict[str, Any]]
+    units: list[dict[str, Any]]
 
 
 class RestoreData(BaseModel):
@@ -124,6 +126,7 @@ class RestoreData(BaseModel):
     templates: list[dict[str, Any]]
     template_items: list[dict[str, Any]]
     weekplan_entries: list[dict[str, Any]]
+    units: list[dict[str, Any]]
 
 
 @router.get("", response_model=BackupData)
@@ -150,6 +153,7 @@ def create_backup(
     templates = session.exec(select(ShoppingTemplate)).all()
     template_items = session.exec(select(TemplateItem)).all()
     weekplan_entries = session.exec(select(WeekplanEntry)).all()
+    units = session.exec(select(Unit)).all()
 
     # Convert to dictionaries (SQLModel handles this automatically)
     backup = BackupData(
@@ -163,6 +167,7 @@ def create_backup(
         templates=[template.model_dump() for template in templates],
         template_items=[item.model_dump() for item in template_items],
         weekplan_entries=[entry.model_dump() for entry in weekplan_entries],
+        units=[unit.model_dump() for unit in units],
     )
 
     return backup
@@ -194,6 +199,9 @@ def _clear_existing_data(session: Session):
 
     for user in session.exec(select(User)).all():
         session.delete(user)
+
+    for unit in session.exec(select(Unit)).all():
+        session.delete(unit)
 
 
 def _restore_entity_list(
@@ -284,6 +292,10 @@ def restore_backup(
         # 8. Weekplan Entries (no dependencies)
         _restore_entity_list(session, WeekplanEntry, restore_data.weekplan_entries)
         restored_counts["weekplan_entries"] = len(restore_data.weekplan_entries)
+
+        # 9. Units (no dependencies)
+        _restore_entity_list(session, Unit, restore_data.units)
+        restored_counts["units"] = len(restore_data.units)
 
         return JSONResponse(
             content={
