@@ -1,6 +1,6 @@
 {
   "name": "einkaufsliste-client",
-  "version": "3.2.14",
+  "version": "4.0.0",
   "description": "Shopping list client in TypeScript",
   "scripts": {
     "build": "node node_modules/typescript/bin/tsc",
