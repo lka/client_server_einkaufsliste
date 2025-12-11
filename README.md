@@ -155,7 +155,7 @@ Python FastAPI Server + TypeScript Client mit JWT-Authentifizierung.
     - **Kompakte Darstellung**: Datumsangaben aus Item-Liste entfernt (Datum ist im DatePicker ausgewählt)
   - **Datenbank-Backup & Restore**: Vollständige Datensicherung und Wiederherstellung
     - **JSON-basiertes Backup**: Strukturunabhängig, funktioniert über Software-Updates hinweg
-    - **Vollständige Datensicherung**: Alle Datenbank-Inhalte (Benutzer, Geschäfte, Produkte, Vorlagen mit Personenanzahl, Einkaufsliste, Wochenplan)
+    - **Vollständige Datensicherung**: Alle Datenbank-Inhalte (Benutzer, Geschäfte, Produkte, Vorlagen mit Personenanzahl, Einkaufsliste, Wochenplan, Einheiten)
     - **Einfacher Download**: Backup wird als JSON-Datei heruntergeladen
     - **Validierte Wiederherstellung**: Automatische Format-Validierung vor Restore
     - **Dedizierte Verwaltungsseite**: Unter `/backup` mit Information und Best Practices
@@ -305,7 +305,7 @@ Python FastAPI Server + TypeScript Client mit JWT-Authentifizierung.
       - Zusätzliche Items hinzufügen
   - **Automatische Einkaufslisten-Generierung**: Rezeptzutaten werden automatisch zur Einkaufsliste hinzugefügt
     - **Intelligente Zutatenerkennung**: Parst Mengenangaben und Einheiten aus Freitext-Zutaten
-    - **Bekannte Einheiten**: g, kg, ml, l, EL, TL, Prise, Stück, Bund, Becher, Dose, Päckchen, Tasse, Stiel, Zweig
+    - **Datenbank-gestützte Einheiten**: Verwendet konfigurierbare Einheiten aus der Datenbank (g, kg, ml, l, EL, TL, Prise, Stück, etc.)
     - **Regex-basiertes Parsing**: Erkennt Muster wie "500 g Mehl" oder "2 EL Öl"
     - **Personenanzahl-Skalierung**: Mengen werden automatisch angepasst (Fallback: 1 Person)
       - `neue_menge = original_menge × (gewünschte_personen / rezept_personen)`
@@ -398,6 +398,14 @@ Python FastAPI Server + TypeScript Client mit JWT-Authentifizierung.
   - **Tabs**: Tab-Navigation für organisierte Content-Bereiche
   - **Toast**: Nicht-blockierende Benachrichtigungen (success, error, warning, info)
   - **DatePicker**: Voll funktionsfähiger Kalender für Datumsauswahl mit deutscher Lokalisierung
+- ✅ **Einheiten-Verwaltung**: Dedizierte Admin-Seite für Maßeinheiten
+  - **CRUD-Operationen**: Erstellen, Bearbeiten und Löschen von Einheiten
+  - **Drag & Drop Sortierung**: Reihenfolge der Einheiten durch Ziehen ändern
+  - **↑↓ Buttons**: Alternative Sortierung mit Auf/Ab-Buttons
+  - **WebSocket-Synchronisation**: Änderungen werden live an alle verbundenen Clients übertragen
+  - **Backup-Integration**: Einheiten werden in Datenbank-Backups gesichert
+  - **29 vorkonfigurierte Einheiten**: g, kg, ml, l, EL, TL, Prise, Stück, Bund, Becher, Dose, Päckchen, Tasse, Stiel, Zweig, etc.
+  - Navigation über Benutzermenü: "📏 Einheiten verwalten"
 - ✅ **Vollständige Tests**: 509 Tests (64 Server + 445 Client) mit 85%+ Code-Abdeckung
 - ✅ **TypeScript Client**: Typsicherer Client mit vier-Schichten-Architektur
 - ✅ **FastAPI Server**: Moderne Python API mit SQLModel ORM
@@ -512,9 +520,9 @@ Das Benutzermenü (⋮) im Header der Anwendung ist hierarchisch organisiert:
 **⚙️ Verwaltung** (Administration)
 - **🏪 Geschäfte verwalten**: Geschäfte und Abteilungen erstellen, bearbeiten und sortieren
 - **📦 Produkte verwalten**: Produkte in Geschäften verwalten
-- **👥 Benutzer verwalten**: Benutzer freigeben und verwalten (Admin-Funktion)
 - **📋 Vorlagen**: Einkaufslisten-Vorlagen erstellen und bearbeiten
-- **🗓️ Wochenplan**: Wochenplan für Mahlzeiten verwalten
+- **📏 Einheiten**: Maßeinheiten für Zutaten verwalten (Sortierung, Hinzufügen, Löschen)
+- **👥 Benutzer verwalten**: Benutzer freigeben und verwalten (Admin-Funktion)
 
 **⚙️ Einstellungen** (Settings)
 - **🔌 WebSocket aktivieren**: Live-Synchronisation zwischen Geräten einschalten
@@ -583,6 +591,15 @@ Nach dem Login können Sie die Einkaufsliste verwenden:
 2. Wählen Sie **"📦 Produkte verwalten"**
 3. Wählen Sie ein Geschäft aus dem Dropdown
 4. Erstellen, bearbeiten oder löschen Sie Produkte
+
+**Einheiten verwalten:**
+1. Klicken Sie auf das Menü (⋮) im Header
+2. Wählen Sie **"📏 Einheiten"**
+3. **Reihenfolge ändern**: Nutzen Sie Drag & Drop oder die ↑↓ Buttons
+4. **Neue Einheit**: Geben Sie den Namen ein und klicken Sie auf "Hinzufügen"
+5. **Einheit bearbeiten**: Klicken Sie auf das Bearbeiten-Icon (✏️)
+6. **Einheit löschen**: Klicken Sie auf das Löschen-Icon (🗑️)
+7. Änderungen werden automatisch an alle verbundenen Clients übertragen (WebSocket)
 
 ### Vorlagen verwenden
 
