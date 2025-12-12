@@ -6,17 +6,14 @@ import { createProduct, updateProduct, deleteProduct } from '../../data/api.js';
 import { createButton } from '../components/button.js';
 import { Modal } from '../components/modal.js';
 import { showError, showSuccess } from '../components/toast.js';
-import { state, loadDepartments, loadProducts, applyFilter, getProductById, resetStateForStoreChange } from './state.js';
-import { updateProductListDisplay } from './rendering.js';
-
-// Global callback for re-rendering
-let globalRerenderCallback: (() => void) | null = null;
+import { productAdminState } from '../../state/product-admin-state.js';
 
 /**
- * Set the global rerender callback
+ * Set the global rerender callback (kept for backwards compatibility with init.ts)
  */
-export function setRerenderCallback(callback: () => void): void {
-  globalRerenderCallback = callback;
+export function setRerenderCallback(_callback: () => void): void {
+  // No longer needed - state subscriptions handle re-rendering automatically
+  // Kept for backwards compatibility
 }
 
 /**
@@ -27,41 +24,43 @@ export async function handleStoreChange(e: Event): Promise<void> {
   const storeId = select.value;
 
   if (!storeId) {
-    resetStateForStoreChange();
-    globalRerenderCallback?.();
+    productAdminState.resetStateForStoreChange();
+    // State change will trigger rerender via subscription
     return;
   }
 
-  state.selectedStoreId = parseInt(storeId, 10);
-  state.editingProductId = null;
-  state.filterQuery = '';
+  const storeIdNum = parseInt(storeId, 10);
+  productAdminState.setSelectedStoreId(storeIdNum);
+  productAdminState.setEditingProductId(null);
+  productAdminState.setFilterQuery('');
 
   await Promise.all([
-    loadDepartments(state.selectedStoreId),
-    loadProducts(state.selectedStoreId)
+    productAdminState.loadDepartments(storeIdNum),
+    productAdminState.loadProducts(storeIdNum)
   ]);
 
-  globalRerenderCallback?.();
+  // State change will trigger rerender via subscription
 }
+
+// Timeout for debouncing filter input
+let filterTimeout: number | null = null;
 
 /**
  * Handle filter input change (with debouncing)
  */
 export function handleFilterInput(e: Event): void {
   const input = e.target as HTMLInputElement;
-  state.filterQuery = input.value;
 
   // Clear previous timeout
-  if (state.filterTimeout !== null) {
-    window.clearTimeout(state.filterTimeout);
+  if (filterTimeout !== null) {
+    window.clearTimeout(filterTimeout);
   }
 
   // Set new timeout for debouncing (50ms for faster feedback)
-  state.filterTimeout = window.setTimeout(() => {
-    applyFilter();
-    updateProductListDisplay();
-    attachProductActionListeners();
-    state.filterTimeout = null;
+  filterTimeout = window.setTimeout(() => {
+    productAdminState.setFilterQuery(input.value);
+    // State change will trigger rerender via subscription
+    filterTimeout = null;
   }, 50);
 }
 
@@ -69,15 +68,13 @@ export function handleFilterInput(e: Event): void {
  * Handle filter clear button
  */
 export function handleFilterClear(): void {
-  state.filterQuery = '';
   const filterInput = document.getElementById('productFilterInput') as HTMLInputElement;
   if (filterInput) {
     filterInput.value = '';
     filterInput.focus();
   }
-  applyFilter();
-  updateProductListDisplay();
-  attachProductActionListeners();
+  productAdminState.setFilterQuery('');
+  // State change will trigger rerender via subscription
 }
 
 /**
@@ -104,6 +101,7 @@ export async function handleSaveProduct(): Promise<void> {
     return;
   }
 
+  const state = productAdminState.getState();
   if (!state.selectedStoreId) {
     showError('Kein Geschäft ausgewählt');
     return;
@@ -120,9 +118,8 @@ export async function handleSaveProduct(): Promise<void> {
         fresh,
       });
       if (result) {
-        state.editingProductId = null;
-        await loadProducts(state.selectedStoreId);
-        globalRerenderCallback?.();
+        productAdminState.setEditingProductId(null);
+        await productAdminState.loadProducts(state.selectedStoreId);
         showSuccess('Produkt erfolgreich aktualisiert');
       } else {
         showError('Fehler beim Aktualisieren des Produkts');
@@ -131,8 +128,7 @@ export async function handleSaveProduct(): Promise<void> {
       // Create new product
       const result = await createProduct(name, state.selectedStoreId, deptId, fresh);
       if (result) {
-        await loadProducts(state.selectedStoreId);
-        globalRerenderCallback?.();
+        await productAdminState.loadProducts(state.selectedStoreId);
         showSuccess('Produkt erfolgreich erstellt');
       } else {
         showError('Fehler beim Erstellen des Produkts');
@@ -148,23 +144,23 @@ export async function handleSaveProduct(): Promise<void> {
  * Handle edit product
  */
 export function handleEditProduct(productId: number): void {
-  state.editingProductId = productId;
-  globalRerenderCallback?.();
+  productAdminState.setEditingProductId(productId);
+  // State change will trigger rerender via subscription
 }
 
 /**
  * Handle cancel edit
  */
 export function handleCancelEdit(): void {
-  state.editingProductId = null;
-  globalRerenderCallback?.();
+  productAdminState.setEditingProductId(null);
+  // State change will trigger rerender via subscription
 }
 
 /**
  * Handle delete product
  */
 export async function handleDeleteProduct(productId: number): Promise<void> {
-  const product = getProductById(productId);
+  const product = productAdminState.getProductById(productId);
   if (!product) return;
 
   // Use Modal component for confirmation
@@ -197,9 +193,9 @@ export async function handleDeleteProduct(productId: number): Promise<void> {
         const success = await deleteProduct(productId);
         if (success) {
           modal.close();
+          const state = productAdminState.getState();
           if (state.selectedStoreId) {
-            await loadProducts(state.selectedStoreId);
-            globalRerenderCallback?.();
+            await productAdminState.loadProducts(state.selectedStoreId);
           }
           showSuccess('Produkt erfolgreich gelöscht');
         } else {

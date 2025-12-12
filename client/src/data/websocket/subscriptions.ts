@@ -62,3 +62,50 @@ export function onWeekplanAdded(callback: (data: any) => void): () => void {
 export function onWeekplanDeleted(callback: (data: { id: number }) => void): () => void {
   return subscribe('weekplan:deleted', callback);
 }
+
+// Product event subscriptions
+export function onProductAdded(callback: (product: any) => void): () => void {
+  return subscribe('product:added', callback);
+}
+
+export function onProductUpdated(callback: (product: any) => void): () => void {
+  return subscribe('product:updated', callback);
+}
+
+export function onProductDeleted(callback: (data: { id: number }) => void): () => void {
+  return subscribe('product:deleted', callback);
+}
+
+// Store management event subscriptions
+export function onStoreAdded(callback: (store: Store) => void): () => void {
+  return subscribe('store:added', callback);
+}
+
+export function onStoreUpdated(callback: (store: Store) => void): () => void {
+  return subscribe('store:updated', callback);
+}
+
+export function onStoreDeleted(callback: (data: { id: number }) => void): () => void {
+  return subscribe('store:deleted', callback);
+}
+
+export function onDepartmentAdded(callback: (department: any) => void): () => void {
+  return subscribe('department:added', callback);
+}
+
+export function onDepartmentDeleted(callback: (data: { id: number }) => void): () => void {
+  return subscribe('department:deleted', callback);
+}
+
+// Template event subscriptions
+export function onTemplateAdded(callback: (template: any) => void): () => void {
+  return subscribe('template:added', callback);
+}
+
+export function onTemplateUpdated(callback: (template: any) => void): () => void {
+  return subscribe('template:updated', callback);
+}
+
+export function onTemplateDeleted(callback: (data: { id: number }) => void): () => void {
+  return subscribe('template:deleted', callback);
+}

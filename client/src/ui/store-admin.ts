@@ -4,7 +4,7 @@
  * Provides UI for managing stores and departments (create, delete).
  */
 
-import { fetchStores, createStore } from '../data/api.js';
+import { createStore } from '../data/api.js';
 import { showError, showSuccess } from './components/toast.js';
 import { renderStores } from './store-admin/renderer.js';
 import {
@@ -17,11 +17,17 @@ import {
   handleDepartmentDelete,
   handleDepartmentReorder,
 } from './store-admin/department-handlers.js';
+import { storeAdminState } from '../state/store-admin-state.js';
 
 /**
  * Initialize the store admin UI.
  */
 export function initStoreAdmin(): void {
+  // Subscribe to state changes for automatic UI updates
+  storeAdminState.subscribe((state) => {
+    renderStores(state.stores, attachDynamicListeners);
+  });
+
   // Load and render stores
   loadStores();
 
@@ -30,11 +36,11 @@ export function initStoreAdmin(): void {
 }
 
 /**
- * Load and render stores from API.
+ * Load and render stores from state.
  */
 async function loadStores(): Promise<void> {
-  const stores = await fetchStores();
-  await renderStores(stores, attachDynamicListeners);
+  await storeAdminState.loadStores();
+  // Rendering is handled by state subscription
 }
 
 /**

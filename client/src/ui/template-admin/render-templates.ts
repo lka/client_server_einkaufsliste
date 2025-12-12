@@ -7,20 +7,22 @@ import {
 
 import { cancelBtn, updateSaveButtonState } from './create-form-buttons.js';
 import { showError, showSuccess } from '../components/toast.js';
+import { templateAdminState } from '../../state/template-admin-state.js';
 
 // Current editing state
 export let editingTemplateId: number | null = null;
 export let currentItems: TemplateItem[] = [];
 
-// Store all templates for filtering
+// Store all templates for filtering (kept for backwards compatibility with existing code)
 export let allTemplates: Template[] = [];
 
 /**
  * Load and render templates from API.
  */
 export async function loadTemplates(): Promise<void> {
-  const templates = await fetchTemplates();
-  allTemplates = templates as Template[];
+  await templateAdminState.loadTemplates();
+  const state = templateAdminState.getState();
+  allTemplates = state.templates as Template[];
   renderTemplates(allTemplates);
 }
 
@@ -111,28 +113,15 @@ export function renderTemplateItems(): void {
  * Filter templates based on search query.
  */
 export function filterTemplates(query: string): void {
-  const normalizedQuery = query.toLowerCase().trim();
+  // Use state-based filtering
+  templateAdminState.setFilterQuery(query);
+  const state = templateAdminState.getState();
 
-  if (!normalizedQuery) {
-    // No filter, show all templates
-    renderTemplates(allTemplates);
-    return;
-  }
+  // Update local allTemplates for backwards compatibility
+  allTemplates = state.templates as Template[];
 
-  // Filter templates that match the query in name or description
-  const filtered = allTemplates.filter(template => {
-    const nameMatch = template.name.toLowerCase().includes(normalizedQuery);
-    const descMatch = template.description?.toLowerCase().includes(normalizedQuery);
-
-    // Also check if any item name matches
-    const itemMatch = template.items.some(item =>
-      item.name.toLowerCase().includes(normalizedQuery)
-    );
-
-    return nameMatch || descMatch || itemMatch;
-  });
-
-  renderTemplates(filtered);
+  // Render filtered results
+  renderTemplates(state.filteredTemplates);
 }
 
 /**
