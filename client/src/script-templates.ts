@@ -8,6 +8,7 @@ import { isAuthenticated } from './data/auth.js';
 import { initTemplateAdmin } from './ui/template-admin.js';
 import { initUserMenu, updateUserDisplay } from './ui/user-menu.js';
 import { initializeComponents } from './ui/components/index.js';
+import * as websocket from './data/websocket.js';
 
 /**
  * Initialize the template admin page when DOM is ready.
@@ -35,4 +36,15 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Initialize template admin module
   initTemplateAdmin();
   initUserMenu();
+
+  // Initialize WebSocket connection if enabled
+  const wsEnabled = localStorage.getItem('enable_ws') === 'true';
+  const wsSupported = websocket.isWebSocketSupported();
+
+  console.log('WebSocket status (template-admin):', { enabled: wsEnabled, supported: wsSupported });
+
+  if (wsEnabled && wsSupported) {
+    console.log('Connecting to WebSocket for template-admin...');
+    websocket.connect();
+  }
 });

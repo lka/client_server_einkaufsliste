@@ -30,7 +30,20 @@ function getWebSocketUrl(): string {
     throw new Error('No authentication token available');
   }
 
-  return `${protocol}//${host}/ws/${token}`;
+  const wsUrl = `${protocol}//${host}/ws/${token}`;
+  console.log('WebSocket URL:', wsUrl.replace(token, 'TOKEN_HIDDEN'));
+  console.log('Browser Info:', {
+    userAgent: navigator.userAgent,
+    platform: navigator.platform,
+    location: {
+      protocol: window.location.protocol,
+      host: window.location.host,
+      hostname: window.location.hostname,
+      port: window.location.port
+    }
+  });
+
+  return wsUrl;
 }
 
 /**

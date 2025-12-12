@@ -32,7 +32,18 @@ export {
   onConnectionClose,
   onConnectionError,
   onWeekplanAdded,
-  onWeekplanDeleted
+  onWeekplanDeleted,
+  onProductAdded,
+  onProductUpdated,
+  onProductDeleted,
+  onStoreAdded,
+  onStoreUpdated,
+  onStoreDeleted,
+  onDepartmentAdded,
+  onDepartmentDeleted,
+  onTemplateAdded,
+  onTemplateUpdated,
+  onTemplateDeleted
 } from './websocket/subscriptions.js';
 
 // Re-export broadcast functions

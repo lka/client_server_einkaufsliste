@@ -8,20 +8,21 @@
 | src\ui\components\autocomplete.ts | 226 | 6 | 25 | 40 | 46 |
 | src\ui\weekplan\ingredient-parser.ts | 154 | 5 | 21 | 39 | 44 |
 | src\data\api\items-api.ts | 198 | 6 | 28 | 37 | 43 |
-| src\ui\product-admin\event-handlers.ts | 207 | 15 | 30 | 28 | 43 |
 | src\data\api\templates-api.ts | 168 | 5 | 24 | 37 | 42 |
 | src\ui\weekplan\template-modal.ts | 250 | 18 | 32 | 24 | 42 |
 | src\data\auth.ts | 245 | 14 | 32 | 27 | 41 |
 | src\ui\components\datepicker\create-date-picker.ts | 160 | 10 | 22 | 31 | 41 |
-| src\ui\template-admin\render-templates.ts | 185 | 9 | 31 | 32 | 41 |
 | src\data\api\products-api.ts | 205 | 6 | 28 | 33 | 39 |
 | src\ui\print-utils\convert-to-four-columns.ts | 167 | 7 | 22 | 32 | 39 |
 | src\ui\store-browser.ts | 196 | 16 | 27 | 23 | 39 |
 | src\ui\components\input.ts | 208 | 7 | 22 | 31 | 38 |
 | src\ui\shopping-list\print-rendering.ts | 164 | 16 | 21 | 21 | 37 |
+| src\ui\product-admin\event-handlers.ts | 195 | 15 | 30 | 21 | 36 |
+| src\ui\template-admin\render-templates.ts | 177 | 8 | 29 | 28 | 36 |
 | src\data\api\weekplan-api.ts | 200 | 9 | 26 | 26 | 35 |
-| src\ui\product-admin\rendering.ts | 171 | 8 | 15 | 27 | 35 |
 | src\ui\weekplan.ts | 170 | 13 | 31 | 22 | 35 |
+| src\state\product-admin-state.ts | 263 | 11 | 29 | 22 | 33 |
+| src\ui\product-admin\rendering.ts | 175 | 8 | 15 | 25 | 33 |
 | src\pages\login.ts | 109 | 10 | 21 | 21 | 31 |
 | src\ui\backup-admin.ts | 189 | 9 | 20 | 22 | 31 |
 | src\ui\components\button.ts | 191 | 5 | 18 | 26 | 31 |
@@ -37,6 +38,8 @@
 | src\ui\components\toast.ts | 326 | 10 | 18 | 17 | 27 |
 | src\ui\components\datepicker\create-calendar.ts | 162 | 12 | 24 | 14 | 26 |
 | src\ui\weekplan\weekplan-state.ts | 181 | 2 | 22 | 24 | 26 |
+| src\data\websocket\subscriptions.ts | 77 | 24 | 24 | 0 | 24 |
+| src\state\store-admin-state.ts | 159 | 7 | 19 | 17 | 24 |
 | src\ui\shopping-list\print-controls.ts | 119 | 11 | 15 | 13 | 24 |
 | src\ui\user-menu\websocket-handlers.ts | 126 | 10 | 19 | 14 | 24 |
 | src\data\api\users-api.ts | 114 | 4 | 16 | 19 | 23 |
@@ -54,11 +57,11 @@
 | src\ui\store-admin\department-handlers.ts | 93 | 6 | 11 | 13 | 19 |
 | src\ui\webdav-admin\event-handlers.ts | 89 | 13 | 13 | 6 | 19 |
 | src\state\store-state\product-operations.ts | 123 | 3 | 9 | 15 | 18 |
+| src\ui\store-admin.ts | 91 | 13 | 17 | 5 | 18 |
 | src\ui\user-menu\navigation-handlers.ts | 67 | 5 | 16 | 13 | 18 |
 | src\ui\weekplan\recipe-modal.ts | 82 | 6 | 10 | 12 | 18 |
 | src\data\api\backup-api.ts | 74 | 2 | 8 | 15 | 17 |
 | src\ui\print-utils\is-android.ts | 29 | 2 | 8 | 15 | 17 |
-| src\ui\store-admin.ts | 88 | 12 | 16 | 5 | 17 |
 | src\ui\webdav-admin\modals.ts | 199 | 6 | 10 | 11 | 17 |
 | src\ui\components\card.ts | 132 | 4 | 12 | 12 | 16 |
 | src\ui\shopping-list\item-operations.ts | 86 | 3 | 12 | 13 | 16 |
@@ -66,13 +69,12 @@
 | src\ui\weekplan\recipe-modal\modal-builder.ts | 112 | 8 | 14 | 8 | 16 |
 | src\data\inactivity-tracker.ts | 95 | 10 | 14 | 5 | 15 |
 | src\ui\user-menu\menu-toggle-handlers.ts | 58 | 7 | 13 | 8 | 15 |
+| src\ui\product-admin\init.ts | 78 | 5 | 14 | 9 | 14 |
 | src\data\websocket\state.ts | 84 | 12 | 12 | 1 | 13 |
-| src\data\websocket\subscriptions.ts | 44 | 13 | 13 | 0 | 13 |
 | src\script.ts | 77 | 3 | 9 | 10 | 13 |
 | src\ui\components\dropdown\native-dropdown.ts | 81 | 6 | 13 | 7 | 13 |
 | src\ui\print-utils\print-debug.ts | 97 | 5 | 9 | 8 | 13 |
 | src\ui\print-utils\print-on-android.ts | 169 | 4 | 8 | 9 | 13 |
-| src\ui\product-admin\init.ts | 74 | 4 | 13 | 9 | 13 |
 | src\ui\product-admin\state.ts | 88 | 7 | 11 | 6 | 13 |
 | src\ui\shopping-list\store-manager.ts | 107 | 4 | 11 | 9 | 13 |
 | src\ui\store-admin\renderer.ts | 112 | 5 | 7 | 8 | 13 |
@@ -88,6 +90,7 @@
 | src\ui\shopping-list\filters.ts | 59 | 6 | 9 | 5 | 11 |
 | src\ui\weekplan\recipe-modal\ingredient-renderer.ts | 75 | 5 | 7 | 6 | 11 |
 | src\ui\weekplan\weekplan-utils.ts | 60 | 6 | 7 | 5 | 11 |
+| src\state\template-admin-state.ts | 155 | 4 | 10 | 6 | 10 |
 | src\ui\weekplan\weekplan-rendering.ts | 108 | 7 | 8 | 3 | 10 |
 | src\ui\weekplan\weekplan-websocket.ts | 47 | 4 | 8 | 6 | 10 |
 | src\data\websocket\event-system.ts | 34 | 5 | 8 | 4 | 9 |
@@ -109,6 +112,9 @@
 | src\ui\weekplan\weekplan-navigation.ts | 60 | 6 | 6 | 0 | 6 |
 | src\ui\weekplan\weekplan-print.ts | 28 | 3 | 5 | 3 | 6 |
 | src\data\websocket\broadcasts.ts | 37 | 5 | 5 | 0 | 5 |
+| src\script-products.ts | 34 | 1 | 4 | 4 | 5 |
+| src\script-stores.ts | 35 | 1 | 4 | 4 | 5 |
+| src\script-templates.ts | 35 | 1 | 4 | 4 | 5 |
 | src\script-weekplan.ts | 29 | 1 | 4 | 4 | 5 |
 | src\state\user-state.ts | 98 | 1 | 2 | 4 | 5 |
 | src\ui\components\dropdown\ui-builder.ts | 49 | 2 | 3 | 3 | 5 |
@@ -118,9 +124,6 @@
 | src\ui\components\dropdown\option-renderer.ts | 34 | 2 | 4 | 2 | 4 |
 | src\ui\webdav-admin.ts | 35 | 3 | 3 | 1 | 4 |
 | src\script-backup.ts | 26 | 1 | 3 | 2 | 3 |
-| src\script-products.ts | 26 | 1 | 3 | 2 | 3 |
-| src\script-stores.ts | 27 | 1 | 3 | 2 | 3 |
-| src\script-templates.ts | 27 | 1 | 3 | 2 | 3 |
 | src\script-units.ts | 26 | 1 | 3 | 2 | 3 |
 | src\script-users.ts | 27 | 1 | 3 | 2 | 3 |
 | src\script-webdav.ts | 27 | 1 | 3 | 2 | 3 |
@@ -138,7 +141,7 @@
 | src\data\api\index.ts | 16 | 0 | 0 | 0 | 0 |
 | src\data\api.ts | 14 | 0 | 0 | 0 | 0 |
 | src\data\websocket\config.ts | 7 | 0 | 0 | 0 | 0 |
-| src\data\websocket.ts | 35 | 0 | 0 | 0 | 0 |
+| src\data\websocket.ts | 46 | 0 | 0 | 0 | 0 |
 | src\state\store-state\types.ts | 14 | 0 | 0 | 0 | 0 |
 | src\ui\components\datepicker\datepicker-types.ts | 7 | 0 | 0 | 0 | 0 |
 | src\ui\components\datepicker\index.ts | 4 | 0 | 0 | 0 | 0 |
@@ -155,12 +158,12 @@
 
 ## Summary
 
-- Total files: 150
-- Total lines: 14996
-- Total functions: 743
-- Average complexity: 10.61
-- Average cyclomatic complexity: 10.57
-- Average McCabe complexity: 15.53
+- Total files: 153
+- Total lines: 15632
+- Total functions: 777
+- Average complexity: 10.87
+- Average cyclomatic complexity: 10.61
+- Average McCabe complexity: 15.69
 
 ## Complexity Ratings
 
@@ -171,4 +174,4 @@ McCabe Complexity Thresholds:
 - 51+: Very complex, very high risk
 
 Files with very high complexity (>50): 0
-Files with high complexity (21-50): 45
+Files with high complexity (21-50): 48

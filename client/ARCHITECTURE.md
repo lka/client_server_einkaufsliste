@@ -43,9 +43,19 @@ The shopping list client is a TypeScript application built with a **four-layer a
 │   │              │              │  - listeners     │        │
 │   │              │              │  - loading       │        │
 │   └──────────────┴──────────────┴──────────────────┘        │
+│   ┌──────────────┬──────────────┬──────────────────┐        │
+│   │  product-    │  store-admin │  template-admin  │        │
+│   │  admin-state │  -state      │  -state          │        │
+│   │  - stores[]  │  - stores[]  │  - templates[]   │        │
+│   │  - depts[]   │    (with     │  - filtered[]    │        │
+│   │  - products[]│     depts[]) │  - filterQuery   │        │
+│   │  - filtered[]│  - listeners │  - listeners     │        │
+│   │  - listeners │  - loading   │  - loading       │        │
+│   └──────────────┴──────────────┴──────────────────┘        │
 │         - Centralized state management                       │
 │         - Observer pattern for reactive updates              │
 │         - Single source of truth with CRUD operations        │
+│         - WebSocket integration for real-time sync           │
 └──────────────────────┬──────────────────────────────────────┘
                        │
                        ▼
@@ -469,6 +479,89 @@ import { fetchItems, Store, Item } from './data/api/index.js';
   - Centralized business logic for data operations
   - Type-safe CRUD operations
 
+#### product-admin-state.ts ✨ NEW
+- **Status**: ✨ **NEW** - State-based architecture for product management with WebSocket integration
+- **Responsibility**: Centralized state management for product admin with real-time synchronization
+- **State Properties**:
+  - `stores: Store[]`: All stores
+  - `selectedStoreId: number | null`: Currently selected store
+  - `departments: Department[]`: Departments for selected store
+  - `products: Product[]`: Products for selected store
+  - `filteredProducts: Product[]`: Filtered products based on search query
+  - `editingProductId: number | null`: Product being edited (null if creating new)
+  - `filterQuery: string`: Current search/filter text
+- **Functions**:
+  - `getState()`: Get complete state (read-only copy)
+  - `subscribe(listener)`: Subscribe to state changes (returns unsubscribe function)
+  - `loadStores()`: Load all stores from API
+  - `loadDepartments(storeId)`: Load departments for store
+  - `loadProducts(storeId)`: Load products for store
+  - `setSelectedStoreId(id)`: Update selected store
+  - `setEditingProductId(id)`: Set product for editing
+  - `setFilterQuery(query)`: Update filter and trigger re-filtering
+  - `getProductById(id)`: Get specific product
+  - `resetStateForStoreChange()`: Reset state when store changes
+- **WebSocket Integration**:
+  - `onProductAdded`: Adds product to state if it belongs to current store
+  - `onProductUpdated`: Updates product in state
+  - `onProductDeleted`: Removes product from state
+  - `onDepartmentAdded`, `onDepartmentUpdated`, `onDepartmentDeleted`: Department updates
+  - `onStoreAdded`, `onStoreUpdated`, `onStoreDeleted`: Store updates
+- **Pattern**: Observer pattern with automatic UI updates via subscriptions
+- **Benefits**:
+  - Real-time synchronization across users
+  - Automatic filtering and state updates
+  - Single source of truth for product admin
+  - No manual refresh calls needed
+
+#### store-admin-state.ts ✨ NEW
+- **Status**: ✨ **NEW** - State-based architecture for store administration with WebSocket integration
+- **Responsibility**: Centralized state management for store/department admin with real-time synchronization
+- **State Properties**:
+  - `stores: Store[]`: All stores with nested departments
+- **Functions**:
+  - `getState()`: Get complete state (read-only copy)
+  - `getStores()`: Get all stores (read-only copy)
+  - `subscribe(listener)`: Subscribe to state changes (returns unsubscribe function)
+  - `loadStores()`: Load stores from API
+- **WebSocket Integration**:
+  - `onStoreAdded`: Adds new store to state
+  - `onStoreUpdated`: Updates store information
+  - `onStoreDeleted`: Removes store from state
+  - `onDepartmentAdded`: Adds department to parent store
+  - `onDepartmentUpdated`: Updates department information
+  - `onDepartmentDeleted`: Removes department from parent store
+- **Pattern**: Observer pattern for reactive UI updates
+- **Benefits**:
+  - Real-time updates when stores/departments change
+  - Automatic UI synchronization
+  - Simplified state management for admin operations
+
+#### template-admin-state.ts ✨ NEW
+- **Status**: ✨ **NEW** - State-based architecture for template management with WebSocket integration
+- **Responsibility**: Centralized state management for template admin with real-time synchronization
+- **State Properties**:
+  - `templates: Template[]`: All templates
+  - `filteredTemplates: Template[]`: Templates matching filter query
+  - `filterQuery: string`: Current search text
+- **Functions**:
+  - `getState()`: Get complete state (read-only copy)
+  - `getTemplates()`: Get all templates (read-only copy)
+  - `getFilteredTemplates()`: Get filtered templates (read-only copy)
+  - `subscribe(listener)`: Subscribe to state changes (returns unsubscribe function)
+  - `loadTemplates()`: Load templates from API
+  - `setFilterQuery(query)`: Update filter and apply filtering
+  - `getTemplateById(id)`: Get specific template
+- **WebSocket Integration**:
+  - `onTemplateAdded`: Adds new template to state
+  - `onTemplateUpdated`: Updates template information
+  - `onTemplateDeleted`: Removes template from state
+- **Pattern**: Observer pattern for reactive UI updates
+- **Benefits**:
+  - Real-time template synchronization across users
+  - Automatic filtering on state change
+  - Consistent state management pattern
+
 **Testing**:
 - `shopping-list-state.test.ts`: 35 tests covering state management, subscriptions, and API integration
 - `user-state.test.ts`: 24 tests covering user state, subscriptions, and error handling
@@ -481,6 +574,7 @@ import { fetchItems, Store, Item } from './data/api/index.js';
 - ✅ Immutable state (returns copies, not references)
 - ✅ Loading state tracking for UX
 - ✅ No direct UI manipulation
+- ✅ WebSocket integration for real-time synchronization (shopping-list, product-admin, store-admin, template-admin)
 
 **See also**: [STATE_LAYER.md](STATE_LAYER.md) for detailed state layer documentation.
 
@@ -868,6 +962,16 @@ import { fetchItems, Store, Item } from './data/api/index.js';
 
 #### template-admin.ts
 - **Responsibility**: Template administration UI for managing shopping templates
+- **State Management**: Uses `template-admin-state.ts` singleton for centralized state
+  - **WebSocket Integration**: Real-time template updates via state subscriptions
+  - Automatic UI re-rendering on state changes (Observer pattern)
+  - State holds templates and filter query
+  - Local state in `render-templates.ts` for editing mode and current items
+- **Modular Architecture** (`src/ui/template-admin/`):
+  - **index.ts**: Re-exports all template admin functions
+  - **render-templates.ts**: Template list rendering and form management (integrates with state)
+  - **create-form-buttons.ts**: Button creation and state management
+  - **event-listeners.ts**: Event handler attachment
 - **Component Integration**:
   - **Button Component**: Uses `createButton()` for Save and Cancel buttons
   - **Toast Component**: Success/error notifications for all operations
@@ -880,17 +984,16 @@ import { fetchItems, Store, Item } from './data/api/index.js';
   - Real-time button state management (disable save when no items)
   - Template list with inline item display: "Article (Quantity)"
   - Form validation (unique template names, minimum one item)
-  - **Intelligent Template Filtering**: Real-time search for templates
+  - **Intelligent Template Filtering**: Real-time search for templates (state-managed)
     - **Filter Input Field**: Located next to "Vorhandene Vorlagen" heading for easy access
     - **Multi-Source Search**: Searches template names, descriptions, AND contained items
     - **Live Filtering**: Updates instantly while typing (case-insensitive)
     - **Clear Button**: ✕ button appears when filter has content, one-click to reset
     - **Keyboard Optimized**: Enter key refocuses input after clearing
-    - **State Management**: Stores all templates in `allTemplates` array for filtering
-- **State Management**:
-  - Local state for editing mode (`editingTemplateId`)
-  - Local state for current items (`currentItems`)
-  - Local state for all templates (`allTemplates`) for filtering
+    - **State Management**: Uses `templateAdminState.setFilterQuery()` for filtering
+- **State Management Details**:
+  - **Centralized**: `template-admin-state.ts` holds templates and filter query
+  - **Local**: `editingTemplateId` and `currentItems` in `render-templates.ts` for form state
   - Button references (`saveBtn`, `cancelBtn`)
 - **Event Handlers**:
   - Add item button → `handleAddItem()` → adds to currentItems array
@@ -900,11 +1003,12 @@ import { fetchItems, Store, Item } from './data/api/index.js';
   - Edit template button (event delegation) → `handleEditTemplate()` → load template into form
   - Delete template button (event delegation) → `handleDeleteTemplate()` → delete with confirmation
   - Enter key support for item name and quantity inputs
-  - Filter input → `filterTemplates()` → filters displayed templates in real-time
+  - Filter input → `filterTemplates()` → calls state.setFilterQuery() for real-time filtering
   - Clear filter button → resets filter and refocuses input
 - **Filtering Logic**:
-  - `filterTemplates(query)`: Filters templates by name, description, or item names
-  - Normalizes query (lowercase, trimmed)
+  - `filterTemplates(query)`: Delegates to `templateAdminState.setFilterQuery()`
+  - State handles normalization (lowercase, trimmed)
+  - State provides `filteredTemplates` array
   - Shows all templates when query is empty
   - Uses Array.filter() with includes() for substring matching
   - Auto-shows/hides clear button based on input value
@@ -913,7 +1017,9 @@ import { fetchItems, Store, Item } from './data/api/index.js';
   - Called after every add/remove operation
   - Called on initial load and form reset
 - **Dependencies**:
+  - `../state/template-admin-state.js`: Centralized state management with WebSocket
   - `../data/api.js`: fetchTemplates, createTemplate, updateTemplate, deleteTemplate
+  - `../data/websocket.js`: Real-time event subscriptions
   - `./components/button.js`: createButton
   - `./components/toast.js`: showError, showSuccess
 
@@ -945,6 +1051,14 @@ import { fetchItems, Store, Item } from './data/api/index.js';
 
 #### product-admin.ts
 - **Responsibility**: Product administration UI for creating, editing, and deleting products
+- **State Management**: Uses `product-admin-state.ts` singleton for centralized state
+  - **WebSocket Integration**: Real-time product updates via state subscriptions
+  - Automatic UI re-rendering on state changes (Observer pattern)
+  - State holds stores, departments, products, filter query, and editing state
+- **Modular Architecture** (`src/ui/product-admin/`):
+  - **init.ts**: Entry point, state subscription setup
+  - **rendering.ts**: UI rendering functions (reads from state)
+  - **event-handlers.ts**: User interaction handlers (writes to state)
 - **Component Integration**:
   - **Modal Component**: Delete confirmations with styled danger/cancel buttons
   - **Button Component**: Consistent button styling for all actions
@@ -957,7 +1071,7 @@ import { fetchItems, Store, Item } from './data/api/index.js';
   - Product deletion with confirmation modal
   - Products grouped by department
   - Fresh product indicator
-  - **Intelligent Filter**: Live search with 50ms debouncing
+  - **Intelligent Filter**: Live search with 50ms debouncing (state-managed)
     - Multi-field search: Product names, department names, "frisch" keyword
     - Counter display: "X von Y" products found
     - Clear button (✕) for quick filter reset
@@ -974,17 +1088,24 @@ import { fetchItems, Store, Item } from './data/api/index.js';
   - **Debouncing**: 50ms timeout prevents excessive re-rendering during fast typing
   - **Preserved Input State**: Filter input is not destroyed/recreated during updates
 - **Dependencies**:
+  - `../state/product-admin-state.js`: Centralized state management with WebSocket
   - `../data/api.js`: Product CRUD operations
+  - `../data/websocket.js`: Real-time event subscriptions
   - `./components/modal.js`, `./components/button.js`, `./components/toast.js`: UI components
 
 #### store-admin.ts ✨ REFACTORED
 - **Status**: ✨ **REFACTORED** - Reduced from 465 lines to 114 lines (-75%)
 - **Responsibility**: Store and department administration UI orchestrator
+- **State Management**: Uses `store-admin-state.ts` singleton for centralized state
+  - **WebSocket Integration**: Real-time store and department updates via state subscriptions
+  - Automatic UI re-rendering on state changes (Observer pattern)
+  - State holds stores with embedded departments array
+  - Uses `StoreWithDepartments` interface extending `Store` with optional `departments?: Department[]`
 - **Modular Architecture** (`src/ui/store-admin/`):
   - **modals.ts**: Delete confirmation modals
-  - **renderer.ts**: UI rendering logic
-  - **store-handlers.ts**: Store CRUD event handlers
-  - **department-handlers.ts**: Department CRUD and reorder handlers
+  - **renderer.ts**: UI rendering logic (reads from state)
+  - **store-handlers.ts**: Store CRUD event handlers (writes to state)
+  - **department-handlers.ts**: Department CRUD and reorder handlers (writes to state)
   - **utils.ts**: Shared utility functions
 - **Component Integration**:
   - **Modal Component**: Delete confirmations for stores and departments
@@ -998,7 +1119,9 @@ import { fetchItems, Store, Item } from './data/api/index.js';
   - Inline edit for store and department names
   - Success/error toast notifications for all operations
 - **Dependencies**:
+  - `../state/store-admin-state.js`: Centralized state management with WebSocket
   - `../data/api.js`: Store and department CRUD operations
+  - `../data/websocket.js`: Real-time event subscriptions
   - `./components/modal.js`, `./components/button.js`, `./components/toast.js`: UI components
   - `./store-admin/*.js`: Modular handlers and renderers
 
@@ -1397,26 +1520,37 @@ import { fetchItems, Store, Item } from './data/api/index.js';
 - **Responsibility**: Store admin page entry point
 - **Flow**:
   1. Check authentication
-  2. Initialize component library styles
-  3. Load stores template
-  4. Update user display
-  5. Initialize store admin and user menu
-- **Dependencies**: `./data/dom.js`, `./data/auth.js`, `./ui/store-admin.js`, `./ui/user-menu.js`
+  2. **Initialize WebSocket connection (if enabled via feature flag)**
+  3. Initialize component library styles
+  4. Load stores template
+  5. Update user display
+  6. Initialize store admin and user menu
+- **Dependencies**: `./data/dom.js`, `./data/auth.js`, `./data/websocket.js`, `./ui/store-admin.js`, `./ui/user-menu.js`
+- **WebSocket Integration**: Connects to WebSocket for real-time store and department updates
 
 #### script-products.ts
 - **Responsibility**: Product admin page entry point
-- **Similar flow to script-stores.ts**
-- **Dependencies**: `./ui/product-admin.js`
+- **Flow**:
+  1. Check authentication
+  2. **Initialize WebSocket connection (if enabled via feature flag)**
+  3. Initialize component library styles
+  4. Load products template
+  5. Update user display
+  6. Initialize product admin and user menu
+- **Dependencies**: `./data/dom.js`, `./data/auth.js`, `./data/websocket.js`, `./ui/product-admin.js`, `./ui/user-menu.js`
+- **WebSocket Integration**: Connects to WebSocket for real-time product updates
 
 #### script-templates.ts
 - **Responsibility**: Template admin page entry point
 - **Flow**:
   1. Check authentication
-  2. Initialize component library styles
-  3. Load templates template
-  4. Update user display
-  5. Initialize template admin and user menu
-- **Dependencies**: `./data/dom.js`, `./data/auth.js`, `./ui/template-admin.js`, `./ui/user-menu.js`
+  2. **Initialize WebSocket connection (if enabled via feature flag)**
+  3. Initialize component library styles
+  4. Load templates template
+  5. Update user display
+  6. Initialize template admin and user menu
+- **Dependencies**: `./data/dom.js`, `./data/auth.js`, `./data/websocket.js`, `./ui/template-admin.js`, `./ui/user-menu.js`
+- **WebSocket Integration**: Connects to WebSocket for real-time template updates
 
 #### script-users.ts
 - **Responsibility**: User admin page entry point
@@ -1898,18 +2032,50 @@ export function disconnect(): void;
 export function isConnected(): boolean;
 export function getConnectionState(): ConnectionState;
 
-// Event Subscriptions
+// Event Subscriptions - Shopping List
 export function onItemAdded(callback: (item: Item) => void): () => void;
 export function onItemDeleted(callback: (itemId: string) => void): () => void;
 export function onItemUpdated(callback: (item: Item) => void): () => void;
+
+// Event Subscriptions - Products ✨ NEW
+export function onProductAdded(callback: (product: Product) => void): () => void;
+export function onProductUpdated(callback: (product: Product) => void): () => void;
+export function onProductDeleted(callback: (data: { id: number }) => void): () => void;
+
+// Event Subscriptions - Stores & Departments ✨ NEW
 export function onStoreChanged(callback: (store: Store) => void): () => void;
+export function onStoreAdded(callback: (store: Store) => void): () => void;
+export function onStoreUpdated(callback: (store: Store) => void): () => void;
+export function onStoreDeleted(callback: (data: { id: number }) => void): () => void;
+export function onDepartmentAdded(callback: (department: Department) => void): () => void;
+export function onDepartmentUpdated(callback: (department: Department) => void): () => void;
+export function onDepartmentDeleted(callback: (data: { id: number }) => void): () => void;
+
+// Event Subscriptions - Templates ✨ NEW
+export function onTemplateAdded(callback: (template: Template) => void): () => void;
+export function onTemplateUpdated(callback: (template: Template) => void): () => void;
+export function onTemplateDeleted(callback: (data: { id: number }) => void): () => void;
+
+// Event Subscriptions - Weekplan
+export function onWeekplanAdded(callback: (data: any) => void): () => void;
+export function onWeekplanDeleted(callback: (data: { id: number }) => void): () => void;
+
+// Event Subscriptions - Users
 export function onUserJoined(callback: (user: User) => void): () => void;
 export function onUserLeft(callback: (userId: number) => void): () => void;
+export function onActiveUserCount(callback: (data: { count: number }) => void): () => void;
+
+// Event Subscriptions - Connection
+export function onConnectionOpen(callback: () => void): () => void;
+export function onConnectionClose(callback: (event: { code: number; reason: string }) => void): () => void;
+export function onConnectionError(callback: (error: Event) => void): () => void;
 
 // Send Events
 export function broadcastItemAdd(item: Item): void;
 export function broadcastItemDelete(itemId: string): void;
 export function broadcastItemUpdate(item: Item): void;
+export function broadcastWeekplanAdd(entry: WeekplanEntry): void;
+export function broadcastWeekplanDelete(entryId: number): void;
 ```
 
 **Features**:
@@ -1920,11 +2086,11 @@ export function broadcastItemUpdate(item: Item): void;
 - **Error Handling**: Graceful degradation to polling if WebSocket unavailable
 - **Authentication**: JWT token in WebSocket handshake
 
-#### 2. State Layer Integration
+#### 2. State Layer Integration ✨ EXPANDED
 
-**Modified State Modules**:
+**All State Modules Now Have WebSocket Integration**:
 
-**shopping-list-state.ts**:
+**shopping-list-state.ts** (Existing):
 ```typescript
 import * as websocket from '../data/websocket.js';
 
@@ -1941,20 +2107,162 @@ websocket.onItemDeleted((itemId) => {
   notifyListeners();
 });
 
+websocket.onItemUpdated((item) => {
+  // Update item in local state
+  const index = state.items.findIndex(i => i.id === item.id);
+  if (index !== -1) {
+    state.items[index] = item;
+    notifyListeners();
+  }
+});
+
+websocket.onDepartmentUpdated(() => {
+  // Reload items to get updated department information
+  loadItems();
+});
+
 export async function addItem(name: string, menge?: string, ...) {
   const item = await api.addItem(name, menge, ...);
   // Broadcast to other users via WebSocket
-  websocket.broadcastItemAdd(item);
-  // Local state already updated by API response
+  if (websocket.isConnected()) {
+    websocket.broadcastItemAdd(item);
+  }
   return item;
 }
 ```
 
+**product-admin-state.ts** ✨ NEW:
+```typescript
+import * as websocket from '../data/websocket.js';
+
+class ProductAdminState {
+  constructor() {
+    this.initializeWebSocket();
+  }
+
+  private initializeWebSocket(): void {
+    // Subscribe to product events
+    websocket.onProductAdded((product) => {
+      if (this.state.selectedStoreId && product.store_id === this.state.selectedStoreId) {
+        this.state.products.push(product);
+        this.applyFilter();
+        this.notifyListeners();
+      }
+    });
+
+    websocket.onProductUpdated((product) => {
+      const index = this.state.products.findIndex(p => p.id === product.id);
+      if (index !== -1) {
+        this.state.products[index] = product;
+        this.applyFilter();
+        this.notifyListeners();
+      }
+    });
+
+    websocket.onProductDeleted((data) => {
+      this.state.products = this.state.products.filter(p => p.id !== data.id);
+      this.applyFilter();
+      this.notifyListeners();
+    });
+
+    // Subscribe to department and store events
+    websocket.onDepartmentAdded((department) => { /* ... */ });
+    websocket.onDepartmentUpdated((department) => { /* ... */ });
+    websocket.onDepartmentDeleted((data) => { /* ... */ });
+    websocket.onStoreAdded((store) => { /* ... */ });
+    websocket.onStoreUpdated((store) => { /* ... */ });
+    websocket.onStoreDeleted((data) => { /* ... */ });
+  }
+}
+```
+
+**store-admin-state.ts** ✨ NEW:
+```typescript
+import * as websocket from '../data/websocket.js';
+
+class StoreAdminState {
+  constructor() {
+    this.initializeWebSocket();
+  }
+
+  private initializeWebSocket(): void {
+    websocket.onStoreAdded((store) => {
+      if (!this.state.stores.find(s => s.id === store.id)) {
+        this.state.stores.push(store);
+        this.notifyListeners();
+      }
+    });
+
+    websocket.onStoreUpdated((store) => {
+      const index = this.state.stores.findIndex(s => s.id === store.id);
+      if (index !== -1) {
+        this.state.stores[index] = store;
+        this.notifyListeners();
+      }
+    });
+
+    websocket.onStoreDeleted((data) => {
+      this.state.stores = this.state.stores.filter(s => s.id !== data.id);
+      this.notifyListeners();
+    });
+
+    websocket.onDepartmentAdded((department) => {
+      const store = this.state.stores.find(s => s.id === department.store_id);
+      if (store?.departments) {
+        store.departments.push(department);
+        this.notifyListeners();
+      }
+    });
+
+    // ... similar for onDepartmentUpdated, onDepartmentDeleted
+  }
+}
+```
+
+**template-admin-state.ts** ✨ NEW:
+```typescript
+import * as websocket from '../data/websocket.js';
+
+class TemplateAdminState {
+  constructor() {
+    this.initializeWebSocket();
+  }
+
+  private initializeWebSocket(): void {
+    websocket.onTemplateAdded((template) => {
+      if (!this.state.templates.find(t => t.id === template.id)) {
+        this.state.templates.push(template);
+        this.applyFilter();
+        this.notifyListeners();
+      }
+    });
+
+    websocket.onTemplateUpdated((template) => {
+      const index = this.state.templates.findIndex(t => t.id === template.id);
+      if (index !== -1) {
+        this.state.templates[index] = template;
+        this.applyFilter();
+        this.notifyListeners();
+      }
+    });
+
+    websocket.onTemplateDeleted((data) => {
+      this.state.templates = this.state.templates.filter(t => t.id !== data.id);
+      this.applyFilter();
+      this.notifyListeners();
+    });
+  }
+}
+```
+
 **Benefits**:
-- State layer remains single source of truth
-- UI automatically updates via existing Observer pattern
-- No changes needed to UI Layer
-- Separation of concerns maintained
+- ✅ State layer remains single source of truth across all admin pages
+- ✅ UI automatically updates via existing Observer pattern
+- ✅ No changes needed to UI Layer - subscriptions handle everything
+- ✅ Separation of concerns maintained
+- ✅ Consistent pattern across all state modules
+- ✅ Real-time synchronization for shopping-list, products, stores, templates, and weekplan
+- ✅ Feature flag support via `localStorage.setItem('enable_ws', 'true')`
 
 #### 3. Server-Side Requirements
 
@@ -2044,7 +2352,12 @@ const status = new ConnectionStatus({
 // Client → Server
 {
   type: 'item:add' | 'item:delete' | 'item:update' |
-        'weekplan:add' | 'weekplan:delete' | 'ping',
+        'weekplan:add' | 'weekplan:delete' |
+        'product:add' | 'product:update' | 'product:delete' |
+        'store:add' | 'store:update' | 'store:delete' |
+        'department:add' | 'department:update' | 'department:delete' |
+        'template:add' | 'template:update' | 'template:delete' |
+        'ping',
   data: { ... },
   timestamp?: string
 }
@@ -2053,6 +2366,10 @@ const status = new ConnectionStatus({
 {
   type: 'item:added' | 'item:deleted' | 'item:updated' |
         'weekplan:added' | 'weekplan:deleted' |
+        'product:added' | 'product:updated' | 'product:deleted' |
+        'store:added' | 'store:updated' | 'store:deleted' |
+        'department:added' | 'department:updated' | 'department:deleted' |
+        'template:added' | 'template:updated' | 'template:deleted' |
         'store:changed' | 'user:joined' | 'user:left' |
         'users:active_count' | 'pong',
   data: { ... },
@@ -2187,6 +2504,60 @@ if (ENABLE_WEBSOCKETS) {
 2. **Shared Lists**: Roommates coordinate grocery shopping in real-time
 3. **Store Mode**: Multiple people shop together, checking off items live
 4. **Planning**: Team discusses what to buy with live updates
+
+### WebSocket Implementation Summary
+
+**Current Status**: ✅ **COMPLETE** - All admin pages now have unified WebSocket integration
+
+**Pages with WebSocket Integration**:
+1. ✅ **Shopping List** - Real-time item synchronization (original implementation)
+2. ✅ **Weekplan** - Real-time weekplan entry synchronization
+3. ✅ **Product Admin** - Real-time product updates (NEW)
+4. ✅ **Store Admin** - Real-time store and department updates (NEW)
+5. ✅ **Template Admin** - Real-time template updates (NEW)
+
+**State Managers with WebSocket**:
+- `shopping-list-state.ts` - Manages shopping list items
+- `product-admin-state.ts` - Manages products, stores, departments with filtering
+- `store-admin-state.ts` - Manages stores with embedded departments
+- `template-admin-state.ts` - Manages templates with filtering
+
+**Unified Architecture Pattern**:
+1. **State Layer Integration**: All state managers follow Observer pattern
+2. **WebSocket Initialization**: Entry points (script-*.ts) initialize WebSocket on load
+3. **Feature Flag Support**: `localStorage.getItem('enable_ws') === 'true'`
+4. **Event Subscriptions**: State constructors subscribe to WebSocket events
+5. **Automatic UI Updates**: State changes trigger UI re-rendering via subscriptions
+6. **No UI Changes Required**: WebSocket integration is transparent to UI layer
+
+**WebSocket Events Supported**:
+- **Items**: `item:added`, `item:updated`, `item:deleted`
+- **Weekplan**: `weekplan:added`, `weekplan:deleted`
+- **Products**: `product:added`, `product:updated`, `product:deleted`
+- **Stores**: `store:added`, `store:updated`, `store:deleted`
+- **Departments**: `department:added`, `department:updated`, `department:deleted`
+- **Templates**: `template:added`, `template:updated`, `template:deleted`
+
+**Key Files Created/Modified**:
+- `client/src/state/product-admin-state.ts` (NEW - 300+ lines)
+- `client/src/state/store-admin-state.ts` (NEW - 180 lines)
+- `client/src/state/template-admin-state.ts` (NEW - 180 lines)
+- `client/src/data/websocket/subscriptions.ts` (EXTENDED with new events)
+- `client/src/script-products.ts` (MODIFIED - WebSocket initialization)
+- `client/src/script-stores.ts` (MODIFIED - WebSocket initialization)
+- `client/src/script-templates.ts` (MODIFIED - WebSocket initialization)
+- `client/src/ui/product-admin/init.ts` (REFACTORED - State integration)
+- `client/src/ui/product-admin/rendering.ts` (REFACTORED - State integration)
+- `client/src/ui/product-admin/event-handlers.ts` (REFACTORED - State integration)
+- `client/src/ui/store-admin.ts` (REFACTORED - State integration)
+- `client/src/ui/template-admin/render-templates.ts` (REFACTORED - State integration)
+
+**Implementation Consistency**:
+All admin pages now follow the same state-based WebSocket pattern established by shopping-list, ensuring:
+- Consistent architecture across the application
+- Predictable behavior for developers
+- Easy maintenance and debugging
+- Scalable pattern for future features
 
 ---
 

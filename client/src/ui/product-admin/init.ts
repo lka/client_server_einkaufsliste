@@ -2,7 +2,7 @@
  * Product admin initialization
  */
 
-import { state, loadStores, loadDepartments, loadProducts } from './state.js';
+import { productAdminState } from '../../state/product-admin-state.js';
 import { renderUI } from './rendering.js';
 import {
   setRerenderCallback,
@@ -18,7 +18,12 @@ import {
  * Initialize the product admin UI
  */
 export async function initProductAdmin(): Promise<void> {
-  await loadStores();
+  // Subscribe to state changes for automatic UI updates
+  productAdminState.subscribe(() => {
+    renderAndAttach();
+  });
+
+  await productAdminState.loadStores();
 
   // Check for store parameter in URL
   const params = new URLSearchParams(window.location.search);
@@ -27,12 +32,13 @@ export async function initProductAdmin(): Promise<void> {
   if (storeParam) {
     const storeId = parseInt(storeParam, 10);
     // Verify that the store ID is valid
+    const state = productAdminState.getState();
     if (state.stores.find(s => s.id === storeId)) {
-      state.selectedStoreId = storeId;
+      productAdminState.setSelectedStoreId(storeId);
       // Load departments and products for the pre-selected store
       await Promise.all([
-        loadDepartments(storeId),
-        loadProducts(storeId)
+        productAdminState.loadDepartments(storeId),
+        productAdminState.loadProducts(storeId)
       ]);
     }
   }

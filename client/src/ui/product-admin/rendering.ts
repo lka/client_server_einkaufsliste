@@ -3,12 +3,14 @@
  */
 
 import type { Product } from '../../data/api.js';
-import { state, getProductById } from './state.js';
+import { productAdminState } from '../../state/product-admin-state.js';
 
 /**
  * Render the entire UI
  */
 export function renderUI(): string {
+  const state = productAdminState.getState();
+
   return `
     <div class="product-admin">
       <h2>Produkte verwalten</h2>
@@ -35,6 +37,9 @@ export function renderUI(): string {
  * Render product management section
  */
 export function renderProductManagement(): string {
+  const state = productAdminState.getState();
+  const currentProduct = state.editingProductId ? productAdminState.getProductById(state.editingProductId) : null;
+
   return `
     <!-- Product Form -->
     <section class="product-form">
@@ -44,7 +49,7 @@ export function renderProductManagement(): string {
           type="text"
           id="productName"
           placeholder="Produktname"
-          value="${state.editingProductId ? getProductById(state.editingProductId)?.name || '' : ''}"
+          value="${currentProduct?.name || ''}"
         />
       </div>
       <div class="form-row">
@@ -52,7 +57,6 @@ export function renderProductManagement(): string {
         <select id="departmentSelect">
           <option value="">Abteilung wählen...</option>
           ${state.departments.map(dept => {
-            const currentProduct = state.editingProductId ? getProductById(state.editingProductId) : null;
             return `
               <option value="${dept.id}" ${currentProduct?.department_id === dept.id ? 'selected' : ''}>
                 ${dept.name}
@@ -66,7 +70,7 @@ export function renderProductManagement(): string {
           <input
             type="checkbox"
             id="productFresh"
-            ${state.editingProductId && getProductById(state.editingProductId)?.fresh ? 'checked' : ''}
+            ${currentProduct?.fresh ? 'checked' : ''}
           />
           Frisches Produkt (verderblich)
         </label>
@@ -110,6 +114,8 @@ export function renderProductManagement(): string {
  * Render the list of products (inner content only, no wrapper)
  */
 export function renderProductListContent(): string {
+  const state = productAdminState.getState();
+
   if (state.filteredProducts.length === 0) {
     if (state.filterQuery) {
       return '<p class="no-products">Keine Produkte gefunden.</p>';
@@ -172,6 +178,8 @@ export function renderProductList(): string {
  * Update product list display efficiently (only updates what changed)
  */
 export function updateProductListDisplay(): void {
+  const state = productAdminState.getState();
+
   // Update counter in header
   const counterElement = document.querySelector('.product-list-header h3');
   if (counterElement) {
