@@ -28,7 +28,7 @@ export function setConnectionStatusInstance(instance: ConnectionStatus | null): 
  */
 function updateWebSocketButtonState(button: HTMLElement): void {
   const isConnected = websocket.isConnected();
-  const isEnabled = localStorage.getItem('enable_ws') === 'true';
+  const isEnabled = true; // localStorage.getItem('enable_ws') === 'true';
 
   if (isConnected) {
     button.textContent = '🔌 WebSocket deaktivieren';
@@ -48,7 +48,7 @@ function handleToggleWebSocket(button: HTMLElement): void {
   if (isConnected) {
     // Disconnect and disable
     websocket.disconnect();
-    localStorage.removeItem('enable_ws');
+    // localStorage.removeItem('enable_ws');
 
     // Properly destroy the ConnectionStatus instance
     if (connectionStatusInstance) {
@@ -75,7 +75,11 @@ function handleToggleWebSocket(button: HTMLElement): void {
         });
       }
 
-      // Connect after status indicator is created
+      // Initialize state WebSocket listeners BEFORE connecting
+      // This ensures event listeners are registered before any messages arrive
+      shoppingListState.initializeWebSocket();
+
+      // Connect after status indicator and state listeners are ready
       websocket.connect();
     } else {
       alert('WebSocket wird von Ihrem Browser nicht unterstützt.');

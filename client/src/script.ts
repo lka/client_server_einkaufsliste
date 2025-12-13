@@ -74,14 +74,24 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Initialize WebSocket connection if enabled
-  const wsEnabled = localStorage.getItem('enable_ws') === 'true';
+  const wsEnabled = true; // localStorage.getItem('enable_ws') === 'true';
   const wsSupported = websocket.isWebSocketSupported();
 
   console.log('WebSocket status:', { enabled: wsEnabled, supported: wsSupported });
 
   if (wsEnabled && wsSupported) {
-    console.log('Connecting to WebSocket...');
-    websocket.connect();
+    // Delay connection slightly to ensure token is loaded on slower devices
+    // The connection has built-in retry logic in connection.ts
+    setTimeout(() => {
+      console.log('Initiating WebSocket connection...');
+
+      // Initialize WebSocket event listeners in state BEFORE connecting
+      // This ensures listeners are registered before any messages arrive
+      shoppingListState.initializeWebSocket();
+
+      // Now connect to WebSocket server
+      websocket.connect();
+    }, 250);
 
     // Add connection status indicator to header-actions (before user menu)
     const headerActions = document.querySelector('.header-actions') as HTMLElement;

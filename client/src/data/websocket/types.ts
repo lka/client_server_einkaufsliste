@@ -18,4 +18,5 @@ export interface ConnectionStateManager {
   reconnectTimeout: number | null;
   heartbeatInterval: number | null;
   messageQueue: WebSocketMessage[];
+  connectionTimeout: number | null;
 }

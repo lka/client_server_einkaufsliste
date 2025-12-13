@@ -18,27 +18,39 @@ class ShoppingListState {
   private listeners: Set<StateChangeListener> = new Set();
   private loading: boolean = false;
   private wsUnsubscribers: Array<() => void> = [];
+  private wsInitialized: boolean = false;
 
   constructor() {
-    this.initializeWebSocket();
+    // Don't initialize WebSocket in constructor - wait for explicit call
+    // This avoids race conditions with token availability on slower devices
   }
 
   /**
    * Initialize WebSocket event listeners for real-time updates.
+   * This should be called explicitly after token is confirmed available.
    */
-  private initializeWebSocket(): void {
+  initializeWebSocket(): void {
+    // Prevent double initialization
+    if (this.wsInitialized) {
+      console.log('ShoppingListState: WebSocket already initialized');
+      return;
+    }
+
     // Only initialize if WebSocket is supported and feature flag is enabled
     if (!websocket.isWebSocketSupported()) {
-      console.log('WebSocket not supported, using HTTP polling fallback');
+      console.log('ShoppingListState: WebSocket not supported, using HTTP polling fallback');
       return;
     }
 
     // Check feature flag from localStorage
-    const wsEnabled = localStorage.getItem('enable_ws') === 'true';
+    const wsEnabled = true; // localStorage.getItem('enable_ws') === 'true';
     if (!wsEnabled) {
-      console.log('WebSocket disabled by feature flag');
+      console.log('ShoppingListState: WebSocket disabled by feature flag');
       return;
     }
+
+    console.log('ShoppingListState: Initializing WebSocket event listeners');
+    this.wsInitialized = true;
 
     // Subscribe to WebSocket events
     this.wsUnsubscribers.push(
