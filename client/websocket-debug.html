@@ -145,7 +145,8 @@
         <div class="info-box">
             <strong>Browser:</strong> <span id="browserInfo"></span><br>
             <strong>Platform:</strong> <span id="platformInfo"></span><br>
-            <strong>Location:</strong> <span id="locationInfo"></span>
+            <strong>Location:</strong> <span id="locationInfo"></span><br>
+            <strong>WebSocket Enabled:</strong> <span id="wsEnabledInfo"></span>
         </div>
 
         <div id="loginWarning" class="warning" style="display: none;">
@@ -155,6 +156,7 @@
         <div class="button-row">
             <button onclick="testWebSocket()" class="success">🔌 WebSocket Testen</button>
             <button onclick="enableWebSocket()">✅ WebSocket Aktivieren</button>
+            <button onclick="checkToken()">🔄 Token Neu Laden</button>
             <button onclick="disconnectWS()" class="danger">❌ Trennen</button>
             <button onclick="clearLog()">🗑️ Log löschen</button>
         </div>
@@ -191,9 +193,13 @@
         }
 
         function checkToken() {
-            const token = localStorage.getItem('token');
+            // Try both 'token' and 'auth_token' keys
+            let token = localStorage.getItem('token') || localStorage.getItem('auth_token');
             const tokenDisplay = document.getElementById('tokenDisplay');
             const loginWarning = document.getElementById('loginWarning');
+
+            // Debug: Show all localStorage keys
+            log('📦 LocalStorage Keys: ' + Object.keys(localStorage).join(', '));
 
             if (token) {
                 // Show first and last 10 chars
@@ -207,7 +213,8 @@
             } else {
                 tokenDisplay.textContent = 'Kein Token gefunden';
                 loginWarning.style.display = 'block';
-                log('❌ Kein Token gefunden - bitte einloggen');
+                log('❌ Kein Token in localStorage - bitte einloggen');
+                log('💡 Tipp: Nach dem Login diese Seite neu laden oder auf "Token Neu Laden" klicken');
                 return false;
             }
         }
@@ -220,12 +227,16 @@
         }
 
         function testWebSocket() {
-            const token = localStorage.getItem('token');
+            // Try both 'token' and 'auth_token' keys (same as checkToken)
+            const token = localStorage.getItem('token') || localStorage.getItem('auth_token');
 
             if (!token) {
                 alert('Bitte zuerst einloggen!');
+                log('❌ Kein Token gefunden - kann nicht verbinden');
                 return;
             }
+
+            log('🔑 Token gefunden, starte WebSocket-Verbindung...');
 
             if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) {
                 log('⚠️ WebSocket ist bereits verbunden oder verbindet gerade');
@@ -238,12 +249,29 @@
                 const url = `${protocol}//${host}/ws/${token}`;
 
                 log(`🔗 Verbinde zu: ${url.replace(token, 'TOKEN_HIDDEN')}`);
+                log(`📍 Protocol: ${protocol}, Host: ${host}`);
                 updateStatus('🟡 Verbinde...', 'connecting');
 
+                // Timeout nach 10 Sekunden
+                const connectionTimeout = setTimeout(() => {
+                    if (ws && ws.readyState === WebSocket.CONNECTING) {
+                        log('⏱️ Verbindungs-Timeout nach 10 Sekunden');
+                        log('❌ Mögliche Ursachen:');
+                        log('   - Server nicht erreichbar (Firewall?)');
+                        log('   - Falsche IP-Adresse');
+                        log('   - Port 8000 nicht offen');
+                        ws.close();
+                        updateStatus('🔴 Timeout', 'error');
+                    }
+                }, 10000);
+
                 ws = new WebSocket(url);
+                log(`⏳ WebSocket erstellt, warte auf Verbindung... (ReadyState: ${ws.readyState})`);
 
                 ws.onopen = () => {
+                    clearTimeout(connectionTimeout);
                     log('✅ WebSocket erfolgreich verbunden!');
+                    log(`📊 ReadyState: ${ws.readyState} (1 = OPEN)`);
                     updateStatus('🟢 Verbunden', 'connected');
                 };
 
@@ -257,13 +285,17 @@
                 };
 
                 ws.onerror = (error) => {
+                    clearTimeout(connectionTimeout);
                     log(`❌ WebSocket Fehler: ${error.type || 'Unbekannter Fehler'}`);
+                    log(`📊 ReadyState beim Fehler: ${ws.readyState}`);
                     updateStatus('🔴 Fehler', 'error');
                     console.error('WebSocket error:', error);
                 };
 
                 ws.onclose = (event) => {
+                    clearTimeout(connectionTimeout);
                     log(`🔌 Verbindung geschlossen - Code: ${event.code}, Reason: ${event.reason || 'Keine Angabe'}`);
+                    log(`📊 wasClean: ${event.wasClean}, ReadyState: ${ws ? ws.readyState : 'null'}`);
                     if (event.code !== 1000) {
                         log(`⚠️ Unerwartete Trennung! Code ${event.code} bedeutet: ${getCloseCodeMeaning(event.code)}`);
                     }
@@ -322,6 +354,15 @@
 
             // Check if WebSocket is enabled
             const wsEnabled = localStorage.getItem('enable_ws');
+            const wsEnabledInfo = document.getElementById('wsEnabledInfo');
+            if (wsEnabled === 'true') {
+                wsEnabledInfo.textContent = '✅ Ja';
+                wsEnabledInfo.style.color = 'green';
+            } else {
+                wsEnabledInfo.textContent = '❌ Nein';
+                wsEnabledInfo.style.color = 'red';
+            }
+
             log(`📱 WebSocket Debug Tool gestartet`);
             log(`📍 Platform: ${navigator.platform}`);
             log(`📍 Location: ${window.location.host}`);

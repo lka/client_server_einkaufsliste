@@ -11,7 +11,8 @@ export const state: ConnectionStateManager = {
   reconnectAttempts: 0,
   reconnectTimeout: null,
   heartbeatInterval: null,
-  messageQueue: []
+  messageQueue: [],
+  connectionTimeout: null
 };
 
 /**

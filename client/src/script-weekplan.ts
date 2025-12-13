@@ -36,11 +36,14 @@ window.addEventListener('DOMContentLoaded', async () => {
   initUserMenu();
 
   // Initialize WebSocket connection if enabled
-  const wsEnabled = localStorage.getItem('enable_ws') === 'true';
+  const wsEnabled = true; // localStorage.getItem('enable_ws') === 'true';
   const wsSupported = websocket.isWebSocketSupported();
 
   if (wsEnabled && wsSupported) {
-    console.log('Connecting to WebSocket...');
-    websocket.connect();
+    // Delay connection slightly to ensure token is loaded on slower devices
+    setTimeout(() => {
+      console.log('Connecting to WebSocket...');
+      websocket.connect();
+    }, 250);
   }
 });

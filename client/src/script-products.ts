@@ -8,6 +8,7 @@ import { initProductAdmin } from './ui/product-admin.js';
 import { initUserMenu, updateUserDisplay } from './ui/user-menu.js';
 import { initializeComponents } from './ui/components/index.js';
 import * as websocket from './data/websocket.js';
+import { productAdminState } from './state/product-admin-state.js';
 
 /**
  * Initialize the products admin page when DOM is ready.
@@ -37,13 +38,21 @@ window.addEventListener('DOMContentLoaded', async () => {
   await initProductAdmin();
 
   // Initialize WebSocket connection if enabled
-  const wsEnabled = localStorage.getItem('enable_ws') === 'true';
+  const wsEnabled = true; // localStorage.getItem('enable_ws') === 'true';
   const wsSupported = websocket.isWebSocketSupported();
 
   console.log('WebSocket status (product-admin):', { enabled: wsEnabled, supported: wsSupported });
 
   if (wsEnabled && wsSupported) {
-    console.log('Connecting to WebSocket for product-admin...');
-    websocket.connect();
+    // Delay connection slightly to ensure token is loaded on slower devices
+    setTimeout(() => {
+      console.log('Connecting to WebSocket for product-admin...');
+
+      // Initialize WebSocket event listeners in state BEFORE connecting
+      productAdminState.initializeWebSocket();
+
+      // Now connect to WebSocket server
+      websocket.connect();
+    }, 250);
   }
 });

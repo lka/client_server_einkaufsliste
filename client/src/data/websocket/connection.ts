@@ -130,24 +130,65 @@ function scheduleReconnect(): void {
 export function connect(): void {
   const ws = getWebSocket();
 
+  console.log('connect() called', { ws, readyState: ws?.readyState });
+
   if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) {
     console.log('WebSocket already connected or connecting');
     return;
   }
 
+  // Clear any existing connection timeout
+  if (state.connectionTimeout) {
+    clearTimeout(state.connectionTimeout);
+    state.connectionTimeout = null;
+  }
+
   try {
     setConnectionState('connecting');
     const url = getWebSocketUrl();
+
+    console.log('Creating WebSocket connection...');
     const newWs = new WebSocket(url);
 
-    newWs.onopen = handleOpen;
+    newWs.onopen = () => {
+      // Clear connection timeout on successful connection
+      if (state.connectionTimeout) {
+        clearTimeout(state.connectionTimeout);
+        state.connectionTimeout = null;
+      }
+      handleOpen();
+    };
+
     newWs.onclose = handleClose;
     newWs.onerror = handleError;
     newWs.onmessage = handleMessage;
 
     setWebSocket(newWs);
+    console.log('WebSocket instance created, waiting for connection...');
+
+    // Safari workaround: Force close connection if stuck in CONNECTING state
+    // Safari's "Advanced Tracking and Fingerprinting Protection" blocks WebSocket to local IPs
+    state.connectionTimeout = window.setTimeout(() => {
+      if (newWs.readyState === WebSocket.CONNECTING) {
+        console.warn('WebSocket connection timeout - stuck in CONNECTING state');
+        console.warn('Safari Advanced Protection may be blocking WebSocket to local IPs');
+        console.warn('App will continue using HTTP polling');
+
+        // Force close the stuck connection
+        newWs.close();
+        setConnectionState('disconnected');
+
+        // Don't retry - Safari will keep blocking
+      }
+    }, 5000); // 5 second timeout
   } catch (error) {
     console.error('Error creating WebSocket connection:', error);
+
+    // If no token is available, the error message will contain this
+    if (error instanceof Error && error.message.includes('No authentication token')) {
+      console.warn('WebSocket connection failed: Token not available yet');
+    }
+
     setConnectionState('disconnected');
     scheduleReconnect();
   }
@@ -160,6 +201,11 @@ export function disconnect(): void {
   if (state.reconnectTimeout) {
     clearTimeout(state.reconnectTimeout);
     state.reconnectTimeout = null;
+  }
+
+  if (state.connectionTimeout) {
+    clearTimeout(state.connectionTimeout);
+    state.connectionTimeout = null;
   }
 
   stopHeartbeat();
@@ -178,7 +224,21 @@ export function disconnect(): void {
 
 /**
  * Check if WebSocket is supported by browser.
+ * Returns false for Safari due to Advanced Tracking Protection blocking local IPs.
  */
 export function isWebSocketSupported(): boolean {
-  return 'WebSocket' in window;
+  if (!('WebSocket' in window)) {
+    return false;
+  }
+
+  // Detect Safari browser
+  // Safari's Advanced Tracking and Fingerprinting Protection blocks WebSocket to local IPs
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+  if (isSafari) {
+    console.log('Safari detected - WebSocket disabled due to Advanced Protection blocking local IPs');
+    return false;
+  }
+
+  return true;
 }

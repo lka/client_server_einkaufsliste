@@ -28,26 +28,38 @@ class TemplateAdminState {
 
   private listeners: Set<StateChangeListener> = new Set();
   private wsUnsubscribers: Array<() => void> = [];
+  private wsInitialized: boolean = false;
 
   constructor() {
-    this.initializeWebSocket();
+    // Don't initialize WebSocket in constructor - wait for explicit call
+    // This avoids race conditions with token availability on slower devices
   }
 
   /**
    * Initialize WebSocket event listeners for real-time updates.
+   * This should be called explicitly after token is confirmed available.
    */
-  private initializeWebSocket(): void {
+  initializeWebSocket(): void {
+    // Prevent double initialization
+    if (this.wsInitialized) {
+      console.log('TemplateAdminState: WebSocket already initialized');
+      return;
+    }
+
     // Only initialize if WebSocket is supported and feature flag is enabled
     if (!websocket.isWebSocketSupported()) {
-      console.log('WebSocket not supported for template-admin');
+      console.log('TemplateAdminState: WebSocket not supported');
       return;
     }
 
     const wsEnabled = localStorage.getItem('enable_ws') === 'true';
     if (!wsEnabled) {
-      console.log('WebSocket disabled by feature flag for template-admin');
+      console.log('TemplateAdminState: WebSocket disabled by feature flag');
       return;
     }
+
+    console.log('TemplateAdminState: Initializing WebSocket event listeners');
+    this.wsInitialized = true;
 
     // Subscribe to template events
     this.wsUnsubscribers.push(

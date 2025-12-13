@@ -29,26 +29,38 @@ class StoreAdminState {
 
   private listeners: Set<StateChangeListener> = new Set();
   private wsUnsubscribers: Array<() => void> = [];
+  private wsInitialized: boolean = false;
 
   constructor() {
-    this.initializeWebSocket();
+    // Don't initialize WebSocket in constructor - wait for explicit call
+    // This avoids race conditions with token availability on slower devices
   }
 
   /**
    * Initialize WebSocket event listeners for real-time updates.
+   * This should be called explicitly after token is confirmed available.
    */
-  private initializeWebSocket(): void {
-    // Only initialize if WebSocket is supported and feature flag is enabled
-    if (!websocket.isWebSocketSupported()) {
-      console.log('WebSocket not supported for store-admin');
+  initializeWebSocket(): void {
+    // Prevent double initialization
+    if (this.wsInitialized) {
+      console.log('StoreAdminState: WebSocket already initialized');
       return;
     }
 
-    const wsEnabled = localStorage.getItem('enable_ws') === 'true';
-    if (!wsEnabled) {
-      console.log('WebSocket disabled by feature flag for store-admin');
+    // Only initialize if WebSocket is supported and feature flag is enabled
+    if (!websocket.isWebSocketSupported()) {
+      console.log('StoreAdminState: WebSocket not supported');
       return;
     }
+
+    const wsEnabled = true; // localStorage.getItem('enable_ws') === 'true';
+    if (!wsEnabled) {
+      console.log('StoreAdminState: WebSocket disabled by feature flag');
+      return;
+    }
+
+    console.log('StoreAdminState: Initializing WebSocket event listeners');
+    this.wsInitialized = true;
 
     // Subscribe to store events
     this.wsUnsubscribers.push(
