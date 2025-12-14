@@ -132,7 +132,15 @@ export function connect(): void {
 
   console.log('connect() called', { ws, readyState: ws?.readyState });
 
-  if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) {
+  // Clean up any closed or closing connections
+  if (ws && (ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING)) {
+    console.log('Cleaning up stale WebSocket connection');
+    setWebSocket(null);
+  }
+
+  // Don't create a new connection if one is already active
+  const currentWs = getWebSocket();
+  if (currentWs && (currentWs.readyState === WebSocket.CONNECTING || currentWs.readyState === WebSocket.OPEN)) {
     console.log('WebSocket already connected or connecting');
     return;
   }
@@ -212,9 +220,12 @@ export function disconnect(): void {
 
   const ws = getWebSocket();
   if (ws) {
-    // Close with code 1000 (normal closure) to prevent auto-reconnect
-    ws.close(1000, 'Client disconnect');
+    // IMPORTANT: Set to null FIRST to prevent race conditions during page navigation
+    // This ensures new pages don't try to reuse a closing connection
     setWebSocket(null);
+
+    // Then close with code 1000 (normal closure) to prevent auto-reconnect
+    ws.close(1000, 'Client disconnect');
   }
 
   setConnectionState('disconnected');
@@ -231,12 +242,14 @@ export function isWebSocketSupported(): boolean {
     return false;
   }
 
-  // Detect Safari browser
-  // Safari's Advanced Tracking and Fingerprinting Protection blocks WebSocket to local IPs
-  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  // Detect Safari browser (but not Chrome on iOS, which uses "CriOS")
+  // Safari has multiple issues with WebSocket:
+  // 1. Advanced Tracking Protection blocks connections to local IPs
+  // 2. WebSocket connections are closed prematurely during page navigation
+  const isSafari = /^((?!chrome|android|crios).)*safari/i.test(navigator.userAgent);
 
   if (isSafari) {
-    console.log('Safari detected - WebSocket disabled due to Advanced Protection blocking local IPs');
+    console.log('Safari detected - WebSocket disabled due to connection issues with local IPs');
     return false;
   }
 
