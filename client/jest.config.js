@@ -25,4 +25,6 @@ module.exports = {
       },
     ],
   },
+  // Force exit after tests complete to prevent worker warnings from async timers
+  forceExit: true,
 };

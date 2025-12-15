@@ -39,21 +39,17 @@ window.addEventListener('DOMContentLoaded', async () => {
   initUserMenu();
 
   // Initialize WebSocket connection if enabled
-  const wsEnabled = true; // localStorage.getItem('enable_ws') === 'true';
   const wsSupported = websocket.isWebSocketSupported();
 
-  console.log('WebSocket status (store-admin):', { enabled: wsEnabled, supported: wsSupported });
+  console.log('WebSocket status (store-admin):', { supported: wsSupported });
 
-  if (wsEnabled && wsSupported) {
-    // Delay connection slightly to ensure token is loaded on slower devices
-    setTimeout(() => {
-      console.log('Connecting to WebSocket for store-admin...');
+  if (wsSupported) {
+    console.log('Store-Admin is connecting to WebSocket...');
 
-      // Initialize WebSocket event listeners in state BEFORE connecting
-      storeAdminState.initializeWebSocket();
+    // Initialize WebSocket event listeners in state BEFORE connecting
+    storeAdminState.initializeWebSocket();
 
-      // Now connect to WebSocket server
-      websocket.connect();
-    }, 250);
+    // Now connect to WebSocket server
+    websocket.connect();
   }
 });

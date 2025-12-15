@@ -38,22 +38,18 @@ window.addEventListener('DOMContentLoaded', async () => {
   initTemplateAdmin();
   initUserMenu();
 
-  // Initialize WebSocket connection if enabled
-  const wsEnabled = true; // localStorage.getItem('enable_ws') === 'true';
+  // Initialize WebSocket connection if supported
   const wsSupported = websocket.isWebSocketSupported();
 
-  console.log('WebSocket status (template-admin):', { enabled: wsEnabled, supported: wsSupported });
+  console.log('WebSocket status (template-admin):', { supported: wsSupported });
 
-  if (wsEnabled && wsSupported) {
-    // Delay connection slightly to ensure token is loaded on slower devices
-    setTimeout(() => {
-      console.log('Connecting to WebSocket for template-admin...');
+  if (wsSupported) {
+    console.log('Connecting to WebSocket for template-admin...');
 
-      // Initialize WebSocket event listeners in state BEFORE connecting
-      templateAdminState.initializeWebSocket();
+    // Initialize WebSocket event listeners in state BEFORE connecting
+    templateAdminState.initializeWebSocket();
 
-      // Now connect to WebSocket server
-      websocket.connect();
-    }, 250);
+    // Now connect to WebSocket server
+    websocket.connect();
   }
 });

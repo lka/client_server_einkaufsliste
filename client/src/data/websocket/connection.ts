@@ -156,39 +156,16 @@ export function connect(): void {
     const url = getWebSocketUrl();
 
     console.log('Creating WebSocket connection...');
-    const newWs = new WebSocket(url);
+    const ws = new WebSocket(url);
 
-    newWs.onopen = () => {
-      // Clear connection timeout on successful connection
-      if (state.connectionTimeout) {
-        clearTimeout(state.connectionTimeout);
-        state.connectionTimeout = null;
-      }
-      handleOpen();
-    };
+    ws.onopen = handleOpen;
+    ws.onclose = handleClose;
+    ws.onerror = handleError;
+    ws.onmessage = handleMessage;
 
-    newWs.onclose = handleClose;
-    newWs.onerror = handleError;
-    newWs.onmessage = handleMessage;
-
-    setWebSocket(newWs);
+    setWebSocket(ws);
     console.log('WebSocket instance created, waiting for connection...');
 
-    // Safari workaround: Force close connection if stuck in CONNECTING state
-    // Safari's "Advanced Tracking and Fingerprinting Protection" blocks WebSocket to local IPs
-    state.connectionTimeout = window.setTimeout(() => {
-      if (newWs.readyState === WebSocket.CONNECTING) {
-        console.warn('WebSocket connection timeout - stuck in CONNECTING state');
-        console.warn('Safari Advanced Protection may be blocking WebSocket to local IPs');
-        console.warn('App will continue using HTTP polling');
-
-        // Force close the stuck connection
-        newWs.close();
-        setConnectionState('disconnected');
-
-        // Don't retry - Safari will keep blocking
-      }
-    }, 5000); // 5 second timeout
   } catch (error) {
     console.error('Error creating WebSocket connection:', error);
 
@@ -235,21 +212,9 @@ export function disconnect(): void {
 
 /**
  * Check if WebSocket is supported by browser.
- * Returns false for Safari due to Advanced Tracking Protection blocking local IPs.
  */
 export function isWebSocketSupported(): boolean {
   if (!('WebSocket' in window)) {
-    return false;
-  }
-
-  // Detect Safari browser (but not Chrome on iOS, which uses "CriOS")
-  // Safari has multiple issues with WebSocket:
-  // 1. Advanced Tracking Protection blocks connections to local IPs
-  // 2. WebSocket connections are closed prematurely during page navigation
-  const isSafari = /^((?!chrome|android|crios).)*safari/i.test(navigator.userAgent);
-
-  if (isSafari) {
-    console.log('Safari detected - WebSocket disabled due to connection issues with local IPs');
     return false;
   }
 

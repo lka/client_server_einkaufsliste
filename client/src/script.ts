@@ -73,25 +73,21 @@ window.addEventListener('DOMContentLoaded', async () => {
     console.warn('Token expiration time not found - inactivity tracker not initialized');
   }
 
-  // Initialize WebSocket connection if enabled
-  const wsEnabled = true; // localStorage.getItem('enable_ws') === 'true';
+  // Initialize WebSocket connection if supported
   const wsSupported = websocket.isWebSocketSupported();
 
-  console.log('WebSocket status:', { enabled: wsEnabled, supported: wsSupported });
+  console.log('WebSocket status:', { supported: wsSupported });
 
-  if (wsEnabled && wsSupported) {
-    // Delay connection slightly to ensure token is loaded on slower devices
+  if (wsSupported) {
     // The connection has built-in retry logic in connection.ts
-    setTimeout(() => {
-      console.log('Initiating WebSocket connection...');
+    console.log('ShoppingList is initiating WebSocket connection...');
 
-      // Initialize WebSocket event listeners in state BEFORE connecting
-      // This ensures listeners are registered before any messages arrive
-      shoppingListState.initializeWebSocket();
+    // Initialize WebSocket event listeners in state BEFORE connecting
+    // This ensures listeners are registered before any messages arrive
+    shoppingListState.initializeWebSocket();
 
-      // Now connect to WebSocket server
-      websocket.connect();
-    }, 250);
+    // Now connect to WebSocket server
+    websocket.connect();
 
     // Add connection status indicator to header-actions (before user menu)
     const headerActions = document.querySelector('.header-actions') as HTMLElement;

@@ -36,14 +36,11 @@ window.addEventListener('DOMContentLoaded', async () => {
   initUserMenu();
 
   // Initialize WebSocket connection if enabled
-  const wsEnabled = true; // localStorage.getItem('enable_ws') === 'true';
   const wsSupported = websocket.isWebSocketSupported();
 
-  if (wsEnabled && wsSupported) {
+  if (wsSupported) {
     // Delay connection slightly to ensure token is loaded on slower devices
-    setTimeout(() => {
-      console.log('Connecting to WebSocket...');
-      websocket.connect();
-    }, 250);
+    console.log('Weekplan is connecting to WebSocket...');
+    websocket.connect();
   }
 });

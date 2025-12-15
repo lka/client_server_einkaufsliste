@@ -6,6 +6,7 @@ import * as domModule from './data/dom.js';
 import * as authModule from './data/auth.js';
 import * as productAdminModule from './ui/product-admin.js';
 import * as userMenuModule from './ui/user-menu.js';
+import * as websocketConnectionModule from './data/websocket/connection.js';
 
 // Mock all dependencies
 jest.mock('./data/dom.js', () => ({
@@ -14,6 +15,7 @@ jest.mock('./data/dom.js', () => ({
 
 jest.mock('./data/auth.js', () => ({
   isAuthenticated: jest.fn(),
+  getToken: jest.fn(() => 'mock-token'),
 }));
 
 jest.mock('./ui/product-admin.js', () => ({
@@ -35,6 +37,9 @@ describe('script-products.ts products page entry point', () => {
   let consoleErrorSpy: jest.SpyInstance;
 
   beforeEach(() => {
+    // Use fake timers to prevent timer leaks
+    jest.useFakeTimers();
+
     // Clear all mocks
     jest.clearAllMocks();
 
@@ -57,6 +62,13 @@ describe('script-products.ts products page entry point', () => {
   });
 
   afterEach(() => {
+    // Clean up WebSocket connections and timers
+    websocketConnectionModule.disconnect();
+
+    // Clear all timers
+    jest.clearAllTimers();
+    jest.useRealTimers();
+
     // Restore spies
     addEventListenerSpy.mockRestore();
     consoleErrorSpy.mockRestore();
