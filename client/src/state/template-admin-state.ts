@@ -52,13 +52,6 @@ class TemplateAdminState {
       return;
     }
 
-    const wsEnabled = localStorage.getItem('enable_ws') === 'true';
-    if (!wsEnabled) {
-      console.log('TemplateAdminState: WebSocket disabled by feature flag');
-      return;
-    }
-
-    console.log('TemplateAdminState: Initializing WebSocket event listeners');
     this.wsInitialized = true;
 
     // Subscribe to template events

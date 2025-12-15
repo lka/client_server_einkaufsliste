@@ -31,18 +31,6 @@ function getWebSocketUrl(): string {
   }
 
   const wsUrl = `${protocol}//${host}/ws/${token}`;
-  console.log('WebSocket URL:', wsUrl.replace(token, 'TOKEN_HIDDEN'));
-  console.log('Browser Info:', {
-    userAgent: navigator.userAgent,
-    platform: navigator.platform,
-    location: {
-      protocol: window.location.protocol,
-      host: window.location.host,
-      hostname: window.location.hostname,
-      port: window.location.port
-    }
-  });
-
   return wsUrl;
 }
 
@@ -62,7 +50,6 @@ function getReconnectDelay(): number {
  * Handle WebSocket connection open.
  */
 function handleOpen(): void {
-  console.log('WebSocket connected');
   setConnectionState('connected');
   resetReconnectAttempts();
 
@@ -80,7 +67,6 @@ function handleOpen(): void {
  * Handle WebSocket connection close.
  */
 function handleClose(event: CloseEvent): void {
-  console.log('WebSocket disconnected:', event.code, event.reason);
   setConnectionState('disconnected');
 
   // Stop heartbeat
@@ -115,8 +101,6 @@ function scheduleReconnect(): void {
   incrementReconnectAttempts();
 
   const delay = getReconnectDelay();
-  const attempts = getReconnectAttempts();
-  console.log(`Reconnecting in ${delay}ms (attempt ${attempts})...`);
 
   state.reconnectTimeout = window.setTimeout(() => {
     state.reconnectTimeout = null;
@@ -130,18 +114,14 @@ function scheduleReconnect(): void {
 export function connect(): void {
   const ws = getWebSocket();
 
-  console.log('connect() called', { ws, readyState: ws?.readyState });
-
   // Clean up any closed or closing connections
   if (ws && (ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING)) {
-    console.log('Cleaning up stale WebSocket connection');
     setWebSocket(null);
   }
 
   // Don't create a new connection if one is already active
   const currentWs = getWebSocket();
   if (currentWs && (currentWs.readyState === WebSocket.CONNECTING || currentWs.readyState === WebSocket.OPEN)) {
-    console.log('WebSocket already connected or connecting');
     return;
   }
 
@@ -155,7 +135,6 @@ export function connect(): void {
     setConnectionState('connecting');
     const url = getWebSocketUrl();
 
-    console.log('Creating WebSocket connection...');
     const ws = new WebSocket(url);
 
     ws.onopen = handleOpen;
@@ -164,7 +143,6 @@ export function connect(): void {
     ws.onmessage = handleMessage;
 
     setWebSocket(ws);
-    console.log('WebSocket instance created, waiting for connection...');
 
   } catch (error) {
     console.error('Error creating WebSocket connection:', error);

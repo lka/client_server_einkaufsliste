@@ -4,7 +4,7 @@
 
 import * as websocket from '../../data/websocket.js';
 import { shoppingListState } from '../../state/shopping-list-state.js';
-import { ConnectionStatus, showToast } from '../components/index.js';
+import { ConnectionStatus } from '../components/index.js';
 
 // Store ConnectionStatus instance for proper cleanup
 let connectionStatusInstance: ConnectionStatus | null = null;
@@ -28,12 +28,9 @@ export function setConnectionStatusInstance(instance: ConnectionStatus | null): 
  */
 function updateWebSocketButtonState(button: HTMLElement): void {
   const isConnected = websocket.isConnected();
-  const isEnabled = true; // localStorage.getItem('enable_ws') === 'true';
 
   if (isConnected) {
     button.textContent = '🔌 WebSocket deaktivieren';
-  } else if (isEnabled) {
-    button.textContent = '🔌 WebSocket verbinden...';
   } else {
     button.textContent = '🔌 WebSocket aktivieren';
   }
@@ -56,8 +53,6 @@ function handleToggleWebSocket(button: HTMLElement): void {
       connectionStatusInstance = null;
     }
   } else {
-    // Enable and connect
-    localStorage.setItem('enable_ws', 'true');
 
     if (websocket.isWebSocketSupported()) {
       // Add connection status indicator to header-actions if not present
@@ -91,58 +86,10 @@ function handleToggleWebSocket(button: HTMLElement): void {
 }
 
 /**
- * Handle copy WebSocket link button click.
- */
-async function handleCopyWebSocketLink(): Promise<void> {
-  // Generate URL with WebSocket parameter
-  const url = new URL(window.location.href);
-  url.searchParams.set('ws', '1');
-  const wsLink = url.toString();
-
-  try {
-    // Try to use native share API if available (mobile devices)
-    if (navigator.share) {
-      await navigator.share({
-        title: 'Einkaufsliste mit WebSocket',
-        text: 'Öffne die Einkaufsliste mit aktiviertem WebSocket',
-        url: wsLink
-      });
-      showToast({
-        message: 'Link erfolgreich geteilt!',
-        type: 'success',
-        duration: 2000
-      });
-      console.log('Link erfolgreich geteilt');
-    } else {
-      // Fallback: Copy to clipboard
-      await navigator.clipboard.writeText(wsLink);
-
-      showToast({
-        message: '✓ WebSocket-Link in Zwischenablage kopiert!',
-        type: 'success',
-        duration: 2000
-      });
-    }
-  } catch (error) {
-    console.error('Fehler beim Kopieren/Teilen des Links:', error);
-
-    showToast({
-      message: 'Fehler beim Kopieren des Links',
-      type: 'error',
-      duration: 3000
-    });
-
-    // Ultimate fallback: Show the link in an alert
-    alert(`WebSocket-Link:\n\n${wsLink}\n\nBitte manuell kopieren.`);
-  }
-}
-
-/**
  * Attach WebSocket handlers to menu items.
  */
 export function attachWebSocketHandlers(): void {
   const toggleWebSocketBtn = document.getElementById('toggleWebSocketBtn');
-  const copyWebSocketLinkBtn = document.getElementById('copyWebSocketLinkBtn');
 
   // Toggle WebSocket button
   if (toggleWebSocketBtn) {
@@ -161,10 +108,5 @@ export function attachWebSocketHandlers(): void {
     toggleWebSocketBtn.addEventListener('click', () => {
       handleToggleWebSocket(toggleWebSocketBtn);
     });
-  }
-
-  // Copy WebSocket Link button
-  if (copyWebSocketLinkBtn) {
-    copyWebSocketLinkBtn.addEventListener('click', handleCopyWebSocketLink);
   }
 }

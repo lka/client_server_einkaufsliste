@@ -45,6 +45,9 @@ export function createDatePicker(options: DatePickerOptions = {}): DatePickerIns
     required = false
   } = options;
 
+  // Generate unique ID for accessibility
+  const uniqueId = `datepicker-${Math.random().toString(36).substr(2, 9)}`;
+
   // Container
   const container = document.createElement('div');
   container.className = `datepicker-container ${className}`.trim();
@@ -53,6 +56,7 @@ export function createDatePicker(options: DatePickerOptions = {}): DatePickerIns
   if (label) {
     const labelEl = document.createElement('label');
     labelEl.className = 'datepicker-label';
+    labelEl.htmlFor = uniqueId;
     labelEl.textContent = label;
     if (required) {
       const requiredSpan = document.createElement('span');
@@ -72,9 +76,12 @@ export function createDatePicker(options: DatePickerOptions = {}): DatePickerIns
   const input = document.createElement('input');
   input.type = 'text';
   input.className = 'datepicker-input';
+  input.id = uniqueId;
+  input.name = uniqueId;
   input.placeholder = placeholder;
   input.readOnly = true;
   input.disabled = disabled;
+
   if (required) {
     input.setAttribute('required', '');
   }

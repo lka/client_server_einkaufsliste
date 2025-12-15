@@ -32,8 +32,6 @@ export function initInactivityTracker(expiresInSeconds: number): void {
   // Convert seconds to milliseconds
   inactivityTimeoutMs = expiresInSeconds * 1000;
 
-  console.log(`Inactivity tracker initialized: ${expiresInSeconds}s (${expiresInSeconds / 60} minutes)`);
-
   // Reset the timer
   resetInactivityTimer();
 

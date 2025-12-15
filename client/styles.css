@@ -114,6 +114,7 @@ header h1{margin:0;font-size:1.5rem;flex:1}
   color:var(--muted);
   border-top:1px solid #e0e0e0;
   font-family:monospace;
+  -webkit-user-select:text;
   user-select:text;
   cursor:default;
 }

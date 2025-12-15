@@ -53,13 +53,6 @@ class StoreAdminState {
       return;
     }
 
-    const wsEnabled = true; // localStorage.getItem('enable_ws') === 'true';
-    if (!wsEnabled) {
-      console.log('StoreAdminState: WebSocket disabled by feature flag');
-      return;
-    }
-
-    console.log('StoreAdminState: Initializing WebSocket event listeners');
     this.wsInitialized = true;
 
     // Subscribe to store events

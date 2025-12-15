@@ -64,13 +64,6 @@ class ProductAdminState {
       return;
     }
 
-    const wsEnabled = true; // localStorage.getItem('enable_ws') === 'true';
-    if (!wsEnabled) {
-      console.log('ProductAdminState: WebSocket disabled by feature flag');
-      return;
-    }
-
-    console.log('ProductAdminState: Initializing WebSocket event listeners');
     this.wsInitialized = true;
 
     // Subscribe to product events

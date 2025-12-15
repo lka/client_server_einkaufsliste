@@ -74,7 +74,6 @@ async function initializeShoppingDatePicker(container: HTMLElement): Promise<voi
     const mainShoppingDayPython = config?.main_shopping_day ?? 2;
     // Convert from Python convention (0=Monday) to JavaScript convention (0=Sunday)
     const mainShoppingDay = (mainShoppingDayPython + 1) % 7;
-    console.log(`Shopping day config: Python=${mainShoppingDayPython}, JS=${mainShoppingDay}`);
 
     // Calculate next occurrence of the configured shopping day
     const nextShoppingDay = calculateNextShoppingDay(mainShoppingDay);

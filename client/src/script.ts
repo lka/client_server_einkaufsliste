@@ -76,12 +76,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Initialize WebSocket connection if supported
   const wsSupported = websocket.isWebSocketSupported();
 
-  console.log('WebSocket status:', { supported: wsSupported });
-
   if (wsSupported) {
     // The connection has built-in retry logic in connection.ts
-    console.log('ShoppingList is initiating WebSocket connection...');
-
     // Initialize WebSocket event listeners in state BEFORE connecting
     // This ensures listeners are registered before any messages arrive
     shoppingListState.initializeWebSocket();
@@ -92,7 +88,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     // Add connection status indicator to header-actions (before user menu)
     const headerActions = document.querySelector('.header-actions') as HTMLElement;
     if (headerActions) {
-      console.log('Creating ConnectionStatus component in header-actions');
       const connectionStatus = new ConnectionStatus({
         container: headerActions,
         onReconnect: () => {

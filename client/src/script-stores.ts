@@ -10,6 +10,8 @@ import { initUserMenu, updateUserDisplay } from './ui/user-menu.js';
 import { initializeComponents } from './ui/components/index.js';
 import * as websocket from './data/websocket.js';
 import { storeAdminState } from './state/store-admin-state.js';
+import { ConnectionStatus } from './ui/components/connection-status.js';
+import { setConnectionStatusInstance } from './ui/user-menu/websocket-handlers.js';
 
 /**
  * Initialize the store admin page when DOM is ready.
@@ -41,15 +43,28 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Initialize WebSocket connection if enabled
   const wsSupported = websocket.isWebSocketSupported();
 
-  console.log('WebSocket status (store-admin):', { supported: wsSupported });
-
   if (wsSupported) {
-    console.log('Store-Admin is connecting to WebSocket...');
-
     // Initialize WebSocket event listeners in state BEFORE connecting
     storeAdminState.initializeWebSocket();
 
     // Now connect to WebSocket server
     websocket.connect();
+
+    // Add connection status indicator to header-actions (before user menu)
+    const headerActions = document.querySelector('.header-actions') as HTMLElement;
+    if (headerActions) {
+      const connectionStatus = new ConnectionStatus({
+        container: headerActions,
+        onReconnect: () => {
+          // Reload stores when reconnected to sync state
+          storeAdminState.loadStores();
+        },
+        showUserCount: false
+      });
+      // Store the instance for proper cleanup when toggling WebSocket
+      setConnectionStatusInstance(connectionStatus);
+    } else {
+      console.warn('Header actions element not found for ConnectionStatus');
+    }
   }
 });

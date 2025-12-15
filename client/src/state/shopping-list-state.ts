@@ -42,14 +42,6 @@ class ShoppingListState {
       return;
     }
 
-    // Check feature flag from localStorage
-    const wsEnabled = true; // localStorage.getItem('enable_ws') === 'true';
-    if (!wsEnabled) {
-      console.log('ShoppingListState: WebSocket disabled by feature flag');
-      return;
-    }
-
-    console.log('ShoppingListState: Initializing WebSocket event listeners');
     this.wsInitialized = true;
 
     // Subscribe to WebSocket events

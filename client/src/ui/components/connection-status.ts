@@ -285,6 +285,7 @@ export function injectConnectionStatusStyles(): void {
 
     .connection-status-label {
       font-weight: 500;
+      -webkit-user-select: none;
       user-select: none;
     }
 
