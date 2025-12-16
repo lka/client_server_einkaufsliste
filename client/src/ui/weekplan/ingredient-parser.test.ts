@@ -50,6 +50,24 @@ describe('adjustQuantityByFactor', () => {
       expect(adjustQuantityByFactor('2', 1.5)).toBe('3');
     });
   });
+
+  describe('ca. prefix removal', () => {
+    it('should remove ca. prefix before adjusting', () => {
+      expect(adjustQuantityByFactor('ca. 150 g', 2)).toBe('300 g');
+      expect(adjustQuantityByFactor('ca. 2 kg', 1.5)).toBe('3 kg');
+      expect(adjustQuantityByFactor('ca. 500 ml', 0.5)).toBe('250 ml');
+    });
+
+    it('should handle case-insensitive ca. prefix', () => {
+      expect(adjustQuantityByFactor('Ca. 150 g', 2)).toBe('300 g');
+      expect(adjustQuantityByFactor('CA. 2 kg', 1.5)).toBe('3 kg');
+    });
+
+    it('should handle ca. prefix with fractions', () => {
+      expect(adjustQuantityByFactor('ca. ½ TL', 2)).toBe('1 TL');
+      expect(adjustQuantityByFactor('ca. 1½ kg', 2)).toBe('3 kg');
+    });
+  });
 });
 
 describe('parseQuantity', () => {

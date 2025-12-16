@@ -95,16 +95,23 @@ export async function parseIngredients(ingredientLines: string[]): Promise<Parse
 /**
  * Adjust a quantity string by a scaling factor
  * Supports Unicode fractions (½, ¼, ¾, etc.) and mixed numbers (1½, 2¼, etc.)
- * @param originalMenge Original quantity string (e.g., "2 kg", "½ TL", "1½ kg")
+ * Also removes "ca. " prefix before processing
+ * @param originalMenge Original quantity string (e.g., "2 kg", "½ TL", "1½ kg", "ca. 150 g")
  * @param factor Scaling factor (e.g., 2 for doubling, 0.5 for halving)
  * @returns Adjusted quantity string
  */
 export function adjustQuantityByFactor(originalMenge: string, factor: number): string {
   if (isNaN(factor) || factor <= 0) return originalMenge;
 
+  // Remove "ca. " prefix (case-insensitive)
+  let menge = originalMenge.trim();
+  if (menge.toLowerCase().startsWith('ca. ')) {
+    menge = menge.substring(4).trim();
+  }
+
   // Extract numeric value and unit from menge
   // First try to match fractions (e.g., "½ TL", "1½ kg")
-  const fractionMatch = originalMenge.match(
+  const fractionMatch = menge.match(
     /^(-?)(\d*)([½¼¾⅓⅔⅕⅖⅗⅘⅙⅚⅐⅑⅛⅜⅝⅞])\s*(.*)$/
   );
   if (fractionMatch) {
@@ -115,7 +122,7 @@ export function adjustQuantityByFactor(originalMenge: string, factor: number): s
 
     const fractionStr = (wholePart || '') + fractionChar;
     let value = convertFractionToDecimal(fractionStr);
-    if (value === null) return originalMenge;
+    if (value === null) return menge;
 
     if (minusSign === '-') {
       value = -value;
@@ -133,8 +140,8 @@ export function adjustQuantityByFactor(originalMenge: string, factor: number): s
   }
 
   // Fall back to regular number parsing
-  const mengeMatch = originalMenge.match(/^([\d]+(?:[.,\/]\d+)?)\s*(.*)$/);
-  if (!mengeMatch) return originalMenge;
+  const mengeMatch = menge.match(/^([\d]+(?:[.,\/]\d+)?)\s*(.*)$/);
+  if (!mengeMatch) return menge;
 
   let value = parseFloat(mengeMatch[1].replace(',', '.'));
   const unit = mengeMatch[2].trim();

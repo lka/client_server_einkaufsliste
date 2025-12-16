@@ -65,7 +65,7 @@ export function createQuantityAdjustmentSection(
       return;
     }
     onAdjust(targetPersonCount);
-    adjustInput.value = '';
+    adjustInput.value = String(targetPersonCount);
   });
 
   adjustForm.appendChild(adjustInput);

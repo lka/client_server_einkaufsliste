@@ -69,7 +69,8 @@ def parse_quantity(menge: str | None) -> tuple[float | None, str | None]:
 
     Args:
         menge: Quantity string like "500 g", "2 Stück",
-            "½ TL", "1½ kg", or "-300 g" for subtraction
+            "½ TL", "1½ kg", "-300 g" for subtraction,
+            or "ca. 150 g" (approximation prefix is removed)
 
     Returns:
         Tuple of (number, unit) or (None, None) if parsing fails
@@ -81,11 +82,16 @@ def parse_quantity(menge: str | None) -> tuple[float | None, str | None]:
         - "1½ kg" -> (1.5, "kg")
         - "2¼ l" -> (2.25, "l")
         - "-300 g" -> (-300.0, "g")
+        - "ca. 150 g" -> (150.0, "g")
     """
     if not menge:
         return None, None
 
     menge_stripped = menge.strip()
+
+    # Remove "ca. " prefix (case-insensitive)
+    if menge_stripped.lower().startswith("ca. "):
+        menge_stripped = menge_stripped[4:]
 
     # First try to match fractions with optional minus sign
     # Pattern: optional minus, optional number, fraction character, optional unit

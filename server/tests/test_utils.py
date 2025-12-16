@@ -82,6 +82,16 @@ class TestParseQuantity:
         assert num == 5.0
         assert unit == "" or unit is None
 
+    def test_ca_prefix_removal(self):
+        """Test that 'ca. ' prefix is removed before parsing."""
+        assert parse_quantity("ca. 150 g") == (150.0, "g")
+        assert parse_quantity("ca. 2 kg") == (2.0, "kg")
+        assert parse_quantity("ca. 500 ml") == (500.0, "ml")
+        assert parse_quantity("Ca. 150 g") == (150.0, "g")  # case-insensitive
+        assert parse_quantity("CA. 2 kg") == (2.0, "kg")  # case-insensitive
+        assert parse_quantity("ca. ½ TL") == (0.5, "TL")
+        assert parse_quantity("ca. 1½ kg") == (1.5, "kg")
+
     def test_invalid_input(self):
         """Test invalid input returns (None, None)."""
         assert parse_quantity(None) == (None, None)
