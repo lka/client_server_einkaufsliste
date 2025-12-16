@@ -68,8 +68,9 @@ function handleActivity(): void {
 
 /**
  * Reset the inactivity timer
+ * This function is exported so it can be called from API operations
  */
-function resetInactivityTimer(): void {
+export function resetInactivityTimer(): void {
   // Clear existing timeout
   if (inactivityTimeout) {
     clearTimeout(inactivityTimeout);

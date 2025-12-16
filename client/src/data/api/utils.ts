@@ -3,6 +3,7 @@
  */
 
 import { getToken, clearToken, refreshToken } from '../auth.js';
+import { resetInactivityTimer } from '../inactivity-tracker.js';
 
 /**
  * Get authorization headers with JWT token.
@@ -23,12 +24,14 @@ export function getAuthHeaders(): HeadersInit {
  */
 export function handleUnauthorized(): void {
   clearToken();
+  alert('Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.');
   window.location.href = '/';
 }
 
 /**
  * Refresh token before making API calls.
  * This extends the token validity with each API interaction.
+ * Also resets the inactivity timer to prevent logout during active API usage.
  */
 export async function ensureFreshToken(): Promise<boolean> {
   const token = getToken();
@@ -42,6 +45,10 @@ export async function ensureFreshToken(): Promise<boolean> {
     handleUnauthorized();
     return false;
   }
+
+  // Reset inactivity timer on successful API interaction
+  // This ensures that API operations (like editing items) count as user activity
+  resetInactivityTimer();
 
   return true;
 }

@@ -3,45 +3,45 @@
 | File | Lines | Functions | Complexity | Cyclomatic | McCabe |
 |------|-------|-----------|------------|------------|--------|
 | src\data\api\stores-api.ts | 239 | 8 | 35 | 42 | 50 |
-| src\ui\shopping-list-ui.ts | 247 | 20 | 41 | 29 | 49 |
+| src\ui\shopping-list-ui.ts | 246 | 20 | 41 | 29 | 49 |
 | src\ui\user-admin.ts | 212 | 15 | 31 | 33 | 48 |
 | src\ui\components\autocomplete.ts | 226 | 6 | 25 | 40 | 46 |
-| src\ui\weekplan\ingredient-parser.ts | 154 | 5 | 21 | 39 | 44 |
+| src\ui\weekplan\ingredient-parser.ts | 159 | 5 | 22 | 40 | 45 |
 | src\data\api\items-api.ts | 198 | 6 | 28 | 37 | 43 |
 | src\data\api\templates-api.ts | 168 | 5 | 24 | 37 | 42 |
 | src\ui\weekplan\template-modal.ts | 250 | 18 | 32 | 24 | 42 |
 | src\data\auth.ts | 245 | 14 | 32 | 27 | 41 |
-| src\ui\components\datepicker\create-date-picker.ts | 160 | 10 | 22 | 31 | 41 |
+| src\ui\components\datepicker\create-date-picker.ts | 164 | 10 | 22 | 31 | 41 |
 | src\data\api\products-api.ts | 205 | 6 | 28 | 33 | 39 |
 | src\ui\print-utils\convert-to-four-columns.ts | 167 | 7 | 22 | 32 | 39 |
 | src\ui\store-browser.ts | 196 | 16 | 27 | 23 | 39 |
 | src\ui\components\input.ts | 208 | 7 | 22 | 31 | 38 |
 | src\ui\shopping-list\print-rendering.ts | 164 | 16 | 21 | 21 | 37 |
+| src\data\api\weekplan-api.ts | 193 | 9 | 27 | 27 | 36 |
 | src\ui\product-admin\event-handlers.ts | 195 | 15 | 30 | 21 | 36 |
 | src\ui\template-admin\render-templates.ts | 177 | 8 | 29 | 28 | 36 |
-| src\data\api\weekplan-api.ts | 200 | 9 | 26 | 26 | 35 |
 | src\ui\weekplan.ts | 170 | 13 | 31 | 22 | 35 |
-| src\state\product-admin-state.ts | 263 | 11 | 29 | 22 | 33 |
+| src\state\product-admin-state.ts | 264 | 11 | 29 | 22 | 33 |
 | src\ui\product-admin\rendering.ts | 175 | 8 | 15 | 25 | 33 |
 | src\pages\login.ts | 109 | 10 | 21 | 21 | 31 |
 | src\ui\backup-admin.ts | 189 | 9 | 20 | 22 | 31 |
 | src\ui\components\button.ts | 191 | 5 | 18 | 26 | 31 |
 | src\ui\shopping-list\dialogs.ts | 205 | 12 | 22 | 19 | 31 |
 | src\ui\template-admin\attach-template-admin-listeners.ts | 103 | 8 | 21 | 23 | 31 |
-| src\ui\components\connection-status.ts | 250 | 9 | 19 | 21 | 30 |
+| src\ui\components\connection-status.ts | 251 | 9 | 19 | 21 | 30 |
 | src\ui\components\tabs.ts | 211 | 2 | 15 | 28 | 30 |
 | src\ui\components\dropdown\searchable-dropdown.ts | 116 | 12 | 20 | 17 | 29 |
 | src\ui\weekplan\entry-input.ts | 169 | 9 | 18 | 20 | 29 |
+| src\data\websocket\connection.ts | 150 | 10 | 21 | 18 | 28 |
 | src\ui\weekplan\modal-shared.ts | 257 | 15 | 23 | 13 | 28 |
 | src\data\api\webdav-api.ts | 150 | 5 | 20 | 22 | 27 |
-| src\state\shopping-list-state.ts | 201 | 5 | 19 | 22 | 27 |
+| src\state\shopping-list-state.ts | 202 | 5 | 19 | 22 | 27 |
 | src\ui\components\toast.ts | 326 | 10 | 18 | 17 | 27 |
 | src\ui\components\datepicker\create-calendar.ts | 162 | 12 | 24 | 14 | 26 |
 | src\ui\weekplan\weekplan-state.ts | 181 | 2 | 22 | 24 | 26 |
 | src\data\websocket\subscriptions.ts | 77 | 24 | 24 | 0 | 24 |
-| src\state\store-admin-state.ts | 159 | 7 | 19 | 17 | 24 |
+| src\state\store-admin-state.ts | 160 | 7 | 19 | 17 | 24 |
 | src\ui\shopping-list\print-controls.ts | 119 | 11 | 15 | 13 | 24 |
-| src\ui\user-menu\websocket-handlers.ts | 126 | 10 | 19 | 14 | 24 |
 | src\data\api\users-api.ts | 114 | 4 | 16 | 19 | 23 |
 | src\data\dom.ts | 159 | 6 | 20 | 17 | 23 |
 | src\data\api\types.ts | 131 | 0 | 0 | 22 | 22 |
@@ -51,7 +51,6 @@
 | src\state\store-state\department-operations.ts | 129 | 3 | 8 | 18 | 21 |
 | src\ui\components\loading.ts | 213 | 6 | 8 | 15 | 21 |
 | src\data\api\units-api.ts | 115 | 4 | 16 | 16 | 20 |
-| src\data\websocket\connection.ts | 136 | 10 | 16 | 10 | 20 |
 | src\state\store-state\store-operations.ts | 114 | 3 | 6 | 17 | 20 |
 | src\ui\print-utils\print-weekplan.ts | 242 | 13 | 17 | 7 | 20 |
 | src\ui\store-admin\department-handlers.ts | 93 | 6 | 11 | 13 | 19 |
@@ -59,19 +58,19 @@
 | src\state\store-state\product-operations.ts | 123 | 3 | 9 | 15 | 18 |
 | src\ui\store-admin.ts | 91 | 13 | 17 | 5 | 18 |
 | src\ui\user-menu\navigation-handlers.ts | 67 | 5 | 16 | 13 | 18 |
+| src\ui\user-menu\websocket-handlers.ts | 80 | 9 | 15 | 9 | 18 |
 | src\ui\weekplan\recipe-modal.ts | 82 | 6 | 10 | 12 | 18 |
 | src\data\api\backup-api.ts | 74 | 2 | 8 | 15 | 17 |
 | src\ui\print-utils\is-android.ts | 29 | 2 | 8 | 15 | 17 |
 | src\ui\webdav-admin\modals.ts | 199 | 6 | 10 | 11 | 17 |
+| src\data\inactivity-tracker.ts | 95 | 11 | 15 | 5 | 16 |
 | src\ui\components\card.ts | 132 | 4 | 12 | 12 | 16 |
 | src\ui\shopping-list\item-operations.ts | 86 | 3 | 12 | 13 | 16 |
 | src\ui\shopping-list\print-preview.ts | 157 | 12 | 15 | 4 | 16 |
 | src\ui\weekplan\recipe-modal\modal-builder.ts | 112 | 8 | 14 | 8 | 16 |
-| src\data\inactivity-tracker.ts | 95 | 10 | 14 | 5 | 15 |
 | src\ui\user-menu\menu-toggle-handlers.ts | 58 | 7 | 13 | 8 | 15 |
 | src\ui\product-admin\init.ts | 78 | 5 | 14 | 9 | 14 |
-| src\data\websocket\state.ts | 84 | 12 | 12 | 1 | 13 |
-| src\script.ts | 77 | 3 | 9 | 10 | 13 |
+| src\data\websocket\state.ts | 85 | 12 | 12 | 1 | 13 |
 | src\ui\components\dropdown\native-dropdown.ts | 81 | 6 | 13 | 7 | 13 |
 | src\ui\print-utils\print-debug.ts | 97 | 5 | 9 | 8 | 13 |
 | src\ui\print-utils\print-on-android.ts | 169 | 4 | 8 | 9 | 13 |
@@ -81,6 +80,7 @@
 | src\ui\units-admin\edit-unit-modal.ts | 151 | 6 | 8 | 7 | 13 |
 | src\ui\units-admin\handle-drag-and-drop.ts | 39 | 4 | 10 | 9 | 13 |
 | src\data\websocket\message-handler.ts | 57 | 3 | 10 | 9 | 12 |
+| src\script.ts | 74 | 3 | 9 | 9 | 12 |
 | src\state\store-state\selection.ts | 136 | 4 | 8 | 8 | 12 |
 | src\ui\print-utils\print-preview-content-popup.ts | 171 | 4 | 7 | 8 | 12 |
 | src\ui\shopping-list\print-helpers.ts | 63 | 5 | 10 | 7 | 12 |
@@ -90,7 +90,7 @@
 | src\ui\shopping-list\filters.ts | 59 | 6 | 9 | 5 | 11 |
 | src\ui\weekplan\recipe-modal\ingredient-renderer.ts | 75 | 5 | 7 | 6 | 11 |
 | src\ui\weekplan\weekplan-utils.ts | 60 | 6 | 7 | 5 | 11 |
-| src\state\template-admin-state.ts | 155 | 4 | 10 | 6 | 10 |
+| src\state\template-admin-state.ts | 156 | 4 | 10 | 6 | 10 |
 | src\ui\weekplan\weekplan-rendering.ts | 108 | 7 | 8 | 3 | 10 |
 | src\ui\weekplan\weekplan-websocket.ts | 47 | 4 | 8 | 6 | 10 |
 | src\data\websocket\event-system.ts | 34 | 5 | 8 | 4 | 9 |
@@ -104,18 +104,18 @@
 | src\ui\weekplan\recipe-modal\utils.ts | 30 | 2 | 7 | 6 | 8 |
 | src\data\api\recipes-api.ts | 53 | 2 | 4 | 5 | 7 |
 | src\data\websocket\heartbeat.ts | 28 | 3 | 6 | 4 | 7 |
+| src\script-products.ts | 51 | 2 | 7 | 5 | 7 |
 | src\ui\user-menu\utils.ts | 37 | 2 | 5 | 5 | 7 |
 | src\data\api\config-api.ts | 43 | 2 | 4 | 4 | 6 |
-| src\data\api\utils.ts | 40 | 3 | 6 | 3 | 6 |
+| src\data\api\utils.ts | 44 | 3 | 6 | 3 | 6 |
+| src\script-stores.ts | 49 | 2 | 6 | 4 | 6 |
+| src\script-templates.ts | 49 | 2 | 6 | 4 | 6 |
 | src\ui\store-admin\modals.ts | 98 | 5 | 6 | 1 | 6 |
 | src\ui\user-menu.ts | 47 | 4 | 5 | 2 | 6 |
 | src\ui\weekplan\weekplan-navigation.ts | 60 | 6 | 6 | 0 | 6 |
 | src\ui\weekplan\weekplan-print.ts | 28 | 3 | 5 | 3 | 6 |
 | src\data\websocket\broadcasts.ts | 37 | 5 | 5 | 0 | 5 |
-| src\script-products.ts | 34 | 1 | 4 | 4 | 5 |
-| src\script-stores.ts | 35 | 1 | 4 | 4 | 5 |
-| src\script-templates.ts | 35 | 1 | 4 | 4 | 5 |
-| src\script-weekplan.ts | 29 | 1 | 4 | 4 | 5 |
+| src\script-weekplan.ts | 39 | 1 | 5 | 4 | 5 |
 | src\state\user-state.ts | 98 | 1 | 2 | 4 | 5 |
 | src\ui\components\dropdown\ui-builder.ts | 49 | 2 | 3 | 3 | 5 |
 | src\ui\weekplan\recipe-modal\delta-manager.ts | 36 | 2 | 2 | 3 | 5 |
@@ -128,7 +128,7 @@
 | src\script-users.ts | 27 | 1 | 3 | 2 | 3 |
 | src\script-webdav.ts | 27 | 1 | 3 | 2 | 3 |
 | src\ui\print-utils\print-preview-content.ts | 23 | 2 | 3 | 1 | 3 |
-| src\data\websocket\types.ts | 18 | 0 | 0 | 2 | 2 |
+| src\data\websocket\types.ts | 19 | 0 | 0 | 2 | 2 |
 | src\ui\components\datepicker\inject-date-picker-styles.ts | 242 | 1 | 2 | 1 | 2 |
 | src\ui\components\dropdown\styles.ts | 148 | 1 | 2 | 1 | 2 |
 | src\ui\components\dropdown.ts | 55 | 1 | 2 | 1 | 2 |
@@ -159,11 +159,11 @@
 ## Summary
 
 - Total files: 153
-- Total lines: 15632
-- Total functions: 777
-- Average complexity: 10.87
-- Average cyclomatic complexity: 10.61
-- Average McCabe complexity: 15.69
+- Total lines: 15664
+- Total functions: 780
+- Average complexity: 10.95
+- Average cyclomatic complexity: 10.65
+- Average McCabe complexity: 15.75
 
 ## Complexity Ratings
 

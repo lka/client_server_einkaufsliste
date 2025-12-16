@@ -2,10 +2,9 @@
  * Weekplan API operations.
  */
 
-import { getToken, clearToken } from '../auth.js';
 import type { WeekplanEntry, WeekplanDeltas } from './types.js';
 import { API_WEEKPLAN } from './types.js';
-import { getAuthHeaders, handleUnauthorized } from './utils.js';
+import { getAuthHeaders, handleUnauthorized, ensureFreshToken } from './utils.js';
 import { fetchTemplates } from './templates-api.js';
 
 /**
@@ -17,20 +16,18 @@ let knownUnitsCache: string[] = [];
  * Get weekplan entries for a specific week
  */
 export async function getWeekplanEntries(weekStart: string): Promise<WeekplanEntry[]> {
-  const token = getToken();
-  if (!token) {
+  const tokenRefreshed = await ensureFreshToken();
+  if (!tokenRefreshed) {
     throw new Error('Not authenticated');
   }
 
   try {
     const res = await fetch(`/api/weekplan/entries?week_start=${weekStart}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
+      headers: getAuthHeaders(),
     });
 
     if (res.status === 401) {
-      clearToken();
+      handleUnauthorized();
       throw new Error('Session expired');
     }
 
@@ -49,23 +46,20 @@ export async function getWeekplanEntries(weekStart: string): Promise<WeekplanEnt
  * Create a new weekplan entry
  */
 export async function createWeekplanEntry(entry: Omit<WeekplanEntry, 'id'>): Promise<WeekplanEntry> {
-  const token = getToken();
-  if (!token) {
+  const tokenRefreshed = await ensureFreshToken();
+  if (!tokenRefreshed) {
     throw new Error('Not authenticated');
   }
 
   try {
     const res = await fetch('/api/weekplan/entries', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify(entry),
     });
 
     if (res.status === 401) {
-      clearToken();
+      handleUnauthorized();
       throw new Error('Session expired');
     }
 
@@ -115,21 +109,19 @@ export async function getWeekplanSuggestions(query: string, maxSuggestions: numb
  * Delete a weekplan entry
  */
 export async function deleteWeekplanEntry(entryId: number): Promise<void> {
-  const token = getToken();
-  if (!token) {
+  const tokenRefreshed = await ensureFreshToken();
+  if (!tokenRefreshed) {
     throw new Error('Not authenticated');
   }
 
   try {
     const res = await fetch(`/api/weekplan/entries/${entryId}`, {
       method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
+      headers: getAuthHeaders(),
     });
 
     if (res.status === 401) {
-      clearToken();
+      handleUnauthorized();
       throw new Error('Session expired');
     }
 
@@ -149,23 +141,20 @@ export async function updateWeekplanEntryDeltas(
   entryId: number,
   deltas: WeekplanDeltas
 ): Promise<WeekplanEntry> {
-  const token = getToken();
-  if (!token) {
+  const tokenRefreshed = await ensureFreshToken();
+  if (!tokenRefreshed) {
     throw new Error('Not authenticated');
   }
 
   try {
     const res = await fetch(`/api/weekplan/entries/${entryId}/deltas`, {
       method: 'PATCH',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify(deltas),
     });
 
     if (res.status === 401) {
-      clearToken();
+      handleUnauthorized();
       throw new Error('Session expired');
     }
 
@@ -190,6 +179,11 @@ export async function fetchKnownUnits(): Promise<string[]> {
   // Return from cache if already loaded
   if (knownUnitsCache.length > 0) {
     return knownUnitsCache;
+  }
+
+  const tokenRefreshed = await ensureFreshToken();
+  if (!tokenRefreshed) {
+    return [];
   }
 
   try {
