@@ -16,6 +16,7 @@ jest.mock('./data/dom.js', () => ({
 jest.mock('./data/auth.js', () => ({
   isAuthenticated: jest.fn(),
   getToken: jest.fn(() => 'mock-token'),
+  getTokenExpiresIn: jest.fn(() => 1800), // 30 minutes in seconds
 }));
 
 jest.mock('./ui/store-admin.js', () => ({
@@ -25,6 +26,10 @@ jest.mock('./ui/store-admin.js', () => ({
 jest.mock('./ui/user-menu.js', () => ({
   initUserMenu: jest.fn(),
   updateUserDisplay: jest.fn(),
+}));
+
+jest.mock('./data/inactivity-tracker.js', () => ({
+  initInactivityTracker: jest.fn(),
 }));
 
 describe('script-stores.ts store admin entry point', () => {

@@ -62,9 +62,9 @@
 | src\ui\user-menu\websocket-handlers.ts | 80 | 9 | 15 | 9 | 18 |
 | src\ui\weekplan\recipe-modal.ts | 82 | 6 | 10 | 12 | 18 |
 | src\data\api\backup-api.ts | 74 | 2 | 8 | 15 | 17 |
+| src\data\inactivity-tracker.ts | 100 | 11 | 16 | 6 | 17 |
 | src\ui\print-utils\is-android.ts | 29 | 2 | 8 | 15 | 17 |
 | src\ui\webdav-admin\modals.ts | 199 | 6 | 10 | 11 | 17 |
-| src\data\inactivity-tracker.ts | 95 | 11 | 15 | 5 | 16 |
 | src\ui\components\card.ts | 132 | 4 | 12 | 12 | 16 |
 | src\ui\shopping-list\item-operations.ts | 86 | 3 | 12 | 13 | 16 |
 | src\ui\shopping-list\print-preview.ts | 157 | 12 | 15 | 4 | 16 |
@@ -97,6 +97,7 @@
 | src\ui\store-admin\store-handlers.ts | 47 | 3 | 5 | 6 | 9 |
 | src\ui\webdav-admin\form.ts | 83 | 3 | 5 | 6 | 9 |
 | src\ui\webdav-admin\renderer.ts | 55 | 2 | 4 | 7 | 9 |
+| src\script-products.ts | 58 | 2 | 8 | 6 | 8 |
 | src\ui\components\dropdown\types.ts | 31 | 0 | 0 | 8 | 8 |
 | src\ui\units-admin\units-admin-render.ts | 86 | 3 | 8 | 5 | 8 |
 | src\ui\units-admin\units-admin-websocket.ts | 30 | 5 | 8 | 3 | 8 |
@@ -104,29 +105,28 @@
 | src\ui\weekplan\recipe-modal\utils.ts | 30 | 2 | 7 | 6 | 8 |
 | src\data\api\recipes-api.ts | 53 | 2 | 4 | 5 | 7 |
 | src\data\websocket\heartbeat.ts | 28 | 3 | 6 | 4 | 7 |
-| src\script-products.ts | 51 | 2 | 7 | 5 | 7 |
+| src\script-stores.ts | 56 | 2 | 7 | 5 | 7 |
+| src\script-templates.ts | 56 | 2 | 7 | 5 | 7 |
 | src\ui\user-menu\utils.ts | 37 | 2 | 5 | 5 | 7 |
 | src\data\api\config-api.ts | 43 | 2 | 4 | 4 | 6 |
 | src\data\api\utils.ts | 44 | 3 | 6 | 3 | 6 |
-| src\script-stores.ts | 49 | 2 | 6 | 4 | 6 |
-| src\script-templates.ts | 49 | 2 | 6 | 4 | 6 |
+| src\script-weekplan.ts | 46 | 1 | 6 | 5 | 6 |
 | src\ui\store-admin\modals.ts | 98 | 5 | 6 | 1 | 6 |
 | src\ui\user-menu.ts | 47 | 4 | 5 | 2 | 6 |
 | src\ui\weekplan\weekplan-navigation.ts | 60 | 6 | 6 | 0 | 6 |
 | src\ui\weekplan\weekplan-print.ts | 28 | 3 | 5 | 3 | 6 |
 | src\data\websocket\broadcasts.ts | 37 | 5 | 5 | 0 | 5 |
-| src\script-weekplan.ts | 39 | 1 | 5 | 4 | 5 |
 | src\state\user-state.ts | 98 | 1 | 2 | 4 | 5 |
 | src\ui\components\dropdown\ui-builder.ts | 49 | 2 | 3 | 3 | 5 |
 | src\ui\weekplan\recipe-modal\delta-manager.ts | 36 | 2 | 2 | 3 | 5 |
 | src\ui\weekplan\recipe-modal\recipe-loader.ts | 25 | 2 | 3 | 3 | 5 |
 | src\ui\weekplan\recipe-modal\save-handler.ts | 42 | 3 | 4 | 2 | 5 |
+| src\script-backup.ts | 33 | 1 | 4 | 3 | 4 |
+| src\script-units.ts | 33 | 1 | 4 | 3 | 4 |
+| src\script-users.ts | 34 | 1 | 4 | 3 | 4 |
+| src\script-webdav.ts | 34 | 1 | 4 | 3 | 4 |
 | src\ui\components\dropdown\option-renderer.ts | 34 | 2 | 4 | 2 | 4 |
 | src\ui\webdav-admin.ts | 35 | 3 | 3 | 1 | 4 |
-| src\script-backup.ts | 26 | 1 | 3 | 2 | 3 |
-| src\script-units.ts | 26 | 1 | 3 | 2 | 3 |
-| src\script-users.ts | 27 | 1 | 3 | 2 | 3 |
-| src\script-webdav.ts | 27 | 1 | 3 | 2 | 3 |
 | src\ui\print-utils\print-preview-content.ts | 23 | 2 | 3 | 1 | 3 |
 | src\data\websocket\types.ts | 19 | 0 | 0 | 2 | 2 |
 | src\ui\components\datepicker\inject-date-picker-styles.ts | 242 | 1 | 2 | 1 | 2 |
@@ -159,11 +159,11 @@
 ## Summary
 
 - Total files: 153
-- Total lines: 15745
+- Total lines: 15806
 - Total functions: 782
-- Average complexity: 11.03
-- Average cyclomatic complexity: 10.88
-- Average McCabe complexity: 15.99
+- Average complexity: 11.09
+- Average cyclomatic complexity: 10.94
+- Average McCabe complexity: 16.05
 
 ## Complexity Ratings
 

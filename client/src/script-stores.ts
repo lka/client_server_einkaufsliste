@@ -4,7 +4,7 @@
  */
 
 import { loadAppTemplate } from './data/dom.js';
-import { isAuthenticated } from './data/auth.js';
+import { isAuthenticated, getTokenExpiresIn } from './data/auth.js';
 import { initStoreAdmin } from './ui/store-admin.js';
 import { initUserMenu, updateUserDisplay } from './ui/user-menu.js';
 import { initializeComponents } from './ui/components/index.js';
@@ -12,6 +12,7 @@ import * as websocket from './data/websocket.js';
 import { storeAdminState } from './state/store-admin-state.js';
 import { ConnectionStatus } from './ui/components/connection-status.js';
 import { setConnectionStatusInstance } from './ui/user-menu/websocket-handlers.js';
+import { initInactivityTracker } from './data/inactivity-tracker.js';
 
 /**
  * Initialize the store admin page when DOM is ready.
@@ -39,6 +40,14 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Initialize store admin module
   initStoreAdmin();
   initUserMenu();
+
+  // Initialize inactivity tracker
+  const expiresIn = getTokenExpiresIn();
+  if (expiresIn) {
+    initInactivityTracker(expiresIn);
+  } else {
+    console.warn('Token expiration time not found - inactivity tracker not initialized');
+  }
 
   // Initialize WebSocket connection if enabled
   const wsSupported = websocket.isWebSocketSupported();

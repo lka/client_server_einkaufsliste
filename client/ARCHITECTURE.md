@@ -8,31 +8,31 @@ The shopping list client is a TypeScript application built with a **four-layer a
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      Entry Points                            │
-│                 (script.ts, index-login.ts)                  │
-│         - Minimal orchestration                              │
-│         - Initialize layers                                  │
-│         - Route to pages                                     │
+│                      Entry Points                           │
+│                 (script.ts, index-login.ts)                 │
+│         - Minimal orchestration                             │
+│         - Initialize layers                                 │
+│         - Route to pages                                    │
 └──────────────────────┬──────────────────────────────────────┘
                        │
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                   Pages/UI Layer                             │
+│                   Pages/UI Layer                            │
 │   ┌─────────────────┬────────────────┬──────────────────┐   │
 │   │   Pages         │   UI Modules   │                  │   │
 │   │  login.ts       │  shopping-     │  user-menu.ts    │   │
 │   │  login.html     │  list-ui.ts    │                  │   │
 │   │  app.html       │                │                  │   │
 │   └─────────────────┴────────────────┴──────────────────┘   │
-│         - Page controllers                                   │
-│         - Feature-specific UI logic                          │
-│         - Event handlers                                     │
-│         - Subscribe to state changes                         │
+│         - Page controllers                                  │
+│         - Feature-specific UI logic                         │
+│         - Event handlers                                    │
+│         - Subscribe to state changes                        │
 └──────────────────────┬──────────────────────────────────────┘
                        │
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                      STATE LAYER (NEW)                       │
+│                      STATE LAYER (NEW)                      │
 │   ┌──────────────┬──────────────┬──────────────────┐        │
 │   │  shopping-   │  user-state  │  store-state     │        │
 │   │  list-state  │              │                  │        │
@@ -52,38 +52,38 @@ The shopping list client is a TypeScript application built with a **four-layer a
 │   │  - filtered[]│  - listeners │  - listeners     │        │
 │   │  - listeners │  - loading   │  - loading       │        │
 │   └──────────────┴──────────────┴──────────────────┘        │
-│         - Centralized state management                       │
-│         - Observer pattern for reactive updates              │
-│         - Single source of truth with CRUD operations        │
-│         - WebSocket integration for real-time sync           │
+│         - Centralized state management                      │
+│         - Observer pattern for reactive updates             │
+│         - Single source of truth with CRUD operations       │
+│         - WebSocket integration for real-time sync          │
 └──────────────────────┬──────────────────────────────────────┘
                        │
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                      Data Layer                              │
+│                      Data Layer                             │
 │   ┌──────────────────────────────────────────────────────┐  │
-│   │  api/ (Modular)  │   auth.ts    │    dom.ts         │  │
-│   │  ┌────────────┐  │              │                   │  │
-│   │  │ types.ts   │  │  JWT auth    │  DOM utilities    │  │
-│   │  │ utils.ts   │  │  localStorage│  Template loading │  │
-│   │  │ items-api  │  │  management  │  Rendering        │  │
-│   │  │ stores-api │  │  expires_in  │                   │  │
-│   │  │ products   │  │──────────────┤───────────────────│  │
-│   │  │ users      │  │ websocket.ts │ inactivity-       │  │
-│   │  │ templates  │  │              │ tracker.ts        │  │
-│   │  │ weekplan   │  │  Real-time   │  Auto logout      │  │
-│   │  │ recipes    │  │  connection  │  on timeout       │  │
-│   │  │ backup     │  │              │                   │  │
-│   │  │ webdav     │  │              │                   │  │
-│   │  │ config     │  │              │                   │  │
-│   │  └────────────┘  │              │                   │  │
-│   │  13 modules      │              │                   │  │
-│   │  McCabe: 6-50    │              │                   │  │
+│   │  api/ (Modular)  │   auth.ts    │    dom.ts          │  │
+│   │  ┌────────────┐  │              │                    │  │
+│   │  │ types.ts   │  │  JWT auth    │  DOM utilities     │  │
+│   │  │ utils.ts   │  │  localStorage│  Template loading  │  │
+│   │  │ items-api  │  │  management  │  Rendering         │  │
+│   │  │ stores-api │  │  expires_in  │                    │  │
+│   │  │ products   │  │──────────────┤────────────────────│  │
+│   │  │ users      │  │ websocket.ts │ inactivity-        │  │
+│   │  │ templates  │  │              │ tracker.ts         │  │
+│   │  │ weekplan   │  │  Real-time   │  Auto logout       │  │
+│   │  │ recipes    │  │  connection  │  on timeout        │  │
+│   │  │ backup     │  │              │                    │  │
+│   │  │ webdav     │  │              │                    │  │
+│   │  │ config     │  │              │                    │  │
+│   │  └────────────┘  │              │                    │  │
+│   │  13 modules      │              │                    │  │
+│   │  McCabe: 6-50    │              │                    │  │
 │   └──────────────────────────────────────────────────────┘  │
-│         - Pure data operations                               │
-│         - No UI knowledge                                    │
-│         - Reusable utilities                                 │
-│         - Modular, focused responsibilities                  │
+│         - Pure data operations                              │
+│         - No UI knowledge                                   │
+│         - Reusable utilities                                │
+│         - Modular, focused responsibilities                 │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -346,22 +346,42 @@ import { fetchItems, Store, Item } from './data/api/index.js';
   - Supports multiple feature event types (items, weekplan, users)
 - **Event System**: Observer pattern with Map-based event listeners
 
-#### inactivity-tracker.ts (NEW)
-- **Responsibility**: Track user activity and auto-logout after inactivity
+#### inactivity-tracker.ts
+- **Responsibility**: Track user activity and auto-logout after inactivity across all pages
 - **Functions**:
   - `initInactivityTracker(expiresInSeconds)`: Start tracking with token expiration time
   - `stopInactivityTracker()`: Stop tracking and cleanup
+  - `resetInactivityTimer()`: Reset timer on activity (exported for API operations)
   - `getRemainingTime()`: Get remaining seconds until timeout
-- **Activity Events Monitored**:
+- **Activity Events Monitored** (passive listeners on window):
   - Mouse: `mousedown`, `mousemove`, `click`
   - Keyboard: `keypress`
   - Touch: `touchstart`
   - Scroll: `scroll`
+- **Initialization**:
+  - Called in all entry point scripts for authenticated pages:
+    - `script.ts` (shopping list)
+    - `script-weekplan.ts` (weekplan)
+    - `script-products.ts` (product admin)
+    - `script-stores.ts` (store admin)
+    - `script-templates.ts` (template admin)
+    - `script-users.ts` (user admin)
+    - `script-backup.ts` (backup admin)
+    - `script-webdav.ts` (WebDAV settings)
+    - `script-units.ts` (units admin)
+  - Uses `isTrackerActive` flag to prevent duplicate event listeners across page navigation
+  - Event listeners persist globally across single-page navigation
 - **Behavior**:
   - Timer resets on any activity event
   - After timeout: Alert message, logout, clear history, redirect to login
   - Configurable timeout from server (`ACCESS_TOKEN_EXPIRE_MINUTES`)
   - Clears SessionStorage and Browser History on logout
+  - Works seamlessly when switching between all application pages
+  - Single global instance ensures consistent tracking across entire session
+- **Implementation Details**:
+  - Global state variables: `inactivityTimeout`, `inactivityTimeoutMs`, `isTrackerActive`
+  - Event listeners added only once per session (not per page load)
+  - Timer continues running across page transitions
 
 **Testing**:
 - `api.test.ts`: 18 tests covering all API operations, 401 handling, and edge cases (100% coverage)
@@ -2007,13 +2027,13 @@ The WebSocket functionality integrates seamlessly with the existing 4-layer arch
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                   WebSocket Layer                            │
-│                                                              │
+│                   WebSocket Layer                           │
+│                                                             │
 │   data/websocket.ts ──────> State Layer                     │
 │   - Connection management    - shopping-list-state          │
 │   - Event handling           - store-state                  │
 │   - Reconnection logic       - user-state                   │
-│                                                              │
+│                                                             │
 │   Receives server events → Updates state → Notifies UI      │
 └─────────────────────────────────────────────────────────────┘
 ```

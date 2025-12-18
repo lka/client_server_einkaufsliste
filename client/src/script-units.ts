@@ -3,10 +3,11 @@
  */
 
 import { loadAppTemplate } from './data/dom.js';
-import { isAuthenticated } from './data/auth.js';
+import { isAuthenticated, getTokenExpiresIn } from './data/auth.js';
 import { initUnitsAdmin } from './ui/units-admin.js';
 import { initUserMenu, updateUserDisplay } from './ui/user-menu.js';
 import { initializeComponents } from './ui/components/index.js';
+import { initInactivityTracker } from './data/inactivity-tracker.js';
 
 /**
  * Initialize the units admin page when DOM is ready.
@@ -34,4 +35,12 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   // Initialize units admin
   initUnitsAdmin();
+
+  // Initialize inactivity tracker
+  const expiresIn = getTokenExpiresIn();
+  if (expiresIn) {
+    initInactivityTracker(expiresIn);
+  } else {
+    console.warn('Token expiration time not found - inactivity tracker not initialized');
+  }
 });

@@ -4,7 +4,7 @@
  */
 
 import { loadAppTemplate } from './data/dom.js';
-import { isAuthenticated } from './data/auth.js';
+import { isAuthenticated, getTokenExpiresIn } from './data/auth.js';
 import { initTemplateAdmin } from './ui/template-admin.js';
 import { initUserMenu, updateUserDisplay } from './ui/user-menu.js';
 import { initializeComponents } from './ui/components/index.js';
@@ -12,6 +12,7 @@ import * as websocket from './data/websocket.js';
 import { templateAdminState } from './state/template-admin-state.js';
 import { ConnectionStatus } from './ui/components/connection-status.js';
 import { setConnectionStatusInstance } from './ui/user-menu/websocket-handlers.js';
+import { initInactivityTracker } from './data/inactivity-tracker.js';
 
 /**
  * Initialize the template admin page when DOM is ready.
@@ -39,6 +40,14 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Initialize template admin module
   initTemplateAdmin();
   initUserMenu();
+
+  // Initialize inactivity tracker
+  const expiresIn = getTokenExpiresIn();
+  if (expiresIn) {
+    initInactivityTracker(expiresIn);
+  } else {
+    console.warn('Token expiration time not found - inactivity tracker not initialized');
+  }
 
   // Initialize WebSocket connection if supported
   const wsSupported = websocket.isWebSocketSupported();
