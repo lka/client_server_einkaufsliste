@@ -4,8 +4,9 @@
  */
 
 import { Autocomplete } from '../components/autocomplete.js';
-import { createWeekplanEntry, getWeekplanSuggestions } from '../../data/api.js';
+import { createWeekplanEntry } from '../../data/api.js';
 import { searchRecipes } from '../../data/api/recipes-api.js';
+import { fetchTemplates } from '../../data/api/templates-api.js';
 import { broadcastWeekplanAdd } from '../../data/websocket.js';
 import { weekplanState } from './weekplan-state.js';
 import { getMonday, formatISODate } from './weekplan-utils.js';
@@ -54,7 +55,7 @@ export async function handleAddMealEntry(event: Event): Promise<void> {
         weekplanState.addEntry(entry);
 
         // Add to DOM
-        addMealItemToDOM(mealContent, entry.text, entry.id!);
+        addMealItemToDOM(mealContent, entry.text, entry.id!, entry.recipe_id, entry.template_id, entry.entry_type);
 
         // Remove the existing input wrapper
         if (existingWrapper) {
@@ -130,7 +131,7 @@ function createEntryInput(
   inputWrapper.appendChild(input);
 
   // Function to save the entry
-  const saveEntry = async (text: string, recipeId?: number) => {
+  const saveEntry = async (text: string, recipeId?: number, templateId?: number, entryType?: 'text' | 'template' | 'recipe') => {
     if (!text.trim()) return;
 
     input.disabled = true;
@@ -143,14 +144,16 @@ function createEntryInput(
         date: dateISO,
         meal: meal,
         text: text.trim(),
-        recipe_id: recipeId
+        entry_type: entryType || 'text',
+        recipe_id: recipeId,
+        template_id: templateId
       });
 
       // Add to state
       weekplanState.addEntry(entry);
 
       // Add to DOM
-      addMealItemToDOM(mealContent, entry.text, entry.id!, recipeId);
+      addMealItemToDOM(mealContent, entry.text, entry.id!, entry.recipe_id, entry.template_id, entry.entry_type);
       autocomplete.destroy();
       inputWrapper.remove();
 
@@ -167,37 +170,89 @@ function createEntryInput(
   const autocomplete = new Autocomplete({
     input,
     onSearch: async (query: string) => {
-      // Fetch both weekplan suggestions and recipe suggestions in parallel
-      const [weekplanSuggestions, recipeSuggestions] = await Promise.all([
-        getWeekplanSuggestions(query, 5),
+      // Fetch templates, recipes in parallel
+      const [templates, recipeSuggestions] = await Promise.all([
+        fetchTemplates().catch(() => []),
         searchRecipes(query, 5).catch(() => []) // Fallback to empty array on error
       ]);
 
-      // Combine both suggestion types - templates/weekplan first, then recipes
-      const combined = [
-        ...weekplanSuggestions.map(text => ({
-          id: text,
-          label: text,
-          data: text,
+      // Filter templates by query
+      const lowerQuery = query.toLowerCase();
+      const templateSuggestions = templates
+        .filter(t => t.name.toLowerCase().includes(lowerQuery))
+        .slice(0, 5);
+
+      // Combine both suggestion types - templates first, then recipes
+      type SuggestionItem = {
+        id: string;
+        label: string;
+        data: string;
+        name?: string;
+      };
+
+      const combined: SuggestionItem[] = [
+        ...templateSuggestions.map(template => ({
+          id: `template-${template.id}`,
+          label: template.name,
+          data: template.name,
         })),
         ...recipeSuggestions.map(recipe => ({
           id: `recipe-${recipe.id}`,
           label: `🍳 ${recipe.name}`,
           data: recipe.name,
+          name: recipe.name, // Store original name for duplicate detection
         }))
       ];
 
+      // Add numbering to recipes with duplicate names
+      const recipeNameCounts = new Map<string, number>();
+      const recipeNameIndices = new Map<string, number>();
+
+      // Count occurrences of each recipe name
+      combined.forEach(item => {
+        if (item.id.startsWith('recipe-') && item.name) {
+          recipeNameCounts.set(item.name, (recipeNameCounts.get(item.name) || 0) + 1);
+        }
+      });
+
+      // Add numbering only to duplicates
+      const numberedCombined = combined.map(item => {
+        if (item.id.startsWith('recipe-') && item.name) {
+          const count = recipeNameCounts.get(item.name) || 0;
+          if (count > 1) {
+            const index = (recipeNameIndices.get(item.name) || 0) + 1;
+            recipeNameIndices.set(item.name, index);
+            return {
+              ...item,
+              label: `🍳 ${item.name} (${index})`,
+            };
+          }
+        }
+        return item;
+      });
+
       // Limit to maxSuggestions
-      return combined.slice(0, 5);
+      return numberedCombined.slice(0, 5);
     },
     onSelect: (suggestion) => {
       // Save entry immediately when suggestion is selected
-      // Extract recipe ID if it's a recipe (id starts with "recipe-")
       const id = String(suggestion.id);
-      const recipeId = id.startsWith('recipe-')
-        ? parseInt(id.replace('recipe-', ''))
-        : undefined;
-      saveEntry(suggestion.data, recipeId);
+
+      let recipeId: number | undefined;
+      let templateId: number | undefined;
+      let entryType: 'text' | 'template' | 'recipe';
+
+      if (id.startsWith('recipe-')) {
+        recipeId = parseInt(id.replace('recipe-', ''));
+        entryType = 'recipe';
+      } else if (id.startsWith('template-')) {
+        templateId = parseInt(id.replace('template-', ''));
+        entryType = 'template';
+      } else {
+        entryType = 'text';
+      }
+
+      saveEntry(suggestion.data, recipeId, templateId, entryType);
     },
     debounceMs: 300,
     minChars: 2,

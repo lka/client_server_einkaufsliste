@@ -101,7 +101,7 @@ async function renderWeek(): Promise<void> {
             const mealEntries = weekplanState.getEntries(dateISO, meal);
             if (mealEntries) {
               mealEntries.forEach((entry: WeekplanEntry) => {
-                addMealItemToDOM(mealContent, entry.text, entry.id!, entry.recipe_id);
+                addMealItemToDOM(mealContent, entry.text, entry.id!, entry.recipe_id, entry.template_id, entry.entry_type);
               });
             }
           }
@@ -142,7 +142,7 @@ function handleWeekplanAdded(data: WeekplanEntry): void {
     if (mealSection) {
       const mealContent = mealSection.querySelector('.meal-content');
       if (mealContent && data.id) {
-        addMealItemToDOM(mealContent, data.text, data.id, data.recipe_id);
+        addMealItemToDOM(mealContent, data.text, data.id, data.recipe_id, data.template_id, data.entry_type);
       }
     }
   }
@@ -200,18 +200,32 @@ export function initWeekplan(): void {
   // Handle clicks on meal items to show details
   document.addEventListener('weekplan:show-details', async (event: Event) => {
     const customEvent = event as CustomEvent;
-    const { text, entryId, recipeId } = customEvent.detail;
+    const { text, entryId, recipeId, templateId, entryType } = customEvent.detail;
 
-    if (recipeId) {
+    // Use entry_type to determine how to handle the click
+    if (entryType === 'recipe' && recipeId) {
       // Show recipe details
       await showRecipeDetailsById(recipeId, entryId);
-    } else {
-      // Try to show template details
+    } else if (entryType === 'template' && templateId) {
+      // Show template details by ID
       try {
         await showTemplateDetails(text, entryId);
       } catch (error) {
-        // Not a template or recipe, do nothing
-        console.log('Not a template:', text);
+        console.log('Template not found:', text);
+      }
+    } else if (entryType === 'text') {
+      // Plain text entry - do nothing
+      console.log('Text entry clicked:', text);
+    } else {
+      // Fallback for entries without entry_type (backward compatibility)
+      if (recipeId) {
+        await showRecipeDetailsById(recipeId, entryId);
+      } else {
+        try {
+          await showTemplateDetails(text, entryId);
+        } catch (error) {
+          console.log('Not a template:', text);
+        }
       }
     }
   });

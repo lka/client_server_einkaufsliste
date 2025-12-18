@@ -30,7 +30,7 @@ function handleWeekplanAdded(data: WeekplanEntry): void {
       if (mealContent && data.id) {
         // Import dynamically to avoid circular dependency
         import('./weekplan-rendering.js').then(({ addMealItemToDOM }) => {
-          addMealItemToDOM(mealContent, data.text, data.id!, data.recipe_id);
+          addMealItemToDOM(mealContent, data.text, data.id!, data.recipe_id, data.template_id, data.entry_type);
         });
       }
     }

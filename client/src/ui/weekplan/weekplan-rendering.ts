@@ -17,13 +17,21 @@ import { weekplanState } from './weekplan-state.js';
  * @param text The entry text
  * @param entryId The entry ID
  * @param recipeId Optional recipe ID
+ * @param templateId Optional template ID
+ * @param entryType Optional entry type
  */
-export function addMealItemToDOM(container: Element, text: string, entryId: number, recipeId?: number): void {
+export function addMealItemToDOM(container: Element, text: string, entryId: number, recipeId?: number, templateId?: number, entryType?: string): void {
   const item = document.createElement('div');
   item.className = 'meal-item';
   item.dataset.entryId = String(entryId);
   if (recipeId !== undefined) {
     item.dataset.recipeId = String(recipeId);
+  }
+  if (templateId !== undefined) {
+    item.dataset.templateId = String(templateId);
+  }
+  if (entryType) {
+    item.dataset.entryType = entryType;
   }
   item.style.cssText = `
     display: flex;
@@ -55,7 +63,7 @@ export function addMealItemToDOM(container: Element, text: string, entryId: numb
 
     // Dispatch custom event for main module to handle
     const event = new CustomEvent('weekplan:show-details', {
-      detail: { text, entryId, recipeId },
+      detail: { text, entryId, recipeId, templateId, entryType },
       bubbles: true
     });
     item.dispatchEvent(event);

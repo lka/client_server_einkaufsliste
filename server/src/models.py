@@ -157,7 +157,9 @@ class WeekplanEntry(SQLModel, table=True):
         date: Date in ISO format (YYYY-MM-DD)
         meal: Meal type ('morning', 'lunch', 'dinner')
         text: Entry text content
+        entry_type: Type of entry ('text', 'template', 'recipe')
         recipe_id: Optional recipe ID reference
+        template_id: Optional template ID reference
         deltas: JSON field storing item modifications
                 (removed items, added items, person count)
                 Format: {
@@ -171,7 +173,9 @@ class WeekplanEntry(SQLModel, table=True):
     date: str = Field(index=True)  # ISO format: YYYY-MM-DD
     meal: str = Field(index=True)  # 'morning', 'lunch', 'dinner'
     text: str
+    entry_type: str = Field(default="text")  # 'text', 'template', or 'recipe'
     recipe_id: Optional[int] = Field(default=None)  # Optional recipe reference
+    template_id: Optional[int] = Field(default=None)  # Optional template reference
     deltas: Optional[str] = Field(default=None)  # JSON string
 
 

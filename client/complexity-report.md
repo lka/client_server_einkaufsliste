@@ -6,8 +6,10 @@
 | src\ui\shopping-list-ui.ts | 246 | 20 | 41 | 29 | 49 |
 | src\ui\user-admin.ts | 212 | 15 | 31 | 33 | 48 |
 | src\ui\components\autocomplete.ts | 226 | 6 | 25 | 40 | 46 |
+| src\ui\weekplan\entry-input.ts | 213 | 11 | 25 | 35 | 46 |
 | src\ui\weekplan\ingredient-parser.ts | 159 | 5 | 22 | 40 | 45 |
 | src\data\api\items-api.ts | 198 | 6 | 28 | 37 | 43 |
+| src\ui\weekplan.ts | 182 | 13 | 34 | 30 | 43 |
 | src\data\api\templates-api.ts | 168 | 5 | 24 | 37 | 42 |
 | src\ui\weekplan\template-modal.ts | 250 | 18 | 32 | 24 | 42 |
 | src\data\auth.ts | 245 | 14 | 32 | 27 | 41 |
@@ -20,7 +22,6 @@
 | src\data\api\weekplan-api.ts | 193 | 9 | 27 | 27 | 36 |
 | src\ui\product-admin\event-handlers.ts | 195 | 15 | 30 | 21 | 36 |
 | src\ui\template-admin\render-templates.ts | 177 | 8 | 29 | 28 | 36 |
-| src\ui\weekplan.ts | 170 | 13 | 31 | 22 | 35 |
 | src\state\product-admin-state.ts | 264 | 11 | 29 | 22 | 33 |
 | src\ui\product-admin\rendering.ts | 175 | 8 | 15 | 25 | 33 |
 | src\pages\login.ts | 109 | 10 | 21 | 21 | 31 |
@@ -31,7 +32,6 @@
 | src\ui\components\connection-status.ts | 251 | 9 | 19 | 21 | 30 |
 | src\ui\components\tabs.ts | 211 | 2 | 15 | 28 | 30 |
 | src\ui\components\dropdown\searchable-dropdown.ts | 116 | 12 | 20 | 17 | 29 |
-| src\ui\weekplan\entry-input.ts | 169 | 9 | 18 | 20 | 29 |
 | src\data\websocket\connection.ts | 150 | 10 | 21 | 18 | 28 |
 | src\ui\weekplan\modal-shared.ts | 257 | 15 | 23 | 13 | 28 |
 | src\data\api\webdav-api.ts | 150 | 5 | 20 | 22 | 27 |
@@ -39,17 +39,18 @@
 | src\ui\components\toast.ts | 326 | 10 | 18 | 17 | 27 |
 | src\ui\components\datepicker\create-calendar.ts | 162 | 12 | 24 | 14 | 26 |
 | src\ui\weekplan\weekplan-state.ts | 181 | 2 | 22 | 24 | 26 |
+| src\data\api\types.ts | 133 | 0 | 0 | 24 | 24 |
 | src\data\websocket\subscriptions.ts | 77 | 24 | 24 | 0 | 24 |
 | src\state\store-admin-state.ts | 160 | 7 | 19 | 17 | 24 |
 | src\ui\shopping-list\print-controls.ts | 119 | 11 | 15 | 13 | 24 |
 | src\data\api\users-api.ts | 114 | 4 | 16 | 19 | 23 |
 | src\data\dom.ts | 159 | 6 | 20 | 17 | 23 |
-| src\data\api\types.ts | 131 | 0 | 0 | 22 | 22 |
 | src\ui\components\datepicker\date-utils.ts | 63 | 6 | 13 | 16 | 22 |
 | src\ui\components\modal.ts | 253 | 4 | 16 | 18 | 22 |
 | src\ui\template-admin\create-form-buttons.ts | 109 | 4 | 16 | 18 | 22 |
 | src\state\store-state\department-operations.ts | 129 | 3 | 8 | 18 | 21 |
 | src\ui\components\loading.ts | 213 | 6 | 8 | 15 | 21 |
+| src\ui\product-admin\init.ts | 93 | 5 | 15 | 16 | 21 |
 | src\data\api\units-api.ts | 115 | 4 | 16 | 16 | 20 |
 | src\state\store-state\store-operations.ts | 114 | 3 | 6 | 17 | 20 |
 | src\ui\print-utils\print-weekplan.ts | 242 | 13 | 17 | 7 | 20 |
@@ -69,7 +70,7 @@
 | src\ui\shopping-list\print-preview.ts | 157 | 12 | 15 | 4 | 16 |
 | src\ui\weekplan\recipe-modal\modal-builder.ts | 112 | 8 | 14 | 8 | 16 |
 | src\ui\user-menu\menu-toggle-handlers.ts | 58 | 7 | 13 | 8 | 15 |
-| src\ui\product-admin\init.ts | 78 | 5 | 14 | 9 | 14 |
+| src\ui\weekplan\weekplan-rendering.ts | 116 | 7 | 10 | 7 | 14 |
 | src\data\websocket\state.ts | 85 | 12 | 12 | 1 | 13 |
 | src\ui\components\dropdown\native-dropdown.ts | 81 | 6 | 13 | 7 | 13 |
 | src\ui\print-utils\print-debug.ts | 97 | 5 | 9 | 8 | 13 |
@@ -91,7 +92,6 @@
 | src\ui\weekplan\recipe-modal\ingredient-renderer.ts | 75 | 5 | 7 | 6 | 11 |
 | src\ui\weekplan\weekplan-utils.ts | 60 | 6 | 7 | 5 | 11 |
 | src\state\template-admin-state.ts | 156 | 4 | 10 | 6 | 10 |
-| src\ui\weekplan\weekplan-rendering.ts | 108 | 7 | 8 | 3 | 10 |
 | src\ui\weekplan\weekplan-websocket.ts | 47 | 4 | 8 | 6 | 10 |
 | src\data\websocket\event-system.ts | 34 | 5 | 8 | 4 | 9 |
 | src\ui\store-admin\store-handlers.ts | 47 | 3 | 5 | 6 | 9 |
@@ -159,11 +159,11 @@
 ## Summary
 
 - Total files: 153
-- Total lines: 15664
-- Total functions: 780
-- Average complexity: 10.95
-- Average cyclomatic complexity: 10.65
-- Average McCabe complexity: 15.75
+- Total lines: 15745
+- Total functions: 782
+- Average complexity: 11.03
+- Average cyclomatic complexity: 10.88
+- Average McCabe complexity: 15.99
 
 ## Complexity Ratings
 
@@ -174,4 +174,4 @@ McCabe Complexity Thresholds:
 - 51+: Very complex, very high risk
 
 Files with very high complexity (>50): 0
-Files with high complexity (21-50): 48
+Files with high complexity (21-50): 49

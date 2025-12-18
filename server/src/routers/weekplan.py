@@ -46,7 +46,9 @@ class WeekplanEntryCreate(BaseModel):
     date: str  # ISO format: YYYY-MM-DD
     meal: str  # 'morning', 'lunch', 'dinner'
     text: str
+    entry_type: Optional[str] = "text"  # 'text', 'template', or 'recipe'
     recipe_id: Optional[int] = None
+    template_id: Optional[int] = None
     deltas: Optional[WeekplanDeltas] = None
 
 
@@ -57,7 +59,9 @@ class WeekplanEntryResponse(BaseModel):
     date: str
     meal: str
     text: str
+    entry_type: Optional[str] = "text"  # 'text', 'template', or 'recipe'
     recipe_id: Optional[int] = None
+    template_id: Optional[int] = None
     deltas: Optional[WeekplanDeltas] = None
 
 
@@ -937,7 +941,9 @@ def get_weekplan_entries(
                 date=entry.date,
                 meal=entry.meal,
                 text=entry.text,
+                entry_type=entry.entry_type,
                 recipe_id=entry.recipe_id,
+                template_id=entry.template_id,
                 deltas=(
                     WeekplanDeltas(**json.loads(entry.deltas)) if entry.deltas else None
                 ),
@@ -979,21 +985,34 @@ async def create_weekplan_entry(
             date=entry.date,
             meal=entry.meal,
             text=entry.text,
+            entry_type=entry.entry_type or "text",
             recipe_id=entry.recipe_id,
+            template_id=entry.template_id,
             deltas=deltas_json,
         )
         session.add(db_entry)
         session.commit()
         session.refresh(db_entry)
 
-        # Check if entry has a recipe_id and add recipe items to shopping list
+        # Add items to shopping list based on entry_type
         modified_items = []
-        if entry.recipe_id:
+        if entry.entry_type == "recipe" and entry.recipe_id:
+            # Entry is a recipe
+            modified_items = _add_recipe_items_to_shopping_list(
+                session, entry.recipe_id, entry.date, entry.meal, entry.deltas
+            )
+        elif entry.entry_type == "template":
+            # Entry is a template - use text to find template
+            modified_items = _add_template_items_to_shopping_list(
+                session, entry.text, entry.date, entry.meal, entry.deltas
+            )
+        elif entry.recipe_id:
+            # Fallback for backward compatibility: check if entry has a recipe_id
             modified_items = _add_recipe_items_to_shopping_list(
                 session, entry.recipe_id, entry.date, entry.meal, entry.deltas
             )
         else:
-            # Check if entry text matches a shopping template
+            # Fallback: check if entry text matches a shopping template
             modified_items = _add_template_items_to_shopping_list(
                 session, entry.text, entry.date, entry.meal, entry.deltas
             )
@@ -1020,7 +1039,9 @@ async def create_weekplan_entry(
             date=db_entry.date,
             meal=db_entry.meal,
             text=db_entry.text,
+            entry_type=db_entry.entry_type,
             recipe_id=db_entry.recipe_id,
+            template_id=db_entry.template_id,
             deltas=entry.deltas,
         )
 
@@ -1060,13 +1081,23 @@ async def delete_weekplan_entry(
 
         # Remove items from shopping list based on entry type
         # Do this BEFORE deleting the entry so we still have access to entry data
-        if entry.recipe_id:
+        if entry.entry_type == "recipe" and entry.recipe_id:
             # Entry is a recipe - remove recipe ingredients
             modified_items, deleted_items = _remove_recipe_items_from_shopping_list(
                 session, entry.recipe_id, entry.date, entry.meal, entry_deltas
             )
-        else:
+        elif entry.entry_type == "template":
             # Entry is a template - remove template items
+            modified_items, deleted_items = _remove_template_items_from_shopping_list(
+                session, entry.text, entry.date, entry.meal, entry_deltas
+            )
+        elif entry.recipe_id:
+            # Fallback for backward compatibility: entry has a recipe_id
+            modified_items, deleted_items = _remove_recipe_items_from_shopping_list(
+                session, entry.recipe_id, entry.date, entry.meal, entry_deltas
+            )
+        else:
+            # Fallback: entry text might match a template
             modified_items, deleted_items = _remove_template_items_from_shopping_list(
                 session, entry.text, entry.date, entry.meal, entry_deltas
             )

@@ -3,7 +3,8 @@
  */
 
 import { productAdminState } from '../../state/product-admin-state.js';
-import { renderUI } from './rendering.js';
+import type { ProductAdminStateData } from '../../state/product-admin-state.js';
+import { renderUI, updateProductListDisplay } from './rendering.js';
 import {
   setRerenderCallback,
   handleStoreChange,
@@ -18,9 +19,31 @@ import {
  * Initialize the product admin UI
  */
 export async function initProductAdmin(): Promise<void> {
+  // Track previous state to detect what changed
+  let previousState: ProductAdminStateData | null = null;
+
   // Subscribe to state changes for automatic UI updates
-  productAdminState.subscribe(() => {
-    renderAndAttach();
+  productAdminState.subscribe((newState) => {
+    // Check if only filter changed (to preserve input focus)
+    const onlyFilterChanged = previousState &&
+      previousState.selectedStoreId === newState.selectedStoreId &&
+      previousState.editingProductId === newState.editingProductId &&
+      previousState.products === newState.products &&
+      previousState.departments === newState.departments &&
+      previousState.stores === newState.stores &&
+      previousState.filterQuery !== newState.filterQuery;
+
+    if (onlyFilterChanged) {
+      // Only update the product list, preserving input focus
+      updateProductListDisplay();
+      // Re-attach product action listeners after DOM update
+      attachProductActionListeners();
+    } else {
+      // Full re-render for all other changes
+      renderAndAttach();
+    }
+
+    previousState = newState;
   });
 
   await productAdminState.loadStores();

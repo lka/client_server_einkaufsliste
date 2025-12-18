@@ -77,7 +77,9 @@ export interface WeekplanEntry {
   date: string;  // ISO format: YYYY-MM-DD
   meal: string;  // 'morning', 'lunch', 'dinner'
   text: string;
+  entry_type?: 'text' | 'template' | 'recipe';  // Type of entry
   recipe_id?: number;  // Optional recipe reference
+  template_id?: number;  // Optional template reference
   deltas?: WeekplanDeltas;
 }
 
