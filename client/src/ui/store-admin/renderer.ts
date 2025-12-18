@@ -41,8 +41,11 @@ function renderDepartmentsSection(storeId: number, departments: readonly { id: n
     <div class="departments-section">
       <h4>Abteilungen (${departments.length})</h4>
       <div class="add-department-form">
+        <label for="department-input-${storeId}" class="visually-hidden">Neue Abteilung</label>
         <input
           type="text"
+          id="department-input-${storeId}"
+          name="departmentName"
           placeholder="Neue Abteilung"
           class="department-name-input"
           data-store-id="${storeId}"

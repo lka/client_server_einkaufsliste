@@ -17,8 +17,10 @@
     <section class="add-store-section">
       <h2>Neues Geschäft hinzufügen</h2>
       <div class="add-store-form">
-        <input id="storeNameInput" type="text" placeholder="Geschäftsname (z.B. Rewe)" />
-        <input id="storeLocationInput" type="text" placeholder="Standort (optional)" />
+        <label for="storeNameInput" class="visually-hidden">Geschäftsname</label>
+        <input id="storeNameInput" name="storeName" type="text" placeholder="Geschäftsname (z.B. Rewe)" />
+        <label for="storeLocationInput" class="visually-hidden">Standort</label>
+        <input id="storeLocationInput" name="storeLocation" type="text" placeholder="Standort (optional)" />
         <button id="addStoreBtn">⏎ Ok</button>
       </div>
     </section>

@@ -63,11 +63,14 @@ export function showEditModal(options: {
 
   const label = document.createElement('label');
   label.textContent = 'Neuer Name:';
+  label.htmlFor = 'edit-modal-input';
   label.style.cssText = 'display: block; margin-bottom: 0.5rem; font-weight: bold;';
   modalContent.appendChild(label);
 
   const input = document.createElement('input');
   input.type = 'text';
+  input.id = 'edit-modal-input';
+  input.name = 'editValue';
   input.value = options.currentValue;
   input.style.cssText = 'width: 100%; padding: 0.5rem; margin-bottom: 1rem; border: 1px solid #ddd; border-radius: 4px;';
   modalContent.appendChild(input);

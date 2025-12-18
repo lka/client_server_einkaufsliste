@@ -17,12 +17,15 @@
     <section class="template-form-section">
       <h2 id="formTitle">Neue Vorlage erstellen</h2>
       <div class="template-form">
-        <input id="templateNameInput" type="text" placeholder="Vorlagen-Name (z.B. Wocheneinkauf)" />
-        <textarea id="templateDescriptionInput" placeholder="Beschreibung (optional)" rows="2"></textarea>
+        <label for="templateNameInput" class="visually-hidden">Vorlagen-Name</label>
+        <input id="templateNameInput" name="templateName" type="text" placeholder="Vorlagen-Name (z.B. Wocheneinkauf)" />
+        <label for="templateDescriptionInput" class="visually-hidden">Beschreibung</label>
+        <textarea id="templateDescriptionInput" name="templateDescription" placeholder="Beschreibung (optional)" rows="2"></textarea>
 
         <div class="person-count-input-wrapper">
           <span class="person-count-icon">👥</span>
-          <input id="templatePersonCountInput" type="number" min="1" step="1" value="2" />
+          <label for="templatePersonCountInput" class="visually-hidden">Personenanzahl</label>
+          <input id="templatePersonCountInput" name="personCount" type="number" min="1" step="1" value="2" />
           <span class="person-count-label">Personen</span>
         </div>
 
@@ -32,8 +35,10 @@
             <!-- Template items will be rendered here -->
           </div>
           <div class="add-item-row">
-            <input id="itemNameInput" type="text" placeholder="Artikel (z.B. Milch)" />
-            <input id="itemMengeInput" type="text" placeholder="Menge (z.B. 2 L)" />
+            <label for="itemNameInput" class="visually-hidden">Artikelname</label>
+            <input id="itemNameInput" name="itemName" type="text" placeholder="Artikel (z.B. Milch)" />
+            <label for="itemMengeInput" class="visually-hidden">Menge</label>
+            <input id="itemMengeInput" name="itemQuantity" type="text" placeholder="Menge (z.B. 2 L)" />
             <button id="addItemBtn">⏎ Ok</button>
           </div>
         </div>
@@ -49,8 +54,10 @@
       <div class="templates-list-header">
         <h2>Vorhandene Vorlagen</h2>
         <div class="templates-filter-wrapper">
+          <label for="templatesFilterInput" class="visually-hidden">Vorlagen filtern</label>
           <input
             id="templatesFilterInput"
+            name="filterQuery"
             type="text"
             placeholder="🔍 Vorlagen filtern..."
             class="templates-filter-input"
