@@ -9,6 +9,7 @@ import { logout, isAuthenticated } from './auth.js';
 
 let inactivityTimeout: number | null = null;
 let inactivityTimeoutMs: number = 30 * 60 * 1000; // Default: 30 minutes
+let isTrackerActive: boolean = false;
 
 // Events that indicate user activity
 const ACTIVITY_EVENTS = [
@@ -35,10 +36,14 @@ export function initInactivityTracker(expiresInSeconds: number): void {
   // Reset the timer
   resetInactivityTimer();
 
-  // Listen to activity events
-  ACTIVITY_EVENTS.forEach(event => {
-    window.addEventListener(event, handleActivity, { passive: true });
-  });
+  // Only add event listeners if not already active
+  // This prevents duplicate listeners when navigating between pages
+  if (!isTrackerActive) {
+    ACTIVITY_EVENTS.forEach(event => {
+      window.addEventListener(event, handleActivity, { passive: true });
+    });
+    isTrackerActive = true;
+  }
 }
 
 /**
@@ -55,6 +60,9 @@ export function stopInactivityTracker(): void {
     clearTimeout(inactivityTimeout);
     inactivityTimeout = null;
   }
+
+  // Mark tracker as inactive
+  isTrackerActive = false;
 
   console.log('Inactivity tracker stopped');
 }
