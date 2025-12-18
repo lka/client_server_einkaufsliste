@@ -63,7 +63,7 @@ export async function showTemplateDetails(templateName: string, entryId: number)
       const itemsList = document.createElement('ul');
       itemsList.style.cssText = 'list-style: none; padding: 0; margin: 0;';
 
-      template.items.forEach(item => {
+      template.items.forEach((item, index) => {
         const li = document.createElement('li');
         const isRemoved = removedItems.has(item.name);
 
@@ -83,8 +83,11 @@ export async function showTemplateDetails(templateName: string, entryId: number)
         const leftDiv = document.createElement('div');
         leftDiv.style.cssText = 'display: flex; align-items: center; gap: 0.5rem;';
 
+        const checkboxId = `template-item-checkbox-${index}`;
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
+        checkbox.id = checkboxId;
+        checkbox.name = `templateItem_${index}`;
         checkbox.checked = isRemoved;
         checkbox.style.cssText = 'cursor: pointer; width: 16px; height: 16px;';
         checkbox.addEventListener('change', () => {

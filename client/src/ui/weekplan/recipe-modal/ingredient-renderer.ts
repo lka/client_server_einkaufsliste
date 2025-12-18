@@ -15,7 +15,7 @@ export function renderIngredientsList(
   const ingredientsList = document.createElement('ul');
   ingredientsList.style.cssText = 'list-style: none; padding: 0; margin: 0;';
 
-  parsedIngredients.forEach((ingredient) => {
+  parsedIngredients.forEach((ingredient, index) => {
     const isRemoved = state.removedItems.has(ingredient.name);
 
     const li = document.createElement('li');
@@ -33,8 +33,11 @@ export function renderIngredientsList(
     const leftDiv = document.createElement('div');
     leftDiv.style.cssText = 'display: flex; align-items: center; gap: 0.5rem;';
 
+    const checkboxId = `recipe-ingredient-checkbox-${index}`;
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
+    checkbox.id = checkboxId;
+    checkbox.name = `recipeIngredient_${index}`;
     checkbox.checked = isRemoved;
     checkbox.style.cssText = 'cursor: pointer; width: 16px; height: 16px;';
 

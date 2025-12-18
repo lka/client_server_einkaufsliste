@@ -162,11 +162,13 @@ export function createPrintDialog(): DialogElements {
   optionsContainer.style.cssText = 'margin-bottom: 0; display: flex; gap: 1.5rem; flex-wrap: wrap;';
 
   const checkboxLabel = document.createElement('label');
+  checkboxLabel.htmlFor = 'hideDepartmentsCheckbox';
   checkboxLabel.style.cssText = 'display: flex; align-items: center; gap: 0.5rem; cursor: pointer;';
 
   const hideDeptCheckbox = document.createElement('input');
   hideDeptCheckbox.type = 'checkbox';
   hideDeptCheckbox.id = 'hideDepartmentsCheckbox';
+  hideDeptCheckbox.name = 'hideDepartments';
   hideDeptCheckbox.style.cssText = 'cursor: pointer;';
 
   const labelText = document.createElement('span');

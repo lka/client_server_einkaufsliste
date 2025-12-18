@@ -26,11 +26,33 @@ export function createStoreAndDateControls(
   const header = document.createElement('div');
   header.style.cssText = 'display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap;';
 
-  // Store dropdown
+  // Store dropdown with label
+  const storeGroup = document.createElement('div');
+  storeGroup.style.cssText = 'display: flex; flex-direction: column; gap: 0.25rem;';
+
+  const storeLabel = document.createElement('label');
+  storeLabel.htmlFor = 'printStoreSelect';
+  storeLabel.textContent = 'Geschäft:';
+  storeLabel.style.cssText = 'font-size: 0.75rem; color: #666; font-weight: 500;';
+
   const storeDropdown = createStoreDropdown(allStores, currentStoreId);
 
-  // Date dropdown
+  storeGroup.appendChild(storeLabel);
+  storeGroup.appendChild(storeDropdown);
+
+  // Date dropdown with label
+  const dateGroup = document.createElement('div');
+  dateGroup.style.cssText = 'display: flex; flex-direction: column; gap: 0.25rem;';
+
+  const dateLabel = document.createElement('label');
+  dateLabel.htmlFor = 'printDateSelect';
+  dateLabel.textContent = 'Datum:';
+  dateLabel.style.cssText = 'font-size: 0.75rem; color: #666; font-weight: 500;';
+
   const dateDropdown = createDateDropdown(uniqueDates, selectedDate);
+
+  dateGroup.appendChild(dateLabel);
+  dateGroup.appendChild(dateDropdown);
 
   // Handle store selection change
   storeDropdown.addEventListener('change', async () => {
@@ -66,8 +88,8 @@ export function createStoreAndDateControls(
     }
   });
 
-  header.appendChild(storeDropdown);
-  header.appendChild(dateDropdown);
+  header.appendChild(storeGroup);
+  header.appendChild(dateGroup);
   return header;
 }
 
@@ -76,6 +98,8 @@ export function createStoreAndDateControls(
  */
 function createStoreDropdown(allStores: any[], currentStoreId: number | null): HTMLSelectElement {
   const storeDropdown = document.createElement('select');
+  storeDropdown.id = 'printStoreSelect';
+  storeDropdown.name = 'storeFilter';
   storeDropdown.style.cssText = 'font-size: 1.2rem; font-weight: bold; padding: 0.25rem 0.5rem; border: 1px solid #ccc; border-radius: 4px; cursor: pointer;';
 
   // Add "Alle Geschäfte" option
@@ -105,6 +129,8 @@ function createStoreDropdown(allStores: any[], currentStoreId: number | null): H
  */
 function createDateDropdown(uniqueDates: string[], selectedDate: string | null): HTMLSelectElement {
   const dateDropdown = document.createElement('select');
+  dateDropdown.id = 'printDateSelect';
+  dateDropdown.name = 'dateFilter';
   dateDropdown.style.cssText = 'color: #666; font-size: 0.8rem; padding: 0.25rem 0.5rem; border: 1px solid #ccc; border-radius: 4px; cursor: pointer;';
 
   // Add "Alle Daten" option

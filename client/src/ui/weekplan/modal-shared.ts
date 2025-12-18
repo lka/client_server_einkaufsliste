@@ -18,6 +18,7 @@ export function createQuantityAdjustmentSection(
 
   const adjustLabel = document.createElement('label');
   adjustLabel.textContent = `Mengen anpassen (Vorlage für ${originalPersonCount} Personen):`;
+  adjustLabel.htmlFor = 'personCountAdjustInput';
   adjustLabel.style.cssText = 'display: block; font-size: 0.85rem; margin-bottom: 0.25rem; color: #666; font-weight: 500;';
 
   const adjustForm = document.createElement('div');
@@ -25,6 +26,8 @@ export function createQuantityAdjustmentSection(
 
   const adjustInput = document.createElement('input');
   adjustInput.type = 'number';
+  adjustInput.id = 'personCountAdjustInput';
+  adjustInput.name = 'personCountAdjust';
   adjustInput.min = '1';
   adjustInput.step = '1';
   adjustInput.placeholder = 'Anzahl Personen';
@@ -91,10 +94,13 @@ export function createAddItemForm(
 
   const nameLabel = document.createElement('label');
   nameLabel.textContent = 'Artikel';
+  nameLabel.htmlFor = 'addItemNameInput';
   nameLabel.style.cssText = 'display: block; font-size: 0.85rem; margin-bottom: 0.25rem; color: #666;';
 
   const nameInput = document.createElement('input');
   nameInput.type = 'text';
+  nameInput.id = 'addItemNameInput';
+  nameInput.name = 'itemName';
   nameInput.placeholder = 'Artikelname';
   nameInput.style.cssText = `
     width: 100%;
@@ -112,10 +118,13 @@ export function createAddItemForm(
 
   const mengeLabel = document.createElement('label');
   mengeLabel.textContent = 'Menge';
+  mengeLabel.htmlFor = 'addItemMengeInput';
   mengeLabel.style.cssText = 'display: block; font-size: 0.85rem; margin-bottom: 0.25rem; color: #666;';
 
   const mengeInput = document.createElement('input');
   mengeInput.type = 'text';
+  mengeInput.id = 'addItemMengeInput';
+  mengeInput.name = 'itemQuantity';
   mengeInput.placeholder = 'z.B. 2 kg';
   mengeInput.style.cssText = `
     width: 100%;

@@ -118,6 +118,8 @@ function createEntryInput(
   // Create input field
   const input = document.createElement('input');
   input.type = 'text';
+  input.id = `weekplan-entry-input-${dayName}-${meal}`;
+  input.name = `weekplanEntry_${dayName}_${meal}`;
   input.className = 'meal-input';
   input.placeholder = 'Eintrag hinzufügen...';
   input.style.cssText = `
