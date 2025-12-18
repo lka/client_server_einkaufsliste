@@ -173,12 +173,57 @@ export async function showEditModal(
  */
 export async function showImportConfirmation(settingsId: number): Promise<void> {
   const modalContent = document.createElement('div');
-  modalContent.innerHTML = '<p>Möchtest du jetzt die Rezepte von WebDAV einlesen? Dies kann einige Sekunden dauern.</p>';
+
+  const messageEl = document.createElement('p');
+  messageEl.textContent = 'Möchtest du jetzt die Rezepte von WebDAV einlesen? Dies kann bis zu 30 Sekunden dauern.';
+  modalContent.appendChild(messageEl);
+
+  // Progress container (initially hidden)
+  const progressContainer = document.createElement('div');
+  progressContainer.style.display = 'none';
+  progressContainer.style.marginTop = '20px';
+  progressContainer.style.marginBottom = '20px';
+
+  const progressMessage = document.createElement('div');
+  progressMessage.style.marginBottom = '10px';
+  progressMessage.style.fontSize = '0.9rem';
+  progressMessage.style.color = '#666';
+  progressContainer.appendChild(progressMessage);
+
+  const progressBarOuter = document.createElement('div');
+  progressBarOuter.style.width = '100%';
+  progressBarOuter.style.height = '24px';
+  progressBarOuter.style.backgroundColor = '#e0e0e0';
+  progressBarOuter.style.borderRadius = '12px';
+  progressBarOuter.style.overflow = 'hidden';
+  progressBarOuter.style.position = 'relative';
+
+  const progressBarInner = document.createElement('div');
+  progressBarInner.style.height = '100%';
+  progressBarInner.style.width = '0%';
+  progressBarInner.style.backgroundColor = '#007bff';
+  progressBarInner.style.transition = 'width 0.3s ease';
+  progressBarInner.style.borderRadius = '12px';
+  progressBarOuter.appendChild(progressBarInner);
+
+  const progressText = document.createElement('div');
+  progressText.style.position = 'absolute';
+  progressText.style.top = '50%';
+  progressText.style.left = '50%';
+  progressText.style.transform = 'translate(-50%, -50%)';
+  progressText.style.fontSize = '0.85rem';
+  progressText.style.fontWeight = 'bold';
+  progressText.style.color = '#333';
+  progressText.textContent = '0%';
+  progressBarOuter.appendChild(progressText);
+
+  progressContainer.appendChild(progressBarOuter);
+  modalContent.appendChild(progressContainer);
 
   const modal = new Modal({
     title: 'Rezepte einlesen',
     content: modalContent,
-    size: 'small',
+    size: 'medium',
   });
 
   const buttonContainer = document.createElement('div');
@@ -198,10 +243,36 @@ export async function showImportConfirmation(settingsId: number): Promise<void> 
     variant: 'primary',
     onClick: async () => {
       importBtn.disabled = true;
-      importBtn.textContent = '⏳ Einlesen...';
+      cancelBtn.disabled = true;
+      progressContainer.style.display = 'block';
+      messageEl.style.display = 'none';
 
       try {
-        const result = await importRecipesFromWebDAV(settingsId);
+        const result = await importRecipesFromWebDAV(settingsId, (progress) => {
+          // Update progress UI
+          if (progress.message) {
+            progressMessage.textContent = progress.message;
+          }
+
+          if (progress.total && progress.current !== undefined) {
+            const percentage = Math.round((progress.current / progress.total) * 100);
+            progressBarInner.style.width = `${percentage}%`;
+            progressText.textContent = `${percentage}%`;
+
+            if (progress.imported !== undefined) {
+              progressText.textContent = `${percentage}% (${progress.imported} Rezepte)`;
+            }
+          } else if (progress.status === 'downloading' || progress.status === 'extracting') {
+            // Indeterminate progress
+            progressBarInner.style.width = '100%';
+            progressBarInner.style.animation = 'pulse 1.5s ease-in-out infinite';
+            progressText.textContent = '';
+          } else if (progress.status === 'committing') {
+            progressBarInner.style.width = '95%';
+            progressText.textContent = '95%';
+          }
+        });
+
         modal.close();
 
         if (result.errors && result.errors.length > 0) {
@@ -212,7 +283,9 @@ export async function showImportConfirmation(settingsId: number): Promise<void> 
         }
       } catch (error) {
         importBtn.disabled = false;
-        importBtn.textContent = '📥 Einlesen';
+        cancelBtn.disabled = false;
+        progressContainer.style.display = 'none';
+        messageEl.style.display = 'block';
 
         if (error instanceof Error) {
           showError(`Einlesen fehlgeschlagen: ${error.message}`);

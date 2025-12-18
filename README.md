@@ -6,6 +6,14 @@ Python FastAPI Server + TypeScript Client mit JWT-Authentifizierung.
 
 ## Release
 
+- Release 5.1.3: WebDAV-UX-Verbesserungen
+  - **Fortschrittsanzeige beim Rezept-Import**: Echtzeit-Updates mit Server-Sent Events
+    - Detaillierte Fortschrittsinformationen (Dateianzahl, importierte Rezepte)
+    - Visueller Fortschrittsbalken mit Prozentanzeige
+    - Statusnachrichten für jeden Import-Schritt
+  - **Größere Buttons in WebDAV-Admin**: Verbesserte Bedienbarkeit mit größeren, besser klickbaren Buttons
+- Release 5.1.2: Bug fixes für Attribute in Modal und Print-Controls
+- Release 5.1.1: Bug fixes für Attribute von Input-Feldern
 - Release 3.1.0: Einheiten-Verwaltung + Bruchzahlen-Unterstützung
   - Einheiten aus Datenbank statt hardcoded (CRUD-UI mit Drag & Drop)
   - Bruchzahlen in Rezepten (½, ¼, ¾, 1½, etc.) bei Parsing, Addition und Skalierung
@@ -282,14 +290,20 @@ Python FastAPI Server + TypeScript Client mit JWT-Authentifizierung.
   - **Multi-User Support**: Mehrere Benutzer können gleichzeitig die gleiche Liste bearbeiten
   - **Vollständig getestet**: 12 Tests mit Mock-WebSocket für umfassende Abdeckung
 - ✅ **Rezept-Integration**: Vollständige Rezeptverwaltung mit WebDAV-Import und Wochenplan-Integration
-  - **Rezept-Import**: Importiere Rezepte direkt von deinem WebDAV-Server
-    - Unterstützt Nextcloud Cookbook Format (JSON)
+  - **Rezept-Import mit Echtzeit-Fortschritt**: Importiere Rezepte direkt von deinem WebDAV-Server
+    - Unterstützt Nextcloud Cookbook Format (JSON-ZIP)
     - Massenimport: Verarbeitet tausende Rezepte in einem Durchgang
+    - **Server-Sent Events (SSE)**: Echtzeit-Fortschrittsupdates während des Imports
+      - **Visueller Fortschrittsbalken**: Zeigt Prozentsatz der verarbeiteten Dateien
+      - **Detaillierte Status-Nachrichten**: Download, Extrahieren, Verarbeitung, Speichern
+      - **Live-Zähler**: Anzahl der bereits importierten Rezepte in Echtzeit
+      - **Datei-Fortschritt**: "Processing file X/Y" für jeden Verarbeitungsschritt
+      - Jede Datei enthält ~400 Rezepte (größere Batches für bessere Performance)
     - Deduplizierung: Verhindert doppelte Importe basierend auf `external_id`
     - Fehlertoleranz: Import läuft weiter auch bei einzelnen fehlerhaften Rezepten
-    - Fortschrittsanzeige: Zeigt Anzahl importierter, übersprungener und fehlerhafter Rezepte
     - Metadaten-Speicherung: Name, Kategorie, Tags, Zutaten, Personenanzahl, Zubereitungszeit
     - Einmalige Konfiguration: WebDAV-Zugangsdaten werden sicher gespeichert
+    - **Verbesserte UI**: Größere, besser klickbare Buttons für Import und Verwaltung
     - Trigger über UI: "📥 Rezepte einlesen" Button in WebDAV-Einstellungen
   - **Rezeptsuche im Wochenplan**: Intelligente Suche mit Echtzeit-Vorschlägen
     - **Autocomplete-Integration**: Rezepte erscheinen automatisch in Vorlagen-Vorschlägen
@@ -559,8 +573,14 @@ Nach dem Login können Sie die Einkaufsliste verwenden:
 
 2. **Rezepte einlesen**:
    - In den WebDAV-Einstellungen, klicken Sie auf **"📥 Rezepte einlesen"**
-   - Der Import läuft im Hintergrund und zeigt Fortschritt an
+   - **Echtzeit-Fortschrittsanzeige** zeigt den Import-Status:
+     - Download der ZIP-Datei vom WebDAV-Server
+     - Extrahieren der Rezept-Dateien
+     - Verarbeitung jeder Datei (~400 Rezepte pro Datei)
+     - Fortschrittsbalken mit Prozentanzeige und Rezept-Zähler
+     - Speichern in die Datenbank
    - Erfolgsmeldung zeigt Anzahl importierter Rezepte
+   - Bei langsamen Servern kann der Import bis zu 30 Sekunden dauern
 
 3. **Rezepte im Wochenplan verwenden**:
    - Gehen Sie zum **"🗓️ Wochenplan"**
