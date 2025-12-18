@@ -173,10 +173,10 @@ export async function showEditModal(
  */
 export async function showImportConfirmation(settingsId: number): Promise<void> {
   const modalContent = document.createElement('div');
-  modalContent.innerHTML = '<p>Möchtest du jetzt die Rezepte von WebDAV importieren? Dies kann einige Sekunden dauern.</p>';
+  modalContent.innerHTML = '<p>Möchtest du jetzt die Rezepte von WebDAV einlesen? Dies kann einige Sekunden dauern.</p>';
 
   const modal = new Modal({
-    title: 'Rezepte importieren',
+    title: 'Rezepte einlesen',
     content: modalContent,
     size: 'small',
   });
@@ -194,11 +194,11 @@ export async function showImportConfirmation(settingsId: number): Promise<void> 
   });
 
   const importBtn = createButton({
-    label: '📥 Importieren',
+    label: '📥 Einlesen',
     variant: 'primary',
     onClick: async () => {
       importBtn.disabled = true;
-      importBtn.textContent = '⏳ Importiere...';
+      importBtn.textContent = '⏳ Einlesen...';
 
       try {
         const result = await importRecipesFromWebDAV(settingsId);
@@ -212,12 +212,12 @@ export async function showImportConfirmation(settingsId: number): Promise<void> 
         }
       } catch (error) {
         importBtn.disabled = false;
-        importBtn.textContent = '📥 Importieren';
+        importBtn.textContent = '📥 Einlesen';
 
         if (error instanceof Error) {
-          showError(`Import fehlgeschlagen: ${error.message}`);
+          showError(`Einlesen fehlgeschlagen: ${error.message}`);
         } else {
-          showError('Import fehlgeschlagen');
+          showError('Einlesen fehlgeschlagen');
         }
         console.error('Error importing recipes:', error);
       }

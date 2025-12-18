@@ -270,12 +270,6 @@ Python FastAPI Server + TypeScript Client mit JWT-Authentifizierung.
     - **Active User Count**: Anzeige der Anzahl verbundener Benutzer (z.B. "👥 3")
     - **Sauberes Cleanup**: ConnectionStatus-Instanz wird ordnungsgemäß beim Deaktivieren zerstört (keine Duplikate)
     - **Optimierte Event-Reihenfolge**: ConnectionStatus wird vor WebSocket-Connect erstellt (verhindert Race-Conditions auf mobilen Geräten)
-  - **WebSocket-Link teilen**: Neuer Button "📋 WebSocket-Link kopieren" im Benutzermenü
-    - **Mobile-First**: Nutzt native Share API auf mobilen Geräten (WhatsApp, E-Mail, etc.)
-    - **Desktop**: Kopiert Link automatisch in Zwischenablage mit Toast-Feedback
-    - **URL-Format**: Generiert Link mit `?ws=1` Parameter (z.B. `https://ihre-domain.de/app?ws=1`)
-    - **Automatische Aktivierung**: Empfänger öffnen Link → WebSocket wird automatisch aktiviert
-    - **Ideal für mobile Geräte**: Einfaches Teilen per Messenger oder Mail
   - **Auto-Reconnection**: Automatische Wiederverbindung bei Verbindungsabbruch mit exponentiellem Backoff
   - **Heartbeat-Mechanismus**: Ping/Pong alle 30 Sekunden zur Erkennung stagnierender Verbindungen
   - **Message Queue**: Bis zu 100 Nachrichten werden während Offline-Phasen gepuffert
@@ -288,7 +282,7 @@ Python FastAPI Server + TypeScript Client mit JWT-Authentifizierung.
   - **Multi-User Support**: Mehrere Benutzer können gleichzeitig die gleiche Liste bearbeiten
   - **Vollständig getestet**: 12 Tests mit Mock-WebSocket für umfassende Abdeckung
 - ✅ **Rezept-Integration**: Vollständige Rezeptverwaltung mit WebDAV-Import und Wochenplan-Integration
-  - **WebDAV-Rezept-Import**: Importiere Rezepte direkt von deinem WebDAV-Server
+  - **Rezept-Import**: Importiere Rezepte direkt von deinem WebDAV-Server
     - Unterstützt Nextcloud Cookbook Format (JSON)
     - Massenimport: Verarbeitet tausende Rezepte in einem Durchgang
     - Deduplizierung: Verhindert doppelte Importe basierend auf `external_id`
@@ -296,7 +290,7 @@ Python FastAPI Server + TypeScript Client mit JWT-Authentifizierung.
     - Fortschrittsanzeige: Zeigt Anzahl importierter, übersprungener und fehlerhafter Rezepte
     - Metadaten-Speicherung: Name, Kategorie, Tags, Zutaten, Personenanzahl, Zubereitungszeit
     - Einmalige Konfiguration: WebDAV-Zugangsdaten werden sicher gespeichert
-    - Trigger über UI: "📥 Rezepte importieren" Button in WebDAV-Einstellungen
+    - Trigger über UI: "📥 Rezepte einlesen" Button in WebDAV-Einstellungen
   - **Rezeptsuche im Wochenplan**: Intelligente Suche mit Echtzeit-Vorschlägen
     - **Autocomplete-Integration**: Rezepte erscheinen automatisch in Vorlagen-Vorschlägen
     - **Vorlagenpriorität**: Vorlagen (Templates) werden vor Rezepten angezeigt
@@ -536,10 +530,10 @@ Das Benutzermenü (⋮) im Header der Anwendung ist hierarchisch organisiert:
 - **👥 Benutzer verwalten**: Benutzer freigeben und verwalten (Admin-Funktion)
 
 **⚙️ Einstellungen** (Settings)
-- **🔌 WebSocket aktivieren**: Live-Synchronisation zwischen Geräten einschalten
-- **📋 WebSocket-Link kopieren**: Link zum Teilen mit anderen Benutzern
+- **🔌 WebSocket de/aktivieren**: Live-Synchronisation zwischen Geräten ein/ausschalten
+- **🗓️ Vor Datum löschen**: löscht Daten aus der Einkaufsliste vor Datum
 - **💾 Datenbank-Backup**: Datenbank sichern und wiederherstellen
-- **☁️ WebDAV Einstellungen**: Zugriff auf Rezepte konfigurieren und importieren
+- **☁️ Rezepte einlesen**: Zugriff auf Rezepte konfigurieren und importieren
 
 ### Einkaufsliste verwenden
 
@@ -559,12 +553,12 @@ Nach dem Login können Sie die Einkaufsliste verwenden:
 
 1. **WebDAV-Einstellungen konfigurieren** (einmalig):
    - Klicken Sie auf das Menü (⋮) im Header
-   - Wählen Sie **"☁️ WebDAV Einstellungen"**
+   - Wählen Sie **"☁️ Rezepte einlesen"**
    - Erstellen Sie eine neue WebDAV-Konfiguration mit Ihren Nextcloud-Zugangsdaten
    - Geben Sie den Pfad zur recipes.json an (z.B. `/remote.php/dav/files/USERNAME/Recipes/recipes.json`)
 
-2. **Rezepte importieren**:
-   - In den WebDAV-Einstellungen, klicken Sie auf **"📥 Rezepte importieren"**
+2. **Rezepte einlesen**:
+   - In den WebDAV-Einstellungen, klicken Sie auf **"📥 Rezepte einlesen"**
    - Der Import läuft im Hintergrund und zeigt Fortschritt an
    - Erfolgsmeldung zeigt Anzahl importierter Rezepte
 

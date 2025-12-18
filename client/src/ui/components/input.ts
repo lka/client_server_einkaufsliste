@@ -28,6 +28,9 @@ export interface InputGroup {
   errorEl?: HTMLSpanElement;
 }
 
+// Counter for auto-generated IDs
+let inputIdCounter = 0;
+
 /**
  * Create an input field with label and error handling.
  */
@@ -48,6 +51,9 @@ export function createInput(options: InputOptions): InputGroup {
     onBlur,
   } = options;
 
+  // Generate unique ID if not provided (needed for label association)
+  const inputId = id || `input-${++inputIdCounter}`;
+
   // Container
   const container = document.createElement('div');
   container.className = `input-group ${className}`.trim();
@@ -65,9 +71,8 @@ export function createInput(options: InputOptions): InputGroup {
       labelEl.appendChild(requiredMark);
     }
 
-    if (id) {
-      labelEl.setAttribute('for', id);
-    }
+    // Always set 'for' attribute to ensure accessibility
+    labelEl.setAttribute('for', inputId);
 
     container.appendChild(labelEl);
   }
@@ -88,9 +93,8 @@ export function createInput(options: InputOptions): InputGroup {
     input.name = name;
   }
 
-  if (id) {
-    input.id = id;
-  }
+  // Always set ID to ensure label association
+  input.id = inputId;
 
   // Event handlers
   if (onChange) {

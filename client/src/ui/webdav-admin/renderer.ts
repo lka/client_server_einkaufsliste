@@ -23,8 +23,8 @@ function renderWebDAVItem(setting: WebDAVSettings): string {
         </div>
       </div>
       <div class="webdav-controls">
-        <button class="import-recipes-btn" data-settings-id="${setting.id}" title="Rezepte importieren" ${!setting.enabled ? 'disabled' : ''}>
-          📥 Rezepte importieren
+        <button class="import-recipes-btn" data-settings-id="${setting.id}" title="Rezepte einlesen" ${!setting.enabled ? 'disabled' : ''}>
+          📥 Rezepte einlesen
         </button>
         <button class="toggle-webdav-btn" data-settings-id="${setting.id}" data-enabled="${setting.enabled}" title="${setting.enabled ? 'Deaktivieren' : 'Aktivieren'}">
           ${setting.enabled ? '⏸' : '▶'}

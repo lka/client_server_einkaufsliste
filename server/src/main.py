@@ -10,6 +10,9 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from starlette.staticfiles import StaticFiles
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import Response
 
 from .db import get_engine, create_db_and_tables, get_session
 from .routers import (
@@ -89,6 +92,34 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Einkaufsliste API", lifespan=lifespan)
+
+
+# Middleware to add charset=utf-8 to Content-Type headers
+class CharsetMiddleware(BaseHTTPMiddleware):
+    """Add charset=utf-8 to Content-Type headers for better compliance."""
+
+    async def dispatch(self, request: Request, call_next):
+        response: Response = await call_next(request)
+
+        # Add charset=utf-8 to text-based content types if not already present
+        content_type = response.headers.get("content-type", "")
+        if content_type and "charset" not in content_type.lower():
+            # Add charset for JSON, XML, SVG, and text responses
+            if any(
+                ct in content_type.lower()
+                for ct in [
+                    "application/json",
+                    "application/xml",
+                    "text/",
+                    "image/svg+xml",
+                ]
+            ):
+                response.headers["content-type"] = f"{content_type}; charset=utf-8"
+
+        return response
+
+
+app.add_middleware(CharsetMiddleware)
 
 # Calculate client directory relative to this module and normalize the path.
 BASE_DIR = os.path.dirname(__file__)
