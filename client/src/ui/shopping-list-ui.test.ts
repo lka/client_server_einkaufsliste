@@ -2,12 +2,18 @@
  * Tests for shopping list UI module.
  */
 
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
+import { describe, it, expect, beforeEach, jest, afterEach } from '@jest/globals';
 import { initShoppingListUI, loadItems } from './shopping-list-ui.js';
 import { shoppingListState } from '../state/shopping-list-state.js';
 import { fetchStores, fetchDepartments, convertItemToProduct, fetchTemplates } from '../data/api.js';
 import { renderItems } from '../data/dom.js';
 import * as toast from './components/toast.js';
+
+// Helper to flush all promises with fake timers
+const flushPromises = async () => {
+  jest.advanceTimersByTime(0);
+  await Promise.resolve();
+};
 
 // Mock the modules
 jest.mock('../data/dom.js');
@@ -23,17 +29,12 @@ jest.mock('./components/toast.js', () => ({
 
 // Mock the components
 let mockModalInstance: any = null;
-let mockDepartmentButtons: HTMLButtonElement[] = [];
+let mockModalContent: HTMLElement | null = null;
 
 jest.mock('./components/modal.js', () => ({
   Modal: jest.fn().mockImplementation((options: any) => {
-    // Extract department buttons from content
-    setTimeout(() => {
-      if (options.content && typeof options.content.querySelectorAll === 'function') {
-        const buttons = options.content.querySelectorAll('button');
-        mockDepartmentButtons = Array.from(buttons);
-      }
-    }, 0);
+    // Store the modal content element for later button extraction
+    mockModalContent = options.content;
 
     mockModalInstance = {
       open: jest.fn(),
@@ -77,6 +78,8 @@ describe('Shopping List UI', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockModalInstance = null;
+    mockModalContent = null;
 
     // Setup DOM
     document.body.innerHTML = `
@@ -114,6 +117,15 @@ describe('Shopping List UI', () => {
     (shoppingListState.getItems as jest.MockedFunction<typeof shoppingListState.getItems>).mockReturnValue(
       []
     );
+
+    // Use fake timers for faster tests
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    // Clean up timers
+    jest.runOnlyPendingTimers();
+    jest.useRealTimers();
   });
 
   describe('loadItems', () => {
@@ -150,7 +162,10 @@ describe('Shopping List UI', () => {
       mockInput.value = 'New Item';
       mockButton.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await flushPromises();
+      jest.runAllTimers();
+      await flushPromises();
 
       expect(shoppingListState.addItem).toHaveBeenCalledWith('New Item', undefined, undefined, undefined);
       expect(mockInput.value).toBe('');
@@ -166,7 +181,8 @@ describe('Shopping List UI', () => {
       mockInput.value = '   ';
       mockButton.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       expect(shoppingListState.addItem).not.toHaveBeenCalled();
     });
@@ -183,7 +199,10 @@ describe('Shopping List UI', () => {
       mockMengeInput.value = '500 g';
       mockButton.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await flushPromises();
+      jest.runAllTimers();
+      await flushPromises();
 
       expect(shoppingListState.addItem).toHaveBeenCalledWith('Möhren', '500 g', undefined, undefined);
       expect(mockInput.value).toBe('');
@@ -200,7 +219,8 @@ describe('Shopping List UI', () => {
       mockInput.value = 'Failed Item';
       mockButton.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       expect(shoppingListState.addItem).toHaveBeenCalledWith('Failed Item', undefined, undefined, undefined);
       expect(mockInput.value).toBe('Failed Item'); // Not cleared on failure
@@ -218,7 +238,8 @@ describe('Shopping List UI', () => {
       const event = new KeyboardEvent('keyup', { key: 'Enter' });
       mockInput.dispatchEvent(event);
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       expect(shoppingListState.addItem).toHaveBeenCalledWith('New Item', undefined, undefined, undefined);
     });
@@ -236,7 +257,8 @@ describe('Shopping List UI', () => {
       const event = new KeyboardEvent('keyup', { key: 'Enter' });
       mockMengeInput.dispatchEvent(event);
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       expect(shoppingListState.addItem).toHaveBeenCalledWith('Möhren', '500 g', undefined, undefined);
     });
@@ -256,7 +278,8 @@ describe('Shopping List UI', () => {
 
       deleteButton.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       expect(shoppingListState.deleteItem).toHaveBeenCalledWith('123');
     });
@@ -281,7 +304,8 @@ describe('Shopping List UI', () => {
       // Button should be disabled immediately
       expect(deleteButton.hasAttribute('disabled')).toBe(true);
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      jest.runAllTimers();
+      await flushPromises();
     });
 
     it('should re-enable button if deletion fails', async () => {
@@ -299,7 +323,8 @@ describe('Shopping List UI', () => {
 
       deleteButton.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await flushPromises();
 
       expect(deleteButton.hasAttribute('disabled')).toBe(false);
     });
@@ -321,7 +346,8 @@ describe('Shopping List UI', () => {
       deleteButton.setAttribute('disabled', 'true');
       deleteButton.click(); // Second click while disabled
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       // Should only be called once
       expect(shoppingListState.deleteItem).toHaveBeenCalledTimes(1);
@@ -345,7 +371,8 @@ describe('Shopping List UI', () => {
       initShoppingListUI();
 
       // Wait for async loadStoreFilter to complete
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       // Check that stores were added to dropdown
       expect(mockStoreFilter.options.length).toBe(3); // "Alle Geschäfte" + 2 stores
@@ -366,7 +393,8 @@ describe('Shopping List UI', () => {
       initShoppingListUI();
 
       // Wait for async loadStoreFilter to complete
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       // Check that first store is selected
       expect(mockStoreFilter.value).toBe('1');
@@ -388,7 +416,8 @@ describe('Shopping List UI', () => {
       initShoppingListUI();
 
       // Wait for async loadStoreFilter to complete
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       // Check that no store is selected
       expect(mockStoreFilter.value).toBe('');
@@ -407,7 +436,8 @@ describe('Shopping List UI', () => {
       initShoppingListUI();
 
       // Wait for async loadStoreFilter to complete
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       // Clear previous calls
       (renderItems as jest.Mock).mockClear();
@@ -433,7 +463,8 @@ describe('Shopping List UI', () => {
       initShoppingListUI();
 
       // Wait for async loadStoreFilter to complete
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       // Clear previous calls
       (renderItems as jest.Mock).mockClear();
@@ -464,7 +495,8 @@ describe('Shopping List UI', () => {
       initShoppingListUI();
 
       // Wait for async loadStoreFilter to complete
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       // Clear previous calls
       (renderItems as jest.Mock).mockClear();
@@ -496,12 +528,14 @@ describe('Shopping List UI', () => {
       initShoppingListUI();
 
       // Wait for async loadStoreFilter to complete (selects first store)
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       mockInput.value = 'New Item';
       mockButton.click();
 
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       // Check that addItem was called with store_id = 1 (first store)
       expect(shoppingListState.addItem).toHaveBeenCalledWith('New Item', undefined, 1, undefined);
@@ -527,7 +561,8 @@ describe('Shopping List UI', () => {
 
       deleteButton.click();
 
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       // Should not be called because button was already disabled
       expect(shoppingListState.deleteItem).not.toHaveBeenCalled();
@@ -565,7 +600,8 @@ describe('Shopping List UI', () => {
 
     it('should show toast.showError when edit button clicked without selected store', async () => {
       initShoppingListUI();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       // Change filter to "Alle Geschäfte"
       mockStoreFilter.value = '';
@@ -579,7 +615,8 @@ describe('Shopping List UI', () => {
 
       // Click edit button (no store selected)
       editButton.click();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       expect(toast.showError).toHaveBeenCalledWith(
         'Bitte wählen Sie ein Geschäft aus, um eine Abteilung zuzuweisen.'
@@ -591,7 +628,8 @@ describe('Shopping List UI', () => {
       (fetchDepartments as jest.MockedFunction<typeof fetchDepartments>).mockResolvedValue([]);
 
       initShoppingListUI();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       // Select first store
       mockStoreFilter.value = '1';
@@ -605,7 +643,8 @@ describe('Shopping List UI', () => {
 
       // Click edit button
       editButton.click();
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      jest.runAllTimers();
+      await flushPromises();
 
       expect(toast.showError).toHaveBeenCalledWith(
         'Keine Abteilungen für dieses Geschäft vorhanden.'
@@ -614,7 +653,8 @@ describe('Shopping List UI', () => {
 
     it('should show department selection dialog when edit button clicked', async () => {
       initShoppingListUI();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       // Select first store
       mockStoreFilter.value = '1';
@@ -628,7 +668,8 @@ describe('Shopping List UI', () => {
 
       // Click edit button
       editButton.click();
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      jest.runAllTimers();
+      await flushPromises();
 
       // Check if Modal was created and opened
       expect(mockModalInstance).toBeTruthy();
@@ -637,7 +678,8 @@ describe('Shopping List UI', () => {
 
     it('should close dialog when cancel button clicked', async () => {
       initShoppingListUI();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       // Select first store
       mockStoreFilter.value = '1';
@@ -651,13 +693,20 @@ describe('Shopping List UI', () => {
 
       // Click edit button
       editButton.click();
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      jest.runAllTimers();
+      await flushPromises();
 
-      // Find and click cancel button
-      const cancelButton = mockDepartmentButtons.find(btn => btn.textContent === '❌ Abbrechen');
-      expect(cancelButton).toBeTruthy();
-      cancelButton?.click();
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      // Find and click cancel button from modal content
+      if (mockModalContent) {
+        const buttons = mockModalContent.querySelectorAll('button');
+        const cancelButton = Array.from(buttons).find(btn => btn.textContent === '❌ Abbrechen');
+        expect(cancelButton).toBeTruthy();
+        if (cancelButton) {
+          (cancelButton as HTMLButtonElement).click();
+          jest.runAllTimers();
+          await flushPromises();
+        }
+      }
 
       // Modal close should have been called
       expect(mockModalInstance.close).toHaveBeenCalled();
@@ -665,7 +714,8 @@ describe('Shopping List UI', () => {
 
     it('should convert item to product when department selected', async () => {
       initShoppingListUI();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await flushPromises();
 
       // Select first store
       mockStoreFilter.value = '1';
@@ -679,21 +729,33 @@ describe('Shopping List UI', () => {
 
       // Click edit button
       editButton.click();
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      jest.runAllTimers();
+      await flushPromises();
+      jest.runAllTimers();
+      await flushPromises();
 
-      // Find and click first department button (not cancel)
-      const firstDeptButton = mockDepartmentButtons.find(btn => btn.textContent !== 'Abbrechen');
-      if (firstDeptButton) {
-        firstDeptButton.click();
-        await new Promise((resolve) => setTimeout(resolve, 100));
+      // Find and click first department button (not cancel) from modal content
+      if (mockModalContent) {
+        const buttons = mockModalContent.querySelectorAll('button');
+        const firstDeptButton = Array.from(buttons).find(btn => !btn.textContent?.includes('Abbrechen'));
+        if (firstDeptButton) {
+          (firstDeptButton as HTMLButtonElement).click();
+          jest.runAllTimers();
+          await flushPromises();
+          jest.runAllTimers();
+          await flushPromises();
 
-        // Should call convertItemToProduct
-        expect(convertItemToProduct).toHaveBeenCalledWith('1', 1);
+          // Should call convertItemToProduct
+          expect(convertItemToProduct).toHaveBeenCalledWith('1', 1);
 
-        // Should reload items
-        expect(shoppingListState.loadItems).toHaveBeenCalled();
+          // Should reload items
+          expect(shoppingListState.loadItems).toHaveBeenCalled();
+        } else {
+          // If no department buttons found, test should still verify modal opened
+          expect(mockModalInstance.open).toHaveBeenCalled();
+        }
       } else {
-        // If no department buttons found, test should still verify modal opened
+        // If no modal content, verify modal opened
         expect(mockModalInstance.open).toHaveBeenCalled();
       }
     });
@@ -703,7 +765,8 @@ describe('Shopping List UI', () => {
       (convertItemToProduct as jest.MockedFunction<typeof convertItemToProduct>).mockResolvedValue(null);
 
       initShoppingListUI();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await flushPromises();
 
       // Select first store
       mockStoreFilter.value = '1';
@@ -717,24 +780,37 @@ describe('Shopping List UI', () => {
 
       // Click edit button
       editButton.click();
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      jest.runAllTimers();
+      await flushPromises();
+      jest.runAllTimers();
+      await flushPromises();
 
-      // Find and click first department button (not cancel)
-      const firstDeptButton = mockDepartmentButtons.find(btn => btn.textContent !== 'Abbrechen');
-      if (firstDeptButton) {
-        firstDeptButton.click();
-        await new Promise((resolve) => setTimeout(resolve, 100));
+      // Find and click first department button (not cancel) from modal content
+      if (mockModalContent) {
+        const buttons = mockModalContent.querySelectorAll('button');
+        const firstDeptButton = Array.from(buttons).find(btn => !btn.textContent?.includes('Abbrechen'));
+        if (firstDeptButton) {
+          (firstDeptButton as HTMLButtonElement).click();
+          jest.runAllTimers();
+          await flushPromises();
+          jest.runAllTimers();
+          await flushPromises();
 
-        expect(toast.showError).toHaveBeenCalledWith('Fehler beim Zuweisen der Abteilung.');
+          expect(toast.showError).toHaveBeenCalledWith('Fehler beim Zuweisen der Abteilung.');
+        } else {
+          // If no department buttons found, just verify modal opened
+          expect(mockModalInstance.open).toHaveBeenCalled();
+        }
       } else {
-        // If no department buttons found, just verify modal opened
+        // If no modal content, verify modal opened
         expect(mockModalInstance.open).toHaveBeenCalled();
       }
     });
 
     it('should close dialog when backdrop clicked', async () => {
       initShoppingListUI();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       // Select first store
       mockStoreFilter.value = '1';
@@ -748,7 +824,8 @@ describe('Shopping List UI', () => {
 
       // Click edit button
       editButton.click();
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      jest.runAllTimers();
+      await flushPromises();
 
       // The modal is configured with closeOnBackdropClick, so backdrop click would trigger onClose
       // We just verify that modal was created and opened
@@ -758,7 +835,8 @@ describe('Shopping List UI', () => {
 
     it('should not close dialog when dialog itself is clicked', async () => {
       initShoppingListUI();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       // Select first store
       mockStoreFilter.value = '1';
@@ -772,7 +850,8 @@ describe('Shopping List UI', () => {
 
       // Click edit button
       editButton.click();
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      jest.runAllTimers();
+      await flushPromises();
 
       // Modal handles click propagation internally, we just verify it opened
       expect(mockModalInstance).toBeTruthy();
@@ -812,11 +891,13 @@ describe('Shopping List UI', () => {
       (shoppingListState.getItems as jest.MockedFunction<typeof shoppingListState.getItems>).mockReturnValue([]);
 
       initShoppingListUI();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       const printButton = document.getElementById('printBtn') as HTMLButtonElement;
       printButton.click();
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      jest.runAllTimers();
+      await flushPromises();
 
       expect(toast.showError).toHaveBeenCalledWith('Keine Einträge zum Drucken vorhanden.');
     });
@@ -826,7 +907,8 @@ describe('Shopping List UI', () => {
       (shoppingListState.getItems as jest.MockedFunction<typeof shoppingListState.getItems>).mockReturnValue(mockItemsWithDepts);
 
       initShoppingListUI();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       // Select first store
       mockStoreFilter.value = '1';
@@ -834,7 +916,8 @@ describe('Shopping List UI', () => {
 
       const printButton = document.getElementById('printBtn') as HTMLButtonElement;
       printButton.click();
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      jest.runAllTimers();
+      await flushPromises();
 
       // Check that print preview dialog was created
       const dialog = document.querySelector('.print-preview-dialog');
@@ -850,7 +933,8 @@ describe('Shopping List UI', () => {
       (shoppingListState.getItems as jest.MockedFunction<typeof shoppingListState.getItems>).mockReturnValue(mockItemsWithDepts);
 
       initShoppingListUI();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       // Select first store
       mockStoreFilter.value = '1';
@@ -858,7 +942,8 @@ describe('Shopping List UI', () => {
 
       const printButton = document.getElementById('printBtn') as HTMLButtonElement;
       printButton.click();
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      jest.runAllTimers();
+      await flushPromises();
 
       // Check that dialog contains department sections
       const dialog = document.querySelector('.print-preview-dialog');
@@ -878,7 +963,8 @@ describe('Shopping List UI', () => {
       (shoppingListState.getItems as jest.MockedFunction<typeof shoppingListState.getItems>).mockReturnValue(mockItemsWithDepts);
 
       initShoppingListUI();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       // Select first store
       mockStoreFilter.value = '1';
@@ -886,14 +972,16 @@ describe('Shopping List UI', () => {
 
       const printButton = document.getElementById('printBtn') as HTMLButtonElement;
       printButton.click();
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      jest.runAllTimers();
+      await flushPromises();
 
       // Find and click cancel button
       const buttons = Array.from(document.querySelectorAll('button'));
       const cancelButton = buttons.find(btn => btn.textContent === '❌ Abbrechen');
 
       cancelButton?.click();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       // Dialog should be removed
       const dialog = document.querySelector('.print-preview-dialog');
@@ -921,7 +1009,8 @@ describe('Shopping List UI', () => {
       (shoppingListState.getItems as jest.MockedFunction<typeof shoppingListState.getItems>).mockReturnValue(mockItemsWithDepts);
 
       initShoppingListUI();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       // Select first store
       mockStoreFilter.value = '1';
@@ -929,14 +1018,16 @@ describe('Shopping List UI', () => {
 
       const printButton = document.getElementById('printBtn') as HTMLButtonElement;
       printButton.click();
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      jest.runAllTimers();
+      await flushPromises();
 
       // Find and click print button in dialog
       const buttons = Array.from(document.querySelectorAll('button'));
       const dialogPrintButton = buttons.find(btn => btn.textContent?.includes('Drucken'));
 
       dialogPrintButton?.click();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       // Check that window.open was called
       expect(windowOpenSpy).toHaveBeenCalledWith('', '_blank');
@@ -953,7 +1044,8 @@ describe('Shopping List UI', () => {
       (shoppingListState.getItems as jest.MockedFunction<typeof shoppingListState.getItems>).mockReturnValue(mockItemsWithDepts);
 
       initShoppingListUI();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       // Select first store
       mockStoreFilter.value = '1';
@@ -961,12 +1053,14 @@ describe('Shopping List UI', () => {
 
       const printButton = document.getElementById('printBtn') as HTMLButtonElement;
       printButton.click();
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      jest.runAllTimers();
+      await flushPromises();
 
       // Click backdrop
       const backdrop = document.querySelector('.print-preview-backdrop') as HTMLElement;
       backdrop?.click();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       // Dialog should be removed
       const dialog = document.querySelector('.print-preview-dialog');
@@ -980,7 +1074,8 @@ describe('Shopping List UI', () => {
       (shoppingListState.getItems as jest.MockedFunction<typeof shoppingListState.getItems>).mockReturnValue(mockItemsWithDepts);
 
       initShoppingListUI();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       // Select first store
       mockStoreFilter.value = '1';
@@ -988,14 +1083,16 @@ describe('Shopping List UI', () => {
 
       const printButton = document.getElementById('printBtn') as HTMLButtonElement;
       printButton.click();
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      jest.runAllTimers();
+      await flushPromises();
 
       // Find and click print button in dialog
       const buttons = Array.from(document.querySelectorAll('button'));
       const dialogPrintButton = buttons.find(btn => btn.textContent?.includes('Drucken'));
 
       dialogPrintButton?.click();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       // Check that toast.showError was shown
       expect(toast.showError).toHaveBeenCalledWith(

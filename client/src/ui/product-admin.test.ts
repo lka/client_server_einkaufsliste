@@ -6,6 +6,12 @@ import { initProductAdmin } from './product-admin';
 import * as api from '../data/api';
 import * as toast from './components/toast.js';
 
+// Helper to flush all promises with fake timers
+const flushPromises = async () => {
+  jest.advanceTimersByTime(0);
+  await Promise.resolve();
+};
+
 // Mock the API module
 jest.mock('../data/api');
 
@@ -17,24 +23,12 @@ jest.mock('./components/toast.js', () => ({
 }));
 
 // Mock the components
-let mockModalOnClick: (() => void) | null = null;
-let mockConfirmOnClick: (() => void) | null = null;
+let mockModalContent: HTMLElement | null = null;
 
 jest.mock('./components/modal.js', () => ({
   Modal: jest.fn().mockImplementation((options) => {
-    // Extract buttons from content to simulate clicking them
-    setTimeout(() => {
-      if (options.content && typeof options.content.querySelectorAll === 'function') {
-        const buttons = options.content.querySelectorAll('button');
-        buttons.forEach((btn: HTMLButtonElement) => {
-          if (btn.textContent?.includes('Löschen')) {
-            mockConfirmOnClick = () => btn.click();
-          } else if (btn.textContent?.includes('Abbrechen')) {
-            mockModalOnClick = () => btn.click();
-          }
-        });
-      }
-    }, 0);
+    // Store the modal content element for later button extraction
+    mockModalContent = options.content;
 
     return {
       open: jest.fn(),
@@ -55,12 +49,26 @@ jest.mock('./components/button.js', () => ({
   }),
 }));
 
+// Track state subscriptions for cleanup
+const mockUnsubscribers: Array<() => void> = [];
+
+// Import the actual state to wrap its subscribe method
+import { productAdminState } from '../state/product-admin-state.js';
+
+// Wrap the subscribe method to track unsubscribers
+const originalSubscribe = productAdminState.subscribe.bind(productAdminState);
+productAdminState.subscribe = jest.fn((listener) => {
+  const unsubscribe = originalSubscribe(listener);
+  // Track the unsubscribe function so we can call it in afterEach
+  mockUnsubscribers.push(unsubscribe);
+  return unsubscribe;
+});
+
 describe('Product Admin', () => {
   let container: HTMLElement;
 
   beforeEach(() => {
-    mockModalOnClick = null;
-    mockConfirmOnClick = null;
+    mockModalContent = null;
 
     // Setup DOM
     document.body.innerHTML = '<div id="product-admin-container"></div>';
@@ -68,6 +76,19 @@ describe('Product Admin', () => {
 
     // Reset mocks
     jest.clearAllMocks();
+
+    // Use fake timers for faster tests
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    // Clean up state subscriptions
+    mockUnsubscribers.forEach(unsub => unsub());
+    mockUnsubscribers.length = 0;
+
+    // Clean up timers
+    jest.runOnlyPendingTimers();
+    jest.useRealTimers();
   });
 
   describe('initProductAdmin', () => {
@@ -121,7 +142,8 @@ describe('Product Admin', () => {
       select.dispatchEvent(new Event('change'));
 
       // Wait for async operations
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await flushPromises();
 
       expect(api.fetchDepartments).toHaveBeenCalledWith(1);
       expect(api.fetchStoreProducts).toHaveBeenCalledWith(1);
@@ -143,11 +165,14 @@ describe('Product Admin', () => {
       (api.fetchStoreProducts as jest.MockedFunction<typeof api.fetchStoreProducts>).mockResolvedValue(mockProducts);
 
       await initProductAdmin();
+      jest.runAllTimers();
+      await flushPromises();
 
       const select = container.querySelector('#storeSelect') as HTMLSelectElement;
       select.value = '1';
       select.dispatchEvent(new Event('change'));
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await flushPromises();
     });
 
     it('should create a new product', async () => {
@@ -165,7 +190,8 @@ describe('Product Admin', () => {
       freshCheckbox.checked = true;
       saveBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await flushPromises();
 
       expect(api.createProduct).toHaveBeenCalledWith('New Product', 1, 1, true);
       expect(api.fetchStoreProducts).toHaveBeenCalledWith(1);
@@ -175,7 +201,8 @@ describe('Product Admin', () => {
       const saveBtn = container.querySelector('#saveProductBtn') as HTMLButtonElement;
       saveBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await flushPromises();
 
       expect(toast.showError).toHaveBeenCalledWith('Bitte Produktname eingeben');
       expect(api.createProduct).not.toHaveBeenCalled();
@@ -188,7 +215,8 @@ describe('Product Admin', () => {
       nameInput.value = 'Test Product';
       saveBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await flushPromises();
 
       expect(toast.showError).toHaveBeenCalledWith('Bitte Abteilung auswählen');
       expect(api.createProduct).not.toHaveBeenCalled();
@@ -208,18 +236,22 @@ describe('Product Admin', () => {
       (api.fetchStoreProducts as jest.MockedFunction<typeof api.fetchStoreProducts>).mockResolvedValue(mockProducts);
 
       await initProductAdmin();
+      jest.runAllTimers();
+      await flushPromises();
 
       const select = container.querySelector('#storeSelect') as HTMLSelectElement;
       select.value = '1';
       select.dispatchEvent(new Event('change'));
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await flushPromises();
     });
 
     it('should enter edit mode when edit button is clicked', async () => {
       const editBtn = container.querySelector('.btn-edit') as HTMLButtonElement;
       editBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await flushPromises();
 
       expect(container.innerHTML).toContain('Produkt bearbeiten');
       expect(container.innerHTML).toContain('Abbrechen');
@@ -235,7 +267,8 @@ describe('Product Admin', () => {
       // Enter edit mode
       const editBtn = container.querySelector('.btn-edit') as HTMLButtonElement;
       editBtn.click();
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await flushPromises();
 
       // Update product
       const nameInput = container.querySelector('#productName') as HTMLInputElement;
@@ -246,7 +279,8 @@ describe('Product Admin', () => {
       freshCheckbox.checked = true;
       saveBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await flushPromises();
 
       expect(api.updateProduct).toHaveBeenCalledWith(1, {
         name: 'Updated Product',
@@ -259,12 +293,14 @@ describe('Product Admin', () => {
       // Enter edit mode
       const editBtn = container.querySelector('.btn-edit') as HTMLButtonElement;
       editBtn.click();
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await flushPromises();
 
       // Cancel edit
       const cancelBtn = container.querySelector('#cancelEditBtn') as HTMLButtonElement;
       cancelBtn.click();
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await flushPromises();
 
       expect(container.innerHTML).not.toContain('Produkt bearbeiten');
       expect(container.innerHTML).toContain('Neues Produkt erstellen');
@@ -284,11 +320,14 @@ describe('Product Admin', () => {
       (api.fetchStoreProducts as jest.MockedFunction<typeof api.fetchStoreProducts>).mockResolvedValue(mockProducts);
 
       await initProductAdmin();
+      jest.runAllTimers();
+      await flushPromises();
 
       const select = container.querySelector('#storeSelect') as HTMLSelectElement;
       select.value = '1';
       select.dispatchEvent(new Event('change'));
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await flushPromises();
     });
 
     it('should delete product when confirmed', async () => {
@@ -298,12 +337,18 @@ describe('Product Admin', () => {
       const deleteBtn = container.querySelector('.btn-delete') as HTMLButtonElement;
       deleteBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      jest.runAllTimers();
+      await flushPromises();
 
-      // Click the confirm button in the modal
-      if (mockConfirmOnClick) {
-        mockConfirmOnClick();
-        await new Promise(resolve => setTimeout(resolve, 100));
+      // Extract buttons from the modal content after they've been added
+      if (mockModalContent) {
+        const buttons = mockModalContent.querySelectorAll('button');
+        const confirmBtn = Array.from(buttons).find(btn => btn.textContent?.includes('Löschen'));
+        if (confirmBtn) {
+          (confirmBtn as HTMLButtonElement).click();
+          jest.runAllTimers();
+          await flushPromises();
+        }
       }
 
       expect(api.deleteProduct).toHaveBeenCalledWith(1);
@@ -314,12 +359,18 @@ describe('Product Admin', () => {
       const deleteBtn = container.querySelector('.btn-delete') as HTMLButtonElement;
       deleteBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      jest.runAllTimers();
+      await flushPromises();
 
-      // Click the cancel button in the modal
-      if (mockModalOnClick) {
-        mockModalOnClick();
-        await new Promise(resolve => setTimeout(resolve, 100));
+      // Extract buttons from the modal content after they've been added
+      if (mockModalContent) {
+        const buttons = mockModalContent.querySelectorAll('button');
+        const cancelBtn = Array.from(buttons).find(btn => btn.textContent?.includes('Abbrechen'));
+        if (cancelBtn) {
+          (cancelBtn as HTMLButtonElement).click();
+          jest.runAllTimers();
+          await flushPromises();
+        }
       }
 
       expect(api.deleteProduct).not.toHaveBeenCalled();
@@ -331,12 +382,18 @@ describe('Product Admin', () => {
       const deleteBtn = container.querySelector('.btn-delete') as HTMLButtonElement;
       deleteBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      jest.runAllTimers();
+      await flushPromises();
 
-      // Click the confirm button in the modal
-      if (mockConfirmOnClick) {
-        mockConfirmOnClick();
-        await new Promise(resolve => setTimeout(resolve, 100));
+      // Extract buttons from the modal content after they've been added
+      if (mockModalContent) {
+        const buttons = mockModalContent.querySelectorAll('button');
+        const confirmBtn = Array.from(buttons).find(btn => btn.textContent?.includes('Löschen'));
+        if (confirmBtn) {
+          (confirmBtn as HTMLButtonElement).click();
+          jest.runAllTimers();
+          await flushPromises();
+        }
       }
 
       expect(toast.showError).toHaveBeenCalledWith('Fehler beim Löschen des Produkts');
@@ -365,7 +422,8 @@ describe('Product Admin', () => {
       const select = container.querySelector('#storeSelect') as HTMLSelectElement;
       select.value = '1';
       select.dispatchEvent(new Event('change'));
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await flushPromises();
 
       // Check that departments are rendered as headers
       expect(container.innerHTML).toContain('Dept 1');
@@ -391,7 +449,8 @@ describe('Product Admin', () => {
       const select = container.querySelector('#storeSelect') as HTMLSelectElement;
       select.value = '1';
       select.dispatchEvent(new Event('change'));
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await flushPromises();
 
       expect(container.innerHTML).toContain('Keine Produkte vorhanden');
     });
@@ -413,7 +472,8 @@ describe('Product Admin', () => {
       const select = container.querySelector('#storeSelect') as HTMLSelectElement;
       select.value = '1';
       select.dispatchEvent(new Event('change'));
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await flushPromises();
 
       const freshBadges = container.querySelectorAll('.product-badge.fresh');
       expect(freshBadges.length).toBe(1);

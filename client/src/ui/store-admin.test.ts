@@ -6,6 +6,12 @@ import { initStoreAdmin } from './store-admin';
 import * as api from '../data/api';
 import * as toast from './components/toast.js';
 
+// Helper to flush all promises with fake timers
+const flushPromises = async () => {
+  jest.advanceTimersByTime(0);
+  await Promise.resolve();
+};
+
 // Mock the API module
 jest.mock('../data/api');
 
@@ -17,24 +23,12 @@ jest.mock('./components/toast.js', () => ({
 }));
 
 // Mock the components
-let mockModalOnClick: (() => void) | null = null;
-let mockConfirmOnClick: (() => void) | null = null;
+let mockModalContent: HTMLElement | null = null;
 
 jest.mock('./components/modal.js', () => ({
   Modal: jest.fn().mockImplementation((options: any) => {
-    // Extract buttons from content to simulate clicking them
-    setTimeout(() => {
-      if (options.content && typeof options.content.querySelectorAll === 'function') {
-        const buttons = options.content.querySelectorAll('button');
-        buttons.forEach((btn: HTMLButtonElement) => {
-          if (btn.textContent?.includes('Löschen')) {
-            mockConfirmOnClick = () => btn.click();
-          } else if (btn.textContent?.includes('Abbrechen')) {
-            mockModalOnClick = () => btn.click();
-          }
-        });
-      }
-    }, 0);
+    // Store the modal content element for later button extraction
+    mockModalContent = options.content;
 
     return {
       open: jest.fn(),
@@ -55,12 +49,26 @@ jest.mock('./components/button.js', () => ({
   }),
 }));
 
+// Track state subscriptions for cleanup
+const mockUnsubscribers: Array<() => void> = [];
+
+// Import the actual state to wrap its subscribe method
+import { storeAdminState } from '../state/store-admin-state.js';
+
+// Wrap the subscribe method to track unsubscribers
+const originalSubscribe = storeAdminState.subscribe.bind(storeAdminState);
+storeAdminState.subscribe = jest.fn((listener) => {
+  const unsubscribe = originalSubscribe(listener);
+  // Track the unsubscribe function so we can call it in afterEach
+  mockUnsubscribers.push(unsubscribe);
+  return unsubscribe;
+});
+
 describe('Store Admin', () => {
   let container: HTMLElement;
 
   beforeEach(() => {
-    mockModalOnClick = null;
-    mockConfirmOnClick = null;
+    mockModalContent = null;
     // Setup DOM with all required elements
     document.body.innerHTML = `
       <div id="storesList"></div>
@@ -76,6 +84,19 @@ describe('Store Admin', () => {
 
     // Mock window.confirm
     global.confirm = jest.fn(() => true);
+
+    // Use fake timers for faster tests
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    // Clean up state subscriptions
+    mockUnsubscribers.forEach(unsub => unsub());
+    mockUnsubscribers.length = 0;
+
+    // Clean up timers
+    jest.runOnlyPendingTimers();
+    jest.useRealTimers();
   });
 
   describe('initStoreAdmin', () => {
@@ -102,7 +123,10 @@ describe('Store Admin', () => {
       initStoreAdmin();
 
       // Wait for async operations
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await flushPromises();
+      jest.runAllTimers();
+      await flushPromises();
 
       expect(api.fetchStores).toHaveBeenCalled();
       expect(api.fetchDepartments).toHaveBeenCalledWith(1);
@@ -117,7 +141,8 @@ describe('Store Admin', () => {
       (api.fetchStores as jest.MockedFunction<typeof api.fetchStores>).mockResolvedValue([]);
 
       initStoreAdmin();
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       expect(container.innerHTML).toContain('Keine Geschäfte vorhanden');
     });
@@ -128,7 +153,10 @@ describe('Store Admin', () => {
       (api.fetchDepartments as jest.MockedFunction<typeof api.fetchDepartments>).mockResolvedValue([]);
 
       initStoreAdmin();
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await flushPromises();
+      jest.runAllTimers();
+      await flushPromises();
 
       expect(container.innerHTML).toContain('Keine Abteilungen');
     });
@@ -140,7 +168,8 @@ describe('Store Admin', () => {
       (api.fetchStores as jest.MockedFunction<typeof api.fetchStores>).mockResolvedValue(mockStores);
       (api.fetchDepartments as jest.MockedFunction<typeof api.fetchDepartments>).mockResolvedValue([]);
       initStoreAdmin();
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
     });
 
     it('should create a new store', async () => {
@@ -157,7 +186,8 @@ describe('Store Admin', () => {
       locationInput.value = 'New Location';
       addBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       expect(api.createStore).toHaveBeenCalledWith('New Store', 'New Location');
     });
@@ -169,7 +199,8 @@ describe('Store Admin', () => {
       nameInput.value = '';
       addBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       expect(toast.showError).toHaveBeenCalledWith('Bitte geben Sie einen Geschäftsnamen ein.');
       expect(api.createStore).not.toHaveBeenCalled();
@@ -186,7 +217,8 @@ describe('Store Admin', () => {
       locationInput.value = 'Location';
       addBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       expect(api.createStore).toHaveBeenCalledWith('New Store', 'Location');
       expect(toast.showError).toHaveBeenCalledWith('Fehler beim Erstellen des Geschäfts. Existiert es bereits?');
@@ -200,12 +232,18 @@ describe('Store Admin', () => {
       const deleteBtn = container.querySelector('.delete-store-btn') as HTMLButtonElement;
       deleteBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      jest.runAllTimers();
+      await flushPromises();
 
-      // Click the confirm button in the modal
-      if (mockConfirmOnClick) {
-        mockConfirmOnClick();
-        await new Promise(resolve => setTimeout(resolve, 100));
+      // Extract buttons from the modal content after they've been added
+      if (mockModalContent) {
+        const buttons = mockModalContent.querySelectorAll('button');
+        const confirmBtn = Array.from(buttons).find(btn => btn.textContent?.includes('Löschen'));
+        if (confirmBtn) {
+          (confirmBtn as HTMLButtonElement).click();
+          jest.runAllTimers();
+          await flushPromises();
+        }
       }
 
       expect(api.deleteStore).toHaveBeenCalledWith(1);
@@ -217,12 +255,18 @@ describe('Store Admin', () => {
       const deleteBtn = container.querySelector('.delete-store-btn') as HTMLButtonElement;
       deleteBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      jest.runAllTimers();
+      await flushPromises();
 
-      // Click the confirm button in the modal
-      if (mockConfirmOnClick) {
-        mockConfirmOnClick();
-        await new Promise(resolve => setTimeout(resolve, 100));
+      // Extract buttons from the modal content after they've been added
+      if (mockModalContent) {
+        const buttons = mockModalContent.querySelectorAll('button');
+        const confirmBtn = Array.from(buttons).find(btn => btn.textContent?.includes('Löschen'));
+        if (confirmBtn) {
+          (confirmBtn as HTMLButtonElement).click();
+          jest.runAllTimers();
+          await flushPromises();
+        }
       }
 
       expect(toast.showError).toHaveBeenCalledWith('Fehler beim Löschen des Geschäfts.');
@@ -232,12 +276,18 @@ describe('Store Admin', () => {
       const deleteBtn = container.querySelector('.delete-store-btn') as HTMLButtonElement;
       deleteBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      jest.runAllTimers();
+      await flushPromises();
 
-      // Click the cancel button in the modal
-      if (mockModalOnClick) {
-        mockModalOnClick();
-        await new Promise(resolve => setTimeout(resolve, 100));
+      // Extract buttons from the modal content after they've been added
+      if (mockModalContent) {
+        const buttons = mockModalContent.querySelectorAll('button');
+        const cancelBtn = Array.from(buttons).find(btn => btn.textContent?.includes('Abbrechen'));
+        if (cancelBtn) {
+          (cancelBtn as HTMLButtonElement).click();
+          jest.runAllTimers();
+          await flushPromises();
+        }
       }
 
       expect(api.deleteStore).not.toHaveBeenCalled();
@@ -253,7 +303,8 @@ describe('Store Admin', () => {
       (api.fetchStores as jest.MockedFunction<typeof api.fetchStores>).mockResolvedValue(mockStores);
       (api.fetchDepartments as jest.MockedFunction<typeof api.fetchDepartments>).mockResolvedValue(mockDepartments);
       initStoreAdmin();
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
     });
 
     it('should create a new department', async () => {
@@ -268,7 +319,8 @@ describe('Store Admin', () => {
       input.value = 'New Dept';
       addBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       expect(api.createDepartment).toHaveBeenCalledWith(1, 'New Dept');
     });
@@ -280,7 +332,8 @@ describe('Store Admin', () => {
       input.value = '';
       addBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       expect(toast.showError).toHaveBeenCalledWith('Bitte geben Sie einen Abteilungsnamen ein.');
       expect(api.createDepartment).not.toHaveBeenCalled();
@@ -295,7 +348,8 @@ describe('Store Admin', () => {
       input.value = 'New Dept';
       addBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       expect(api.createDepartment).toHaveBeenCalledWith(1, 'New Dept');
       expect(toast.showError).toHaveBeenCalledWith('Fehler beim Erstellen der Abteilung.');
@@ -309,12 +363,18 @@ describe('Store Admin', () => {
       const deleteBtn = container.querySelector('.delete-department-btn') as HTMLButtonElement;
       deleteBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      jest.runAllTimers();
+      await flushPromises();
 
-      // Click the confirm button in the modal
-      if (mockConfirmOnClick) {
-        mockConfirmOnClick();
-        await new Promise(resolve => setTimeout(resolve, 100));
+      // Extract buttons from the modal content after they've been added
+      if (mockModalContent) {
+        const buttons = mockModalContent.querySelectorAll('button');
+        const confirmBtn = Array.from(buttons).find(btn => btn.textContent?.includes('Löschen'));
+        if (confirmBtn) {
+          (confirmBtn as HTMLButtonElement).click();
+          jest.runAllTimers();
+          await flushPromises();
+        }
       }
 
       expect(api.deleteDepartment).toHaveBeenCalledWith(1);
@@ -326,12 +386,18 @@ describe('Store Admin', () => {
       const deleteBtn = container.querySelector('.delete-department-btn') as HTMLButtonElement;
       deleteBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      jest.runAllTimers();
+      await flushPromises();
 
-      // Click the confirm button in the modal
-      if (mockConfirmOnClick) {
-        mockConfirmOnClick();
-        await new Promise(resolve => setTimeout(resolve, 100));
+      // Extract buttons from the modal content after they've been added
+      if (mockModalContent) {
+        const buttons = mockModalContent.querySelectorAll('button');
+        const confirmBtn = Array.from(buttons).find(btn => btn.textContent?.includes('Löschen'));
+        if (confirmBtn) {
+          (confirmBtn as HTMLButtonElement).click();
+          jest.runAllTimers();
+          await flushPromises();
+        }
       }
 
       expect(toast.showError).toHaveBeenCalledWith('Fehler beim Löschen der Abteilung.');
@@ -341,12 +407,18 @@ describe('Store Admin', () => {
       const deleteBtn = container.querySelector('.delete-department-btn') as HTMLButtonElement;
       deleteBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      jest.runAllTimers();
+      await flushPromises();
 
-      // Click the cancel button in the modal
-      if (mockModalOnClick) {
-        mockModalOnClick();
-        await new Promise(resolve => setTimeout(resolve, 100));
+      // Extract buttons from the modal content after they've been added
+      if (mockModalContent) {
+        const buttons = mockModalContent.querySelectorAll('button');
+        const cancelBtn = Array.from(buttons).find(btn => btn.textContent?.includes('Abbrechen'));
+        if (cancelBtn) {
+          (cancelBtn as HTMLButtonElement).click();
+          jest.runAllTimers();
+          await flushPromises();
+        }
       }
 
       expect(api.deleteDepartment).not.toHaveBeenCalled();
@@ -364,7 +436,8 @@ describe('Store Admin', () => {
       (api.fetchStores as jest.MockedFunction<typeof api.fetchStores>).mockResolvedValue(mockStores);
       (api.fetchDepartments as jest.MockedFunction<typeof api.fetchDepartments>).mockResolvedValue(mockDepartments);
       initStoreAdmin();
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
     });
 
     it('should disable up button for first department', () => {
@@ -404,7 +477,8 @@ describe('Store Admin', () => {
       const secondUpBtn = deptItems[1].querySelector('.up-btn') as HTMLButtonElement;
       secondUpBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       // Should swap sort_order with previous department
       expect(api.updateDepartment).toHaveBeenCalledWith(2, undefined, 0); // Current dept (id=2) to position 0
@@ -425,7 +499,8 @@ describe('Store Admin', () => {
       const secondDownBtn = deptItems[1].querySelector('.down-btn') as HTMLButtonElement;
       secondDownBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       // Should swap sort_order with next department
       expect(api.updateDepartment).toHaveBeenCalledWith(2, undefined, 2); // Current dept (id=2) to position 2
@@ -439,7 +514,8 @@ describe('Store Admin', () => {
       const upBtn = deptItems[1].querySelector('.up-btn') as HTMLButtonElement;
       upBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await flushPromises();
 
       expect(toast.showError).toHaveBeenCalledWith('Fehler beim Ändern der Reihenfolge.');
     });
@@ -452,7 +528,10 @@ describe('Store Admin', () => {
 
       // Re-initialize with single department
       initStoreAdmin();
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await flushPromises();
+      jest.runAllTimers();
+      await flushPromises();
 
       const deptItems = container.querySelectorAll('.department-item');
       expect(deptItems.length).toBe(1);
@@ -472,7 +551,10 @@ describe('Store Admin', () => {
 
       // Re-initialize with single department
       initStoreAdmin();
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await flushPromises();
+      jest.runAllTimers();
+      await flushPromises();
 
       const deptItems = container.querySelectorAll('.department-item');
       const upBtn = deptItems[0].querySelector('.up-btn') as HTMLButtonElement;
@@ -481,7 +563,8 @@ describe('Store Admin', () => {
       upBtn.disabled = false;
       upBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       // Should not call updateDepartment because allDeptItems.length < 2 (line 246)
       expect(api.updateDepartment).not.toHaveBeenCalled();
@@ -500,7 +583,8 @@ describe('Store Admin', () => {
 
       secondUpBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       // Should not call updateDepartment because currentIndex will be -1 (line 255)
       expect(api.updateDepartment).not.toHaveBeenCalled();
@@ -517,7 +601,8 @@ describe('Store Admin', () => {
       firstUpBtn.disabled = false;
       firstUpBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       // Should not call updateDepartment because swapIndex would be -1
       expect(api.updateDepartment).not.toHaveBeenCalled();
@@ -533,7 +618,8 @@ describe('Store Admin', () => {
       lastDownBtn.disabled = false;
       lastDownBtn.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
 
       // Should not call updateDepartment because swapIndex would be >= allDeptItems.length
       expect(api.updateDepartment).not.toHaveBeenCalled();
@@ -545,7 +631,8 @@ describe('Store Admin', () => {
       (api.fetchStores as jest.MockedFunction<typeof api.fetchStores>).mockResolvedValue([]);
       (api.fetchDepartments as jest.MockedFunction<typeof api.fetchDepartments>).mockResolvedValue([]);
       initStoreAdmin();
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.runAllTimers();
+      await Promise.resolve();
     });
 
     it('should navigate back to app when back button is clicked', () => {
