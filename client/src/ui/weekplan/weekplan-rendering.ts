@@ -10,6 +10,8 @@
 import { deleteWeekplanEntry } from '../../data/api.js';
 import { broadcastWeekplanDelete } from '../../data/websocket.js';
 import { weekplanState } from './weekplan-state.js';
+import { showError } from '../components/index.js';
+
 
 /**
  * Add a meal item to the DOM
@@ -126,7 +128,7 @@ export function addMealItemToDOM(container: Element, text: string, entryId: numb
     } catch (error) {
       console.error('Failed to delete entry:', error);
       deleteBtn.disabled = false;
-      alert('Fehler beim Löschen des Eintrags');
+      showError('Fehler beim Löschen des Eintrags');
     }
   });
 

@@ -2,6 +2,8 @@
 const DEBUG = false;
 
 import { convertToFourColumns } from './convert-to-four-columns.js';
+import { showError } from '../components/index.js';
+
 
 /**
  * Print preview content using browser print dialog (inline for Android)
@@ -210,7 +212,7 @@ export function printPreviewContentInline(
         } catch (error) {
           const errorMsg = 'Fehler beim Aufruf von window.print(): ' + (error as Error).message;
           debugLog(errorMsg, 'error');
-          alert('Druckfehler: ' + (error as Error).message);
+          showError('Druckfehler: ' + (error as Error).message);
         }
       }, 300);
     });

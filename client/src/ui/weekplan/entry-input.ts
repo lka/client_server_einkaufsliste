@@ -12,6 +12,8 @@ import { weekplanState } from './weekplan-state.js';
 import { getMonday, formatISODate } from './weekplan-utils.js';
 import { addMealItemToDOM } from './weekplan-rendering.js';
 import { DAY_NAMES } from './types.js';
+import { showError } from '../components/index.js';
+
 
 /**
  * Handle adding a new meal entry
@@ -69,7 +71,7 @@ export async function handleAddMealEntry(event: Event): Promise<void> {
       } catch (error) {
         console.error('Failed to create entry:', error);
         existingInput.disabled = false;
-        alert('Fehler beim Speichern des Eintrags');
+        showError('Fehler beim Speichern des Eintrags');
         return; // Don't create a new input if save failed
       }
     } else {
@@ -164,7 +166,7 @@ function createEntryInput(
     } catch (error) {
       console.error('Failed to create entry:', error);
       input.disabled = false;
-      alert('Fehler beim Speichern des Eintrags');
+      showError('Fehler beim Speichern des Eintrags');
     }
   };
 

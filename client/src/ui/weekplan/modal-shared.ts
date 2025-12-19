@@ -4,6 +4,8 @@
  */
 
 import type { DeltaItem } from './types.js';
+import { showError } from '../components/index.js';
+
 
 /**
  * Create a quantity adjustment section for templates/recipes
@@ -64,7 +66,7 @@ export function createQuantityAdjustmentSection(
   adjustBtn.addEventListener('click', () => {
     const targetPersonCount = parseInt(adjustInput.value.trim());
     if (!targetPersonCount || targetPersonCount < 1) {
-      alert('Bitte gültige Personenanzahl eingeben (mindestens 1)');
+      showError('Bitte gültige Personenanzahl eingeben (mindestens 1)');
       return;
     }
     onAdjust(targetPersonCount);
@@ -174,7 +176,7 @@ export function createAddItemForm(
         item.toLowerCase() === name.toLowerCase()
       );
       if (isExisting) {
-        alert('Dieser Artikel ist bereits in der Liste enthalten.');
+        showError('Dieser Artikel ist bereits in der Liste enthalten.');
         nameInput.value = '';
         nameInput.focus();
         return;

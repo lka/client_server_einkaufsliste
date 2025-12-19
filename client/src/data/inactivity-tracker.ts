@@ -6,6 +6,7 @@
  */
 
 import { logout, isAuthenticated } from './auth.js';
+import { showError } from '../ui/components/index.js';
 
 let inactivityTimeout: number | null = null;
 let inactivityTimeoutMs: number = 30 * 60 * 1000; // Default: 30 minutes
@@ -106,7 +107,7 @@ function handleInactivityTimeout(): void {
   clearBrowserHistory();
 
   // Redirect to login with message
-  alert('Sie wurden aufgrund von Inaktivität abgemeldet.');
+  showError('Sie wurden aufgrund von Inaktivität abgemeldet.');
   window.location.href = '/';
 }
 

@@ -325,7 +325,7 @@ describe('Product Admin', () => {
       expect(api.deleteProduct).not.toHaveBeenCalled();
     });
 
-    it('should show alert when deletion fails', async () => {
+    it('should show toast.showError when deletion fails', async () => {
       (api.deleteProduct as jest.MockedFunction<typeof api.deleteProduct>).mockResolvedValue(false);
 
       const deleteBtn = container.querySelector('.btn-delete') as HTMLButtonElement;

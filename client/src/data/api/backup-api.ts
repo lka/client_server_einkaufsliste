@@ -5,6 +5,8 @@
 import type { BackupData, RestoreResult } from './types.js';
 import { API_BACKUP } from './types.js';
 import { getAuthHeaders, handleUnauthorized, ensureFreshToken } from './utils.js';
+import { showError } from '../../ui/components/index.js';
+
 
 /**
  * Create a database backup.
@@ -29,7 +31,7 @@ export async function createBackup(): Promise<BackupData | null> {
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({ detail: res.statusText }));
       console.error('Failed to create backup:', errorData.detail || res.statusText);
-      alert(`Fehler beim Backup: ${errorData.detail || res.statusText}`);
+      showError(`Fehler beim Backup: ${errorData.detail || res.statusText}`);
       return null;
     }
     return await res.json();
@@ -68,7 +70,7 @@ export async function restoreBackup(
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({ detail: res.statusText }));
       console.error('Failed to restore backup:', errorData.detail || res.statusText);
-      alert(`Fehler beim Restore: ${errorData.detail || res.statusText}`);
+      showError(`Fehler beim Restore: ${errorData.detail || res.statusText}`);
       return null;
     }
     return await res.json();

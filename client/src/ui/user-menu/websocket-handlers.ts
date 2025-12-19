@@ -4,7 +4,7 @@
 
 import * as websocket from '../../data/websocket.js';
 import { shoppingListState } from '../../state/shopping-list-state.js';
-import { ConnectionStatus } from '../components/index.js';
+import { ConnectionStatus, showError } from '../components/index.js';
 
 // Store ConnectionStatus instance for proper cleanup
 let connectionStatusInstance: ConnectionStatus | null = null;
@@ -77,7 +77,7 @@ function handleToggleWebSocket(button: HTMLElement): void {
       // Connect after status indicator and state listeners are ready
       websocket.connect();
     } else {
-      alert('WebSocket wird von Ihrem Browser nicht unterstützt.');
+      showError('WebSocket wird von Ihrem Browser nicht unterstützt.');
     }
   }
 

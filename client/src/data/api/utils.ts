@@ -4,6 +4,8 @@
 
 import { getToken, clearToken, refreshToken } from '../auth.js';
 import { resetInactivityTimer } from '../inactivity-tracker.js';
+import { showError } from '../../ui/components/index.js';
+
 
 /**
  * Get authorization headers with JWT token.
@@ -24,7 +26,7 @@ export function getAuthHeaders(): HeadersInit {
  */
 export function handleUnauthorized(): void {
   clearToken();
-  alert('Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.');
+  showError('Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.');
   window.location.href = '/';
 }
 

@@ -563,7 +563,7 @@ describe('Shopping List UI', () => {
       (shoppingListState.loadItems as jest.MockedFunction<typeof shoppingListState.loadItems>).mockResolvedValue(undefined as any);
     });
 
-    it('should show alert when edit button clicked without selected store', async () => {
+    it('should show toast.showError when edit button clicked without selected store', async () => {
       initShoppingListUI();
       await new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -586,7 +586,7 @@ describe('Shopping List UI', () => {
       );
     });
 
-    it('should show alert when no departments available', async () => {
+    it('should show toast.showError when no departments available', async () => {
       // Mock fetchDepartments to return empty array
       (fetchDepartments as jest.MockedFunction<typeof fetchDepartments>).mockResolvedValue([]);
 
@@ -698,7 +698,7 @@ describe('Shopping List UI', () => {
       }
     });
 
-    it('should show alert when conversion fails', async () => {
+    it('should show toast.showError when conversion fails', async () => {
       // Mock convertItemToProduct to return null (failure)
       (convertItemToProduct as jest.MockedFunction<typeof convertItemToProduct>).mockResolvedValue(null);
 
@@ -807,7 +807,7 @@ describe('Shopping List UI', () => {
       });
     });
 
-    it('should show alert when print button clicked with no items', async () => {
+    it('should show toast.showError when print button clicked with no items', async () => {
       // Mock getItems to return empty array
       (shoppingListState.getItems as jest.MockedFunction<typeof shoppingListState.getItems>).mockReturnValue([]);
 
@@ -973,7 +973,7 @@ describe('Shopping List UI', () => {
       expect(dialog).toBeFalsy();
     });
 
-    it('should show alert when popup is blocked', async () => {
+    it('should show toast.showError when popup is blocked', async () => {
       const windowOpenSpy = jest.spyOn(window, 'open').mockReturnValue(null);
 
       // Mock getItems to return items
@@ -997,7 +997,7 @@ describe('Shopping List UI', () => {
       dialogPrintButton?.click();
       await new Promise((resolve) => setTimeout(resolve, 0));
 
-      // Check that alert was shown
+      // Check that toast.showError was shown
       expect(toast.showError).toHaveBeenCalledWith(
         'Popup-Blocker verhindert das Drucken. Bitte erlauben Sie Popups für diese Seite.'
       );

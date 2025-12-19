@@ -5,6 +5,8 @@
 import type { Template, TemplateItem } from './types.js';
 import { API_TEMPLATES } from './types.js';
 import { getAuthHeaders, handleUnauthorized, ensureFreshToken } from './utils.js';
+import { showError } from '../../ui/components/index.js';
+
 
 /**
  * Fetch all shopping templates.
@@ -92,7 +94,7 @@ export async function createTemplate(
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({ detail: res.statusText }));
       console.error('Failed to create template:', errorData.detail || res.statusText);
-      alert(`Fehler beim Erstellen: ${errorData.detail || res.statusText}`);
+      showError(`Fehler beim Erstellen: ${errorData.detail || res.statusText}`);
       return null;
     }
     return await res.json();
@@ -137,7 +139,7 @@ export async function updateTemplate(
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({ detail: res.statusText }));
       console.error('Failed to update template:', errorData.detail || res.statusText);
-      alert(`Fehler beim Aktualisieren: ${errorData.detail || res.statusText}`);
+      showError(`Fehler beim Aktualisieren: ${errorData.detail || res.statusText}`);
       return null;
     }
     return await res.json();
@@ -169,7 +171,7 @@ export async function deleteTemplate(templateId: number): Promise<boolean> {
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({ detail: res.statusText }));
       console.error('Failed to delete template:', errorData.detail || res.statusText);
-      alert(`Fehler beim Löschen: ${errorData.detail || res.statusText}`);
+      showError(`Fehler beim Löschen: ${errorData.detail || res.statusText}`);
       return false;
     }
     return true;

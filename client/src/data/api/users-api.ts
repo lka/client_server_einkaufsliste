@@ -5,6 +5,7 @@
 import type { User } from './types.js';
 import { API_USERS } from './types.js';
 import { getAuthHeaders, handleUnauthorized, ensureFreshToken } from './utils.js';
+import { showError } from '../../ui/components/index.js';
 
 /**
  * Fetch all users.
@@ -112,7 +113,7 @@ export async function deleteUser(userId: number): Promise<boolean> {
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({ detail: res.statusText }));
       console.error('Failed to delete user:', errorData.detail || res.statusText);
-      alert(`Fehler beim Löschen: ${errorData.detail || res.statusText}`);
+      showError(`Fehler beim Löschen: ${errorData.detail || res.statusText}`);
       return false;
     }
     return true;

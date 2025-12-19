@@ -8,6 +8,8 @@ import { fetchAllUsers, fetchPendingUsers, approveUser, deleteUser, type User } 
 import { getCurrentUser, logout } from '../data/auth.js';
 import { userState } from '../state/user-state.js';
 import { shoppingListState } from '../state/shopping-list-state.js';
+import { showError, showSuccess } from '../ui/components/index.js';
+
 
 let currentUser: User | null = null;
 
@@ -163,7 +165,7 @@ async function handleApproveUser(userId: number): Promise<void> {
     // Reload users
     await loadUsers();
   } else {
-    alert('Fehler beim Freischalten des Benutzers.');
+    showError('Fehler beim Freischalten des Benutzers.');
   }
 }
 
@@ -244,10 +246,10 @@ function initDeleteSelfAccountButton(): void {
       logout();
       userState.clearUser();
       shoppingListState.clear();
-      alert('Ihr Account wurde erfolgreich gelöscht.');
+      showSuccess('Ihr Account wurde erfolgreich gelöscht.');
       window.location.href = '/';
     } else {
-      alert('Fehler beim Löschen des Accounts. Bitte versuchen Sie es erneut.');
+      showError('Fehler beim Löschen des Accounts. Bitte versuchen Sie es erneut.');
     }
   });
 }

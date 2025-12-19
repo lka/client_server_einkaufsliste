@@ -162,7 +162,7 @@ describe('Store Admin', () => {
       expect(api.createStore).toHaveBeenCalledWith('New Store', 'New Location');
     });
 
-    it('should show alert when creating store without name', async () => {
+    it('should show toast.showError when creating store without name', async () => {
       const nameInput = document.getElementById('storeNameInput') as HTMLInputElement;
       const addBtn = document.getElementById('addStoreBtn') as HTMLButtonElement;
 
@@ -175,7 +175,7 @@ describe('Store Admin', () => {
       expect(api.createStore).not.toHaveBeenCalled();
     });
 
-    it('should show alert when store creation fails', async () => {
+    it('should show toast.showError when store creation fails', async () => {
       (api.createStore as jest.MockedFunction<typeof api.createStore>).mockResolvedValue(null);
 
       const nameInput = document.getElementById('storeNameInput') as HTMLInputElement;
@@ -211,7 +211,7 @@ describe('Store Admin', () => {
       expect(api.deleteStore).toHaveBeenCalledWith(1);
     });
 
-    it('should show alert when store deletion fails', async () => {
+    it('should show toast.showError when store deletion fails', async () => {
       (api.deleteStore as jest.MockedFunction<typeof api.deleteStore>).mockResolvedValue(false);
 
       const deleteBtn = container.querySelector('.delete-store-btn') as HTMLButtonElement;
@@ -273,7 +273,7 @@ describe('Store Admin', () => {
       expect(api.createDepartment).toHaveBeenCalledWith(1, 'New Dept');
     });
 
-    it('should show alert when creating department without name', async () => {
+    it('should show toast.showError when creating department without name', async () => {
       const input = container.querySelector('.department-name-input') as HTMLInputElement;
       const addBtn = container.querySelector('.add-department-btn') as HTMLButtonElement;
 
@@ -286,7 +286,7 @@ describe('Store Admin', () => {
       expect(api.createDepartment).not.toHaveBeenCalled();
     });
 
-    it('should show alert when department creation fails', async () => {
+    it('should show toast.showError when department creation fails', async () => {
       (api.createDepartment as jest.MockedFunction<typeof api.createDepartment>).mockResolvedValue(null);
 
       const input = container.querySelector('.department-name-input') as HTMLInputElement;
@@ -320,7 +320,7 @@ describe('Store Admin', () => {
       expect(api.deleteDepartment).toHaveBeenCalledWith(1);
     });
 
-    it('should show alert when department deletion fails', async () => {
+    it('should show toast.showError when department deletion fails', async () => {
       (api.deleteDepartment as jest.MockedFunction<typeof api.deleteDepartment>).mockResolvedValue(false);
 
       const deleteBtn = container.querySelector('.delete-department-btn') as HTMLButtonElement;
@@ -432,7 +432,7 @@ describe('Store Admin', () => {
       expect(api.updateDepartment).toHaveBeenCalledWith(3, undefined, 1); // Next dept (id=3) to position 1
     });
 
-    it('should show alert when reordering fails', async () => {
+    it('should show toast.showError when reordering fails', async () => {
       (api.updateDepartment as jest.MockedFunction<typeof api.updateDepartment>).mockResolvedValue(null);
 
       const deptItems = container.querySelectorAll('.department-item');

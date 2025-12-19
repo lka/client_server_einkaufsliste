@@ -5,6 +5,8 @@
 import { initUserAdmin } from './user-admin.js';
 import * as api from '../data/api.js';
 import * as auth from '../data/auth.js';
+import * as toast from './components/index.js';
+
 
 // Mock the API and auth modules
 jest.mock('../data/api.js');
@@ -259,10 +261,10 @@ describe('User Admin', () => {
       expect(api.approveUser).not.toHaveBeenCalled();
     });
 
-    it('should show error alert if approval fails', async () => {
+    it('should show toast.showError if approval fails', async () => {
       jest.spyOn(api, 'approveUser').mockResolvedValue(null);
       jest.spyOn(window, 'confirm').mockReturnValue(true);
-      jest.spyOn(window, 'alert').mockImplementation(() => {});
+      jest.spyOn(toast, 'showError').mockReturnValue('mock-toast-id');
 
       await initUserAdmin();
       await waitForRender();
@@ -271,7 +273,7 @@ describe('User Admin', () => {
       approveBtn.click();
       await waitForRender();
 
-      expect(window.alert).toHaveBeenCalledWith('Fehler beim Freischalten des Benutzers.');
+      expect(toast.showError).toHaveBeenCalledWith('Fehler beim Freischalten des Benutzers.');
     });
 
     it('should reload users after successful approval', async () => {
@@ -362,10 +364,10 @@ describe('User Admin', () => {
       expect(api.fetchPendingUsers).toHaveBeenCalledTimes(initialCallCount + 1);
     });
 
-    it('should not show error alert on failed deletion (handled in API)', async () => {
+    it('should not show toast.showError on failed deletion (handled in API)', async () => {
       jest.spyOn(api, 'deleteUser').mockResolvedValue(false);
       jest.spyOn(window, 'confirm').mockReturnValue(true);
-      jest.spyOn(window, 'alert').mockImplementation(() => {});
+      jest.spyOn(toast, 'showError').mockReturnValue('mock-toast-id');
 
       await initUserAdmin();
       await waitForRender();
@@ -375,7 +377,7 @@ describe('User Admin', () => {
       await waitForRender();
 
       // Error is shown in deleteUser function, not here
-      expect(window.alert).not.toHaveBeenCalled();
+      expect(toast.showError).not.toHaveBeenCalled();
     });
   });
 
