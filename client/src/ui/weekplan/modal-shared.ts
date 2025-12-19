@@ -306,7 +306,7 @@ export function createAddedItemsList(
 export function createScrollableSection(): HTMLDivElement {
   const scrollableSection = document.createElement('div');
   scrollableSection.style.cssText = `
-    max-height: 60vh;
+    max-height: 55vh;
     overflow-y: auto;
     margin-bottom: 1rem;
     padding-right: 0.5rem;
@@ -320,7 +320,7 @@ export function createScrollableSection(): HTMLDivElement {
 export function createFixedFormSection(): HTMLDivElement {
   const fixedSection = document.createElement('div');
   fixedSection.style.cssText = `
-    padding-top: 1rem;
+    padding-top: 0.2rem;
     border-top: 1px solid #e0e0e0;
     background: white;
   `;

@@ -13,6 +13,7 @@ import {
   createFixedFormSection
 } from '../modal-shared.js';
 import { renderIngredientsList } from './ingredient-renderer.js';
+import { createButton } from '../../components/index.js';
 
 /**
  * Build modal content with recipe details.
@@ -113,22 +114,19 @@ export function buildModalContent(
     const saveButtonDiv = document.createElement('div');
     saveButtonDiv.style.cssText = 'margin-top: 0.75rem; display: flex; justify-content: flex-end;';
 
-    saveButton = document.createElement('button');
-    saveButton.textContent = 'Änderungen speichern';
-    saveButton.style.cssText = `
-      background: #4a90e2;
-      color: white;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 0.9rem;
-      transition: background-color 0.2s;
-    `;
-    saveButton.addEventListener('mouseover', () => {
+    // Create save button using component library
+    saveButton = createButton({
+      label: 'Änderungen speichern',
+      variant: 'primary',
+      size: 'medium'
+    });
+
+    // Override button color to match original blue theme
+    saveButton.style.backgroundColor = '#4a90e2';
+    saveButton.addEventListener('mouseenter', () => {
       saveButton!.style.backgroundColor = '#357abd';
     });
-    saveButton.addEventListener('mouseout', () => {
+    saveButton.addEventListener('mouseleave', () => {
       saveButton!.style.backgroundColor = '#4a90e2';
     });
 
