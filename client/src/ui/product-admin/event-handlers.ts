@@ -82,12 +82,14 @@ export function handleFilterClear(): void {
  */
 export async function handleSaveProduct(): Promise<void> {
   const nameInput = document.getElementById('productName') as HTMLInputElement;
+  const manufacturerInput = document.getElementById('productManufacturer') as HTMLInputElement;
   const deptSelect = document.getElementById('departmentSelect') as HTMLSelectElement;
   const freshCheckbox = document.getElementById('productFresh') as HTMLInputElement;
 
   if (!nameInput || !deptSelect) return;
 
   const name = nameInput.value.trim();
+  const manufacturer = manufacturerInput?.value.trim() || undefined;
   const departmentId = deptSelect.value;
   const fresh = freshCheckbox?.checked || false;
 
@@ -116,6 +118,7 @@ export async function handleSaveProduct(): Promise<void> {
         name,
         departmentId: deptId,
         fresh,
+        manufacturer,
       });
       if (result) {
         productAdminState.setEditingProductId(null);
@@ -126,7 +129,7 @@ export async function handleSaveProduct(): Promise<void> {
       }
     } else {
       // Create new product
-      const result = await createProduct(name, state.selectedStoreId, deptId, fresh);
+      const result = await createProduct(name, state.selectedStoreId, deptId, fresh, manufacturer);
       if (result) {
         await productAdminState.loadProducts(state.selectedStoreId);
         showSuccess('Produkt erfolgreich erstellt');

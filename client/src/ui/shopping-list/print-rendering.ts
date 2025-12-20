@@ -76,7 +76,11 @@ export function createDepartmentSection(deptName: string, items: Item[]): HTMLEl
   sortedItems.forEach(item => {
     const li = document.createElement('li');
     li.style.cssText = 'margin-bottom: 0.1rem; line-height: 1.15; font-size: 0.85rem;';
-    li.textContent = item.menge ? `${item.name} (${item.menge})` : item.name;
+
+    // Use manufacturer if available, otherwise use item name
+    const displayName = item.manufacturer || item.name;
+    li.textContent = item.menge ? `${displayName} (${item.menge})` : displayName;
+
     itemList.appendChild(li);
   });
 

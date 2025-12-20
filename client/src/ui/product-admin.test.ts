@@ -193,7 +193,7 @@ describe('Product Admin', () => {
       jest.runAllTimers();
       await flushPromises();
 
-      expect(api.createProduct).toHaveBeenCalledWith('New Product', 1, 1, true);
+      expect(api.createProduct).toHaveBeenCalledWith('New Product', 1, 1, true, undefined);
       expect(api.fetchStoreProducts).toHaveBeenCalledWith(1);
     });
 

@@ -285,6 +285,7 @@ async def create_product(
             store_id=product_data.store_id,
             department_id=product_data.department_id,
             fresh=product_data.fresh,
+            manufacturer=product_data.manufacturer,
         )
         session.add(product)
         session.commit()
@@ -306,6 +307,7 @@ async def create_product(
             # Update item to reference the new product
             item.product_id = product.id
             item.name = product.name  # Normalize name to product name
+            item.manufacturer = product.manufacturer
             session.add(item)
             updated_items.append(item)
 
@@ -333,6 +335,7 @@ async def create_product(
                             "user_id": item.user_id,
                             "menge": item.menge,
                             "shopping_date": item.shopping_date,
+                            "manufacturer": item.manufacturer,
                         },
                     }
                 )
@@ -341,7 +344,7 @@ async def create_product(
 
 
 @router.put("/products/{product_id}", response_model=Product)
-def update_product(
+async def update_product(
     product_id: int,
     product_data: ProductUpdate,
     current_user: str = Depends(get_current_user),
@@ -369,6 +372,8 @@ def update_product(
             product.name = product_data.name
         if product_data.fresh is not None:
             product.fresh = product_data.fresh
+        if product_data.manufacturer is not None:
+            product.manufacturer = product_data.manufacturer
 
         # If store_id is being updated, verify it exists
         if product_data.store_id is not None:
@@ -392,6 +397,42 @@ def update_product(
         session.add(product)
         session.commit()
         session.refresh(product)
+
+        # Update all existing items linked to this product
+        from ..models import Item
+
+        statement = select(Item).where(Item.product_id == product_id)
+        linked_items = session.exec(statement).all()
+
+        updated_items = []
+        for item in linked_items:
+            item.manufacturer = product.manufacturer
+            session.add(item)
+            updated_items.append(item)
+
+        if updated_items:
+            session.commit()
+            for item in updated_items:
+                session.refresh(item)
+
+            # Broadcast item updates via WebSocket
+            for item in updated_items:
+                await manager.broadcast(
+                    {
+                        "type": "item:update",
+                        "data": {
+                            "id": item.id,
+                            "name": item.name,
+                            "product_id": item.product_id,
+                            "store_id": item.store_id,
+                            "user_id": item.user_id,
+                            "menge": item.menge,
+                            "shopping_date": item.shopping_date,
+                            "manufacturer": item.manufacturer,
+                        },
+                    }
+                )
+
         return product
 
 

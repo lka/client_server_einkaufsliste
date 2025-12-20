@@ -60,11 +60,14 @@ class Product(SQLModel, table=True):
 
     Attributes:
         id: Primary key (auto-generated integer)
-        name: Product name (e.g., "Milch", "Brot", "Äpfel")
+        name: Product name (e.g., "Milch", "Brot", "Brötchen")
         store_id: Foreign key to store where product is available
         department_id: Foreign key to department where product is located
         fresh: Boolean flag indicating if the product is fresh/perishable
                (default: False)
+        manufacturer: Optional specific product designation/brand name
+                     (e.g., "Harry's Dinkelkrüstchen" instead of "Brötchen",
+                      "Weihenstephan Frische Vollmilch" instead of "Milch")
     """
 
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -72,6 +75,7 @@ class Product(SQLModel, table=True):
     store_id: int = Field(foreign_key="store.id", index=True)
     department_id: int = Field(foreign_key="department.id", index=True)
     fresh: bool = Field(default=False)
+    manufacturer: Optional[str] = None
 
     # Relationships
     store: Store = Relationship(back_populates="products")
@@ -87,9 +91,12 @@ class Item(SQLModel, table=True):
         user_id: Foreign key to user who owns this item
         store_id: Optional foreign key to store (for organizing shopping lists by store)
         product_id: Optional foreign key to product (None for free-text items)
-        name: Item name (can override product name for display)
+        name: Item name (generic name like "Brötchen", "Milch")
         menge: Optional quantity (e.g., "500 g", "2 Stück")
         shopping_date: Optional date when shopping is planned (ISO format: YYYY-MM-DD)
+        manufacturer: Optional specific product designation (cached from product)
+                     Used for printing (e.g., "Harry's Dinkelkrüstchen"
+                     instead of "Brötchen")
     """
 
     id: Optional[str] = Field(default=None, primary_key=True)
@@ -101,6 +108,7 @@ class Item(SQLModel, table=True):
     name: str
     menge: Optional[str] = None
     shopping_date: Optional[str] = Field(default=None, index=True)
+    manufacturer: Optional[str] = None
 
     # Relationships
     user: Optional["User"] = Relationship(back_populates="items")
