@@ -53,6 +53,14 @@ export function renderProductManagement(): string {
         />
       </div>
       <div class="form-row">
+        <input
+          type="text"
+          id="productManufacturer"
+          placeholder="Produktbezeichnung (optional, z.B. 'Harry's Dinkelkrüstchen')"
+          value="${currentProduct?.manufacturer || ''}"
+        />
+      </div>
+      <div class="form-row">
         <label for="departmentSelect">Abteilung:</label>
         <select id="departmentSelect">
           <option value="">Abteilung wählen...</option>

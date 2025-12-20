@@ -376,6 +376,12 @@ Python FastAPI Server + TypeScript Client mit JWT-Authentifizierung.
   - **CRUD-Operationen**: Erstellen, Bearbeiten und Löschen von Produkten
   - **Store- und Department-Zuordnung**: Jedes Produkt ist einem Store und einer Abteilung zugeordnet
   - **Frische-Kennzeichnung**: Optionale Markierung für frische/verderbliche Produkte
+  - **Herstellerbezeichnung**: Optionale produktspezifische Bezeichnung für genauere Einkaufslisten
+    - **Beispiele**: "Brötchen" → "Harry's Dinkelkrüstchen", "Milch" → "Weihenstephan Frische Vollmilch 3,5%"
+    - **Automatische Propagierung**: Wird automatisch zu neuen Shopping-List-Items hinzugefügt
+    - **Druckpräferenz**: Herstellerbezeichnung wird in gedruckten Einkaufslisten bevorzugt angezeigt
+    - **Intelligente Updates**: Bei Änderung der Herstellerbezeichnung werden alle verlinkten Items automatisch aktualisiert (via WebSocket)
+    - **Normale Ansicht**: Weiterhin wird der generische Produktname in der regulären Einkaufsliste angezeigt
   - **Intelligenter Filter**: Live-Suche mit schnellem Debouncing (50ms)
     - Suche in Produktnamen, Abteilungsnamen und "frisch"-Keyword
     - Counter-Anzeige: "X von Y" Produkten gefunden
@@ -616,6 +622,10 @@ Nach dem Login können Sie die Einkaufsliste verwenden:
 2. Wählen Sie **"📦 Produkte verwalten"**
 3. Wählen Sie ein Geschäft aus dem Dropdown
 4. Erstellen, bearbeiten oder löschen Sie Produkte
+5. **Herstellerbezeichnung hinzufügen** (optional):
+   - Beim Erstellen/Bearbeiten eines Produkts: Feld "Produktbezeichnung" ausfüllen
+   - Beispiel: Produkt "Brötchen" → Herstellerbezeichnung "Harry's Dinkelkrüstchen"
+   - Diese Bezeichnung erscheint auf der gedruckten Einkaufsliste
 
 **Einheiten verwalten:**
 1. Klicken Sie auf das Menü (⋮) im Header

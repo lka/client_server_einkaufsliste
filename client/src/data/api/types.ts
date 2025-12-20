@@ -13,6 +13,7 @@ export interface Item {
   department_id?: number;
   department_name?: string;
   department_sort_order?: number;
+  manufacturer?: string;  // Specific product designation (e.g., "Harry's Dinkelkrüstchen")
 }
 
 export interface Store {
@@ -35,6 +36,7 @@ export interface Product {
   store_id: number;
   department_id: number;
   fresh: boolean;
+  manufacturer?: string;  // Specific product designation (e.g., "Harry's Dinkelkrüstchen")
 }
 
 export interface User {

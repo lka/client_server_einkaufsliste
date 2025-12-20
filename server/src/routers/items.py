@@ -59,12 +59,14 @@ def read_items(current_user: str = Depends(get_current_user)):
             dept_id = None
             dept_name = None
             dept_sort_order = None
+            manufacturer = None
 
             # If item has a product, get department from product
             if item.product_id:
                 product = session.get(Product, item.product_id)
                 if product:
                     dept_id = product.department_id
+                    manufacturer = product.manufacturer
                     department = session.get(Department, product.department_id)
                     if department:
                         dept_name = department.name
@@ -82,6 +84,7 @@ def read_items(current_user: str = Depends(get_current_user)):
                     department_id=dept_id,
                     department_name=dept_name,
                     department_sort_order=dept_sort_order,
+                    manufacturer=manufacturer,
                 )
             )
 
@@ -122,12 +125,14 @@ def read_items_by_date(
             dept_id = None
             dept_name = None
             dept_sort_order = None
+            manufacturer = None
 
             # If item has a product, get department from product
             if item.product_id:
                 product = session.get(Product, item.product_id)
                 if product:
                     dept_id = product.department_id
+                    manufacturer = product.manufacturer
                     department = session.get(Department, product.department_id)
                     if department:
                         dept_name = department.name
@@ -145,6 +150,7 @@ def read_items_by_date(
                     department_id=dept_id,
                     department_name=dept_name,
                     department_sort_order=dept_sort_order,
+                    manufacturer=manufacturer,
                 )
             )
 
@@ -245,6 +251,7 @@ def _create_negative_quantity_dummy(item: Item) -> ItemWithDepartment:
         department_id=None,
         department_name=None,
         department_sort_order=None,
+        manufacturer=None,
     )
 
 
@@ -276,6 +283,7 @@ def _find_matching_product(session, item: Item) -> int | None:
 
     # Assign product if match is good enough (threshold 0.6)
     if best_ratio >= 0.6 and best_match:
+        item.manufacturer = best_match.manufacturer
         return best_match.id
 
     return None
@@ -286,11 +294,13 @@ def _enrich_with_department(session, result_item: Item) -> ItemWithDepartment:
     dept_id = None
     dept_name = None
     dept_sort_order = None
+    manufacturer = None
 
     if result_item.product_id:
         product = session.get(Product, result_item.product_id)
         if product:
             dept_id = product.department_id
+            manufacturer = product.manufacturer
             department = session.get(Department, product.department_id)
             if department:
                 dept_name = department.name
@@ -307,6 +317,7 @@ def _enrich_with_department(session, result_item: Item) -> ItemWithDepartment:
         department_id=dept_id,
         department_name=dept_name,
         department_sort_order=dept_sort_order,
+        manufacturer=manufacturer,
     )
 
 
@@ -395,6 +406,7 @@ async def create_item(item: Item, current_user: str = Depends(get_current_user))
                     "product_id": item.product_id,
                     "shopping_date": item.shopping_date,
                     "user_id": item.user_id,
+                    "manufacturer": item.manufacturer,
                 },
             }
         )
@@ -589,4 +601,5 @@ def convert_item_to_product(
             department_id=dept.id if dept else None,
             department_name=dept.name if dept else None,
             department_sort_order=dept.sort_order if dept else None,
+            manufacturer=None,
         )

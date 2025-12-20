@@ -117,7 +117,8 @@ export async function createProduct(
   name: string,
   storeId: number,
   departmentId: number,
-  fresh: boolean = false
+  fresh: boolean = false,
+  manufacturer?: string
 ): Promise<Product | null> {
   const tokenRefreshed = await ensureFreshToken();
   if (!tokenRefreshed) {
@@ -133,6 +134,7 @@ export async function createProduct(
         store_id: storeId,
         department_id: departmentId,
         fresh,
+        manufacturer,
       }),
     });
     if (res.status === 401) {
@@ -160,6 +162,7 @@ export async function updateProduct(
     storeId?: number;
     departmentId?: number;
     fresh?: boolean;
+    manufacturer?: string;
   }
 ): Promise<Product | null> {
   const tokenRefreshed = await ensureFreshToken();
@@ -173,6 +176,7 @@ export async function updateProduct(
     if (updates.storeId !== undefined) body.store_id = updates.storeId;
     if (updates.departmentId !== undefined) body.department_id = updates.departmentId;
     if (updates.fresh !== undefined) body.fresh = updates.fresh;
+    if (updates.manufacturer !== undefined) body.manufacturer = updates.manufacturer;
 
     const res = await fetch(`/api/products/${productId}`, {
       method: 'PUT',

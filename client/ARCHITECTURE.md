@@ -143,14 +143,14 @@ The shopping list client is a TypeScript application built with a **four-layer a
   - `deleteDepartment(departmentId)`: Delete department
 
 ##### api/products-api.ts
-- **Lines**: 205 | **McCabe**: 39
+- **Lines**: 225 | **McCabe**: 39
 - **Responsibility**: Product catalog operations
 - **Functions**:
   - `getProductSuggestions(storeId, query, limit?)`: Autocomplete suggestions
   - `fetchStoreProducts(storeId)`: Get all products for store
   - `fetchDepartmentProducts(departmentId)`: Get products by department
-  - `createProduct(name, storeId, departmentId, fresh?)`: Create product
-  - `updateProduct(productId, updates)`: Update product
+  - `createProduct(name, storeId, departmentId, fresh?, manufacturer?)`: Create product with optional manufacturer designation
+  - `updateProduct(productId, updates)`: Update product (supports name, storeId, departmentId, fresh, manufacturer)
   - `deleteProduct(productId)`: Delete product
 
 ##### api/users-api.ts
@@ -1086,11 +1086,15 @@ import { fetchItems, Store, Item } from './data/api/index.js';
   - Modal-based confirmations replace browser `confirm()` dialogs
 - **Features**:
   - Store selection dropdown
-  - Product creation form with department assignment
-  - Product editing with pre-filled form
+  - Product creation form with department assignment and optional manufacturer designation
+  - Product editing with pre-filled form (includes manufacturer field)
   - Product deletion with confirmation modal
   - Products grouped by department
   - Fresh product indicator
+  - **Manufacturer Field**: Optional product-specific designation (e.g., "Harry's Dinkelkrüstchen" for generic "Brötchen")
+    - Automatically propagated to shopping list items
+    - Preferred over item name in print view
+    - Auto-updates all linked items when changed via WebSocket
   - **Intelligent Filter**: Live search with 50ms debouncing (state-managed)
     - Multi-field search: Product names, department names, "frisch" keyword
     - Counter display: "X von Y" products found
@@ -2578,6 +2582,58 @@ All admin pages now follow the same state-based WebSocket pattern established by
 - Predictable behavior for developers
 - Easy maintenance and debugging
 - Scalable pattern for future features
+
+### Product Manufacturer Field ✅ IMPLEMENTED
+
+**Status**: ✅ **FULLY IMPLEMENTED** - Optional manufacturer designation for products
+
+**Overview**:
+Products can now have an optional manufacturer-specific designation (e.g., "Harry's Dinkelkrüstchen" instead of generic "Brötchen"). This field automatically propagates to shopping list items and is preferred when printing shopping lists.
+
+**Implementation Details**:
+
+**Database** ([server/migrations/003_add_manufacturer_to_product.py](server/migrations/003_add_manufacturer_to_product.py)):
+- Added `manufacturer VARCHAR NULL` column to `product` table
+- Added `manufacturer VARCHAR NULL` column to `item` table
+- Migration executed successfully with backward compatibility
+
+**Backend** (Python/FastAPI):
+- **Models** ([server/src/models.py](server/src/models.py)): `Product.manufacturer` and `Item.manufacturer` fields
+- **Schemas** ([server/src/schemas.py](server/src/schemas.py)): ProductCreate, ProductUpdate, ItemWithDepartment schemas
+- **Products Router** ([server/src/routers/products.py](server/src/routers/products.py)):
+  - `create_product()`: Saves manufacturer and propagates to linked items
+  - `update_product()`: Auto-updates all associated items when product manufacturer changes
+  - WebSocket broadcasts for real-time manufacturer updates
+- **Items Router** ([server/src/routers/items.py](server/src/routers/items.py)): Automatic item enrichment with manufacturer from matched products
+
+**Frontend** (TypeScript):
+- **Types** ([client/src/data/api/types.ts](client/src/data/api/types.ts)): `Item.manufacturer` and `Product.manufacturer` optional fields
+- **API Client** ([client/src/data/api/products-api.ts](client/src/data/api/products-api.ts)):
+  - `createProduct(name, storeId, departmentId, fresh?, manufacturer?)`
+  - `updateProduct(productId, updates)` - supports manufacturer in updates object
+- **Product Admin UI**:
+  - [rendering.ts](client/src/ui/product-admin/rendering.ts): Manufacturer input field in product form
+  - [event-handlers.ts](client/src/ui/product-admin/event-handlers.ts): Manufacturer save/update logic
+- **Print Rendering** ([client/src/ui/shopping-list/print-rendering.ts](client/src/ui/shopping-list/print-rendering.ts)): **Prefers manufacturer over item.name**
+
+**Behavior**:
+- **Product Admin**: Optional text field "Produktbezeichnung (optional, z.B. 'Harry's Dinkelkrüstchen')"
+- **Shopping List**: Items automatically enriched with manufacturer when saved
+- **Regular UI**: Continues displaying `item.name` (unchanged user experience)
+- **Print View**: Displays `item.manufacturer || item.name` (manufacturer takes precedence)
+- **Autocomplete**: Continues showing product names (not manufacturer)
+- **Real-time Updates**: Changes to product manufacturer auto-update all linked items via WebSocket
+- **Backward Compatible**: All fields optional, existing data works without changes
+
+**Testing**:
+- ✅ All 474 client tests passing (including [product-admin.test.ts](client/src/ui/product-admin.test.ts))
+- ✅ All 101 server tests passing
+- Test updated to expect 5th parameter in `createProduct()` calls
+
+**Use Cases**:
+- Generic product "Brötchen" → Manufacturer: "Harry's Dinkelkrüstchen"
+- Generic product "Milch" → Manufacturer: "Weihenstephan Frische Vollmilch 3,5%"
+- Generic product "Butter" → Manufacturer: "Kerrygold Original Irische Butter"
 
 ---
 

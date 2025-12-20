@@ -43,6 +43,7 @@ class ProductCreate(BaseModel):
     store_id: int
     department_id: int
     fresh: bool = False
+    manufacturer: str | None = None
 
 
 class ProductUpdate(BaseModel):
@@ -52,6 +53,7 @@ class ProductUpdate(BaseModel):
     store_id: int | None = None
     department_id: int | None = None
     fresh: bool | None = None
+    manufacturer: str | None = None
 
 
 # Item management schemas
@@ -74,6 +76,7 @@ class ItemWithDepartment(BaseModel):
     department_id: int | None = None
     department_name: str | None = None
     department_sort_order: int | None = None
+    manufacturer: str | None = None
 
 
 # WebDAV settings schemas
