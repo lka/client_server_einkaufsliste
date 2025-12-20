@@ -129,7 +129,7 @@ export function createAddItemForm(
   });
 
   // Adjust styling for form layout - remove gap and margin, match button height
-  mengeInputGroup.container.style.cssText = 'flex: 0 0 100px; margin-bottom: 0; gap: 0; align-items: stretch; position: relative; padding-top: 1.5rem;';
+  mengeInputGroup.container.style.cssText = 'flex: 0 0 150px; margin-bottom: 0; gap: 0; align-items: stretch; position: relative; padding-top: 1.5rem;';
   // Position label absolutely so it doesn't affect container height
   const mengeLabel = mengeInputGroup.container.querySelector('.input-label') as HTMLElement;
   if (mengeLabel) {
