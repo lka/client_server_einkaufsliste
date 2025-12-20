@@ -8,6 +8,7 @@ import { loadUnits } from './units-admin-actions.js';
 import { showError, showSuccess } from '../components/toast.js';
 import { Modal } from '../components/modal.js';
 import { createButton } from '../components/button.js';
+import { createInput } from '../components/input.js';
 
 /**
  * Show modal to add new unit.
@@ -15,22 +16,19 @@ import { createButton } from '../components/button.js';
 export function showAddUnitModal(): void {
   const content = document.createElement('div');
 
-  const label = document.createElement('label');
-  label.textContent = 'Einheit:';
-  label.style.cssText = 'display: block; margin-bottom: 0.5rem; font-weight: 500;';
+  // Create input using component library
+  const inputGroup = createInput({
+    label: 'Einheit:',
+    type: 'text',
+    placeholder: 'z.B. kg, g, EL, TL'
+  });
 
-  const input = document.createElement('input');
-  input.type = 'text';
-  input.placeholder = 'z.B. kg, g, EL, TL';
-  input.style.cssText = 'width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;';
-
-  content.appendChild(label);
-  content.appendChild(input);
+  content.appendChild(inputGroup.container);
 
   const saveBtn = createButton({
     label: 'Hinzufügen',
     onClick: async () => {
-      const name = input.value.trim();
+      const name = inputGroup.input.value.trim();
       if (!name) {
         showError('Bitte geben Sie eine Einheit ein');
         return;
@@ -71,7 +69,7 @@ export function showAddUnitModal(): void {
   });
 
   modal.open();
-  input.focus();
+  inputGroup.input.focus();
 }
 
 /**
@@ -80,22 +78,19 @@ export function showAddUnitModal(): void {
 export function showEditUnitModal(unit: Unit): void {
   const content = document.createElement('div');
 
-  const label = document.createElement('label');
-  label.textContent = 'Einheit:';
-  label.style.cssText = 'display: block; margin-bottom: 0.5rem; font-weight: 500;';
+  // Create input using component library
+  const inputGroup = createInput({
+    label: 'Einheit:',
+    type: 'text',
+    value: unit.name
+  });
 
-  const input = document.createElement('input');
-  input.type = 'text';
-  input.value = unit.name;
-  input.style.cssText = 'width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;';
-
-  content.appendChild(label);
-  content.appendChild(input);
+  content.appendChild(inputGroup.container);
 
   const saveBtn = createButton({
     label: 'Speichern',
     onClick: async () => {
-      const name = input.value.trim();
+      const name = inputGroup.input.value.trim();
       if (!name) {
         showError('Bitte geben Sie eine Einheit ein');
         return;
@@ -133,7 +128,7 @@ export function showEditUnitModal(unit: Unit): void {
   });
 
   modal.open();
-  input.focus();
+  inputGroup.input.focus();
 }
 
 /**

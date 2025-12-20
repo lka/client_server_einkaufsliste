@@ -12,7 +12,7 @@ import { weekplanState } from './weekplan-state.js';
 import { getMonday, formatISODate } from './weekplan-utils.js';
 import { addMealItemToDOM } from './weekplan-rendering.js';
 import { DAY_NAMES } from './types.js';
-import { showError } from '../components/index.js';
+import { showError, createInput } from '../components/index.js';
 
 
 /**
@@ -117,22 +117,22 @@ function createEntryInput(
     margin-bottom: 0.5rem;
   `;
 
-  // Create input field
-  const input = document.createElement('input');
-  input.type = 'text';
-  input.id = `weekplan-entry-input-${dayName}-${meal}`;
-  input.name = `weekplanEntry_${dayName}_${meal}`;
-  input.className = 'meal-input';
-  input.placeholder = 'Eintrag hinzufügen...';
-  input.style.cssText = `
-    width: 100%;
-    padding: 0.5rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 0.9rem;
-  `;
+  // Create input field using component library
+  const inputGroup = createInput({
+    type: 'text',
+    id: `weekplan-entry-input-${dayName}-${meal}`,
+    name: `weekplanEntry_${dayName}_${meal}`,
+    placeholder: 'Eintrag hinzufügen...',
+    className: 'meal-input'
+  });
 
-  inputWrapper.appendChild(input);
+  // Apply custom styling for weekplan entry input
+  inputGroup.container.style.marginBottom = '0';
+  inputGroup.input.style.fontSize = '0.9rem';
+
+  const input = inputGroup.input;
+
+  inputWrapper.appendChild(inputGroup.container);
 
   // Function to save the entry
   const saveEntry = async (text: string, recipeId?: number, templateId?: number, entryType?: 'text' | 'template' | 'recipe') => {

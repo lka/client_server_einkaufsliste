@@ -10,7 +10,7 @@
 import { deleteWeekplanEntry } from '../../data/api.js';
 import { broadcastWeekplanDelete } from '../../data/websocket.js';
 import { weekplanState } from './weekplan-state.js';
-import { showError } from '../components/index.js';
+import { showError, createButton } from '../components/index.js';
 
 
 /**
@@ -83,8 +83,33 @@ export function addMealItemToDOM(container: Element, text: string, entryId: numb
     span.style.color = 'inherit';
   });
 
-  const deleteBtn = document.createElement('button');
-  deleteBtn.textContent = '🗑️';
+  // Create delete button using component library
+  const deleteBtn = createButton({
+    label: '🗑️',
+    variant: 'danger',
+    size: 'small',
+    onClick: async () => {
+      deleteBtn.disabled = true;
+      try {
+        await deleteWeekplanEntry(entryId);
+
+        // Remove from state
+        weekplanState.removeEntry(entryId);
+
+        // Remove from DOM
+        item.remove();
+
+        // Broadcast to other users via WebSocket
+        broadcastWeekplanDelete(entryId);
+      } catch (error) {
+        console.error('Failed to delete entry:', error);
+        deleteBtn.disabled = false;
+        showError('Fehler beim Löschen des Eintrags');
+      }
+    }
+  });
+
+  // Override button styles for compact appearance
   deleteBtn.className = 'delete-meal-item';
   deleteBtn.style.cssText = `
     background: transparent;
@@ -110,26 +135,6 @@ export function addMealItemToDOM(container: Element, text: string, entryId: numb
   deleteBtn.addEventListener('mouseout', () => {
     deleteBtn.style.opacity = '0.6';
     deleteBtn.style.filter = 'grayscale(100%)';
-  });
-
-  deleteBtn.addEventListener('click', async () => {
-    deleteBtn.disabled = true;
-    try {
-      await deleteWeekplanEntry(entryId);
-
-      // Remove from state
-      weekplanState.removeEntry(entryId);
-
-      // Remove from DOM
-      item.remove();
-
-      // Broadcast to other users via WebSocket
-      broadcastWeekplanDelete(entryId);
-    } catch (error) {
-      console.error('Failed to delete entry:', error);
-      deleteBtn.disabled = false;
-      showError('Fehler beim Löschen des Eintrags');
-    }
   });
 
   item.appendChild(span);
