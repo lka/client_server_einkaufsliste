@@ -4,7 +4,7 @@
  */
 
 import { fetchStores, getProductSuggestions, type ProductSuggestion } from '../../data/api.js';
-import { Autocomplete } from '../components/autocomplete.js';
+import { Autocomplete } from '../components/index.js';
 
 export class StoreManager {
   private selectedStoreId: number | null = null;

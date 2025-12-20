@@ -3,7 +3,7 @@
  * Handles creating and managing entry input fields with autocomplete
  */
 
-import { Autocomplete } from '../components/autocomplete.js';
+import { Autocomplete, showError, createInput } from '../components/index.js';
 import { createWeekplanEntry } from '../../data/api.js';
 import { searchRecipes } from '../../data/api/recipes-api.js';
 import { fetchTemplates } from '../../data/api/templates-api.js';
@@ -12,7 +12,6 @@ import { weekplanState } from './weekplan-state.js';
 import { getMonday, formatISODate } from './weekplan-utils.js';
 import { addMealItemToDOM } from './weekplan-rendering.js';
 import { DAY_NAMES } from './types.js';
-import { showError, createInput } from '../components/index.js';
 
 
 /**

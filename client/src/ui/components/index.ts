@@ -16,6 +16,7 @@ import { injectTabsStyles } from './tabs.js';
 import { injectToastStyles } from './toast.js';
 import { injectDatePickerStyles } from './datepicker.js';
 import { injectConnectionStatusStyles } from './connection-status.js';
+import { injectAutocompleteStyles } from './autocomplete.js';
 
 // Button
 export {
@@ -113,6 +114,14 @@ export {
 } from './connection-status.js';
 export { injectConnectionStatusStyles } from './connection-status.js';
 
+// Autocomplete
+export {
+  Autocomplete,
+  type AutocompleteSuggestion,
+  type AutocompleteConfig,
+} from './autocomplete.js';
+export { injectAutocompleteStyles } from './autocomplete.js';
+
 /**
  * Initialize all component styles.
  *
@@ -132,4 +141,5 @@ export function initializeComponents(): void {
   injectToastStyles();
   injectDatePickerStyles();
   injectConnectionStatusStyles();
+  injectAutocompleteStyles();
 }

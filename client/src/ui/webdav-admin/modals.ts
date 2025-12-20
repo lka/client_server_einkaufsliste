@@ -3,10 +3,18 @@
  */
 
 import type { WebDAVSettings } from '../../data/api.js';
-import { fetchWebDAVSettings, updateWebDAVSettings, deleteWebDAVSettings, importRecipesFromWebDAV } from '../../data/api.js';
-import { createButton, createInput } from '../components/index.js';
-import { Modal } from '../components/modal.js';
-import { showError, showSuccess, showWarning } from '../components/toast.js';
+import {
+  fetchWebDAVSettings,
+  updateWebDAVSettings,
+  deleteWebDAVSettings,
+  importRecipesFromWebDAV } from '../../data/api.js';
+import {
+  createButton,
+  createInput,
+  showError,
+  showSuccess,
+  showWarning,
+  Modal } from '../components/index.js';
 
 /**
  * Show delete confirmation modal.
