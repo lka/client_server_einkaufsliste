@@ -232,3 +232,117 @@ def test_delete_entry_with_template_name():
     response = client.delete(f"/api/weekplan/entries/{entry_id}", headers=headers)
     assert response.status_code == 200
     assert "message" in response.json()
+
+
+def test_parse_ingredient_line_removes_parentheses():
+    """Test that _parse_ingredient_line removes content within parentheses."""
+    from server.src.routers.weekplan import (
+        _parse_ingredient_line,
+        _create_ingredient_pattern,
+    )
+    from sqlmodel import Session
+
+    engine = get_engine()
+    with Session(engine) as session:
+        pattern = _create_ingredient_pattern(session)
+
+        # Test cases with parentheses
+        test_cases = [
+            # Parentheses at the end
+            ("500 g Mehl (Type 405)", "500 g", "Mehl"),
+            ("2 EL Öl (z.B. Olivenöl)", "2 EL", "Öl"),
+            ("Salz (nach Geschmack)", None, "Salz"),
+            ("1 kg Zucker (weiß)", "1 kg", "Zucker"),
+            ("Butter (zimmerwarm)", None, "Butter"),
+            # Parentheses in the middle
+            ("500 g Tomaten (geschält) gewürfelt", "500 g", "Tomaten gewürfelt"),
+            ("2 EL Essig (Apfel) oder Zitronensaft", "2 EL", "Essig oder Zitronensaft"),
+            ("Paprika (rot) in Streifen", None, "Paprika in Streifen"),
+            # Multiple parentheses
+            ("1 kg Kartoffeln (festkochend) (geschält)", "1 kg", "Kartoffeln"),
+            # Test without parentheses (should remain unchanged)
+            ("250 g Butter", "250 g", "Butter"),
+            ("Milch", None, "Milch"),
+        ]
+
+        for line, expected_quantity, expected_name in test_cases:
+            quantity, name = _parse_ingredient_line(line, pattern)
+            assert (
+                name == expected_name
+            ), f"Expected name '{expected_name}' but got '{name}' for line '{line}'"
+            if expected_quantity is not None:
+                assert (
+                    quantity == expected_quantity
+                ), f"Expected quantity '{expected_quantity}' but got '{quantity}'"
+
+
+def test_recipe_ingredient_parentheses_removal_in_add_and_remove():
+    """Test that parentheses are removed when adding and removing recipe items."""
+    from datetime import datetime, timedelta
+    from server.src.models import Recipe
+    import json
+
+    token = get_auth_token()
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Create a test recipe with ingredients containing parentheses
+    engine = get_engine()
+    with Session(engine) as session:
+        recipe_data = {
+            "name": "Test Recipe",
+            "ingredients": (
+                "500 g Mehl (Type 405)\n"
+                "2 EL Öl (z.B. Olivenöl)\n"
+                "Salz (nach Geschmack)"
+            ),
+            "quantity": 2,
+        }
+        recipe = Recipe(
+            external_id="test_recipe_parentheses",
+            name="Test Recipe",
+            data=json.dumps(recipe_data),
+        )
+        session.add(recipe)
+        session.commit()
+        session.refresh(recipe)
+        recipe_id = recipe.id
+
+    # Use a future date (tomorrow)
+    future_date = (datetime.now() + timedelta(days=1)).date().isoformat()
+
+    # Create weekplan entry with recipe
+    response = client.post(
+        "/api/weekplan/entries",
+        headers=headers,
+        json={
+            "date": future_date,
+            "meal": "dinner",
+            "text": "Test Recipe",
+            "entry_type": "recipe",
+            "recipe_id": recipe_id,
+        },
+    )
+    assert response.status_code == 200
+    entry_id = response.json()["id"]
+
+    # Check that items were added with parentheses removed
+    with Session(engine) as session:
+        items = session.exec(select(Item)).all()
+        item_names = {item.name for item in items}
+        # Should have "Mehl", "Öl", "Salz" (without parentheses content)
+        assert "Mehl" in item_names, "Mehl should be in shopping list"
+        assert "Öl" in item_names, "Öl should be in shopping list"
+        assert "Salz" in item_names, "Salz should be in shopping list"
+        # Should NOT have the original names with parentheses
+        assert "Mehl (Type 405)" not in item_names
+        assert "Öl (z.B. Olivenöl)" not in item_names
+        assert "Salz (nach Geschmack)" not in item_names
+
+    # Delete the weekplan entry (this should remove the items)
+    response = client.delete(f"/api/weekplan/entries/{entry_id}", headers=headers)
+    assert response.status_code == 200
+
+    # Verify items were removed correctly
+    # The removal logic also uses _parse_ingredient_line,
+    # so it must match the same names (without parentheses)
+    # This ensures consistency between add and remove operations

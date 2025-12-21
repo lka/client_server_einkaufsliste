@@ -325,6 +325,12 @@ Python FastAPI Server + TypeScript Client mit JWT-Authentifizierung.
       - **Addition/Subtraktion**: "½ TL" + "½ TL" = "1 TL", "1 TL" - "½ TL" = "0,5 TL"
       - **Skalierung**: "½ TL" für 2 Personen → "1 TL" für 4 Personen
     - **Regex-basiertes Parsing**: Erkennt Muster wie "500 g Mehl", "2 EL Öl", "½ TL Salz", "1½ kg Zucker"
+    - **Automatische Klammer-Entfernung**: Inhalte in runden Klammern werden aus Rezeptzutaten entfernt
+      - **Klammern am Ende**: "Mehl (Type 405)" → "Mehl"
+      - **Klammern in der Mitte**: "Tomaten (geschält) gewürfelt" → "Tomaten gewürfelt"
+      - **Mehrfache Klammern**: "Kartoffeln (festkochend) (geschält)" → "Kartoffeln"
+      - **Konsistenz**: Funktioniert beim Hinzufügen UND Entfernen von Rezepten
+      - **Anwendungsfälle**: Entfernt optionale Hinweise wie "(Type 405)", "(z.B. Olivenöl)", "(nach Geschmack)"
     - **Personenanzahl-Skalierung**: Mengen werden automatisch angepasst (Fallback: 1 Person)
       - `neue_menge = original_menge × (gewünschte_personen / rezept_personen)`
       - Beispiel: Rezept für 4 Personen (500g) → 2 Personen = 250g
@@ -431,7 +437,7 @@ Python FastAPI Server + TypeScript Client mit JWT-Authentifizierung.
   - **Backup-Integration**: Einheiten werden in Datenbank-Backups gesichert
   - **29 vorkonfigurierte Einheiten**: g, kg, ml, l, EL, TL, Prise, Stück, Bund, Becher, Dose, Päckchen, Tasse, Stiel, Zweig, etc.
   - Navigation über Benutzermenü: "📏 Einheiten verwalten"
-- ✅ **Vollständige Tests**: 509 Tests (64 Server + 445 Client) mit 85%+ Code-Abdeckung
+- ✅ **Vollständige Tests**: 577 Tests (103 Server + 474 Client) mit 85%+ Code-Abdeckung
 - ✅ **TypeScript Client**: Typsicherer Client mit vier-Schichten-Architektur
 - ✅ **FastAPI Server**: Moderne Python API mit SQLModel ORM
 - ✅ **Benutzer-Verwaltung**: Freischaltungs-System für neue Benutzer

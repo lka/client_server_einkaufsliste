@@ -492,13 +492,22 @@ def _create_ingredient_pattern(session):
 def _parse_ingredient_line(line: str, pattern) -> tuple[str | None, str]:
     """Parse a single ingredient line into quantity and name.
 
+    Removes content within parentheses from the ingredient name.
+
     Args:
         line: Ingredient line to parse
         pattern: Regex pattern for parsing
 
     Returns:
         Tuple of (quantity_str, name)
+
+    Examples:
+        "500 g Mehl (Type 405)" -> ("500 g", "Mehl")
+        "2 EL Öl (z.B. Olivenöl)" -> ("2 EL", "Öl")
+        "Salz (nach Geschmack)" -> (None, "Salz")
     """
+    import re
+
     match = pattern.match(line)
     if match:
         quantity_str = match.group(1).strip()
@@ -506,6 +515,10 @@ def _parse_ingredient_line(line: str, pattern) -> tuple[str | None, str]:
     else:
         quantity_str = None
         name = line.strip()
+
+    # Remove content within parentheses (including the parentheses)
+    # This handles cases like "Mehl (Type 405)" -> "Mehl"
+    name = re.sub(r"\s*\([^)]*\)", "", name).strip()
 
     return quantity_str, name
 
