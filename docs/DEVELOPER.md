@@ -2,7 +2,7 @@
 
 Technische Dokumentation für Entwickler der Client/Server Einkaufsliste.
 
-> **Hinweis:** Für Feature-Beschreibungen und Benutzer-Informationen siehe [README.md](README.md)
+> **Hinweis:** Für Feature-Beschreibungen und Benutzer-Informationen siehe [README.md](../README.md)
 
 ## Inhaltsverzeichnis
 
@@ -302,8 +302,6 @@ Der Server läuft auf `http://localhost:8000`
 ---
 
 ## API-Endpunkte
-
-Vollständige API-Dokumentation siehe [README.md - API-Endpunkte](README.md#api-endpunkte).
 
 Die API verwendet JWT-Token für Authentifizierung. Alle Endpunkte außer `/register` und `/token` erfordern einen gültigen Access-Token im Authorization-Header:
 
@@ -613,7 +611,7 @@ Das Projekt hat zwei große Refactorings durchlaufen, um die Code-Komplexität z
 - **Durchschnittliche zyklomatische Komplexität**: 21.84 (war 35.17)
 - **Durchschnittliche McCabe-Komplexität**: 31.07 (war 49.60)
 
-Weitere Details siehe [client/ARCHITECTURE.md](client/ARCHITECTURE.md) und [client/src/ui/weekplan/README.md](client/src/ui/weekplan/README.md).
+Weitere Details siehe [client/ARCHITECTURE.md](../client/ARCHITECTURE.md) und [client/src/ui/weekplan/README.md](../client/src/ui/weekplan/README.md).
 
 ### Entwickler-Notizen
 
