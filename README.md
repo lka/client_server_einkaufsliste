@@ -349,6 +349,9 @@ Python FastAPI Server + TypeScript Client mit JWT-Authentifizierung.
     - **Einkaufslisten-Sync**: Markierte Items werden automatisch von Einkaufsliste entfernt
     - **Personenanzahl-Änderung**: Bei Anpassung werden alte Items entfernt und neue mit korrekten Mengen hinzugefügt
     - **Zusätzliche Items**: Freies Hinzufügen weiterer Zutaten über Eingabefeld
+      - **Duplikate erlaubt**: Zutaten können mehrfach mit verschiedenen Mengen hinzugefügt werden
+      - **Hellgrüne Hinterlegung**: Visuell hervorgehobene Darstellung hinzugefügter Artikel
+      - **Kompakte Ansicht**: Optimierte UI ohne redundante Überschriften
   - **Recipe-Modell**: Strukturierte Speicherung in SQLite-Datenbank
     - `external_id`: Eindeutige ID vom WebDAV-Server (z.B. "recipe_123")
     - `name`: Rezeptname (indiziert für schnelle Suche)

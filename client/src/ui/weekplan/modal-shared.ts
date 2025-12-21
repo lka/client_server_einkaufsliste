@@ -88,8 +88,7 @@ export function createQuantityAdjustmentSection(
  * Create an "add item" form for modals
  */
 export function createAddItemForm(
-  onAddItem: (name: string, menge?: string) => void,
-  existingItems?: string[]
+  onAddItem: (name: string, menge?: string) => void
 ): HTMLDivElement {
   const addForm = document.createElement('div');
   addForm.style.cssText = 'display: flex; gap: 0.5rem; align-items: stretch;';
@@ -151,19 +150,6 @@ export function createAddItemForm(
       return;
     }
 
-    // Check if item already exists
-    if (existingItems) {
-      const isExisting = existingItems.some(item =>
-        item.toLowerCase() === name.toLowerCase()
-      );
-      if (isExisting) {
-        showError('Dieser Artikel ist bereits in der Liste enthalten.');
-        nameInputGroup.input.value = '';
-        nameInputGroup.input.focus();
-        return;
-      }
-    }
-
     onAddItem(name, menge || undefined);
     nameInputGroup.input.value = '';
     mengeInputGroup.input.value = '';
@@ -223,11 +209,6 @@ export function createAddedItemsList(
   const addedItemsList = document.createElement('div');
   addedItemsList.style.cssText = 'margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e0e0e0;';
 
-  const heading = document.createElement('h4');
-  heading.textContent = 'Hinzugefügte Artikel';
-  heading.style.cssText = 'margin: 0 0 0.5rem 0; font-size: 0.9rem; color: #666; font-weight: 600;';
-  addedItemsList.appendChild(heading);
-
   if (addedItems.size === 0) {
     const emptyMsg = document.createElement('p');
     emptyMsg.textContent = 'Keine zusätzlichen Artikel';
@@ -235,7 +216,7 @@ export function createAddedItemsList(
     addedItemsList.appendChild(emptyMsg);
   } else {
     const list = document.createElement('ul');
-    list.style.cssText = 'list-style: none; padding: 0; margin: 0;';
+    list.style.cssText = 'list-style: none; padding: 0; margin: 0; background: #e8f5e9; border-radius: 4px; padding: 0.5rem;';
 
     addedItems.forEach((item, name) => {
       const li = document.createElement('li');

@@ -190,7 +190,7 @@ export async function showTemplateDetails(templateName: string, entryId: number)
 
     // Container for added items list (in scrollable section)
     const addedItemsContainer = document.createElement('div');
-    addedItemsContainer.style.cssText = 'margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e0e0e0;';
+    addedItemsContainer.style.cssText = 'margin-top: 1rem;';
 
     const renderAddedItems = () => {
       const newList = createAddedItemsList(addedItems, (name) => {
@@ -209,15 +209,11 @@ export async function showTemplateDetails(templateName: string, entryId: number)
     // Fixed section for adding new items (always visible at bottom)
     const addItemSection = createFixedFormSection();
 
-    // Get existing item names for validation
-    const existingItemNames = template.items.map(item => item.name);
-
     const addForm = createAddItemForm(
       (name, menge) => {
         addedItems.set(name, { name, menge });
         renderAddedItems();
-      },
-      existingItemNames
+      }
     );
 
     addItemSection.appendChild(addForm);

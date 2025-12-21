@@ -78,7 +78,7 @@ export function buildModalContent(
 
   // Added items section
   const addedItemsContainer = document.createElement('div');
-  addedItemsContainer.style.cssText = 'margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e0e0e0;';
+  addedItemsContainer.style.cssText = 'margin-top: 1rem;';
 
   const renderAddedItems = () => {
     const newList = createAddedItemsList(state.addedItems, (name) => {
@@ -95,14 +95,12 @@ export function buildModalContent(
 
   // Fixed section for adding new items
   const addItemSection = createFixedFormSection();
-  const existingIngredientNames = parsedIngredients.map(ing => ing.name);
 
   const addForm = createAddItemForm(
     (name, menge) => {
       state.addedItems.set(name, { name, menge });
       renderAddedItems();
-    },
-    existingIngredientNames
+    }
   );
 
   addItemSection.appendChild(addForm);
