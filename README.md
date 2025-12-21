@@ -27,7 +27,7 @@ Eine Schnellstartanleitung finden Sie in [QUICKSTART.md](docs/QUICKSTART.md).
 ## Benutzung
 
 Nach dem Aufruf der Seite in einem Browser Ihrer Wahl auf einem Tablet oder PC mit z.B. http://192.168.0.22:8000 (die IP-Adresse ihres Servers) landen Sie auf der Login-Seite. Nach dem Einloggen sind sie in der Einkaufsliste.
-[![Screenshot]](docs/images/Einkaufsliste.png)
+![Screenshot](docs/images/Einkaufsliste.png)
 
 ### Navigation im Benutzermenü
 
@@ -150,9 +150,8 @@ Nach dem Login können Sie die Einkaufsliste verwenden:
 ### WebSocket aktivieren (für Live-Updates)
 
 1. Klicken Sie auf das Menü (⋮) im Header
-2. Wählen Sie **"Einstellungen"** → **"🔌 WebSocket aktivieren"**
+2. Wählen Sie **"Einstellungen"** → **"🔌 WebSocket aktivieren"** (ist standardmäßig aktiv)
 3. Alle Änderungen werden jetzt live auf allen verbundenen Geräten synchronisiert
-4. Teilen Sie den WebSocket-Link mit anderen Benutzern: **"📋 WebSocket-Link kopieren"**
 
 ### Datenbank-Backup erstellen
 
