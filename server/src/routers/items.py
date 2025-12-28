@@ -157,6 +157,26 @@ def read_items_by_date(
         return items_with_dept
 
 
+def _find_existing_item_exact(
+    session, item_name: str, shopping_date: str | None, store_id: int | None
+) -> Item | None:
+    """Find existing item with exact match only (no fuzzy matching).
+
+    This is used for recipe ingredients to avoid merging similar but different
+    ingredients like 'Kürbiskerne' and 'Kürbiskernöl'.
+    """
+    from sqlmodel import func
+
+    query = select(Item).where(
+        func.lower(Item.name) == func.lower(item_name),
+        Item.shopping_date == shopping_date,
+    )
+    if store_id is not None:
+        query = query.where(Item.store_id == store_id)
+
+    return session.exec(query).first()
+
+
 def _find_existing_item(
     session, item_name: str, shopping_date: str | None, store_id: int | None
 ) -> Item | None:

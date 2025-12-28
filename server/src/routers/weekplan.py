@@ -523,6 +523,24 @@ def _parse_ingredient_line(line: str, pattern) -> tuple[str | None, str]:
     return quantity_str, name
 
 
+def _create_removed_items_set(removed_items: List[str], pattern) -> set:
+    """Create set of removed items for fast lookup (Helper function).
+
+    Parse each removed item to remove parentheses, matching the behavior
+    of how ingredients are parsed from recipes
+
+    Args:
+        removed_items (List[str]): List of removed item names
+        pattern (_type_): Regex pattern for parsing ingredients
+
+    Returns:
+        set: Set of parsed item names (without parentheses)
+    """
+    return {
+        _parse_ingredient_line(item_name, pattern)[1] for item_name in removed_items
+    }
+
+
 def _add_recipe_items_to_shopping_list(
     session,
     recipe_id: int,
@@ -543,7 +561,7 @@ def _add_recipe_items_to_shopping_list(
         List of items that were added or modified
     """
     import uuid
-    from ..routers.items import _find_existing_item, _find_matching_product
+    from ..routers.items import _find_existing_item_exact, _find_matching_product
     from ..utils import merge_quantities
 
     modified_items = []
@@ -572,14 +590,16 @@ def _add_recipe_items_to_shopping_list(
     if not first_store:
         return modified_items  # No store available
 
-    # Create set of removed items for fast lookup
-    removed_items = set(deltas.removed_items) if deltas else set()
-
     # Get person_count from deltas if available
     person_count = deltas.person_count if deltas else None
 
     # Create ingredient pattern
     pattern = _create_ingredient_pattern(session)
+
+    # Create set of removed items for fast lookup
+    removed_items = (
+        _create_removed_items_set(deltas.removed_items, pattern) if deltas else set()
+    )
 
     # Process each ingredient
     for line in ingredient_lines:
@@ -590,7 +610,8 @@ def _add_recipe_items_to_shopping_list(
             continue
 
         # Adjust quantity based on person_count if provided
-        item_menge = quantity_str
+        # Default to "1" if no quantity is specified
+        item_menge = quantity_str if quantity_str else "1"
         if person_count is not None and quantity_str:
             item_menge = _adjust_quantity_by_person_count(
                 quantity_str, person_count, original_quantity
@@ -601,8 +622,8 @@ def _add_recipe_items_to_shopping_list(
             weekplan_date, name, first_store, session, meal
         )
 
-        # Find existing item
-        existing_item = _find_existing_item(
+        # Find existing item (exact match only for recipes)
+        existing_item = _find_existing_item_exact(
             session, name, shopping_date, first_store.id
         )
 
@@ -645,8 +666,8 @@ def _add_recipe_items_to_shopping_list(
                 weekplan_date, delta_item.name, first_store, session, meal
             )
 
-            # Find existing item
-            existing_item = _find_existing_item(
+            # Find existing item (exact match only for recipes)
+            existing_item = _find_existing_item_exact(
                 session, delta_item.name, shopping_date, first_store.id
             )
 
@@ -706,7 +727,7 @@ def _remove_recipe_items_from_shopping_list(
     Returns:
         Tuple of (modified_items, deleted_items)
     """
-    from ..routers.items import _find_existing_item
+    from ..routers.items import _find_existing_item_exact
 
     modified_items = []
     deleted_items = []
@@ -735,14 +756,19 @@ def _remove_recipe_items_from_shopping_list(
     if not first_store:
         return modified_items, deleted_items  # No store available
 
-    # Create set of removed items for fast lookup
-    removed_items = set(deltas.removed_items) if deltas else set()
-
     # Get person_count from deltas if available
     person_count = deltas.person_count if deltas else None
 
     # Create ingredient pattern
     pattern = _create_ingredient_pattern(session)
+
+    # Create set of removed items for fast lookup
+    # Parse each removed item to remove parentheses for consistent matching
+    removed_items = set()
+    if deltas and deltas.removed_items:
+        for item_name in deltas.removed_items:
+            _, parsed_name = _parse_ingredient_line(item_name, pattern)
+            removed_items.add(parsed_name)
 
     # Process each ingredient
     for line in ingredient_lines:
@@ -758,15 +784,17 @@ def _remove_recipe_items_from_shopping_list(
         )
 
         # Adjust quantity based on person_count if provided
-        item_menge = quantity_str
+        # Default to "1" if no quantity is specified
+        item_menge = quantity_str if quantity_str else "1"
         if person_count is not None and quantity_str:
             item_menge = _adjust_quantity_by_person_count(
                 quantity_str, person_count, original_quantity
             )
 
         # Subtract quantities using merge logic
-        # Find existing item with same name, date, and store
-        existing_item = _find_existing_item(
+        # Find existing item with same name, date,
+        # and store (exact match only for recipes)
+        existing_item = _find_existing_item_exact(
             session, name, shopping_date, first_store.id
         )
 
@@ -787,8 +815,8 @@ def _remove_recipe_items_from_shopping_list(
                 weekplan_date, delta_item.name, first_store, session, meal
             )
 
-            # Find existing item
-            existing_item = _find_existing_item(
+            # Find existing item (exact match only for recipes)
+            existing_item = _find_existing_item_exact(
                 session, delta_item.name, shopping_date, first_store.id
             )
 
@@ -899,7 +927,7 @@ def _remove_template_items_from_shopping_list(
                 weekplan_date, delta_item.name, first_store, session, meal
             )
 
-            # Find existing item
+            # Find existing item (uses fuzzy matching for templates)
             existing_item = _find_existing_item(
                 session, delta_item.name, shopping_date, first_store.id
             )
@@ -1428,7 +1456,7 @@ def _handle_recipe_person_count_change(
     modified_items: list,
 ):
     """Handle person_count changes for recipes."""
-    from ..routers.items import _find_existing_item, _find_matching_product
+    from ..routers.items import _find_existing_item_exact, _find_matching_product
     from ..utils import merge_quantities
     import uuid
 
@@ -1457,7 +1485,7 @@ def _handle_recipe_person_count_change(
         else:
             old_menge = quantity_str
 
-        existing_item = _find_existing_item(
+        existing_item = _find_existing_item_exact(
             session, name, shopping_date, first_store.id
         )
 
@@ -1487,7 +1515,7 @@ def _handle_recipe_person_count_change(
                 else None
             )
 
-            existing_item = _find_existing_item(
+            existing_item = _find_existing_item_exact(
                 session, name, shopping_date, first_store.id
             )
 
@@ -1523,7 +1551,7 @@ def _remove_newly_marked_recipe_items(
     person_count: Optional[int] = None,
 ):
     """Remove newly marked recipe items from shopping list."""
-    from ..routers.items import _find_existing_item
+    from ..routers.items import _find_existing_item_exact
 
     # Parse recipe data using helper
     _, original_quantity, ingredient_lines = _parse_recipe_data(recipe)
@@ -1541,13 +1569,14 @@ def _remove_newly_marked_recipe_items(
             entry.date, name, first_store, session, entry.meal
         )
 
-        item_menge = quantity_str
+        # Default to "1" if no quantity is specified
+        item_menge = quantity_str if quantity_str else "1"
         if person_count is not None and quantity_str:
             item_menge = _adjust_quantity_by_person_count(
                 quantity_str, person_count, original_quantity
             )
 
-        existing_item = _find_existing_item(
+        existing_item = _find_existing_item_exact(
             session, name, shopping_date, first_store.id
         )
 
@@ -1584,7 +1613,8 @@ def _add_back_unmarked_recipe_items(
         if name not in newly_added_back:
             continue
 
-        item_menge = quantity_str
+        # Default to "1" if no quantity is specified
+        item_menge = quantity_str if quantity_str else "1"
         if person_count is not None and quantity_str:
             item_menge = _adjust_quantity_by_person_count(
                 quantity_str, person_count, original_quantity
@@ -1805,9 +1835,22 @@ async def update_weekplan_entry_deltas(
             recipe = session.get(Recipe, entry.recipe_id)
             if recipe:
                 # For recipes, we need to handle deltas similarly to templates
+                # Parse removed items to remove parentheses for consistent matching
+                pattern = _create_ingredient_pattern(session)
+
+                old_removed = (
+                    _create_removed_items_set(old_deltas.removed_items, pattern)
+                    if old_deltas and old_deltas.removed_items
+                    else set()
+                )
+
+                new_removed = (
+                    _create_removed_items_set(deltas.removed_items, pattern)
+                    if deltas.removed_items
+                    else set()
+                )
+
                 # Calculate which items were newly marked as removed
-                old_removed = set(old_deltas.removed_items) if old_deltas else set()
-                new_removed = set(deltas.removed_items)
                 newly_removed = new_removed - old_removed
 
                 # Calculate which items were unmarked (no longer removed)
