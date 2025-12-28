@@ -70,6 +70,7 @@ def parse_quantity(menge: str | None) -> tuple[float | None, str | None]:
     Args:
         menge: Quantity string like "500 g", "2 Stück",
             "½ TL", "1½ kg", "-300 g" for subtraction,
+            "1/2 TL", "2 1/2 kg" (text-based fractions),
             or "ca. 150 g" (approximation prefix is removed)
 
     Returns:
@@ -81,6 +82,9 @@ def parse_quantity(menge: str | None) -> tuple[float | None, str | None]:
         - "½ TL" -> (0.5, "TL")
         - "1½ kg" -> (1.5, "kg")
         - "2¼ l" -> (2.25, "l")
+        - "1/2 TL" -> (0.5, "TL")
+        - "2 1/2 kg" -> (2.5, "kg")
+        - "3/4 l" -> (0.75, "l")
         - "-300 g" -> (-300.0, "g")
         - "ca. 150 g" -> (150.0, "g")
     """
@@ -93,7 +97,41 @@ def parse_quantity(menge: str | None) -> tuple[float | None, str | None]:
     if menge_stripped.lower().startswith("ca. "):
         menge_stripped = menge_stripped[4:]
 
-    # First try to match fractions with optional minus sign
+    # Try to match text-based fractions: "2 1/2 kg" or "1/2 TL"
+    # Pattern: optional minus, optional whole number, optional space,
+    # numerator/denominator, optional unit
+    text_fraction_match = re.match(r"^(-?)(\d+)?\s*(\d+)/(\d+)\s*(.*)$", menge_stripped)
+    if text_fraction_match:
+        minus_sign = text_fraction_match.group(1)
+        whole_part_str = text_fraction_match.group(2)
+        numerator_str = text_fraction_match.group(3)
+        denominator_str = text_fraction_match.group(4)
+        unit = (
+            text_fraction_match.group(5).strip()
+            if text_fraction_match.group(5)
+            else None
+        )
+
+        try:
+            numerator = int(numerator_str)
+            denominator = int(denominator_str)
+
+            if denominator == 0:
+                return None, None
+
+            fraction_value = numerator / denominator
+            whole_part = int(whole_part_str) if whole_part_str else 0
+            number = whole_part + fraction_value
+
+            # Apply minus sign if present
+            if minus_sign == "-":
+                number = -number
+
+            return number, unit
+        except (ValueError, ZeroDivisionError):
+            pass  # Fall through to other patterns
+
+    # Try to match unicode fractions with optional minus sign
     # Pattern: optional minus, optional number, fraction character, optional unit
     fraction_match = re.match(
         r"^(-?)(\d*)([½¼¾⅓⅔⅕⅖⅗⅘⅙⅚⅐⅑⅛⅜⅝⅞])\s*(.*)$", menge_stripped

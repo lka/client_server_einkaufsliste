@@ -92,6 +92,36 @@ class TestParseQuantity:
         assert parse_quantity("ca. ½ TL") == (0.5, "TL")
         assert parse_quantity("ca. 1½ kg") == (1.5, "kg")
 
+    def test_text_based_simple_fractions(self):
+        """Test parsing text-based simple fractions like 1/2, 3/4."""
+        assert parse_quantity("1/2 TL") == (0.5, "TL")
+        assert parse_quantity("3/4 kg") == (0.75, "kg")
+        assert parse_quantity("1/4 l") == (0.25, "l")
+        assert parse_quantity("2/3 Tasse") == (2 / 3, "Tasse")
+
+    def test_text_based_mixed_fractions(self):
+        """Test parsing text-based mixed fractions like 2 1/2, 1 3/4."""
+        assert parse_quantity("2 1/2 kg") == (2.5, "kg")
+        assert parse_quantity("1 3/4 l") == (1.75, "l")
+        assert parse_quantity("3 1/4 TL") == (3.25, "TL")
+        assert parse_quantity("5 1/2 Tassen") == (5.5, "Tassen")
+
+    def test_text_based_fractions_without_unit(self):
+        """Test parsing text-based fractions without unit."""
+        num, unit = parse_quantity("1/2")
+        assert num == 0.5
+        assert unit == "" or unit is None
+
+        num, unit = parse_quantity("2 1/2")
+        assert num == 2.5
+        assert unit == "" or unit is None
+
+    def test_negative_text_based_fractions(self):
+        """Test parsing negative text-based fractions for subtraction."""
+        assert parse_quantity("-1/2 TL") == (-0.5, "TL")
+        assert parse_quantity("-2 1/2 kg") == (-2.5, "kg")
+        assert parse_quantity("-3/4 l") == (-0.75, "l")
+
     def test_invalid_input(self):
         """Test invalid input returns (None, None)."""
         assert parse_quantity(None) == (None, None)
@@ -164,3 +194,26 @@ class TestMergeQuantities:
         result = merge_quantities("500 g", "2; 300 g")
         assert "800 g" in result
         assert "2" in result
+
+    def test_merge_text_based_fractions_same_unit(self):
+        """Test merging text-based fractions with same unit."""
+        assert merge_quantities("1/2 TL", "1/2 TL") == "1 TL"
+        assert merge_quantities("3/4 kg", "1/4 kg") == "1 kg"
+
+    def test_merge_text_and_unicode_fractions(self):
+        """Test merging text-based and unicode fractions."""
+        assert merge_quantities("1/2 TL", "½ TL") == "1 TL"
+        assert merge_quantities("¼ kg", "3/4 kg") == "1 kg"
+
+    def test_merge_mixed_text_fractions(self):
+        """Test merging mixed text-based fractions."""
+        assert merge_quantities("2 1/2 kg", "1/2 kg") == "3 kg"
+        assert merge_quantities("1 3/4 l", "1/4 l") == "2 l"
+
+    def test_subtract_text_based_fractions(self):
+        """Test subtracting text-based fractions."""
+        result = merge_quantities("1 TL", "-1/2 TL")
+        assert result == "0,5 TL"
+
+        result = merge_quantities("2 1/2 kg", "-1/2 kg")
+        assert result == "2 kg"

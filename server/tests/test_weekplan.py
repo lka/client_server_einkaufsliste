@@ -810,3 +810,74 @@ def test_recipe_similar_ingredient_names_not_merged():
     # Clean up: delete the weekplan entry
     response = client.delete(f"/api/weekplan/entries/{entry_id}", headers=headers)
     assert response.status_code == 200
+
+
+def test_recipe_text_based_fractions():
+    """Test recipe ingredients with text-based fractions (1/2, 2 1/2)."""
+    import json
+    from datetime import datetime, timedelta
+    from server.src.models import Recipe
+
+    token = get_auth_token()
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Clean up: delete all items
+    items = client.get("/api/items", headers=headers).json()
+    for item in items:
+        client.delete(f"/api/items/{item['id']}", headers=headers)
+
+    # Create a test recipe with text-based fractions
+    engine = get_engine()
+    with Session(engine) as session:
+        recipe_data = {
+            "name": "Text Fractions Test Recipe",
+            "ingredients": ("1/2 kg Mehl\n" "2 1/2 TL Zucker\n" "3/4 TL Salz"),
+            "quantity": 2,
+        }
+        recipe = Recipe(
+            external_id="test_recipe_text_fractions",
+            name="Text Fractions Test Recipe",
+            data=json.dumps(recipe_data),
+        )
+        session.add(recipe)
+        session.commit()
+        session.refresh(recipe)
+        recipe_id = recipe.id
+
+    # Create weekplan entry for tomorrow (future date so items are added)
+    future_date = (datetime.now() + timedelta(days=1)).date().isoformat()
+    weekplan_response = client.post(
+        "/api/weekplan/entries",
+        headers=headers,
+        json={
+            "date": future_date,
+            "meal": "dinner",
+            "text": "Text Fractions Test Recipe",
+            "entry_type": "recipe",
+            "recipe_id": recipe_id,
+        },
+    )
+    assert weekplan_response.status_code == 200
+
+    # Verify items were added with correct quantities
+    items = client.get("/api/items", headers=headers).json()
+
+    # Find the items
+    mehl_item = next((i for i in items if i["name"] == "Mehl"), None)
+    zucker_item = next((i for i in items if i["name"] == "Zucker"), None)
+    salz_item = next((i for i in items if i["name"] == "Salz"), None)
+
+    assert mehl_item is not None, "Mehl should be in shopping list"
+    assert zucker_item is not None, "Zucker should be in shopping list"
+    assert salz_item is not None, "Salz should be in shopping list"
+
+    # Verify the quantities are parsed correctly
+    assert (
+        mehl_item["menge"] == "0,5 kg"
+    ), f"Mehl: expected '0,5 kg', got {mehl_item['menge']}"
+    assert (
+        zucker_item["menge"] == "2,5 TL"
+    ), f"Zucker: expected '2,5 TL', got {zucker_item['menge']}"
+    assert (
+        salz_item["menge"] == "0,75 TL"
+    ), f"Salz: expected '0,75 TL', got {salz_item['menge']}"

@@ -459,8 +459,8 @@ def _parse_recipe_data(recipe: Recipe) -> tuple[str, int, list[str]]:
 def _create_ingredient_pattern(session):
     """Create regex pattern for parsing ingredients with known units.
 
-    Supports regular numbers, fractions (½, ¼, ¾, etc.),
-    and mixed numbers (1½, 2¼, etc.).
+    Supports regular numbers, unicode fractions (½, ¼, ¾, etc.),
+    mixed numbers (1½, 2¼, etc.), and text-based fractions (1/2, 2 1/2, etc.).
 
     Args:
         session: Database session
@@ -473,6 +473,8 @@ def _create_ingredient_pattern(session):
         - "½ TL Salz" -> ("½ TL", "Salz")
         - "1½ kg Zucker" -> ("1½ kg", "Zucker")
         - "2¼ l Milch" -> ("2¼ l", "Milch")
+        - "1/2 TL Salz" -> ("1/2 TL", "Salz")
+        - "2 1/2 kg Zucker" -> ("2 1/2 kg", "Zucker")
     """
     import re
 
@@ -480,13 +482,55 @@ def _create_ingredient_pattern(session):
     units_pattern = "|".join(known_units)
 
     # Pattern explanation:
-    # (?:\d*[½¼¾⅓⅔⅕⅖⅗⅘⅙⅚⅐⅑⅛⅜⅝⅞]|[\d\/\.,]+) matches either:
-    #   - optional digit(s) + fraction character (e.g., "½", "1½", "2¼")
-    #   - regular number with optional decimal/comma (e.g., "500", "2.5", "1,5")
-    # (?:\s*(?:{units_pattern}))? matches optional unit preceded by optional whitespace
+    # Matches one of the following quantity formats:
+    #   1. Unicode fractions: \d*[½¼¾⅓⅔⅕⅖⅗⅘⅙⅚⅐⅑⅛⅜⅝⅞] (e.g., "½", "1½", "2¼")
+    #   2. Text-based fractions: \d+\s*\d+/\d+ or \d+/\d+ (e.g., "1/2", "2 1/2", "3/4")
+    #   3. Regular numbers: [\d\.,]+ (e.g., "500", "2.5", "1,5")
+    # Followed by optional unit preceded by optional whitespace
     return re.compile(
-        rf"^((?:\d*[½¼¾⅓⅔⅕⅖⅗⅘⅙⅚⅐⅑⅛⅜⅝⅞]|[\d\/\.,]+)(?:\s*(?:{units_pattern}))?)\s+(.+)$"
+        rf"^((?:\d*[½¼¾⅓⅔⅕⅖⅗⅘⅙⅚⅐⅑⅛⅜⅝⅞]|\d+\s*\d+/\d+|\d+/\d+|[\d\.,]+)"
+        rf"(?:\s*(?:{units_pattern}))?)\s+(.+)$"
     )
+
+
+def _normalize_quantity(quantity_str: str | None) -> str | None:
+    """Normalize quantity string by converting text fractions to decimals.
+
+    Args:
+        quantity_str: Quantity string like "1/2 kg", "2 1/2 TL", "500 g"
+
+    Returns:
+        Normalized quantity string with decimal fractions like "0,5 kg", "2,5 TL"
+
+    Examples:
+        "1/2 kg" -> "0,5 kg"
+        "2 1/2 TL" -> "2,5 TL"
+        "3/4 l" -> "0,75 l"
+        "500 g" -> "500 g" (unchanged)
+    """
+    if not quantity_str:
+        return quantity_str
+
+    from ..utils import parse_quantity
+
+    # Parse the quantity
+    number, unit = parse_quantity(quantity_str)
+
+    if number is None:
+        # Can't parse, return original
+        return quantity_str
+
+    # Format the number
+    if number == int(number):
+        formatted_number = str(int(number))
+    else:
+        # Use comma as decimal separator
+        formatted_number = str(number).replace(".", ",")
+
+    # Combine with unit
+    if unit:
+        return f"{formatted_number} {unit}"
+    return formatted_number
 
 
 def _parse_ingredient_line(line: str, pattern) -> tuple[str | None, str]:
@@ -505,6 +549,8 @@ def _parse_ingredient_line(line: str, pattern) -> tuple[str | None, str]:
         "500 g Mehl (Type 405)" -> ("500 g", "Mehl")
         "2 EL Öl (z.B. Olivenöl)" -> ("2 EL", "Öl")
         "Salz (nach Geschmack)" -> (None, "Salz")
+        "1/2 kg Mehl" -> ("0,5 kg", "Mehl")
+        "2 1/2 TL Zucker" -> ("2,5 TL", "Zucker")
     """
     import re
 
@@ -512,6 +558,8 @@ def _parse_ingredient_line(line: str, pattern) -> tuple[str | None, str]:
     if match:
         quantity_str = match.group(1).strip()
         name = match.group(2).strip()
+        # Normalize text-based fractions to decimal format
+        quantity_str = _normalize_quantity(quantity_str)
     else:
         quantity_str = None
         name = line.strip()

@@ -91,10 +91,24 @@ describe('parseQuantity', () => {
   });
 
   describe('Slash fractions', () => {
-    it('should parse slash fractions', () => {
+    it('should parse simple slash fractions', () => {
       expect(parseQuantity('1/2')).toBe(0.5);
       expect(parseQuantity('3/4')).toBe(0.75);
       expect(parseQuantity('2/3')).toBeCloseTo(0.667, 2);
+      expect(parseQuantity('1/4')).toBe(0.25);
+    });
+
+    it('should parse mixed slash fractions', () => {
+      expect(parseQuantity('2 1/2')).toBe(2.5);
+      expect(parseQuantity('1 3/4')).toBe(1.75);
+      expect(parseQuantity('3 1/4')).toBe(3.25);
+      expect(parseQuantity('5 1/2')).toBe(5.5);
+    });
+
+    it('should parse negative slash fractions', () => {
+      expect(parseQuantity('-1/2')).toBe(-0.5);
+      expect(parseQuantity('-2 1/2')).toBe(-2.5);
+      expect(parseQuantity('-3/4')).toBe(-0.75);
     });
   });
 
