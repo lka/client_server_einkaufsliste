@@ -110,6 +110,13 @@ export class Autocomplete {
   private selectedIndex: number = -1;
   private debounceTimer: number | null = null;
 
+  // Store bound handlers for proper cleanup
+  private boundHandleInput: () => void;
+  private boundHandleKeyDown: (event: KeyboardEvent) => void;
+  private boundHandleBlur: () => void;
+  private boundHandleFocus: () => void;
+  private boundHandleDocumentClick: (event: MouseEvent) => void;
+
   constructor(config: AutocompleteConfig) {
     this.input = config.input;
     this.onSearch = config.onSearch;
@@ -121,6 +128,13 @@ export class Autocomplete {
     if (config.placeholder) {
       this.input.placeholder = config.placeholder;
     }
+
+    // Bind event handlers once
+    this.boundHandleInput = this.handleInput.bind(this);
+    this.boundHandleKeyDown = this.handleKeyDown.bind(this);
+    this.boundHandleBlur = this.handleBlur.bind(this);
+    this.boundHandleFocus = this.handleFocus.bind(this);
+    this.boundHandleDocumentClick = this.handleDocumentClick.bind(this);
 
     this.init();
   }
@@ -134,14 +148,14 @@ export class Autocomplete {
     // Insert after input
     this.input.parentElement?.appendChild(this.suggestionsContainer);
 
-    // Attach event listeners
-    this.input.addEventListener('input', this.handleInput.bind(this));
-    this.input.addEventListener('keydown', this.handleKeyDown.bind(this));
-    this.input.addEventListener('blur', this.handleBlur.bind(this));
-    this.input.addEventListener('focus', this.handleFocus.bind(this));
+    // Attach event listeners using bound handlers
+    this.input.addEventListener('input', this.boundHandleInput);
+    this.input.addEventListener('keydown', this.boundHandleKeyDown);
+    this.input.addEventListener('blur', this.boundHandleBlur);
+    this.input.addEventListener('focus', this.boundHandleFocus);
 
     // Click outside to close
-    document.addEventListener('click', this.handleDocumentClick.bind(this));
+    document.addEventListener('click', this.boundHandleDocumentClick);
   }
 
   private handleInput(): void {
@@ -211,8 +225,10 @@ export class Autocomplete {
       item.dataset.index = index.toString();
 
       // Mouse events
+      // Use mousedown instead of click to trigger before blur
       item.addEventListener('mousedown', (e) => {
         e.preventDefault(); // Prevent input blur
+        e.stopPropagation(); // Stop event from bubbling
         this.selectSuggestion(index);
       });
 
@@ -343,11 +359,11 @@ export class Autocomplete {
       this.suggestionsContainer = null;
     }
 
-    // Remove event listeners
-    this.input.removeEventListener('input', this.handleInput.bind(this));
-    this.input.removeEventListener('keydown', this.handleKeyDown.bind(this));
-    this.input.removeEventListener('blur', this.handleBlur.bind(this));
-    this.input.removeEventListener('focus', this.handleFocus.bind(this));
-    document.removeEventListener('click', this.handleDocumentClick.bind(this));
+    // Remove event listeners using the same bound handlers
+    this.input.removeEventListener('input', this.boundHandleInput);
+    this.input.removeEventListener('keydown', this.boundHandleKeyDown);
+    this.input.removeEventListener('blur', this.boundHandleBlur);
+    this.input.removeEventListener('focus', this.boundHandleFocus);
+    document.removeEventListener('click', this.boundHandleDocumentClick);
   }
 }
