@@ -197,6 +197,30 @@ def _find_existing_item_exact(
     return session.exec(query).first()
 
 
+def _find_item_by_match_strategy(
+    session, name: str, shopping_date: str, store_id: int
+) -> Item | None:
+    """Find existing item using intelligent matching strategy.
+
+    Uses exact match if name exists in product list, otherwise fuzzy matching.
+    This prevents unwanted merging of similar items when the exact item exists
+    as a product, while still allowing fuzzy matching for free-text items.
+
+    Args:
+        session: Database session
+        name: Item name to search for
+        shopping_date: Shopping date
+        store_id: Store ID
+
+    Returns:
+        Existing item if found, None otherwise
+    """
+    if _find_exact_product_match(session, name, store_id):
+        return _find_existing_item_exact(session, name, shopping_date, store_id)
+    else:
+        return _find_existing_item(session, name, shopping_date, store_id)
+
+
 def _find_existing_item(
     session, item_name: str, shopping_date: str | None, store_id: int | None
 ) -> Item | None:
@@ -360,7 +384,8 @@ async def create_item(item: Item, current_user: str = Depends(get_current_user))
     """Create a new item or update quantity if item already exists in the shared list.
 
     Adds items to the shared shopping list that all authenticated users can access.
-    Uses fuzzy matching to find similar item names (e.g., "Möhre" matches "Möhren").
+    Uses intelligent matching: exact match if item exists in product list, otherwise
+    fuzzy matching to find similar names (e.g., "Möhre" matches "Möhren").
     Automatically matches items to products in the store's catalog using fuzzy matching.
 
     If an item with the same or similar name AND same shopping_date already exists:
@@ -396,8 +421,8 @@ async def create_item(item: Item, current_user: str = Depends(get_current_user))
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
-        # Find existing item with exact or fuzzy match
-        existing_item = _find_existing_item(
+        # Find existing item using intelligent matching strategy
+        existing_item = _find_item_by_match_strategy(
             session, item.name, item.shopping_date, item.store_id
         )
 

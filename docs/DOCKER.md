@@ -1,5 +1,7 @@
 # Docker Deployment
 
+> **📚 Alle Dokumentationen:** Siehe [Dokumentations-Index](INDEX.md)
+
 Diese Anleitung beschreibt, wie Sie die Einkaufsliste-Anwendung mit Docker deployen.
 
 ## Voraussetzungen

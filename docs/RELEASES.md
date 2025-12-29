@@ -1,5 +1,7 @@
 # Releases
 
+> **📚 Alle Dokumentationen:** Siehe [Dokumentations-Index](INDEX.md)
+
   - Release 6.0.0: Herstellerbezeichnung + Rezept-Klammer-Entfernung + Modal-UX-Verbesserungen
     - **Optionale Herstellerbezeichnung für Produkte**: Produkte können jetzt eine zusätzliche herstellerspezifische Bezeichnung haben
         - Datenbankfeld `manufacturer_designation` (nullable, max 200 Zeichen)

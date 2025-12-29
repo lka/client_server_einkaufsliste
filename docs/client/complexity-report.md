@@ -1,5 +1,7 @@
 # Complexity Report
 
+> **📚 Alle Dokumentationen:** Siehe [Dokumentations-Index](../INDEX.md)
+
 | File | Lines | Functions | Complexity | Cyclomatic | McCabe |
 |------|-------|-----------|------------|------------|--------|
 | src\data\api\stores-api.ts | 239 | 8 | 35 | 42 | 50 |

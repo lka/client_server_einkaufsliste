@@ -1,5 +1,7 @@
 # Features
 
+> **📚 Alle Dokumentationen:** Siehe [Dokumentations-Index](INDEX.md)
+
 - ✅ **JWT-Authentifizierung**: Sichere Benutzerauthentifizierung mit automatischem Token-Refresh und Inaktivitäts-Logout
   - **Automatisches Inaktivitäts-Logout**: Benutzer werden nach Ablauf der Token-Gültigkeit bei Inaktivität automatisch abgemeldet
     - Aktivitäts-Tracking durch Maus, Tastatur, Scroll und Touch-Events

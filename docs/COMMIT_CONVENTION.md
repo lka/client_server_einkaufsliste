@@ -1,5 +1,7 @@
 # Conventional Commits - Quick Reference
 
+> **📚 Alle Dokumentationen:** Siehe [Dokumentations-Index](INDEX.md)
+
 Dieses Projekt verwendet [Conventional Commits](https://www.conventionalcommits.org/) für automatische Versionierung.
 
 ## Format

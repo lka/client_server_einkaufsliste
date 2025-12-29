@@ -1,5 +1,7 @@
 # State Layer Architecture
 
+> **📚 Alle Dokumentationen:** Siehe [Dokumentations-Index](../INDEX.md)
+
 ## Overview
 
 The State Layer sits between the UI Layer and the Data Layer, providing centralized state management with reactive updates through the Observer pattern.

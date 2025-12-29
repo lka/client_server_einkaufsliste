@@ -3,6 +3,8 @@
 Technische Dokumentation für Entwickler der Client/Server Einkaufsliste.
 
 > **Hinweis:** Für Feature-Beschreibungen und Benutzer-Informationen siehe [README.md](../README.md)
+>
+> **📚 Alle Dokumentationen:** Siehe [Dokumentations-Index](INDEX.md)
 
 ## Inhaltsverzeichnis
 

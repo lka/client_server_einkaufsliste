@@ -1,5 +1,7 @@
 # Datenbankschema
 
+> **📚 Alle Dokumentationen:** Siehe [Dokumentations-Index](../INDEX.md)
+
 ## Übersicht
 
 Die Einkaufsliste verwendet ein relationales Datenbankschema mit SQLModel/SQLAlchemy, das eine flexible Organisation von Produkten nach Geschäften und Abteilungen ermöglicht.

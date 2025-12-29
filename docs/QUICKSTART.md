@@ -1,5 +1,7 @@
 # Schnellstart
 
+> **📚 Alle Dokumentationen:** Siehe [Dokumentations-Index](INDEX.md)
+
 ## Voraussetzungen
 
 - Python 3.13+ (empfohlen) oder Python 3.10+

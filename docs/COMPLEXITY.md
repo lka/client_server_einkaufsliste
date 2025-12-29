@@ -2,6 +2,8 @@
 
 Dieses Dokument beschreibt, wie Sie die Zyklomatische Komplexität (McCabe-Zahl) und andere Code-Metriken für dieses Projekt berechnen können.
 
+> **📚 Alle Dokumentationen:** Siehe [Dokumentations-Index](INDEX.md)
+
 ## Was ist Zyklomatische Komplexität?
 
 Die **Zyklomatische Komplexität** (auch McCabe-Metrik genannt) ist ein Software-Maß, das die Komplexität eines Programms misst. Sie gibt die Anzahl der linear unabhängigen Pfade durch den Quellcode an.
@@ -109,6 +111,7 @@ radon mi src -s >> complexity-python.txt
 - `_merge_single_part()` - B (7) - Einzelmengen-Merging
 
 **routers/items.py:**
+- `_find_item_by_match_strategy()` - A (2) - Intelligente Fuzzy/Exact Strategie
 - `_find_existing_item()` - A (3) - Exakte und Fuzzy-Suche
 - `_find_existing_item_exact()` - A (2) - Nur exakte Suche
 - `_find_exact_product_match()` - A (2) - Prüft exakte Produktübereinstimmung
@@ -127,7 +130,6 @@ radon mi src -s >> complexity-python.txt
 - `_add_template_items_to_matches()` - B (7) - Template-Items zu Matches hinzufügen
 
 **routers/weekplan.py:**
-- `_find_item_by_match_strategy()` - A (2) - Intelligente Fuzzy/Exact Strategie
 - `_add_or_merge_ingredient_item()` - A (5) - Item hinzufügen oder mergen
 - `_process_recipe_ingredients()` - B (6) - Rezeptzutaten verarbeiten (hinzufügen)
 - `_process_delta_items()` - A (2) - Delta-Items verarbeiten (hinzufügen)
@@ -148,8 +150,9 @@ radon mi src -s >> complexity-python.txt
   - Alle 72 Tests bestehen nach Refaktorierung
   - Durchschnittliche Komplexität von A (3.49) auf A (3.21) verbessert
 
-- **2025-12-29**: Umfangreiches Refactoring von `routers/weekplan.py`
-  - **Intelligente Item-Suche**: Neue Funktion `_find_item_by_match_strategy()` nutzt Fuzzy-Matching nur wenn Item nicht in Produktliste
+- **2025-12-29**: Umfangreiches Refactoring von `routers/weekplan.py` und `routers/items.py`
+  - **Intelligente Item-Suche**: Neue Funktion `_find_item_by_match_strategy()` in `routers/items.py` nutzt Fuzzy-Matching nur wenn Item nicht in Produktliste
+  - **Konsistente Matching-Strategie**: Alle Wege Items zur Einkaufsliste hinzuzufügen (manuell, Rezepte, Templates) nutzen nun die gleiche intelligente Matching-Strategie
   - **3 kritische D-Funktionen eliminiert**:
     - `update_weekplan_entry_deltas()`: D (24) → B (6) - **75% Reduktion**
     - `_add_recipe_items_to_shopping_list()`: D (21) → B (9) - **57% Reduktion**
@@ -308,6 +311,7 @@ def _add_recipe_items_to_shopping_list(...):
 
 **Nachher (Komplexität: 9):**
 ```python
+# In routers/items.py - zentrale, wiederverwendbare Funktion!
 def _find_item_by_match_strategy(session, name, shopping_date, store_id):
     """Zentrale Matching-Strategie - wiederverwendbar!"""
     if _find_exact_product_match(session, name, store_id):
@@ -323,6 +327,7 @@ def _add_or_merge_ingredient_item(session, name, menge, shopping_date, store, mo
     else:
         # ... Create logic ...
 
+# In routers/weekplan.py
 def _add_recipe_items_to_shopping_list(...):
     # Nur 30 Zeilen - viel klarer!
     _process_recipe_ingredients(...)  # Nutzt _add_or_merge_ingredient_item
@@ -330,9 +335,10 @@ def _add_recipe_items_to_shopping_list(...):
 ```
 
 **Vorteile:**
-- Matching-Logik nur an **1 Stelle** statt 6+
+- Matching-Logik nur an **1 Stelle** (`routers/items.py`) statt 6+ (in `weekplan.py`)
 - Add/Merge-Logik nur an **1 Stelle** statt 4+
 - Jede Funktion hat eine **klare Verantwortlichkeit**
+- **Bessere Modularität**: Item-Operationen gehören zu `items.py`
 - **Einfacher zu testen** (kleine Funktionen)
 - **Einfacher zu warten** (Änderungen nur an einer Stelle)
 

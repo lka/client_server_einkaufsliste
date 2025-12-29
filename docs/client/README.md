@@ -1,5 +1,7 @@
 # Einkaufsliste Client (TypeScript)
 
+> **📚 Alle Dokumentationen:** Siehe [Dokumentations-Index](../INDEX.md)
+
 Shopping list client application written in TypeScript with **quantity support**.
 
 ## Overview

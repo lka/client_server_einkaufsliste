@@ -1,5 +1,7 @@
 # Shopping List UI Module
 
+> **📚 Alle Dokumentationen:** Siehe [Dokumentations-Index](../../INDEX.md)
+
 This directory contains the refactored shopping list UI code, organized into smaller, more maintainable modules.
 
 ## Module Overview

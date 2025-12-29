@@ -1,5 +1,7 @@
 # Weekplan Module
 
+> **📚 Alle Dokumentationen:** Siehe [Dokumentations-Index](../../INDEX.md)
+
 **Status**: ✨ **FULLY INTEGRATED** - Modular architecture for weekly meal planning
 
 ## Overview

@@ -1,5 +1,7 @@
 # Client Architecture Documentation
 
+> **📚 Alle Dokumentationen:** Siehe [Dokumentations-Index](../INDEX.md)
+
 ## Overview
 
 The shopping list client is a TypeScript application built with a **four-layer architecture** that emphasizes separation of concerns, maintainability, and scalability. The architecture uses **physical folder separation** to make layer boundaries explicit and easy to navigate.

@@ -2,6 +2,8 @@
 
 Dieses Projekt verwendet **Semantic Versioning** mit GitHub als Single Source of Truth und **Conventional Commits** für automatische Versionierung.
 
+> **📚 Alle Dokumentationen:** Siehe [Dokumentations-Index](INDEX.md)
+
 ## Semantic Versioning Format
 
 Versionen folgen dem Format `MAJOR.MINOR.PATCH`:

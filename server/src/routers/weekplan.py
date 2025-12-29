@@ -21,6 +21,7 @@ from ..user_models import User
 from ..db import get_session
 from ..auth import get_current_user
 from ..websocket_manager import manager
+from ..routers.items import _find_item_by_match_strategy
 
 router = APIRouter(prefix="/api/weekplan", tags=["weekplan"])
 
@@ -259,7 +260,7 @@ def _add_template_items_to_shopping_list(
         List of items that were added or modified
     """
     import uuid
-    from ..routers.items import _find_existing_item, _find_matching_product
+    from ..routers.items import _find_matching_product
     from ..utils import merge_quantities
 
     modified_items = []
@@ -310,8 +311,8 @@ def _add_template_items_to_shopping_list(
             )
 
         # Add items directly with merge logic (similar to create_item endpoint)
-        # Find existing item with same name, date, and store
-        existing_item = _find_existing_item(
+        # Find existing item using intelligent matching strategy
+        existing_item = _find_item_by_match_strategy(
             session, template_item.name, shopping_date, first_store.id
         )
 
@@ -354,8 +355,8 @@ def _add_template_items_to_shopping_list(
                 weekplan_date, delta_item.name, first_store, session, meal
             )
 
-            # Find existing item
-            existing_item = _find_existing_item(
+            # Find existing item using intelligent matching strategy
+            existing_item = _find_item_by_match_strategy(
                 session, delta_item.name, shopping_date, first_store.id
             )
 
@@ -587,34 +588,6 @@ def _create_removed_items_set(removed_items: List[str], pattern) -> set:
     return {
         _parse_ingredient_line(item_name, pattern)[1] for item_name in removed_items
     }
-
-
-def _find_item_by_match_strategy(
-    session, name: str, shopping_date: str, store_id: int
-) -> Item | None:
-    """Find existing item using intelligent matching strategy.
-
-    Uses exact match if name exists in product list, otherwise fuzzy matching.
-
-    Args:
-        session: Database session
-        name: Item name to search for
-        shopping_date: Shopping date
-        store_id: Store ID
-
-    Returns:
-        Existing item if found, None otherwise
-    """
-    from ..routers.items import (
-        _find_existing_item,
-        _find_existing_item_exact,
-        _find_exact_product_match,
-    )
-
-    if _find_exact_product_match(session, name, store_id):
-        return _find_existing_item_exact(session, name, shopping_date, store_id)
-    else:
-        return _find_existing_item(session, name, shopping_date, store_id)
 
 
 def _add_or_merge_ingredient_item(
@@ -1084,8 +1057,6 @@ def _remove_template_items_from_shopping_list(
     Returns:
         Tuple of (modified_items, deleted_items)
     """
-    from ..routers.items import _find_existing_item
-
     modified_items = []
     deleted_items = []
 
@@ -1135,8 +1106,8 @@ def _remove_template_items_from_shopping_list(
             )
 
         # Subtract quantities using merge logic
-        # Find existing item with same name, date, and store
-        existing_item = _find_existing_item(
+        # Find existing item using intelligent matching strategy
+        existing_item = _find_item_by_match_strategy(
             session, template_item.name, shopping_date, first_store.id
         )
 
@@ -1157,8 +1128,8 @@ def _remove_template_items_from_shopping_list(
                 weekplan_date, delta_item.name, first_store, session, meal
             )
 
-            # Find existing item (uses fuzzy matching for templates)
-            existing_item = _find_existing_item(
+            # Find existing item using intelligent matching strategy
+            existing_item = _find_item_by_match_strategy(
                 session, delta_item.name, shopping_date, first_store.id
             )
 
@@ -1505,14 +1476,12 @@ def _find_item_to_modify(
             existing_item: Existing Item instance or None
             shopping_date: Calculated shopping date (str)
     """
-    from ..routers.items import _find_existing_item
-
     # Calculate shopping date
     shopping_date = _calculate_shopping_date(
         entry.date, item_name, first_store, session, entry.meal
     )
-    # Find and remove/reduce quantity
-    existing_item = _find_existing_item(
+    # Find item using intelligent matching strategy
+    existing_item = _find_item_by_match_strategy(
         session, item_name, shopping_date, first_store.id
     )
     return existing_item, shopping_date
@@ -2164,7 +2133,7 @@ def _handle_person_count_change(
         session (get_session): Database session
         modified_items (list): List to append modified items to
     """
-    from ..routers.items import _find_existing_item, _find_matching_product
+    from ..routers.items import _find_matching_product
     from ..utils import merge_quantities
     import uuid
 
@@ -2185,7 +2154,7 @@ def _handle_person_count_change(
         else:
             old_menge = template_item.menge
 
-        existing_item = _find_existing_item(
+        existing_item = _find_item_by_match_strategy(
             session, template_item.name, shopping_date, first_store.id
         )
 
@@ -2209,7 +2178,7 @@ def _handle_person_count_change(
                 template_item.menge, new_person_count, template.person_count
             )
 
-            existing_item = _find_existing_item(
+            existing_item = _find_item_by_match_strategy(
                 session, template_item.name, shopping_date, first_store.id
             )
 

@@ -32,6 +32,9 @@ Nach dem Aufruf der Seite in einem Browser Ihrer Wahl auf einem Tablet oder PC m
 ### Navigation im Benutzermenü
 
 Das Benutzermenü (⋮) im Header der Anwendung ist hierarchisch organisiert:
+![DropdownMenu](docs/images/Dropdownmenu.png)
+
+**[🗓️ Wochenplan](#wochenplan-nutzen)**: Wochenplan erstellen und pflegen
 
 **⚙️ Verwaltung** (Administration)
 - **🏪 Geschäfte verwalten**: Geschäfte und Abteilungen erstellen, bearbeiten und sortieren
@@ -46,6 +49,12 @@ Das Benutzermenü (⋮) im Header der Anwendung ist hierarchisch organisiert:
 - **💾 Datenbank-Backup**: Datenbank sichern und wiederherstellen
 - **☁️ Rezepte einlesen**: Zugriff auf Rezepte konfigurieren und importieren
 
+**📖 Dokumentation**: Öffnet ein neues Fenster im Browser mit dieser README.md
+
+**🚪Abmelden**: Alle Verbindungen werden geschlossen und Sie landen wieder auf der Login-Seite.
+
+Darunter sehen Sie die aktuelle Versionsnummer.
+
 ### Einkaufsliste verwenden
 
 Nach dem Login können Sie die Einkaufsliste verwenden:
@@ -53,12 +62,13 @@ Nach dem Login können Sie die Einkaufsliste verwenden:
 1. **Automatische Geschäfts-Auswahl**: Das erste Geschäft wird automatisch ausgewählt
 2. **Produkte hinzufügen**: Geben Sie den Produktnamen ein (z.B. "Möhren")
 3. **Automatisches Matching**: Das System findet automatisch das passende Produkt im Katalog
-4. **Abteilungs-Gruppierung**: Items werden automatisch nach Abteilungen gruppiert angezeigt
-5. **Items entfernen**: Klicken Sie auf das Papierkorb-Icon (🗑️) neben dem Item
-6. **Produktkatalog erweitern**: Items in "Sonstiges" können dem Katalog hinzugefügt werden
-   - Klicken Sie auf das Bearbeiten-Icon (✏️) neben einem Item in "Sonstiges"
+4. **Abteilungs-Gruppierung**: Produkte werden automatisch nach Abteilungen gruppiert angezeigt
+5. **Items entfernen**: Klicken Sie auf das Papierkorb-Icon (🗑️) neben dem Produkt
+6. **Produktkatalog erweitern**: Produkte in "Sonstiges" können dem Produkte-Katalog hinzugefügt werden
+   - Klicken Sie auf das Bearbeiten-Icon (✏️) neben einem Produkt in "Sonstiges"
    - Wählen Sie eine Abteilung aus dem Dialog
    - Das Produkt wird automatisch dem Katalog hinzugefügt
+7. **Falsche Zuordnung**: Produkte, die falsch zugeordnet werden, können im Produkte-Katalog korrigiert werden.
 
 ### Rezepte verwenden
 
@@ -97,7 +107,35 @@ Nach dem Login können Sie die Einkaufsliste verwenden:
    - Rezeptzutaten werden automatisch zur Einkaufsliste hinzugefügt
    - Mengen werden basierend auf Personenanzahl berechnet
    - Passende Einkaufstage werden automatisch zugewiesen
-   - Items werden mit bestehenden Einträgen intelligent zusammengeführt
+   - Items werden mit bestehenden Einträgen intelligent zusammengeführt (siehe unten)
+
+### Intelligentes Item-Matching
+
+Die Anwendung verwendet eine **intelligente Matching-Strategie** beim Hinzufügen von Items zur Einkaufsliste:
+
+**Wie funktioniert es?**
+- **Item existiert in der Produktliste**: Verwendet **Exact Match** (exakte Übereinstimmung)
+  - Verhindert ungewolltes Zusammenführen ähnlicher aber unterschiedlicher Produkte
+  - Beispiel: "Kürbiskerne" wird NICHT mit "Kürbiskernöl" zusammengeführt
+
+- **Item existiert NICHT in der Produktliste**: Verwendet **Fuzzy Match** (ca. 80% Ähnlichkeit)
+  - Ermöglicht flexibles Zusammenführen bei Tippfehlern oder Variationen
+  - Beispiel: "Möhre" wird mit "Möhren" zusammengeführt
+
+**Konsistentes Verhalten überall:**
+
+Diese intelligente Strategie wird einheitlich angewendet bei:
+- ✅ Manuelles Hinzufügen von Items (Eingabefeld in der Einkaufsliste)
+- ✅ Rezepte aus dem Wochenplan
+- ✅ Vorlagen/Templates, die im Wochenplan verwendet werden
+
+**Vorteile:**
+- **Keine ungewollten Vermischungen** bei Produkten aus dem Katalog
+- **Flexible Zusammenführung** bei freien Texteingaben
+- **Einheitliches Verhalten** egal wie Items hinzugefügt werden
+
+> **Für Entwickler:** Die technische Implementierung finden Sie in `server/src/routers/items.py` (`_find_item_by_match_strategy()`).
+> Details zum Refactoring in [COMPLEXITY.md](docs/COMPLEXITY.md).
 
 ### Geschäfte und Produkte verwalten
 
@@ -144,8 +182,11 @@ Nach dem Login können Sie die Einkaufsliste verwenden:
 1. Klicken Sie auf das Menü (⋮) im Header
 2. Wählen Sie **"🗓️ Wochenplan"**
 3. Fügen Sie Mahlzeiten für die Woche hinzu
-4. Bei Template-Namen: Items werden automatisch zur Einkaufsliste hinzugefügt
-5. Navigation zwischen Wochen mit Vor/Zurück-Buttons
+   - Sie können nur Texte in den Wochenplan einfügen, indem sie die Eingabe mit ⏎ Enter abschliessen, dann werden keine Zutaten in die Einkaufsliste hinzugefügt
+   - Ansonsten nutzen Sie das erscheinende Auswahlfeld für Vorlagen oder Rezepte
+4. Bei Vorlagen-Namen: Zutaten werden automatisch zur Einkaufsliste hinzugefügt
+5. Bei Rezept-Namen: Zutaten werden automatisch zur Einkaufsliste hinzugefügt
+6. Navigation zwischen Wochen mit Vor/Zurück-Buttons
 
 ### WebSocket aktivieren (für Live-Updates)
 
@@ -214,13 +255,27 @@ Inhalte:
 
 Dieses Projekt ist Open Source. Siehe LICENSE-Datei für Details.
 
-## Weiterführende Links
+## 📚 Dokumentation
 
-- [RELEASES.md](docs/RELEASES.md) - Release-Liste
-- [FEATURES.md](docs/FEATURES.md) - Vollständige Feature-Liste
-- [QUICKSTART.md](docs/QUICKSTART.md) - Schnellstartanleitung
-- [DEVELOPER.md](docs/DEVELOPER.md) - Technische Dokumentation
-- [COMPLEXITY.md](docs/COMPLEXITY.md) - Komplexitäts-Report für die Qualitätssicherung
-- [VERSIONING.md](docs/VERSIONING.md) - Release-Workflow und Semantic Versioning
+**📖 [Vollständiger Dokumentations-Index](docs/INDEX.md)** - Übersicht aller verfügbaren Dokumentationen
+
+### Schnellzugriff
+
+**Für Benutzer:**
+- 🚀 [QUICKSTART.md](docs/QUICKSTART.md) - Schnellstartanleitung
+- ✨ [FEATURES.md](docs/FEATURES.md) - Vollständige Feature-Liste
+- 📋 [RELEASES.md](docs/RELEASES.md) - Release-Liste
+
+**Für Entwickler:**
+- 👨‍💻 [DEVELOPER.md](docs/DEVELOPER.md) - Technische Dokumentation (Server)
+- 🗄️ [server/DATABASE_SCHEMA.md](docs/server/DATABASE_SCHEMA.md) - Datenbank-Schema
+- 📊 [COMPLEXITY.md](docs/COMPLEXITY.md) - Code-Qualität und Komplexitätsanalyse (Python)
+- 🏷️ [VERSIONING.md](docs/VERSIONING.md) - Release-Workflow und Semantic Versioning
+- 💻 [client/ARCHITECTURE.md](docs/client/ARCHITECTURE.md) - Client 4-Schichten-Architektur
+- 🔄 [client/STATE_LAYER.md](docs/client/STATE_LAYER.md) - State Management (TypeScript)
+- 🐳 [DOCKER.md](docs/DOCKER.md) - Docker Deployment
+- 🔌 [WEBSOCKET-DEBUG.md](docs/WEBSOCKET-DEBUG.md) - WebSocket Debugging
+
+**Externe Ressourcen:**
 - [FastAPI Dokumentation](https://fastapi.tiangolo.com/)
 - [TypeScript Handbook](https://www.typescriptlang.org/docs/)

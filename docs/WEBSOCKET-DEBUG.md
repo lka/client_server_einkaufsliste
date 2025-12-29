@@ -1,5 +1,7 @@
 # WebSocket Debugging Guide
 
+> **📚 Alle Dokumentationen:** Siehe [Dokumentations-Index](INDEX.md)
+
 Dieses Dokument hilft bei der Diagnose von WebSocket-Verbindungsproblemen, insbesondere wenn Verbindungen vom iPad oder anderen Geräten im lokalen Netzwerk nicht funktionieren.
 
 ## Problem: iPad zeigt "verbinde..." aber keine Verbindung
