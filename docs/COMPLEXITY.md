@@ -68,16 +68,27 @@ radon mi src -s >> complexity-python.txt
 
 ### Aktuelle Ergebnisse (Server):
 
-**Durchschnittliche Komplexität:** A (3.21) ✅ Verbessert von 3.49
+**Durchschnittliche Komplexität (gesamt):** A (3.78)
+
+**Modul-spezifische Komplexität:**
+- `routers/weekplan.py`: B (5.96) - Verbessert von 7.0 (enthält komplexe Business-Logik)
 
 **Kritische Funktionen (D-Rating):** ✅ Alle eliminiert!
 - ~~`merge_quantities()` in `utils.py` - D (21)~~ → **B (10)** - 52% Reduzierung
 - ~~`create_item()` in `routers/items.py` - D (21)~~ → **B (8)** - 62% Reduzierung
+- ~~`update_weekplan_entry_deltas()` in `routers/weekplan.py` - D (24)~~ → **B (6)** - 75% Reduzierung
+- ~~`_add_recipe_items_to_shopping_list()` in `routers/weekplan.py` - D (21)~~ → **B (9)** - 57% Reduzierung
+- ~~`_remove_recipe_items_from_shopping_list()` in `routers/weekplan.py` - D (21)~~ → **B (9)** - 57% Reduzierung
 
-**Hohe Komplexität (C-Rating):** ✅ Alle refactored!
+**Hohe Komplexität (C-Rating):** ✅ Hauptfunktionen refactored!
 - ~~`restore_backup()` in `routers/backup.py` - C (18)~~ → **A (4)** - 78% Reduzierung
 - ~~`get_product_suggestions()` in `routers/products.py` - C (18)~~ → **B (9)** - 50% Reduzierung
 - ~~`convert_date_strings()` in `routers/backup.py` - C (11)~~ → **B (9)** - 18% Reduzierung
+- `_add_template_items_to_shopping_list()` in `routers/weekplan.py` - C (20)
+- `_calculate_shopping_date()` in `routers/weekplan.py` - C (18)
+- `_handle_recipe_person_count_change()` in `routers/weekplan.py` - C (17)
+- `_remove_template_items_from_shopping_list()` in `routers/weekplan.py` - C (16)
+- `_handle_person_count_change()` in `routers/weekplan.py` - C (13)
 
 **Moderate Komplexität (B-Rating):**
 - `convert_item_to_product()` in `routers/items.py` - B (10)
@@ -99,6 +110,8 @@ radon mi src -s >> complexity-python.txt
 
 **routers/items.py:**
 - `_find_existing_item()` - A (3) - Exakte und Fuzzy-Suche
+- `_find_existing_item_exact()` - A (2) - Nur exakte Suche
+- `_find_exact_product_match()` - A (2) - Prüft exakte Produktübereinstimmung
 - `_handle_item_merge()` - A (3) - Mengen-Merging und Broadcasting
 - `_create_negative_quantity_dummy()` - A (1) - Dummy-Item für negative Mengen
 - `_find_matching_product()` - B (8) - Fuzzy-Matching zu Produkten
@@ -113,14 +126,44 @@ radon mi src -s >> complexity-python.txt
 - `_add_products_to_matches()` - A (4) - Produkte zu Matches hinzufügen
 - `_add_template_items_to_matches()` - B (7) - Template-Items zu Matches hinzufügen
 
+**routers/weekplan.py:**
+- `_find_item_by_match_strategy()` - A (2) - Intelligente Fuzzy/Exact Strategie
+- `_add_or_merge_ingredient_item()` - A (5) - Item hinzufügen oder mergen
+- `_process_recipe_ingredients()` - B (6) - Rezeptzutaten verarbeiten (hinzufügen)
+- `_process_delta_items()` - A (2) - Delta-Items verarbeiten (hinzufügen)
+- `_subtract_ingredient_item()` - A (3) - Menge von Item subtrahieren
+- `_process_recipe_ingredients_removal()` - B (6) - Rezeptzutaten verarbeiten (entfernen)
+- `_process_delta_items_removal()` - A (2) - Delta-Items verarbeiten (entfernen)
+- `_calculate_delta_changes()` - A (3) - Delta-Änderungen berechnen
+- `_handle_added_items_changes()` - A (4) - Added_items Änderungen behandeln
+- `_update_recipe_deltas()` - B (8) - Rezept-Deltas aktualisieren
+- `_update_template_deltas()` - B (6) - Template-Deltas aktualisieren
+
 **Maintainability Index:**
 - Alle Module haben Rating A (>50)
 - Durchschnitt verbessert durch Refaktorierung
 
 **Refactoring-Historie:**
 - **2025-01-24**: Erfolgreiche Refaktorierung aller kritischen Funktionen mit Extract Method Pattern
-- Alle 72 Tests bestehen nach Refaktorierung
-- Durchschnittliche Komplexität von A (3.49) auf A (3.21) verbessert
+  - Alle 72 Tests bestehen nach Refaktorierung
+  - Durchschnittliche Komplexität von A (3.49) auf A (3.21) verbessert
+
+- **2025-12-29**: Umfangreiches Refactoring von `routers/weekplan.py`
+  - **Intelligente Item-Suche**: Neue Funktion `_find_item_by_match_strategy()` nutzt Fuzzy-Matching nur wenn Item nicht in Produktliste
+  - **3 kritische D-Funktionen eliminiert**:
+    - `update_weekplan_entry_deltas()`: D (24) → B (6) - **75% Reduktion**
+    - `_add_recipe_items_to_shopping_list()`: D (21) → B (9) - **57% Reduktion**
+    - `_remove_recipe_items_from_shopping_list()`: D (21) → B (9) - **57% Reduktion**
+  - **11 neue Helper-Funktionen** extrahiert mit klaren Verantwortlichkeiten
+  - **Code-Duplikation** an ~20 Stellen eliminiert durch Wiederverwendung
+  - **Modul-Komplexität** `routers/weekplan.py` von B (7.0) auf B (5.96) verbessert - **15% Reduktion**
+  - **Gesamt-Komplexität** von A (3.21) auf A (3.78) (45 Funktionen hinzugefügt, Durchschnitt leicht gestiegen)
+  - Alle 117 Tests bestehen nach Refaktorierung
+  - Architektur-Verbesserungen:
+    - DRY-Prinzip: Zentrale Matching-Strategie wiederverwendbar
+    - Single Responsibility: Jede Funktion hat eine klare Aufgabe
+    - Bessere Wartbarkeit: Änderungen nur an einer Stelle nötig
+    - Erhöhte Testbarkeit: Kleine Funktionen einfacher zu testen
 
 ## TypeScript/JavaScript (Client)
 
@@ -204,9 +247,12 @@ Sie können die Komplexitätsanalyse in Ihre CI/CD-Pipeline integrieren:
 3. **Strategy Pattern**: Ersetzen Sie komplexe if/else-Ketten durch Strategie-Objekte
 4. **State Pattern**: Vereinfachen Sie komplexe Zustandslogik
 5. **Table-Driven Methods**: Verwenden Sie Lookup-Tabellen statt if/else
+6. **Eliminate Duplication**: Identifizieren Sie duplizierte Logik und extrahieren Sie sie
+7. **Single Responsibility**: Jede Funktion sollte nur eine klar definierte Aufgabe haben
 
-### Beispiel - Vorher (Komplexität: 21):
+### Beispiel 1 - Extract Method (merge_quantities)
 
+**Vorher (Komplexität: 21):**
 ```python
 def merge_quantities(existing, new):
     if not existing:
@@ -218,8 +264,7 @@ def merge_quantities(existing, new):
     # ... viele weitere if/else ...
 ```
 
-### Beispiel - Nachher (Komplexität: ~8):
-
+**Nachher (Komplexität: ~8):**
 ```python
 def merge_quantities(existing, new):
     # Extract sub-functions
@@ -231,6 +276,65 @@ def merge_quantities(existing, new):
         return existing
     return merge_with_existing(existing, new)
 ```
+
+### Beispiel 2 - Eliminate Duplication (weekplan.py)
+
+**Vorher (Komplexität: 21):**
+```python
+def _add_recipe_items_to_shopping_list(...):
+    # 80 Zeilen für Rezeptzutaten
+    for line in ingredient_lines:
+        # ... Parse ...
+        # ... Calculate date ...
+        if _find_exact_product_match(...):
+            existing_item = _find_existing_item_exact(...)
+        else:
+            existing_item = _find_existing_item(...)
+        if existing_item:
+            # ... Merge logic ...
+        else:
+            # ... Create logic ...
+
+    # 40 Zeilen für Delta-Items (fast identisch!)
+    for delta_item in deltas.added_items:
+        # ... Parse ...
+        # ... Calculate date ...
+        if _find_exact_product_match(...):
+            existing_item = _find_existing_item_exact(...)
+        else:
+            existing_item = _find_existing_item(...)
+        # ... Gleiche Merge/Create Logik ...
+```
+
+**Nachher (Komplexität: 9):**
+```python
+def _find_item_by_match_strategy(session, name, shopping_date, store_id):
+    """Zentrale Matching-Strategie - wiederverwendbar!"""
+    if _find_exact_product_match(session, name, store_id):
+        return _find_existing_item_exact(session, name, shopping_date, store_id)
+    else:
+        return _find_existing_item(session, name, shopping_date, store_id)
+
+def _add_or_merge_ingredient_item(session, name, menge, shopping_date, store, modified_items):
+    """Zentrale Add/Merge Logik - wiederverwendbar!"""
+    existing_item = _find_item_by_match_strategy(session, name, shopping_date, store.id)
+    if existing_item:
+        # ... Merge logic ...
+    else:
+        # ... Create logic ...
+
+def _add_recipe_items_to_shopping_list(...):
+    # Nur 30 Zeilen - viel klarer!
+    _process_recipe_ingredients(...)  # Nutzt _add_or_merge_ingredient_item
+    _process_delta_items(...)          # Nutzt _add_or_merge_ingredient_item
+```
+
+**Vorteile:**
+- Matching-Logik nur an **1 Stelle** statt 6+
+- Add/Merge-Logik nur an **1 Stelle** statt 4+
+- Jede Funktion hat eine **klare Verantwortlichkeit**
+- **Einfacher zu testen** (kleine Funktionen)
+- **Einfacher zu warten** (Änderungen nur an einer Stelle)
 
 ## Weitere Tools
 

@@ -157,6 +157,26 @@ def read_items_by_date(
         return items_with_dept
 
 
+def _find_exact_product_match(session, item_name: str, store_id: int | None) -> bool:
+    """Check if item name exists exactly in the product list.
+
+    Args:
+        session: Database session
+        item_name: Name to search for
+        store_id: Optional store ID to filter products
+
+    Returns:
+        True if an exact match exists in the product list, False otherwise
+    """
+    from sqlmodel import func
+
+    query = select(Product).where(func.lower(Product.name) == func.lower(item_name))
+    if store_id is not None:
+        query = query.where(Product.store_id == store_id)
+
+    return session.exec(query).first() is not None
+
+
 def _find_existing_item_exact(
     session, item_name: str, shopping_date: str | None, store_id: int | None
 ) -> Item | None:
@@ -181,17 +201,11 @@ def _find_existing_item(
     session, item_name: str, shopping_date: str | None, store_id: int | None
 ) -> Item | None:
     """Find existing item with exact or fuzzy match."""
-    from sqlmodel import func
 
     # Try exact match first (case-insensitive)
-    query = select(Item).where(
-        func.lower(Item.name) == func.lower(item_name),
-        Item.shopping_date == shopping_date,
+    existing_item = _find_existing_item_exact(
+        session, item_name, shopping_date, store_id
     )
-    if store_id is not None:
-        query = query.where(Item.store_id == store_id)
-
-    existing_item = session.exec(query).first()
 
     # If no exact match, try fuzzy matching
     if not existing_item:
