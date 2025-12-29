@@ -1185,7 +1185,7 @@ import { fetchItems, Store, Item } from './data/api/index.js';
   - Rendering → `weekplan/weekplan-rendering.ts`
   - WebSocket integration → `weekplan/weekplan-websocket.ts`
   - Print functionality → `weekplan/weekplan-print.ts`
-  - Ingredient parsing → `weekplan/ingredient-parser.ts`
+  - Ingredient parsing → `weekplan/ingredient-parser/` (modularized)
   - Template modal → `weekplan/template-modal.ts`
   - Recipe modal → `weekplan/recipe-modal.ts`
   - Modal shared utilities → `weekplan/modal-shared.ts`
@@ -1310,18 +1310,44 @@ import { fetchItems, Store, Item } from './data/api/index.js';
   - Enter key to save
   - Auto-remove on blur if empty
 
-##### weekplan/ingredient-parser.ts
-- **Lines**: 64 | **McCabe**: 23
-- **Responsibility**: Parse and adjust ingredient quantities
-- **Functions**:
-  - `parseIngredients(ingredientLines)`: Parse ingredient lines using known units from server
-  - `adjustQuantityByFactor(originalMenge, factor)`: Scale quantity by factor
-  - `parseQuantity(quantityStr)`: Parse numeric quantity from string (handles fractions)
+##### weekplan/ingredient-parser/ ✨ MODULARIZED
+- **Status**: ✨ **MODULARIZED** - Split from 231 lines (McCabe 60) into 7 focused modules
+- **Responsibility**: Parse and adjust ingredient quantities with fractions and units
+- **Modular Architecture** (`src/ui/weekplan/ingredient-parser/`):
+  - **index.ts**: Public API (re-exports)
+  - **constants.ts**: FRACTIONS_MAP (Unicode fractions → decimal values)
+  - **fraction-converter.ts** (McCabe 9): Convert Unicode fractions to decimal
+    - `convertFractionToDecimal(fractionStr)`: Handles simple (½) and mixed (1½) fractions
+    - `applySign(value, minusSign)`: Apply +/- sign to values
+  - **formatters.ts** (McCabe 7): Value formatting utilities
+    - `formatValue(value)`: Format numbers with comma separator
+    - `formatValueWithUnit(value, unit)`: Format with optional unit
+    - `removeApproximationPrefix(text)`: Remove "ca. " prefix
+  - **parsers.ts** (McCabe 26): Core parsing functions
+    - `parseUnicodeFractionValue(text)`: Parse Unicode fractions (½, 1½)
+    - `parseTextFractionValue(text)`: Parse text fractions (1/2, 2 1/2)
+    - `parseUnicodeFraction(text)`: Parse with unit (½ TL, 1½ kg)
+    - `parseTextFraction(text)`: Parse with unit (1/2 TL, 2 1/2 kg)
+    - `parseDecimalNumber(text)`: Parse decimals (500, 2.5, 1,5)
+  - **ingredient-parser.ts** (McCabe 13): Main functionality
+    - `parseIngredients(ingredientLines)`: Parse ingredient lines with server units
+    - `adjustQuantityByFactor(originalMenge, factor)`: Scale quantities
+  - **quantity-parser.ts** (McCabe 5): Numeric quantity parsing
+    - `parseQuantity(quantityStr)`: Parse numeric values (handles fractions)
+- **Backward Compatibility**: Original `ingredient-parser.ts` re-exports all functions
 - **Features**:
-  - Fetches known units from server for accurate parsing
-  - Handles fractions (e.g., "1/2")
-  - Handles decimals with comma or dot
-  - Extracts quantity and name from ingredient lines
+  - **Unicode Fractions**: Supports ½, ¼, ¾, ⅓, ⅔, ⅕, ⅙, ⅛, etc.
+  - **Mixed Numbers**: Handles 1½, 2¼, 3⅓, etc.
+  - **Text Fractions**: Parses 1/2, 2 1/2, 3/4, etc.
+  - **Decimal Support**: Comma or dot separators (2.5 or 2,5)
+  - **Unit Parsing**: Fetches known units from server
+  - **Approximation Prefix**: Removes "ca. " before parsing
+  - **Scaling**: Adjusts quantities by factor (for person count changes)
+- **Architecture Benefits**:
+  - **Low Complexity**: Max McCabe 26 per module (was 60)
+  - **High Cohesion**: Each module has one clear responsibility
+  - **Testability**: Small modules easier to unit test
+  - **Reusability**: Parsers/formatters can be imported individually
 
 ##### weekplan/template-modal.ts
 - **Lines**: 250 | **McCabe**: 42
@@ -2752,7 +2778,8 @@ According to McCabe Complexity thresholds:
 **Weekplan Modules** (all McCabe < 54):
 - types.ts (0), weekplan-state.ts (26), weekplan-utils.ts (11)
 - weekplan-navigation.ts (6), weekplan-websocket.ts (10), weekplan-print.ts (6)
-- weekplan-rendering.ts (10), entry-input.ts (29), ingredient-parser.ts (23)
+- weekplan-rendering.ts (10), entry-input.ts (29)
+- ingredient-parser/ (modularized - see below)
 - template-modal.ts (42), recipe-modal.ts (53), modal-shared.ts (28)
 - index.ts (2)
 
@@ -2778,12 +2805,27 @@ Remaining refactoring candidates (by priority, based on current complexity-repor
 - ~~**webdav-admin.ts** (465 lines)~~ ✅ Refactored into 4 modules → 42 lines (-91%)
 - ~~**recipe-modal.ts** (363 lines)~~ ✅ Refactored into 7 modules → 99 lines (-73%)
 - ~~**dropdown.ts** (490 lines)~~ ✅ Refactored into 6 modules → 61 lines (-88%)
+- ~~**ingredient-parser.ts** (231 lines, McCabe 60)~~ ✅ Refactored into 7 modules → 8 lines re-export (-97%)
 
-**Refactoring Summary** (7 recent refactorings):
-- **Total reduction**: 3,233 → 600 lines (-81%)
+**Refactoring Summary** (10 recent refactorings):
+- **Total reduction**: 3,464 → 608 lines (-82%)
 - **Pattern**: Extract modular responsibilities into subdirectories
 - **Maintained**: Full backward compatibility and type safety
 - **Result**: Improved maintainability, reduced complexity, easier testing
+
+#### 3. ingredient-parser Modular Refactoring (Completed)
+- **Before**: Single file with 231 lines, McCabe 60
+- **After**: Main re-export 8 lines + 7 focused modules (max McCabe 26)
+- **Result**:
+  - Reduced complexity by 57% (McCabe 60 → 26 max)
+  - Average module complexity: ~8.6 McCabe (low range)
+  - Maintained full backward compatibility
+  - Improved code organization with clear separation of concerns
+
+**Ingredient Parser Modules** (all McCabe ≤ 26):
+- index.ts (0), constants.ts (0), fraction-converter.ts (9)
+- formatters.ts (7), parsers.ts (26), ingredient-parser.ts (13)
+- quantity-parser.ts (5)
 
 ### Maintaining Code Quality
 

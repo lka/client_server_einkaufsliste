@@ -125,10 +125,12 @@ try {
   report += `Files with very high complexity (>50): ${highComplexity.length}\n`;
   report += `Files with high complexity (21-50): ${moderateComplexity.length}\n`;
 
-  writeFileSync('complexity-report.md', report);
-  console.log('Complexity report generated successfully');
+  const outputPath = join('..', 'docs', 'client', 'complexity-report.md');
+  writeFileSync(outputPath, report);
+  console.log(`Complexity report generated successfully: ${outputPath}`);
 } catch (error) {
   console.error('Error generating complexity report:', error.message);
-  writeFileSync('complexity-report.md', `Error: ${error.message}`);
+  const outputPath = join('..', 'docs', 'client', 'complexity-report.md');
+  writeFileSync(outputPath, `Error: ${error.message}`);
   process.exit(1);
 }

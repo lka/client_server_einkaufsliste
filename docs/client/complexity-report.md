@@ -1,16 +1,13 @@
 # Complexity Report
 
-> **📚 Alle Dokumentationen:** Siehe [Dokumentations-Index](../INDEX.md)
-
 | File | Lines | Functions | Complexity | Cyclomatic | McCabe |
 |------|-------|-----------|------------|------------|--------|
 | src\data\api\stores-api.ts | 239 | 8 | 35 | 42 | 50 |
 | src\data\api\webdav-api.ts | 222 | 6 | 31 | 44 | 50 |
-| src\ui\components\autocomplete.ts | 287 | 7 | 28 | 42 | 49 |
+| src\ui\components\autocomplete.ts | 298 | 7 | 28 | 42 | 49 |
 | src\ui\shopping-list-ui.ts | 246 | 20 | 41 | 29 | 49 |
 | src\ui\user-admin.ts | 213 | 15 | 31 | 33 | 48 |
 | src\ui\weekplan\entry-input.ts | 212 | 11 | 25 | 35 | 46 |
-| src\ui\weekplan\ingredient-parser.ts | 159 | 5 | 22 | 40 | 45 |
 | src\data\api\items-api.ts | 198 | 6 | 28 | 37 | 43 |
 | src\ui\weekplan.ts | 182 | 13 | 34 | 30 | 43 |
 | src\data\api\products-api.ts | 209 | 6 | 29 | 36 | 42 |
@@ -42,6 +39,7 @@
 | src\ui\webdav-admin\modals.ts | 267 | 7 | 16 | 20 | 27 |
 | src\data\api\types.ts | 135 | 0 | 0 | 26 | 26 |
 | src\ui\components\datepicker\create-calendar.ts | 162 | 12 | 24 | 14 | 26 |
+| src\ui\weekplan\ingredient-parser\parsers.ts | 83 | 5 | 12 | 21 | 26 |
 | src\ui\weekplan\weekplan-state.ts | 181 | 2 | 22 | 24 | 26 |
 | src\data\websocket\subscriptions.ts | 77 | 24 | 24 | 0 | 24 |
 | src\state\store-admin-state.ts | 160 | 7 | 19 | 17 | 24 |
@@ -82,6 +80,7 @@
 | src\ui\store-admin\renderer.ts | 115 | 5 | 7 | 8 | 13 |
 | src\ui\units-admin\edit-unit-modal.ts | 146 | 6 | 8 | 7 | 13 |
 | src\ui\units-admin\handle-drag-and-drop.ts | 39 | 4 | 10 | 9 | 13 |
+| src\ui\weekplan\ingredient-parser\ingredient-parser.ts | 62 | 3 | 8 | 10 | 13 |
 | src\data\websocket\message-handler.ts | 57 | 3 | 10 | 9 | 12 |
 | src\script.ts | 74 | 3 | 9 | 9 | 12 |
 | src\state\store-state\selection.ts | 136 | 4 | 8 | 8 | 12 |
@@ -99,6 +98,7 @@
 | src\ui\store-admin\store-handlers.ts | 47 | 3 | 5 | 6 | 9 |
 | src\ui\webdav-admin\form.ts | 83 | 3 | 5 | 6 | 9 |
 | src\ui\webdav-admin\renderer.ts | 55 | 2 | 4 | 7 | 9 |
+| src\ui\weekplan\ingredient-parser\fraction-converter.ts | 33 | 2 | 6 | 7 | 9 |
 | src\script-products.ts | 58 | 2 | 8 | 6 | 8 |
 | src\ui\components\dropdown\types.ts | 31 | 0 | 0 | 8 | 8 |
 | src\ui\units-admin\units-admin-render.ts | 86 | 3 | 8 | 5 | 8 |
@@ -110,6 +110,7 @@
 | src\script-stores.ts | 56 | 2 | 7 | 5 | 7 |
 | src\script-templates.ts | 56 | 2 | 7 | 5 | 7 |
 | src\ui\user-menu\utils.ts | 37 | 2 | 5 | 5 | 7 |
+| src\ui\weekplan\ingredient-parser\formatters.ts | 28 | 3 | 3 | 4 | 7 |
 | src\data\api\config-api.ts | 43 | 2 | 4 | 4 | 6 |
 | src\data\api\utils.ts | 45 | 3 | 6 | 3 | 6 |
 | src\script-weekplan.ts | 46 | 1 | 6 | 5 | 6 |
@@ -120,6 +121,7 @@
 | src\data\websocket\broadcasts.ts | 37 | 5 | 5 | 0 | 5 |
 | src\state\user-state.ts | 98 | 1 | 2 | 4 | 5 |
 | src\ui\components\dropdown\ui-builder.ts | 49 | 2 | 3 | 3 | 5 |
+| src\ui\weekplan\ingredient-parser\quantity-parser.ts | 20 | 1 | 4 | 4 | 5 |
 | src\ui\weekplan\recipe-modal\delta-manager.ts | 36 | 2 | 2 | 3 | 5 |
 | src\ui\weekplan\recipe-modal\recipe-loader.ts | 25 | 2 | 3 | 3 | 5 |
 | src\ui\weekplan\recipe-modal\save-handler.ts | 42 | 3 | 4 | 2 | 5 |
@@ -155,17 +157,20 @@
 | src\ui\template-admin\index.ts | 4 | 0 | 0 | 0 | 0 |
 | src\ui\units-admin\index.ts | 7 | 0 | 0 | 0 | 0 |
 | src\ui\units-admin\types.ts | 8 | 0 | 0 | 0 | 0 |
+| src\ui\weekplan\ingredient-parser\constants.ts | 25 | 0 | 0 | 0 | 0 |
+| src\ui\weekplan\ingredient-parser\index.ts | 8 | 0 | 0 | 0 | 0 |
+| src\ui\weekplan\ingredient-parser.ts | 8 | 0 | 0 | 0 | 0 |
 | src\ui\weekplan\recipe-modal\types.ts | 10 | 0 | 0 | 0 | 0 |
 | src\ui\weekplan\types.ts | 39 | 0 | 0 | 0 | 0 |
 
 ## Summary
 
-- Total files: 153
-- Total lines: 16046
-- Total functions: 786
-- Average complexity: 11.22
-- Average cyclomatic complexity: 11.21
-- Average McCabe complexity: 16.35
+- Total files: 160
+- Total lines: 16165
+- Total functions: 795
+- Average complexity: 10.80
+- Average cyclomatic complexity: 10.76
+- Average McCabe complexity: 15.72
 
 ## Complexity Ratings
 
