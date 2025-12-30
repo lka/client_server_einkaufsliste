@@ -149,14 +149,18 @@
 - Client-spezifische Konfiguration
 
 ### [client/ARCHITECTURE.md](client/ARCHITECTURE.md)
-**Client-Architektur: 4-Schichten-Modell**
+**Client-Architektur: 4-Schichten-Modell (Modular aufgeteilt)**
 
-- Four-Layer Architecture (UI, State, Data, Network)
-- Physical Folder Separation
-- Layer Responsibilities und Patterns
-- State Management mit Observer Pattern
-- Module Organization
-- Dependency Flow und Best Practices
+- Hauptübersicht mit Quick Reference und Navigation
+- **Detaillierte Module**:
+  - [01-overview.md](client/architecture/01-overview.md) - Architektur-Diagramm und Layer-Details
+  - [02-data-layer.md](client/architecture/02-data-layer.md) - API, Auth, WebSocket, Utilities
+  - [03-state-layer.md](client/architecture/03-state-layer.md) - State Management & Observer Pattern
+  - [04-ui-layer.md](client/architecture/04-ui-layer.md) - Components & Feature Modules
+  - [05-pages.md](client/architecture/05-pages.md) - Pages & Entry Points
+  - [06-modules.md](client/architecture/06-modules.md) - Weekplan Modules Deep-Dive
+  - [07-refactoring.md](client/architecture/07-refactoring.md) - Refactoring Success Stories
+  - [08-code-quality.md](client/architecture/08-code-quality.md) - Metrics, Testing, Performance
 
 ### [client/STATE_LAYER.md](client/STATE_LAYER.md)
 **State Layer Detaildokumentation**
