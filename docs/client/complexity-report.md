@@ -2,7 +2,6 @@
 
 | File | Lines | Functions | Complexity | Cyclomatic | McCabe |
 |------|-------|-----------|------------|------------|--------|
-| src\data\api\webdav-api.ts | 222 | 6 | 31 | 44 | 50 |
 | src\ui\components\autocomplete.ts | 298 | 7 | 28 | 42 | 49 |
 | src\ui\user-admin.ts | 213 | 15 | 31 | 33 | 48 |
 | src\ui\weekplan\entry-input.ts | 212 | 11 | 25 | 35 | 46 |
@@ -27,6 +26,7 @@
 | src\ui\components\button.ts | 191 | 5 | 18 | 26 | 31 |
 | src\ui\shopping-list\dialogs.ts | 205 | 12 | 22 | 19 | 31 |
 | src\ui\template-admin\attach-template-admin-listeners.ts | 103 | 8 | 21 | 23 | 31 |
+| src\data\api\webdav-api\import.ts | 116 | 2 | 15 | 28 | 30 |
 | src\ui\components\connection-status.ts | 251 | 9 | 19 | 21 | 30 |
 | src\ui\components\tabs.ts | 211 | 2 | 15 | 28 | 30 |
 | src\ui\components\dropdown\searchable-dropdown.ts | 116 | 12 | 20 | 17 | 29 |
@@ -54,6 +54,7 @@
 | src\ui\components\loading.ts | 213 | 6 | 8 | 15 | 21 |
 | src\ui\product-admin\init.ts | 93 | 5 | 15 | 16 | 21 |
 | src\data\api\units-api.ts | 115 | 4 | 16 | 16 | 20 |
+| src\data\api\webdav-api\crud.ts | 121 | 4 | 16 | 16 | 20 |
 | src\state\store-state\store-operations.ts | 114 | 3 | 6 | 17 | 20 |
 | src\ui\print-utils\print-weekplan.ts | 242 | 13 | 17 | 7 | 20 |
 | src\ui\store-admin\department-handlers.ts | 93 | 6 | 11 | 13 | 19 |
@@ -149,6 +150,8 @@
 | src\data\api\index.ts | 16 | 0 | 0 | 0 | 0 |
 | src\data\api\stores-api\index.ts | 20 | 0 | 0 | 0 | 0 |
 | src\data\api\stores-api.ts | 20 | 0 | 0 | 0 | 0 |
+| src\data\api\webdav-api\index.ts | 19 | 0 | 0 | 0 | 0 |
+| src\data\api\webdav-api.ts | 19 | 0 | 0 | 0 | 0 |
 | src\data\api.ts | 14 | 0 | 0 | 0 | 0 |
 | src\data\websocket\config.ts | 7 | 0 | 0 | 0 | 0 |
 | src\data\websocket.ts | 46 | 0 | 0 | 0 | 0 |
@@ -172,12 +175,12 @@
 
 ## Summary
 
-- Total files: 167
-- Total lines: 16306
+- Total files: 170
+- Total lines: 16359
 - Total functions: 799
-- Average complexity: 10.37
-- Average cyclomatic complexity: 10.31
-- Average McCabe complexity: 15.09
+- Average complexity: 10.19
+- Average cyclomatic complexity: 10.12
+- Average McCabe complexity: 14.82
 
 ## Complexity Ratings
 

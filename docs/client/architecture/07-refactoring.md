@@ -87,7 +87,22 @@
 - shopping-list-ui.ts (3, re-export), shopping-list-ui/index.ts (0, barrel file)
 - shopping-list-ui/event-handlers.ts (22), shopping-list-ui/date-picker-manager.ts (14), shopping-list-ui/initialization.ts (14)
 
-### 6. Other Completed Refactorings
+### 6. webdav-api.ts Modular Refactoring (Completed)
+
+- **Before**: Single file with 222 lines, McCabe 50
+- **After**: Main re-export 19 lines (McCabe 0) + 2 focused modules (max McCabe 30)
+- **Result**:
+  - Reduced complexity by 40% (McCabe 50 → 30 max)
+  - Clear separation: CRUD operations vs. Recipe Import with SSE
+  - Maintained full backward compatibility
+  - Average module complexity: ~25 McCabe (moderate range)
+
+**WebDAV API Modules** (all McCabe ≤ 30):
+
+- webdav-api.ts (0, re-export), webdav-api/index.ts (0, barrel file)
+- webdav-api/import.ts (30, SSE import), webdav-api/crud.ts (20, CRUD ops)
+
+### 7. Other Completed Refactorings
 
 **store-admin.ts**:
 - **Before**: 465 lines
@@ -126,8 +141,8 @@
 
 ## Refactoring Summary
 
-**12 Recent Refactorings**:
-- **Total reduction**: 3,950 → 797 lines (-80%)
+**13 Recent Refactorings**:
+- **Total reduction**: 4,172 → 816 lines (-80%)
 - **Pattern**: Extract modular responsibilities into subdirectories
 - **Maintained**: Full backward compatibility and type safety
 - **Result**: Improved maintainability, reduced complexity, easier testing

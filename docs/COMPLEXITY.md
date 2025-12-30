@@ -199,6 +199,21 @@ radon mi src -s >> complexity-python.txt
     - Alle bestehenden Imports funktionieren weiterhin
   - **Status**: ✅ Alle Dateien nun McCabe ≤48
 
+- **2025-12-30**: Client-Refactoring `webdav-api.ts` - Modularisierung CRUD/Import
+  - **Trennung**: CRUD-Operationen und Recipe-Import mit SSE in separate Module aufgeteilt
+  - **Komplexität reduziert**: McCabe 50 → 30 (40% Reduktion)
+  - **Neue Struktur**:
+    - `webdav-api/crud.ts`: WebDAV Settings CRUD (121 Zeilen, McCabe 20)
+    - `webdav-api/import.ts`: Recipe Import mit SSE-Support (116 Zeilen, McCabe 30)
+    - `webdav-api/index.ts`: Public API (19 Zeilen, McCabe 0)
+    - `webdav-api.ts`: Backward Compatibility Re-Export (19 Zeilen, McCabe 0)
+  - **Vorteile**:
+    - Klare Trennung: CRUD vs. Import mit Server-Sent Events
+    - Jedes Modul < 125 Zeilen, Single Responsibility
+    - Volle Backward Compatibility über Re-Exports
+    - Alle bestehenden Imports funktionieren weiterhin
+  - **Status**: ✅ Alle Dateien nun McCabe ≤48
+
 ## TypeScript/JavaScript (Client)
 
 ### Tool: complexity-report
