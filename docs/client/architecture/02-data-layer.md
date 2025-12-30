@@ -46,19 +46,57 @@
   - `deleteItemsBeforeDate(beforeDate, storeId?)`: Bulk delete by date
   - `convertItemToProduct(itemId, departmentId)`: Convert to product
 
-#### api/stores-api.ts
+#### api/stores-api.ts ✨ REFACTORED
 
-- **Lines**: 239 | **McCabe**: 50
-- **Responsibility**: Stores and departments management
+- **Status**: ✨ **REFACTORED** - Reduced from McCabe 50 to modular structure (58% reduction)
+- **Lines**: 20 | **McCabe**: 0
+- **Responsibility**: Barrel file that re-exports stores and departments functionality
+- **Backward Compatibility**: Existing imports continue to work without changes
+
+**Modular Structure** (`src/data/api/stores-api/`):
+
+##### stores-api/stores.ts
+- **Lines**: 119 | **McCabe**: 21
+- **Responsibility**: Store CRUD operations
 - **Functions**:
   - `fetchStores()`: Get all stores
   - `createStore(name, location?)`: Create new store
   - `updateStore(storeId, name?, location?, sortOrder?)`: Update store
   - `deleteStore(storeId)`: Delete store
+
+##### stores-api/departments.ts
+- **Lines**: 126 | **McCabe**: 21
+- **Responsibility**: Department CRUD operations
+- **Functions**:
   - `fetchDepartments(storeId)`: Get store departments
   - `createDepartment(storeId, name, sortOrder?)`: Create department
   - `updateDepartment(departmentId, name?, sortOrder?)`: Update department
   - `deleteDepartment(departmentId)`: Delete department
+
+##### stores-api/index.ts
+- **Lines**: 20 | **McCabe**: 0
+- **Responsibility**: Public API that re-exports all store and department operations
+- **Purpose**: Single entry point for stores and departments functionality
+
+**Migration Guide**:
+
+```typescript
+// Old (still works - backward compatible)
+import { fetchStores, createDepartment } from './data/api/stores-api.js';
+
+// New (preferred - using barrel file)
+import { fetchStores, createDepartment } from './data/api/stores-api/index.js';
+
+// New (specific module imports)
+import { fetchStores } from './data/api/stores-api/stores.js';
+import { createDepartment } from './data/api/stores-api/departments.js';
+```
+
+**Benefits**:
+- **Clear Separation**: Store and department operations in separate files
+- **Reduced Complexity**: From McCabe 50 to 21 per module
+- **Better Maintainability**: Each file < 130 lines, single responsibility
+- **No Breaking Changes**: Full backward compatibility via re-exports
 
 #### api/products-api.ts
 

@@ -2,7 +2,6 @@
 
 | File | Lines | Functions | Complexity | Cyclomatic | McCabe |
 |------|-------|-----------|------------|------------|--------|
-| src\data\api\stores-api.ts | 239 | 8 | 35 | 42 | 50 |
 | src\data\api\webdav-api.ts | 222 | 6 | 31 | 44 | 50 |
 | src\ui\components\autocomplete.ts | 298 | 7 | 28 | 42 | 49 |
 | src\ui\shopping-list-ui.ts | 246 | 20 | 41 | 29 | 49 |
@@ -41,6 +40,8 @@
 | src\ui\components\datepicker\create-calendar.ts | 162 | 12 | 24 | 14 | 26 |
 | src\ui\weekplan\ingredient-parser\parsers.ts | 83 | 5 | 12 | 21 | 26 |
 | src\ui\weekplan\weekplan-state.ts | 181 | 2 | 22 | 24 | 26 |
+| src\data\api\stores-api\departments.ts | 126 | 4 | 17 | 21 | 25 |
+| src\data\api\stores-api\stores.ts | 119 | 4 | 18 | 21 | 25 |
 | src\data\websocket\subscriptions.ts | 77 | 24 | 24 | 0 | 24 |
 | src\state\store-admin-state.ts | 160 | 7 | 19 | 17 | 24 |
 | src\ui\shopping-list\print-controls.ts | 139 | 11 | 15 | 13 | 24 |
@@ -143,6 +144,8 @@
 | src\index-login.ts | 7 | 1 | 1 | 0 | 1 |
 | src\ui\template-admin.ts | 19 | 1 | 1 | 0 | 1 |
 | src\data\api\index.ts | 16 | 0 | 0 | 0 | 0 |
+| src\data\api\stores-api\index.ts | 20 | 0 | 0 | 0 | 0 |
+| src\data\api\stores-api.ts | 20 | 0 | 0 | 0 | 0 |
 | src\data\api.ts | 14 | 0 | 0 | 0 | 0 |
 | src\data\websocket\config.ts | 7 | 0 | 0 | 0 | 0 |
 | src\data\websocket.ts | 46 | 0 | 0 | 0 | 0 |
@@ -165,12 +168,12 @@
 
 ## Summary
 
-- Total files: 160
-- Total lines: 16165
+- Total files: 163
+- Total lines: 16211
 - Total functions: 795
-- Average complexity: 10.80
-- Average cyclomatic complexity: 10.76
-- Average McCabe complexity: 15.72
+- Average complexity: 10.60
+- Average cyclomatic complexity: 10.56
+- Average McCabe complexity: 15.44
 
 ## Complexity Ratings
 
@@ -181,4 +184,4 @@ McCabe Complexity Thresholds:
 - 51+: Very complex, very high risk
 
 Files with very high complexity (>50): 0
-Files with high complexity (21-50): 50
+Files with high complexity (21-50): 51

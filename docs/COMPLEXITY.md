@@ -168,6 +168,21 @@ radon mi src -s >> complexity-python.txt
     - Bessere Wartbarkeit: Änderungen nur an einer Stelle nötig
     - Erhöhte Testbarkeit: Kleine Funktionen einfacher zu testen
 
+- **2025-12-30**: Client-Refactoring `stores-api.ts` - Modularisierung Store/Department Operations
+  - **Trennung**: Store- und Department-Operationen in separate Module aufgeteilt
+  - **Komplexität reduziert**: McCabe 50 → 21 (58% Reduktion)
+  - **Neue Struktur**:
+    - `stores-api/stores.ts`: Store CRUD-Operationen (119 Zeilen, McCabe 21)
+    - `stores-api/departments.ts`: Department CRUD-Operationen (126 Zeilen, McCabe 21)
+    - `stores-api/index.ts`: Public API mit Re-Exports (20 Zeilen, McCabe 0)
+    - `stores-api.ts`: Backward Compatibility Re-Export (20 Zeilen, McCabe 0)
+  - **Vorteile**:
+    - Klare Trennung der Verantwortlichkeiten
+    - Jedes Modul < 130 Zeilen, Single Responsibility
+    - Volle Backward Compatibility über Re-Exports
+    - Alle bestehenden Imports funktionieren weiterhin
+  - **Status**: ✅ Alle Dateien nun McCabe ≤49
+
 ## TypeScript/JavaScript (Client)
 
 ### Tool: complexity-report

@@ -95,7 +95,8 @@ Pages Layer → Entry ✗
 **Purpose**: Core data operations and utilities with no UI knowledge.
 
 **Key Modules**:
-- **api/** - 13 modular API modules (McCabe: 6-50)
+- **api/** - 13 modular API modules (McCabe: 6-43)
+  - **stores-api/** ✨ REFACTORED - Store and department operations (2 modules)
 - **auth.ts** - JWT authentication and user management
 - **websocket.ts** ✨ REFACTORED - Real-time WebSocket connection (9 modules)
 - **dom.ts** - DOM manipulation and template loading

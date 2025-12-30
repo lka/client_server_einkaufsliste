@@ -57,7 +57,22 @@
 - formatters.ts (7), parsers.ts (26), ingredient-parser.ts (13)
 - quantity-parser.ts (5)
 
-### 4. Other Completed Refactorings
+### 4. stores-api.ts Modular Refactoring (Completed)
+
+- **Before**: Single file with 239 lines, McCabe 50
+- **After**: Main re-export 20 lines (McCabe 0) + 2 focused modules (max McCabe 21)
+- **Result**:
+  - Reduced complexity by 58% (McCabe 50 → 21 max)
+  - Clear separation: Store operations vs. Department operations
+  - Maintained full backward compatibility
+  - Average module complexity: ~21 McCabe (low-moderate range)
+
+**Stores API Modules** (all McCabe ≤ 21):
+
+- stores-api.ts (0, re-export), stores-api/index.ts (0, barrel file)
+- stores-api/stores.ts (21), stores-api/departments.ts (21)
+
+### 5. Other Completed Refactorings
 
 **store-admin.ts**:
 - **Before**: 465 lines
@@ -96,19 +111,18 @@
 
 ## Refactoring Summary
 
-**10 Recent Refactorings**:
-- **Total reduction**: 3,464 → 608 lines (-82%)
+**11 Recent Refactorings**:
+- **Total reduction**: 3,703 → 747 lines (-80%)
 - **Pattern**: Extract modular responsibilities into subdirectories
 - **Maintained**: Full backward compatibility and type safety
 - **Result**: Improved maintainability, reduced complexity, easier testing
 
 ## Refactoring Opportunities
 
-**Current Status**: ✅ **All files now have McCabe ≤50!** Great achievement through systematic refactoring.
+**Current Status**: ✅ **All files now have McCabe ≤49!** Great achievement through systematic refactoring.
 
 Remaining refactoring candidates (by priority, based on current complexity-report.md):
 
-- **stores-api.ts** (McCabe 50, 239 lines): Right at threshold, could benefit from splitting store and department operations
 - **shopping-list-ui.ts** (McCabe 49, 247 lines): Extract modal dialogs and event handlers into separate modules
 - **user-admin.ts** (McCabe 48, 212 lines): Consider splitting form management from rendering logic
 - **items-api.ts** (McCabe 43, 198 lines): Split into smaller focused modules if it grows

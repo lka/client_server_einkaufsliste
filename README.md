@@ -8,7 +8,7 @@ Python FastAPI Server + TypeScript Client mit JWT-Authentifizierung.
 
 1. Meine Rezepte verwalte ich in einer App [My Recipe Box](https://www.myrecipebox.app/de/) sowohl auf Android als auch auf dem Ipad. Diese App kann die Rezepte auf einem Gerät in meinem Netzwerk speichern.
 2. Wir planen unsere Essen eine Woche im Voraus und kaufen 2-mal je Woche ein.
-3. Ich möchte die Rezepte aus der App in dem Wochenplan wiederfinden und die Zutaten in der Einkaufsliste.
+3. Ich möchte die Rezepte aus der App im Wochenplan wiederfinden und die Zutaten in der Einkaufsliste.
 4. Wir haben mehrere Stamm-Geschäfte in denen wir regelmäßig einkaufen und ich möchte die Einkaufsliste so aufbereitet haben, dass sie die Zutaten auf dem Weg durch das jeweilige Geschäft in der richtigen Reihenfolge darstellt.
 5. Der Wochenplan und die Einkaufsliste sollen <b>ausgedruckt</b> werden.
 
