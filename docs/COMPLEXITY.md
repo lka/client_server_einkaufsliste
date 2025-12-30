@@ -336,6 +336,26 @@ radon mi src -s >> complexity-python.txt
     - Alle bestehenden Imports funktionieren weiterhin
   - **Status**: ✅ **Nur noch 1 Datei mit McCabe 42!** (template-modal.ts verbleibend)
 
+- **2025-12-30**: Client-Refactoring `template-modal.ts` - Modularisierung Template Modal
+  - **Trennung**: Rendering, Quantity Adjustment, Added Items, Save Handler, Modal Builder, Utils in separate Module aufgeteilt
+  - **Komplexität reduziert**: McCabe 42 → 13 (69% Reduktion - beste Reduktion aller Refactorings!)
+  - **Neue Struktur**:
+    - `template-modal/save-handler.ts`: Save logic (79 Zeilen, McCabe 13)
+    - `template-modal/quantity-adjustment.ts`: Person count adjustment (65 Zeilen, McCabe 9)
+    - `template-modal/modal-builder.ts`: Main modal construction (103 Zeilen, McCabe 8)
+    - `template-modal/rendering.ts`: Template items rendering (70 Zeilen, McCabe 8)
+    - `template-modal/added-items.ts`: Added items management (34 Zeilen, McCabe 4)
+    - `template-modal/utils.ts`: Helper functions (18 Zeilen, McCabe 4)
+    - `template-modal/index.ts`: Public API (4 Zeilen, McCabe 0)
+    - `template-modal.ts`: Backward Compatibility Re-Export (16 Zeilen, McCabe 0)
+  - **Vorteile**:
+    - Klare Trennung: Rendering, Adjustment, Items, Save, Modal, Utils
+    - Jedes Modul < 110 Zeilen, sehr fokussiert
+    - Sehr niedrige durchschnittliche Komplexität (~7.7)
+    - Volle Backward Compatibility über Re-Exports
+    - Alle bestehenden Imports funktionieren weiterhin
+  - **Status**: 🎉 **ALLE McCabe 42+ Dateien eliminiert!** Maximum nun 41 (create-date-picker.ts, auth.ts)
+
 ## TypeScript/JavaScript (Client)
 
 ### Tool: complexity-report

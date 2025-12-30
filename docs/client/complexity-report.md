@@ -2,7 +2,6 @@
 
 | File | Lines | Functions | Complexity | Cyclomatic | McCabe |
 |------|-------|-----------|------------|------------|--------|
-| src\ui\weekplan\template-modal.ts | 246 | 18 | 32 | 24 | 42 |
 | src\data\auth.ts | 245 | 14 | 32 | 27 | 41 |
 | src\ui\components\datepicker\create-date-picker.ts | 164 | 10 | 22 | 31 | 41 |
 | src\ui\print-utils\convert-to-four-columns.ts | 167 | 7 | 22 | 32 | 39 |
@@ -89,6 +88,7 @@
 | src\ui\units-admin\handle-drag-and-drop.ts | 39 | 4 | 10 | 9 | 13 |
 | src\ui\weekplan\entry-input\entry-handler.ts | 44 | 3 | 9 | 10 | 13 |
 | src\ui\weekplan\ingredient-parser\ingredient-parser.ts | 62 | 3 | 8 | 10 | 13 |
+| src\ui\weekplan\template-modal\save-handler.ts | 79 | 8 | 10 | 5 | 13 |
 | src\data\websocket\message-handler.ts | 57 | 3 | 10 | 9 | 12 |
 | src\script.ts | 74 | 3 | 9 | 9 | 12 |
 | src\state\store-state\selection.ts | 136 | 4 | 8 | 8 | 12 |
@@ -112,12 +112,15 @@
 | src\ui\webdav-admin\form.ts | 83 | 3 | 5 | 6 | 9 |
 | src\ui\webdav-admin\renderer.ts | 55 | 2 | 4 | 7 | 9 |
 | src\ui\weekplan\ingredient-parser\fraction-converter.ts | 33 | 2 | 6 | 7 | 9 |
+| src\ui\weekplan\template-modal\quantity-adjustment.ts | 65 | 5 | 9 | 4 | 9 |
 | src\script-products.ts | 58 | 2 | 8 | 6 | 8 |
 | src\ui\components\dropdown\types.ts | 31 | 0 | 0 | 8 | 8 |
 | src\ui\units-admin\units-admin-render.ts | 86 | 3 | 8 | 5 | 8 |
 | src\ui\units-admin\units-admin-websocket.ts | 30 | 5 | 8 | 3 | 8 |
 | src\ui\user-menu\auth-handlers.ts | 37 | 3 | 7 | 5 | 8 |
 | src\ui\weekplan\recipe-modal\utils.ts | 30 | 2 | 7 | 6 | 8 |
+| src\ui\weekplan\template-modal\modal-builder.ts | 103 | 1 | 4 | 7 | 8 |
+| src\ui\weekplan\template-modal\rendering.ts | 70 | 3 | 5 | 5 | 8 |
 | src\ui\weekplan-main\initialization.ts | 42 | 4 | 8 | 4 | 8 |
 | src\ui\weekplan-main\websocket-handlers.ts | 35 | 2 | 6 | 6 | 8 |
 | src\data\api\products-api\search-operations.ts | 50 | 1 | 5 | 6 | 7 |
@@ -150,6 +153,8 @@
 | src\ui\components\dropdown\option-renderer.ts | 34 | 2 | 4 | 2 | 4 |
 | src\ui\user-admin\initialization.ts | 31 | 4 | 4 | 0 | 4 |
 | src\ui\webdav-admin.ts | 35 | 3 | 3 | 1 | 4 |
+| src\ui\weekplan\template-modal\added-items.ts | 34 | 4 | 4 | 0 | 4 |
+| src\ui\weekplan\template-modal\utils.ts | 18 | 1 | 4 | 3 | 4 |
 | src\ui\components\autocomplete\styles.ts | 64 | 1 | 3 | 2 | 3 |
 | src\ui\print-utils\print-preview-content.ts | 23 | 2 | 3 | 1 | 3 |
 | src\ui\shopping-list-ui.ts | 50 | 3 | 3 | 0 | 3 |
@@ -202,18 +207,20 @@
 | src\ui\weekplan\ingredient-parser\index.ts | 8 | 0 | 0 | 0 | 0 |
 | src\ui\weekplan\ingredient-parser.ts | 8 | 0 | 0 | 0 | 0 |
 | src\ui\weekplan\recipe-modal\types.ts | 10 | 0 | 0 | 0 | 0 |
+| src\ui\weekplan\template-modal\index.ts | 4 | 0 | 0 | 0 | 0 |
+| src\ui\weekplan\template-modal.ts | 16 | 0 | 0 | 0 | 0 |
 | src\ui\weekplan\types.ts | 39 | 0 | 0 | 0 | 0 |
 | src\ui\weekplan-main\index.ts | 10 | 0 | 0 | 0 | 0 |
 | src\ui\weekplan.ts | 14 | 0 | 0 | 0 | 0 |
 
 ## Summary
 
-- Total files: 203
-- Total lines: 16737
-- Total functions: 815
-- Average complexity: 8.62
-- Average cyclomatic complexity: 8.55
-- Average McCabe complexity: 12.57
+- Total files: 210
+- Total lines: 16880
+- Total functions: 819
+- Average complexity: 8.35
+- Average cyclomatic complexity: 8.27
+- Average McCabe complexity: 12.17
 
 ## Complexity Ratings
 
@@ -224,4 +231,4 @@ McCabe Complexity Thresholds:
 - 51+: Very complex, very high risk
 
 Files with very high complexity (>50): 0
-Files with high complexity (21-50): 50
+Files with high complexity (21-50): 49

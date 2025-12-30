@@ -215,7 +215,24 @@
 - templates-api.ts (0, re-export), templates-api/index.ts (0, barrel file)
 - templates-api/crud-operations.ts (32, create/update/delete), templates-api/fetch-operations.ts (10, fetch templates)
 
-### 14. Other Completed Refactorings
+### 14. template-modal.ts Modular Refactoring (Completed)
+
+- **Before**: Single file with 246 lines, McCabe 42
+- **After**: Main re-export 16 lines (McCabe 0) + 7 focused modules (max McCabe 13)
+- **Result**:
+  - Reduced complexity by 69% (McCabe 42 → 13 max)
+  - Clear separation: Rendering, Quantity adjustment, Added items, Save handler, Modal building, Utils
+  - Maintained full backward compatibility
+  - Average module complexity: ~7.7 McCabe (very low range)
+
+**Template Modal Modules** (all McCabe ≤ 13):
+
+- template-modal.ts (0, re-export), template-modal/index.ts (0, barrel file)
+- template-modal/save-handler.ts (13, save logic), template-modal/quantity-adjustment.ts (9, person count)
+- template-modal/modal-builder.ts (8, main modal), template-modal/rendering.ts (8, template items)
+- template-modal/added-items.ts (4, added items), template-modal/utils.ts (4, helpers)
+
+### 15. Other Completed Refactorings
 
 **store-admin.ts**:
 - **Before**: 465 lines
@@ -254,26 +271,31 @@
 
 ## Refactoring Summary
 
-**20 Recent Refactorings**:
-- **Total reduction**: 5,652 → 1,979 lines (-65%)
+**21 Recent Refactorings**:
+- **Total reduction**: 5,898 → 1,995 lines (-66%)
 - **Pattern**: Extract modular responsibilities into subdirectories
 - **Maintained**: Full backward compatibility and type safety
 - **Result**: Improved maintainability, reduced complexity, easier testing
 
 ## Refactoring Opportunities
 
-**Current Status**: Maximum McCabe reduced from 48 to 42 through systematic refactoring.
+**Current Status**: Maximum McCabe reduced from 48 to 41 through systematic refactoring.
 
-Remaining refactoring candidate:
+**All McCabe 42+ files eliminated!** Remaining files with higher complexity:
 
-- **template-modal.ts** (McCabe 42, 246 lines): Only remaining file with McCabe 42 - could split into rendering, validation, and save logic
+- **create-date-picker.ts** (McCabe 41, 164 lines): Date picker component
+- **auth.ts** (McCabe 41, 245 lines): Authentication logic
+- **convert-to-four-columns.ts** (McCabe 39, 167 lines): Print layout conversion
+- **input.ts** (McCabe 37, 206 lines): Input component
+- **autocomplete.ts** (McCabe 36, 196 lines): Main autocomplete class
 
 **Recent Achievements**:
-- templates-api.ts refactored (McCabe 42 → 32), only one file with McCabe 42 remaining!
-- products-api.ts refactored (McCabe 42 → 25), bringing down one of the top complexity files!
-- weekplan.ts refactored (McCabe 43 → 14), excellent complexity reduction!
+- template-modal.ts refactored (McCabe 42 → 13), **eliminating the last McCabe 42 file!** 69% reduction!
+- templates-api.ts refactored (McCabe 42 → 32)
+- products-api.ts refactored (McCabe 42 → 25)
+- weekplan.ts refactored (McCabe 43 → 14)
 - items-api.ts refactored (McCabe 43 → 27)
-- Maximum complexity reduced from 48 to 42
+- Maximum complexity reduced from 48 to 41 (15% improvement)
 
 ## Maintaining Code Quality
 
