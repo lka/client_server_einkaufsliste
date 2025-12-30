@@ -214,6 +214,24 @@ radon mi src -s >> complexity-python.txt
     - Alle bestehenden Imports funktionieren weiterhin
   - **Status**: ✅ Alle Dateien nun McCabe ≤48
 
+- **2025-12-30**: Client-Refactoring `autocomplete.ts` - Modularisierung Component
+  - **Trennung**: Types, Styles, Rendering, Main Class Logic in separate Module aufgeteilt
+  - **Komplexität reduziert**: McCabe 49 → 20 (59% Reduktion)
+  - **Neue Struktur**:
+    - `autocomplete/types.ts`: TypeScript Interfaces (17 Zeilen, McCabe 0)
+    - `autocomplete/styles.ts`: CSS Injection (64 Zeilen, McCabe 3)
+    - `autocomplete/rendering.ts`: Pure DOM Rendering Functions (74 Zeilen, McCabe 10)
+    - `autocomplete/autocomplete.ts`: Main Autocomplete Class (196 Zeilen, McCabe 20)
+    - `autocomplete/index.ts`: Public API (19 Zeilen, McCabe 1)
+    - `autocomplete.ts`: Backward Compatibility Re-Export (20 Zeilen, McCabe 0)
+  - **Vorteile**:
+    - Klare Trennung: Types, Styles, Rendering, Class Logic
+    - Jedes Modul < 200 Zeilen, Single Responsibility
+    - Pure Functions im rendering.ts (leicht testbar)
+    - Volle Backward Compatibility über Re-Exports
+    - Alle bestehenden Imports funktionieren weiterhin
+  - **Status**: ✅ Alle Dateien nun McCabe ≤48
+
 ## TypeScript/JavaScript (Client)
 
 ### Tool: complexity-report

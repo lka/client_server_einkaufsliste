@@ -102,7 +102,23 @@
 - webdav-api.ts (0, re-export), webdav-api/index.ts (0, barrel file)
 - webdav-api/import.ts (30, SSE import), webdav-api/crud.ts (20, CRUD ops)
 
-### 7. Other Completed Refactorings
+### 7. autocomplete.ts Modular Refactoring (Completed)
+
+- **Before**: Single file with 298 lines, McCabe 49
+- **After**: Main re-export 20 lines (McCabe 0) + 4 focused modules (max McCabe 20)
+- **Result**:
+  - Reduced complexity by 59% (McCabe 49 → 20 max)
+  - Clear separation: Types, Styles, Rendering functions, Main class logic
+  - Maintained full backward compatibility
+  - Average module complexity: ~8.5 McCabe (low range)
+
+**Autocomplete Modules** (all McCabe ≤ 20):
+
+- autocomplete.ts (0, re-export), autocomplete/index.ts (1, barrel file)
+- autocomplete/autocomplete.ts (20, main class), autocomplete/rendering.ts (10, DOM rendering)
+- autocomplete/styles.ts (3, CSS injection), autocomplete/types.ts (0, TypeScript interfaces)
+
+### 8. Other Completed Refactorings
 
 **store-admin.ts**:
 - **Before**: 465 lines
@@ -141,8 +157,8 @@
 
 ## Refactoring Summary
 
-**13 Recent Refactorings**:
-- **Total reduction**: 4,172 → 816 lines (-80%)
+**14 Recent Refactorings**:
+- **Total reduction**: 4,470 → 1,134 lines (-75%)
 - **Pattern**: Extract modular responsibilities into subdirectories
 - **Maintained**: Full backward compatibility and type safety
 - **Result**: Improved maintainability, reduced complexity, easier testing

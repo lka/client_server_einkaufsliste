@@ -181,6 +181,83 @@
   });
   ```
 
+#### autocomplete.ts ✨ REFACTORED
+
+- **Status**: ✨ **REFACTORED** - Reduced from McCabe 49 (298 lines) to modular structure (59% reduction)
+- **Lines**: 20 | **McCabe**: 0
+- **Responsibility**: Barrel file that re-exports autocomplete functionality
+- **Backward Compatibility**: Existing imports continue to work without changes
+- **Modular Architecture** (`src/ui/components/autocomplete/`):
+  - **types.ts**: TypeScript interfaces (AutocompleteSuggestion, AutocompleteConfig) - McCabe 0
+  - **styles.ts**: CSS style injection with idempotent check - 64 lines, McCabe 3
+  - **rendering.ts**: Pure rendering functions (showLoadingState, renderSuggestions, updateSelection, hideSuggestions) - 74 lines, McCabe 10
+  - **autocomplete.ts**: Main Autocomplete class with keyboard navigation and debouncing - 196 lines, McCabe 20
+  - **index.ts**: Public API barrel file - 19 lines, McCabe 1
+- **Exports**:
+  - `Autocomplete` class: Full-featured autocomplete component
+  - `injectAutocompleteStyles()`: Inject autocomplete CSS
+  - `AutocompleteSuggestion` interface: `{ id, label, data? }`
+  - `AutocompleteConfig` interface: Configuration options
+- **Features**:
+  - Dynamic suggestions based on user input
+  - Keyboard navigation (Arrow Up/Down, Enter, Escape)
+  - Mouse/Touch selection
+  - Debounced search for performance (configurable, default 300ms)
+  - Customizable suggestion rendering
+  - Configurable minimum characters (default 1)
+  - Maximum suggestions limit (default 10)
+  - Loading state with spinner
+  - No results message
+- **Usage**:
+  ```typescript
+  import { Autocomplete } from './ui/components/autocomplete.js';
+
+  const autocomplete = new Autocomplete({
+    input: document.querySelector('#search-input'),
+    onSearch: async (query) => {
+      const results = await fetchSuggestions(query);
+      return results.map(r => ({ id: r.id, label: r.name, data: r }));
+    },
+    onSelect: (suggestion) => {
+      console.log('Selected:', suggestion);
+    },
+    debounceMs: 300,
+    minChars: 2,
+    maxSuggestions: 10,
+    placeholder: 'Search...'
+  });
+
+  // Clear autocomplete
+  autocomplete.clear();
+
+  // Clean up when done
+  autocomplete.destroy();
+  ```
+
+**Migration Guide**:
+
+```typescript
+// Old (still works - backward compatible)
+import { Autocomplete, injectAutocompleteStyles } from './ui/components/autocomplete.js';
+import type { AutocompleteSuggestion, AutocompleteConfig } from './ui/components/autocomplete.js';
+
+// New (preferred - using barrel file)
+import { Autocomplete, injectAutocompleteStyles } from './ui/components/autocomplete/index.js';
+import type { AutocompleteSuggestion, AutocompleteConfig } from './ui/components/autocomplete/index.js';
+
+// New (specific module imports)
+import { Autocomplete } from './ui/components/autocomplete/autocomplete.js';
+import { injectAutocompleteStyles } from './ui/components/autocomplete/styles.js';
+import type { AutocompleteSuggestion, AutocompleteConfig } from './ui/components/autocomplete/types.js';
+```
+
+**Benefits**:
+- **Clear Separation**: Styles, types, rendering, and main class in separate files
+- **Reduced Complexity**: From McCabe 49 to 20 max per module (59% reduction)
+- **Better Maintainability**: Each file < 200 lines, single responsibility
+- **Easier Testing**: Pure rendering functions can be tested independently
+- **No Breaking Changes**: Full backward compatibility via re-exports
+
 #### tabs.ts
 
 - **Exports**:
