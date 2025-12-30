@@ -200,7 +200,22 @@
 - products-api/crud-operations.ts (25, create/update/delete), products-api/fetch-operations.ts (10, fetch products)
 - products-api/search-operations.ts (7, product suggestions)
 
-### 13. Other Completed Refactorings
+### 13. templates-api.ts Modular Refactoring (Completed)
+
+- **Before**: Single file with 169 lines, McCabe 42
+- **After**: Main re-export 12 lines (McCabe 0) + 3 focused modules (max McCabe 32)
+- **Result**:
+  - Reduced complexity by 24% (McCabe 42 → 32 max)
+  - Clear separation: Fetch, CRUD operations
+  - Maintained full backward compatibility
+  - Average module complexity: ~21 McCabe (low-moderate range)
+
+**Templates API Modules** (all McCabe ≤ 32):
+
+- templates-api.ts (0, re-export), templates-api/index.ts (0, barrel file)
+- templates-api/crud-operations.ts (32, create/update/delete), templates-api/fetch-operations.ts (10, fetch templates)
+
+### 14. Other Completed Refactorings
 
 **store-admin.ts**:
 - **Before**: 465 lines
@@ -239,8 +254,8 @@
 
 ## Refactoring Summary
 
-**19 Recent Refactorings**:
-- **Total reduction**: 5,483 → 1,967 lines (-64%)
+**20 Recent Refactorings**:
+- **Total reduction**: 5,652 → 1,979 lines (-65%)
 - **Pattern**: Extract modular responsibilities into subdirectories
 - **Maintained**: Full backward compatibility and type safety
 - **Result**: Improved maintainability, reduced complexity, easier testing
@@ -249,12 +264,12 @@
 
 **Current Status**: Maximum McCabe reduced from 48 to 42 through systematic refactoring.
 
-Remaining refactoring candidates (by priority, based on current complexity-report.md):
+Remaining refactoring candidate:
 
-- **templates-api.ts** (McCabe 42, 169 lines): Could split into CRUD and template management
-- **template-modal.ts** (McCabe 42, 246 lines): Could split into rendering, validation, and save logic
+- **template-modal.ts** (McCabe 42, 246 lines): Only remaining file with McCabe 42 - could split into rendering, validation, and save logic
 
 **Recent Achievements**:
+- templates-api.ts refactored (McCabe 42 → 32), only one file with McCabe 42 remaining!
 - products-api.ts refactored (McCabe 42 → 25), bringing down one of the top complexity files!
 - weekplan.ts refactored (McCabe 43 → 14), excellent complexity reduction!
 - items-api.ts refactored (McCabe 43 → 27)

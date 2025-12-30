@@ -320,6 +320,22 @@ radon mi src -s >> complexity-python.txt
     - Alle bestehenden Imports funktionieren weiterhin
   - **Status**: ✅ Maximale Komplexität weiterhin bei 42 (verbleibend: templates-api.ts, template-modal.ts)
 
+- **2025-12-30**: Client-Refactoring `templates-api.ts` - Modularisierung Templates API
+  - **Trennung**: Fetch, CRUD Operations in separate Module aufgeteilt
+  - **Komplexität reduziert**: McCabe 42 → 32 (24% Reduktion)
+  - **Neue Struktur**:
+    - `templates-api/crud-operations.ts`: Create/Update/Delete (115 Zeilen, McCabe 32)
+    - `templates-api/fetch-operations.ts`: Fetch templates (60 Zeilen, McCabe 10)
+    - `templates-api/index.ts`: Public API (5 Zeilen, McCabe 0)
+    - `templates-api.ts`: Backward Compatibility Re-Export (12 Zeilen, McCabe 0)
+  - **Vorteile**:
+    - Klare Trennung: Fetch, CRUD
+    - Jedes Modul < 120 Zeilen, Single Responsibility
+    - Niedrige durchschnittliche Komplexität (~21)
+    - Volle Backward Compatibility über Re-Exports
+    - Alle bestehenden Imports funktionieren weiterhin
+  - **Status**: ✅ **Nur noch 1 Datei mit McCabe 42!** (template-modal.ts verbleibend)
+
 ## TypeScript/JavaScript (Client)
 
 ### Tool: complexity-report
