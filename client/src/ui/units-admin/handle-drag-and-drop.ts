@@ -1,7 +1,7 @@
 /**
  * Handles drag-and-drop functionality for reordering units in the admin interface.
  */
-import { swapUnits } from './units-admin-actions.js';
+import { insertUnitAt } from './units-admin-actions.js';
 
 // Drag and Drop state
 let draggedElement: HTMLElement | null = null;
@@ -36,7 +36,7 @@ export function handleDrop(e: DragEvent): void {
     const draggedId = parseInt(draggedElement.dataset.unitId || '0');
     const targetId = parseInt(target.dataset.unitId || '0');
 
-    swapUnits(draggedId, targetId);
+    insertUnitAt(draggedId, targetId);
   }
 }
 

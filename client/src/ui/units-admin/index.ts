@@ -4,5 +4,5 @@
 
 export { Unit } from './types.js';
 export { loadUnits } from './units-admin-actions.js';
-export { attachUnitsAdminListeners } from './units-admin-render.js';
+export { initializeUnitsAdminUI, attachUnitsAdminListeners } from './units-admin-render.js';
 export { setupWebSocketHandlers, _cleanupUnitsAdmin } from './units-admin-websocket.js';

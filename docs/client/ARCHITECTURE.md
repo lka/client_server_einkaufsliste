@@ -117,6 +117,7 @@ Pages Layer → Entry ✗
 - **product-admin-state.ts** ✨ NEW - Product administration with WebSocket
 - **store-admin-state.ts** ✨ NEW - Store administration with WebSocket
 - **template-admin-state.ts** ✨ NEW - Template management with WebSocket
+- **units-admin-state.ts** ✨ NEW - Units administration with WebSocket
 
 **Pattern**: Observer pattern for reactive UI updates
 

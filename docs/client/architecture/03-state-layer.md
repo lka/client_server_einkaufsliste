@@ -224,6 +224,35 @@
   - Automatic filtering on state change
   - Consistent state management pattern
 
+### units-admin-state.ts ✨ NEW
+
+- **Status**: ✨ **NEW** - State-based architecture for units management with WebSocket integration
+- **Responsibility**: Centralized state management for units admin with real-time synchronization
+- **Location**: `src/state/units-admin-state.ts` (139 lines)
+- **State Properties**:
+  - `units: Unit[]`: All measurement units
+- **Functions**:
+  - `getState()`: Get complete state (read-only copy)
+  - `getUnits()`: Get all units (read-only copy)
+  - `subscribe(listener)`: Subscribe to state changes (returns unsubscribe function)
+  - `loadUnits()`: Load units from API and update state
+  - `initializeWebSocket()`: Initialize WebSocket event listeners for real-time updates
+  - `destroy()`: Cleanup WebSocket subscriptions and state
+- **WebSocket Integration**:
+  - `unit:created`: Reloads units when new unit is created
+  - `unit:updated`: Reloads units when unit is updated
+  - `unit:deleted`: Reloads units when unit is deleted
+  - Initialization: Called explicitly via `initializeWebSocket()` after token is confirmed available
+- **Pattern**: Observer pattern with singleton instance (`unitsAdminState`)
+- **Benefits**:
+  - Real-time synchronization across users
+  - Eliminates excessive API calls (previously called on every action)
+  - Consistent with other admin modules (product-admin, store-admin, template-admin)
+  - Automatic UI updates via subscriptions
+  - Centralized state management
+- **Migration**: WebSocket logic moved from `ui/units-admin/units-admin-websocket.ts` to State Layer
+- **Backward Compatibility**: Old WebSocket functions kept as no-ops with deprecation notices
+
 ## Testing
 
 - `shopping-list-state.test.ts`: 35 tests covering state management, subscriptions, and API integration
@@ -238,7 +267,7 @@
 - ✅ Immutable state (returns copies, not references)
 - ✅ Loading state tracking for UX
 - ✅ No direct UI manipulation
-- ✅ WebSocket integration for real-time synchronization (shopping-list, product-admin, store-admin, template-admin)
+- ✅ WebSocket integration for real-time synchronization (shopping-list, product-admin, store-admin, template-admin, units-admin)
 
 **See also**: [STATE_LAYER.md](../STATE_LAYER.md) for detailed state layer documentation.
 

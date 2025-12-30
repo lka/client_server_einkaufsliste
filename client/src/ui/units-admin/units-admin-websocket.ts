@@ -1,41 +1,25 @@
 /**
  * WebSocket handlers for units admin interface.
+ *
+ * @deprecated WebSocket integration has been moved to the State Layer.
+ * See src/state/units-admin-state.ts for WebSocket event handling.
+ * These functions are kept for backward compatibility but are now no-ops.
  */
-
-import { subscribe } from '../../data/websocket.js';
-import { loadUnits } from './units-admin-actions.js';
-
-// Store unsubscribe functions for cleanup
-let unsubscribeCreated: (() => void) | null = null;
-let unsubscribeUpdated: (() => void) | null = null;
-let unsubscribeDeleted: (() => void) | null = null;
-
 
 /**
  * Setup WebSocket event handlers for real-time unit updates.
+ * @deprecated WebSocket is now initialized via unitsAdminState.initializeWebSocket()
  */
 export function setupWebSocketHandlers(): void {
-  // Handle unit created by other users
-  unsubscribeCreated = subscribe('unit:created', () => {
-    loadUnits();
-  });
-
-  // Handle unit updated by other users
-  unsubscribeUpdated = subscribe('unit:updated', () => {
-    loadUnits();
-  });
-
-  // Handle unit deleted by other users
-  unsubscribeDeleted = subscribe('unit:deleted', () => {
-    loadUnits();
-  });
+  // WebSocket integration moved to State Layer (units-admin-state.ts)
+  // This function is kept for backward compatibility but does nothing
 }
 
 /**
  * Cleanup WebSocket handlers when leaving the page.
+ * @deprecated Cleanup is now handled via unitsAdminState.destroy()
  */
 export function _cleanupUnitsAdmin(): void {
-  if (unsubscribeCreated) unsubscribeCreated();
-  if (unsubscribeUpdated) unsubscribeUpdated();
-  if (unsubscribeDeleted) unsubscribeDeleted();
+  // WebSocket cleanup moved to State Layer (units-admin-state.ts)
+  // This function is kept for backward compatibility but does nothing
 }

@@ -3,12 +3,13 @@
  */
 
 import { Unit } from './types.js';
-import { createUnit, deleteUnit, updateUnit, fetchUnits } from '../../data/api.js';
+import { createUnit, deleteUnit, updateUnit } from '../../data/api.js';
 import { loadUnits } from './units-admin-actions.js';
 import { showError, showSuccess } from '../components/toast.js';
 import { Modal } from '../components/modal.js';
 import { createButton } from '../components/button.js';
 import { createInput } from '../components/input.js';
+import { unitsAdminState } from '../../state/units-admin-state.js';
 
 /**
  * Show modal to add new unit.
@@ -35,8 +36,8 @@ export function showAddUnitModal(): void {
       }
 
       try {
-        const units = await fetchUnits();
-        const maxSortOrder = units.length > 0 ? Math.max(...units.map(u => u.sort_order)) : -1;
+        const units = unitsAdminState.getUnits();
+        const maxSortOrder = units.length > 0 ? Math.max(...units.map((u: Unit) => u.sort_order)) : -1;
 
         await createUnit({ name, sort_order: maxSortOrder + 1 });
         await loadUnits();

@@ -2,15 +2,16 @@
  * Renders the list of units in the admin interface.
  */
 
-import { Unit } from './types.js';
 import { showEditUnitModal, showDeleteUnitModal, showAddUnitModal } from './edit-unit-modal.js';
 import { handleDragStart, handleDragOver, handleDrop, handleDragEnd } from './handle-drag-and-drop.js';
 import { moveUnit } from './units-admin-actions.js';
+import { unitsAdminState } from '../../state/units-admin-state.js';
 
 /**
- * Render units list.
+ * Render units list from state.
  */
-export function renderUnits(units: Unit[]): void {
+export function renderUnits(): void {
+  const units = unitsAdminState.getUnits();
   const container = document.getElementById('unitsListContainer');
   if (!container) return;
 
@@ -105,4 +106,17 @@ export function attachUnitsAdminListeners(): void {
   if (addUnitBtn) {
     addUnitBtn.addEventListener('click', () => showAddUnitModal());
   }
+}
+
+/**
+ * Initialize units admin UI with state subscription.
+ */
+export function initializeUnitsAdminUI(): void {
+  // Subscribe to state changes for reactive updates
+  unitsAdminState.subscribe(() => {
+    renderUnits();
+  });
+
+  // Attach event listeners
+  attachUnitsAdminListeners();
 }
