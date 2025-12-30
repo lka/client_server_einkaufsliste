@@ -249,6 +249,25 @@ radon mi src -s >> complexity-python.txt
     - Alle bestehenden Imports funktionieren weiterhin
   - **Status**: ✅ **Alle Dateien nun McCabe ≤43!** Neuer Meilenstein erreicht
 
+- **2025-12-30**: Client-Refactoring `entry-input.ts` - Modularisierung Weekplan Entry Input
+  - **Trennung**: Entry Handler, Input Creation, Entry Saving, Autocomplete, Date Utils in separate Module aufgeteilt
+  - **Komplexität reduziert**: McCabe 46 → 21 (54% Reduktion)
+  - **Neue Struktur**:
+    - `entry-input/entry-handler.ts`: Main add meal handler (44 Zeilen, McCabe 13)
+    - `entry-input/input-creation.ts`: Input & autocomplete setup (81 Zeilen, McCabe 16)
+    - `entry-input/entry-save.ts`: Entry saving logic (48 Zeilen, McCabe 17)
+    - `entry-input/autocomplete-helpers.ts`: Suggestion search & parsing (89 Zeilen, McCabe 21)
+    - `entry-input/date-utils.ts`: Date calculation (20 Zeilen, McCabe 1)
+    - `entry-input/index.ts`: Public API (10 Zeilen, McCabe 0)
+    - `entry-input.ts`: Backward Compatibility Re-Export (14 Zeilen, McCabe 0)
+  - **Vorteile**:
+    - Klare Trennung: Handler, Input, Saving, Autocomplete, Utils
+    - Jedes Modul < 90 Zeilen, Single Responsibility
+    - Autocomplete-Logik isoliert und wiederverwendbar
+    - Volle Backward Compatibility über Re-Exports
+    - Alle bestehenden Imports funktionieren weiterhin
+  - **Status**: ✅ Alle Dateien weiterhin McCabe ≤43
+
 ## TypeScript/JavaScript (Client)
 
 ### Tool: complexity-report

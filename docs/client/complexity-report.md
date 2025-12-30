@@ -2,7 +2,6 @@
 
 | File | Lines | Functions | Complexity | Cyclomatic | McCabe |
 |------|-------|-----------|------------|------------|--------|
-| src\ui\weekplan\entry-input.ts | 212 | 11 | 25 | 35 | 46 |
 | src\data\api\items-api.ts | 198 | 6 | 28 | 37 | 43 |
 | src\ui\weekplan.ts | 182 | 13 | 34 | 30 | 43 |
 | src\data\api\products-api.ts | 209 | 6 | 29 | 36 | 42 |
@@ -53,6 +52,7 @@
 | src\state\store-state\department-operations.ts | 129 | 3 | 8 | 18 | 21 |
 | src\ui\components\loading.ts | 213 | 6 | 8 | 15 | 21 |
 | src\ui\product-admin\init.ts | 93 | 5 | 15 | 16 | 21 |
+| src\ui\weekplan\entry-input\autocomplete-helpers.ts | 89 | 5 | 10 | 16 | 21 |
 | src\data\api\units-api.ts | 115 | 4 | 16 | 16 | 20 |
 | src\data\api\webdav-api\crud.ts | 121 | 4 | 16 | 16 | 20 |
 | src\state\store-state\store-operations.ts | 114 | 3 | 6 | 17 | 20 |
@@ -68,9 +68,11 @@
 | src\data\inactivity-tracker.ts | 101 | 11 | 16 | 6 | 17 |
 | src\ui\print-utils\is-android.ts | 29 | 2 | 8 | 15 | 17 |
 | src\ui\user-admin\event-handlers.ts | 74 | 4 | 13 | 13 | 17 |
+| src\ui\weekplan\entry-input\entry-save.ts | 48 | 1 | 2 | 16 | 17 |
 | src\ui\components\card.ts | 132 | 4 | 12 | 12 | 16 |
 | src\ui\shopping-list\item-operations.ts | 86 | 3 | 12 | 13 | 16 |
 | src\ui\shopping-list\print-preview.ts | 157 | 12 | 15 | 4 | 16 |
+| src\ui\weekplan\entry-input\input-creation.ts | 81 | 8 | 11 | 8 | 16 |
 | src\ui\weekplan\recipe-modal\modal-builder.ts | 105 | 8 | 14 | 8 | 16 |
 | src\ui\user-menu\menu-toggle-handlers.ts | 58 | 7 | 13 | 8 | 15 |
 | src\ui\shopping-list-ui\date-picker-manager.ts | 93 | 7 | 10 | 7 | 14 |
@@ -85,6 +87,7 @@
 | src\ui\store-admin\renderer.ts | 115 | 5 | 7 | 8 | 13 |
 | src\ui\units-admin\edit-unit-modal.ts | 146 | 6 | 8 | 7 | 13 |
 | src\ui\units-admin\handle-drag-and-drop.ts | 39 | 4 | 10 | 9 | 13 |
+| src\ui\weekplan\entry-input\entry-handler.ts | 44 | 3 | 9 | 10 | 13 |
 | src\ui\weekplan\ingredient-parser\ingredient-parser.ts | 62 | 3 | 8 | 10 | 13 |
 | src\data\websocket\message-handler.ts | 57 | 3 | 10 | 9 | 12 |
 | src\script.ts | 74 | 3 | 9 | 9 | 12 |
@@ -154,6 +157,7 @@
 | src\index-login.ts | 7 | 1 | 1 | 0 | 1 |
 | src\ui\components\autocomplete\index.ts | 19 | 1 | 1 | 0 | 1 |
 | src\ui\template-admin.ts | 19 | 1 | 1 | 0 | 1 |
+| src\ui\weekplan\entry-input\date-utils.ts | 20 | 1 | 1 | 0 | 1 |
 | src\data\api\index.ts | 16 | 0 | 0 | 0 | 0 |
 | src\data\api\stores-api\index.ts | 20 | 0 | 0 | 0 | 0 |
 | src\data\api\stores-api.ts | 20 | 0 | 0 | 0 | 0 |
@@ -177,6 +181,8 @@
 | src\ui\units-admin\types.ts | 8 | 0 | 0 | 0 | 0 |
 | src\ui\user-admin\index.ts | 9 | 0 | 0 | 0 | 0 |
 | src\ui\user-admin.ts | 13 | 0 | 0 | 0 | 0 |
+| src\ui\weekplan\entry-input\index.ts | 10 | 0 | 0 | 0 | 0 |
+| src\ui\weekplan\entry-input.ts | 14 | 0 | 0 | 0 | 0 |
 | src\ui\weekplan\ingredient-parser\constants.ts | 25 | 0 | 0 | 0 | 0 |
 | src\ui\weekplan\ingredient-parser\index.ts | 8 | 0 | 0 | 0 | 0 |
 | src\ui\weekplan\ingredient-parser.ts | 8 | 0 | 0 | 0 | 0 |
@@ -185,12 +191,12 @@
 
 ## Summary
 
-- Total files: 180
-- Total lines: 16503
-- Total functions: 807
-- Average complexity: 9.67
-- Average cyclomatic complexity: 9.56
-- Average McCabe complexity: 14.04
+- Total files: 186
+- Total lines: 16597
+- Total functions: 814
+- Average complexity: 9.40
+- Average cyclomatic complexity: 9.33
+- Average McCabe complexity: 13.71
 
 ## Complexity Ratings
 

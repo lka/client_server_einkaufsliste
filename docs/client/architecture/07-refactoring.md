@@ -134,7 +134,24 @@
 - user-admin/rendering.ts (27, user list rendering), user-admin/event-handlers.ts (17, user actions)
 - user-admin/initialization.ts (4, main init), user-admin/utils.ts (2, formatDate/escapeHtml)
 
-### 9. Other Completed Refactorings
+### 9. entry-input.ts Modular Refactoring (Completed)
+
+- **Before**: Single file with 212 lines, McCabe 46
+- **After**: Main re-export 14 lines (McCabe 0) + 5 focused modules (max McCabe 21)
+- **Result**:
+  - Reduced complexity by 54% (McCabe 46 → 21 max)
+  - Clear separation: Entry handler, Input creation, Entry saving, Autocomplete, Date utils
+  - Maintained full backward compatibility
+  - Average module complexity: ~13.6 McCabe (low-moderate range)
+
+**Entry Input Modules** (all McCabe ≤ 21):
+
+- entry-input.ts (0, re-export), entry-input/index.ts (0, barrel file)
+- entry-input/autocomplete-helpers.ts (21, suggestion search & parsing), entry-input/entry-save.ts (17, save logic)
+- entry-input/input-creation.ts (16, input & autocomplete), entry-input/entry-handler.ts (13, main handler)
+- entry-input/date-utils.ts (1, date calculation)
+
+### 10. Other Completed Refactorings
 
 **store-admin.ts**:
 - **Before**: 465 lines
@@ -173,8 +190,8 @@
 
 ## Refactoring Summary
 
-**15 Recent Refactorings**:
-- **Total reduction**: 4,682 → 1,399 lines (-70%)
+**16 Recent Refactorings**:
+- **Total reduction**: 4,894 → 1,705 lines (-65%)
 - **Pattern**: Extract modular responsibilities into subdirectories
 - **Maintained**: Full backward compatibility and type safety
 - **Result**: Improved maintainability, reduced complexity, easier testing
