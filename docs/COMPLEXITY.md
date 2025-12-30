@@ -282,7 +282,26 @@ radon mi src -s >> complexity-python.txt
     - Jedes Modul < 105 Zeilen, Single Responsibility
     - Volle Backward Compatibility über Re-Exports
     - Alle bestehenden Imports funktionieren weiterhin
-  - **Status**: ✅ **Alle Dateien nun McCabe ≤41!** Neuer Meilenstein erreicht (höchste Datei reduziert)
+  - **Status**: ✅ Maximale Komplexität reduziert von 48 auf 42 (3 Dateien mit McCabe 42 verbleiben)
+
+- **2025-12-30**: Client-Refactoring `weekplan.ts` - Modularisierung Weekplan UI
+  - **Trennung**: Week Rendering, Navigation, WebSocket, Event Handlers, Init in separate Module aufgeteilt
+  - **Komplexität reduziert**: McCabe 43 → 14 (67% Reduktion)
+  - **Neue Struktur**:
+    - `weekplan-main/week-renderer.ts`: Week rendering logic (79 Zeilen, McCabe 14)
+    - `weekplan-main/event-handlers.ts`: Detail dialogs (34 Zeilen, McCabe 12)
+    - `weekplan-main/initialization.ts`: Main init (42 Zeilen, McCabe 8)
+    - `weekplan-main/websocket-handlers.ts`: Real-time updates (35 Zeilen, McCabe 8)
+    - `weekplan-main/navigation-handlers.ts`: Previous/Next week (19 Zeilen, McCabe 2)
+    - `weekplan-main/index.ts`: Public API (10 Zeilen, McCabe 0)
+    - `weekplan.ts`: Backward Compatibility Re-Export (14 Zeilen, McCabe 0)
+  - **Vorteile**:
+    - Klare Trennung: Rendering, Navigation, WebSocket, Events, Init
+    - Jedes Modul < 80 Zeilen, sehr fokussiert
+    - Sehr niedrige durchschnittliche Komplexität (~7.3)
+    - Volle Backward Compatibility über Re-Exports
+    - Alle bestehenden Imports funktionieren weiterhin
+  - **Status**: ✅ Maximale Komplexität weiterhin bei 42 (verbleibend: products-api.ts, templates-api.ts, template-modal.ts)
 
 ## TypeScript/JavaScript (Client)
 

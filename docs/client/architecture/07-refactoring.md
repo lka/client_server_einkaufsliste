@@ -167,7 +167,24 @@
 - items-api/create-delete-operations.ts (27, add/delete items), items-api/fetch-operations.ts (11, fetch items)
 - items-api/convert-operations.ts (5, convert to product)
 
-### 11. Other Completed Refactorings
+### 11. weekplan.ts Modular Refactoring (Completed)
+
+- **Before**: Single file with 182 lines, McCabe 43
+- **After**: Main re-export 14 lines (McCabe 0) + 6 focused modules (max McCabe 14)
+- **Result**:
+  - Reduced complexity by 67% (McCabe 43 → 14 max)
+  - Clear separation: Week rendering, Navigation, WebSocket handlers, Event handlers, Initialization
+  - Maintained full backward compatibility
+  - Average module complexity: ~7.3 McCabe (very low range)
+
+**Weekplan Main Modules** (all McCabe ≤ 14):
+
+- weekplan.ts (0, re-export), weekplan-main/index.ts (0, barrel file)
+- weekplan-main/week-renderer.ts (14, render week logic), weekplan-main/event-handlers.ts (12, detail dialogs)
+- weekplan-main/initialization.ts (8, main init), weekplan-main/websocket-handlers.ts (8, real-time updates)
+- weekplan-main/navigation-handlers.ts (2, previous/next week)
+
+### 12. Other Completed Refactorings
 
 **store-admin.ts**:
 - **Before**: 465 lines
@@ -206,24 +223,26 @@
 
 ## Refactoring Summary
 
-**17 Recent Refactorings**:
-- **Total reduction**: 5,092 → 1,939 lines (-62%)
+**18 Recent Refactorings**:
+- **Total reduction**: 5,274 → 1,953 lines (-63%)
 - **Pattern**: Extract modular responsibilities into subdirectories
 - **Maintained**: Full backward compatibility and type safety
 - **Result**: Improved maintainability, reduced complexity, easier testing
 
 ## Refactoring Opportunities
 
-**Current Status**: ✅ **All files now have McCabe ≤41!** Outstanding achievement through systematic refactoring.
+**Current Status**: Maximum McCabe reduced from 48 to 42 through systematic refactoring.
 
 Remaining refactoring candidates (by priority, based on current complexity-report.md):
 
-- **template-admin** modules (already refactored but render-templates.ts has McCabe 41): Monitor for further splitting if needed
-- **product-admin/event-handlers.ts** (McCabe 40): Well-structured, monitor for further splitting if it grows
+- **products-api.ts** (McCabe 42, 209 lines): Could split into CRUD, search, and conversion operations
+- **templates-api.ts** (McCabe 42, 169 lines): Could split into CRUD and template management
+- **template-modal.ts** (McCabe 42, 246 lines): Could split into rendering, validation, and save logic
 
 **Recent Achievements**:
-- items-api.ts refactored (McCabe 43 → 27), bringing the highest complexity file down!
-- All files now McCabe ≤41 (down from ≤48)
+- weekplan.ts refactored (McCabe 43 → 14), excellent complexity reduction!
+- items-api.ts refactored (McCabe 43 → 27)
+- Maximum complexity reduced from 48 to 42
 
 ## Maintaining Code Quality
 
