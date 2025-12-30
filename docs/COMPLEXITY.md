@@ -183,6 +183,22 @@ radon mi src -s >> complexity-python.txt
     - Alle bestehenden Imports funktionieren weiterhin
   - **Status**: ✅ Alle Dateien nun McCabe ≤49
 
+- **2025-12-30**: Client-Refactoring `shopping-list-ui.ts` - Modularisierung UI-Komponenten
+  - **Trennung**: Initialization, DatePicker-Management und Event-Handler in separate Module aufgeteilt
+  - **Komplexität reduziert**: McCabe 49 → 22 (55% Reduktion)
+  - **Neue Struktur**:
+    - `shopping-list-ui/initialization.ts`: Main UI Setup (82 Zeilen, McCabe 14)
+    - `shopping-list-ui/date-picker-manager.ts`: DatePicker Operations (93 Zeilen, McCabe 14)
+    - `shopping-list-ui/event-handlers.ts`: Event Handling (98 Zeilen, McCabe 22)
+    - `shopping-list-ui/index.ts`: Public API (18 Zeilen, McCabe 0)
+    - `shopping-list-ui.ts`: Backward Compatibility Re-Export (50 Zeilen, McCabe 3)
+  - **Vorteile**:
+    - Klare Trennung: Initialisierung, DatePicker, Events
+    - Jedes Modul < 100 Zeilen, Single Responsibility
+    - Volle Backward Compatibility über Re-Exports
+    - Alle bestehenden Imports funktionieren weiterhin
+  - **Status**: ✅ Alle Dateien nun McCabe ≤48
+
 ## TypeScript/JavaScript (Client)
 
 ### Tool: complexity-report

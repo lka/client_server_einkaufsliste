@@ -4,7 +4,6 @@
 |------|-------|-----------|------------|------------|--------|
 | src\data\api\webdav-api.ts | 222 | 6 | 31 | 44 | 50 |
 | src\ui\components\autocomplete.ts | 298 | 7 | 28 | 42 | 49 |
-| src\ui\shopping-list-ui.ts | 246 | 20 | 41 | 29 | 49 |
 | src\ui\user-admin.ts | 213 | 15 | 31 | 33 | 48 |
 | src\ui\weekplan\entry-input.ts | 212 | 11 | 25 | 35 | 46 |
 | src\data\api\items-api.ts | 198 | 6 | 28 | 37 | 43 |
@@ -49,6 +48,7 @@
 | src\data\dom.ts | 159 | 6 | 20 | 17 | 23 |
 | src\ui\components\datepicker\date-utils.ts | 63 | 6 | 13 | 16 | 22 |
 | src\ui\components\modal.ts | 253 | 4 | 16 | 18 | 22 |
+| src\ui\shopping-list-ui\event-handlers.ts | 98 | 7 | 20 | 15 | 22 |
 | src\ui\template-admin\create-form-buttons.ts | 109 | 4 | 16 | 18 | 22 |
 | src\state\store-state\department-operations.ts | 129 | 3 | 8 | 18 | 21 |
 | src\ui\components\loading.ts | 213 | 6 | 8 | 15 | 21 |
@@ -71,6 +71,8 @@
 | src\ui\shopping-list\print-preview.ts | 157 | 12 | 15 | 4 | 16 |
 | src\ui\weekplan\recipe-modal\modal-builder.ts | 105 | 8 | 14 | 8 | 16 |
 | src\ui\user-menu\menu-toggle-handlers.ts | 58 | 7 | 13 | 8 | 15 |
+| src\ui\shopping-list-ui\date-picker-manager.ts | 93 | 7 | 10 | 7 | 14 |
+| src\ui\shopping-list-ui\initialization.ts | 82 | 7 | 12 | 7 | 14 |
 | src\ui\weekplan\weekplan-rendering.ts | 120 | 7 | 10 | 7 | 14 |
 | src\data\websocket\state.ts | 85 | 12 | 12 | 1 | 13 |
 | src\ui\components\dropdown\native-dropdown.ts | 81 | 6 | 13 | 7 | 13 |
@@ -133,6 +135,7 @@
 | src\ui\components\dropdown\option-renderer.ts | 34 | 2 | 4 | 2 | 4 |
 | src\ui\webdav-admin.ts | 35 | 3 | 3 | 1 | 4 |
 | src\ui\print-utils\print-preview-content.ts | 23 | 2 | 3 | 1 | 3 |
+| src\ui\shopping-list-ui.ts | 50 | 3 | 3 | 0 | 3 |
 | src\data\websocket\types.ts | 19 | 0 | 0 | 2 | 2 |
 | src\ui\components\datepicker\inject-date-picker-styles.ts | 242 | 1 | 2 | 1 | 2 |
 | src\ui\components\dropdown\styles.ts | 148 | 1 | 2 | 1 | 2 |
@@ -157,6 +160,7 @@
 | src\ui\product-admin\index.ts | 4 | 0 | 0 | 0 | 0 |
 | src\ui\product-admin.ts | 6 | 0 | 0 | 0 | 0 |
 | src\ui\shopping-list\index.ts | 8 | 0 | 0 | 0 | 0 |
+| src\ui\shopping-list-ui\index.ts | 18 | 0 | 0 | 0 | 0 |
 | src\ui\template-admin\index.ts | 4 | 0 | 0 | 0 | 0 |
 | src\ui\units-admin\index.ts | 7 | 0 | 0 | 0 | 0 |
 | src\ui\units-admin\types.ts | 8 | 0 | 0 | 0 | 0 |
@@ -168,12 +172,12 @@
 
 ## Summary
 
-- Total files: 163
-- Total lines: 16211
-- Total functions: 795
-- Average complexity: 10.60
-- Average cyclomatic complexity: 10.56
-- Average McCabe complexity: 15.44
+- Total files: 167
+- Total lines: 16306
+- Total functions: 799
+- Average complexity: 10.37
+- Average cyclomatic complexity: 10.31
+- Average McCabe complexity: 15.09
 
 ## Complexity Ratings
 

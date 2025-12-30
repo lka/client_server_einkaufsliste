@@ -72,7 +72,22 @@
 - stores-api.ts (0, re-export), stores-api/index.ts (0, barrel file)
 - stores-api/stores.ts (21), stores-api/departments.ts (21)
 
-### 5. Other Completed Refactorings
+### 5. shopping-list-ui.ts Modular Refactoring (Completed)
+
+- **Before**: Single file with 247 lines, McCabe 49
+- **After**: Main re-export 50 lines (McCabe 3) + 3 focused modules (max McCabe 22)
+- **Result**:
+  - Reduced complexity by 55% (McCabe 49 → 22 max)
+  - Clear separation: Initialization, DatePicker management, Event handling
+  - Maintained full backward compatibility
+  - Average module complexity: ~17 McCabe (low-moderate range)
+
+**Shopping List UI Modules** (all McCabe ≤ 22):
+
+- shopping-list-ui.ts (3, re-export), shopping-list-ui/index.ts (0, barrel file)
+- shopping-list-ui/event-handlers.ts (22), shopping-list-ui/date-picker-manager.ts (14), shopping-list-ui/initialization.ts (14)
+
+### 6. Other Completed Refactorings
 
 **store-admin.ts**:
 - **Before**: 465 lines
@@ -111,19 +126,18 @@
 
 ## Refactoring Summary
 
-**11 Recent Refactorings**:
-- **Total reduction**: 3,703 → 747 lines (-80%)
+**12 Recent Refactorings**:
+- **Total reduction**: 3,950 → 797 lines (-80%)
 - **Pattern**: Extract modular responsibilities into subdirectories
 - **Maintained**: Full backward compatibility and type safety
 - **Result**: Improved maintainability, reduced complexity, easier testing
 
 ## Refactoring Opportunities
 
-**Current Status**: ✅ **All files now have McCabe ≤49!** Great achievement through systematic refactoring.
+**Current Status**: ✅ **All files now have McCabe ≤48!** Great achievement through systematic refactoring.
 
 Remaining refactoring candidates (by priority, based on current complexity-report.md):
 
-- **shopping-list-ui.ts** (McCabe 49, 247 lines): Extract modal dialogs and event handlers into separate modules
 - **user-admin.ts** (McCabe 48, 212 lines): Consider splitting form management from rendering logic
 - **items-api.ts** (McCabe 43, 198 lines): Split into smaller focused modules if it grows
 - **product-admin** modules (already refactored but event-handlers.ts has McCabe 43): Monitor for further splitting if needed

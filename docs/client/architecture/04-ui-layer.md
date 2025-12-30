@@ -327,17 +327,73 @@
 
 ### Feature UI Modules
 
-#### shopping-list-ui.ts
+#### shopping-list-ui.ts ✨ REFACTORED
 
-- **Responsibility**: Shopping list feature UI
+- **Status**: ✨ **REFACTORED** - Reduced from McCabe 49 (247 lines) to modular structure (55% reduction)
+- **Lines**: 50 | **McCabe**: 3
+- **Responsibility**: Barrel file that re-exports shopping list UI functionality
+- **Backward Compatibility**: Existing imports continue to work without changes
+
+**Modular Structure** (`src/ui/shopping-list-ui/`):
+
+##### shopping-list-ui/initialization.ts
+- **Lines**: 82 | **McCabe**: 14
+- **Responsibility**: Main UI setup and orchestration
 - **Functions**:
   - `initShoppingListUI()`: Initialize event handlers and state subscriptions
+  - `getSelectedStoreId()`: Get currently selected store ID
+
+##### shopping-list-ui/date-picker-manager.ts
+- **Lines**: 93 | **McCabe**: 14
+- **Responsibility**: DatePicker initialization and management
+- **Functions**:
+  - `initializeShoppingDatePicker(container, onDateChange)`: Initialize date picker
+  - `getShoppingDatePicker()`: Get DatePicker instance
+  - `getSelectedShoppingDate()`: Get selected date (ISO format)
+  - `setSelectedShoppingDate(date)`: Set selected date
+  - `updateDatePickerHighlights()`: Update highlighted dates
+
+##### shopping-list-ui/event-handlers.ts
+- **Lines**: 98 | **McCabe**: 22
+- **Responsibility**: Event handling for add, delete, and edit operations
+- **Functions**:
+  - `setupAddItemHandlers(input, mengeInput, addBtn, storeManager)`: Setup add button handlers
+  - `setupItemListHandlers(itemsList, storeManager)`: Setup delete/edit event delegation
+
+##### shopping-list-ui/index.ts
+- **Lines**: 18 | **McCabe**: 0
+- **Responsibility**: Public API that re-exports all shopping list UI operations
+- **Purpose**: Single entry point for shopping list UI functionality
+
+**Migration Guide**:
+
+```typescript
+// Old (still works - backward compatible)
+import { initShoppingListUI, getSelectedStoreId } from './ui/shopping-list-ui.js';
+
+// New (preferred - using barrel file)
+import { initShoppingListUI, getSelectedStoreId } from './ui/shopping-list-ui/index.js';
+
+// New (specific module imports)
+import { initShoppingListUI } from './ui/shopping-list-ui/initialization.js';
+import { setupAddItemHandlers } from './ui/shopping-list-ui/event-handlers.js';
+import { initializeShoppingDatePicker } from './ui/shopping-list-ui/date-picker-manager.js';
+```
+
+**Benefits**:
+- **Clear Separation**: Initialization, DatePicker management, and event handling in separate files
+- **Reduced Complexity**: From McCabe 49 to 22 max per module (55% reduction)
+- **Better Maintainability**: Each file < 100 lines, single responsibility
+- **No Breaking Changes**: Full backward compatibility via re-exports
+
+**Functions** (via `shopping-list/` modules):
   - `loadItems()`: Trigger state to load items
   - `handleEditItem(itemId)`: Handle edit button click for "Sonstiges" items
   - `showDepartmentSelectionDialog(departments)`: Show modal dialog for department selection
   - `showDeleteByDateDialog()`: Show modal dialog for deleting items before a selected date
   - `showPrintPreview()`: Show print preview with date-based filtering
   - `printPreviewContent(frontContent, backContent, storeName, hideDepartments, selectedDate?)`: Generate and print final content with date replacement
+
 - **State Integration**:
   - Subscribes to `shoppingListState` for automatic UI updates
   - UI re-renders automatically when state changes
