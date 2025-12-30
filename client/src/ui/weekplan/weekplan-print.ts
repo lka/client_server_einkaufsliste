@@ -3,7 +3,7 @@
  */
 
 import { printWeekplan } from '../print-utils/index.js';
-import { weekplanState } from './weekplan-state.js';
+import { weekplanState } from '../../state/weekplan-state.js';
 import { getCurrentWeekInfo } from './weekplan-navigation.js';
 import { formatISODate } from './weekplan-utils.js';
 import { MEAL_TYPES } from './types.js';

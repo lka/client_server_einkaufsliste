@@ -3,7 +3,7 @@
  */
 
 import { onWeekplanAdded, onWeekplanDeleted } from '../../data/websocket.js';
-import { weekplanState } from './weekplan-state.js';
+import { weekplanState } from '../../state/weekplan-state.js';
 import type { WeekplanEntry, DAY_NAMES } from './types.js';
 
 /**

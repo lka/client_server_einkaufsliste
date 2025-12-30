@@ -13,7 +13,7 @@
 export * from './types.js';
 
 // Export state management
-export { weekplanState } from './weekplan-state.js';
+export { weekplanState } from '../../state/weekplan-state.js';
 
 // Export utilities
 export {
@@ -74,7 +74,7 @@ export {
 
 // Re-import for internal use
 import { initializeWeekplanWebSocket as initWS } from './weekplan-websocket.js';
-import { weekplanState as state } from './weekplan-state.js';
+import { weekplanState as state } from '../../state/weekplan-state.js';
 
 /**
  * Initialize weekplan module

@@ -45,6 +45,38 @@
   - Centralized user management
   - Loading state tracking
 
+### weekplan-state.ts ✨ MOVED
+
+- **Status**: ✨ **MOVED** - Relocated from `src/ui/weekplan/` to `src/state/` to follow 4-layer architecture (2025-12-30)
+- **Responsibility**: Manage weekplan entries state with reactive updates
+- **Location**: `src/state/weekplan-state.ts` (181 lines, McCabe 26)
+- **State Storage**: `Map<dateISO, Map<meal, WeekplanEntry[]>>` - Entries organized by date and meal
+- **Functions**:
+  - `getEntries(date, meal)`: Get entries for specific date and meal (read-only copy)
+  - `getDateEntries(date)`: Get all entries for a date (read-only copy)
+  - `getAllEntries()`: Get entire store (deep read-only copy)
+  - `addEntry(entry)`: Add entry and notify listeners
+  - `removeEntry(entryId)`: Remove entry by ID and notify listeners
+  - `updateEntry(entry)`: Update existing entry and notify listeners
+  - `clearEntries()`: Clear all entries and notify listeners
+  - `setEntries(entries)`: Set entries from API response
+  - `getWeekOffset()`: Get current week offset (0 = current, -1 = previous, +1 = next)
+  - `setWeekOffset(offset)`: Set week offset and notify listeners
+  - `incrementWeekOffset()`: Navigate to next week
+  - `decrementWeekOffset()`: Navigate to previous week
+  - `subscribe(listener)`: Subscribe to state changes (returns unsubscribe function)
+  - `destroy()`: Cleanup for testing
+- **Pattern**: Observer pattern with singleton instance (`weekplanState`)
+- **State**: Single source of truth for weekplan entries and navigation
+- **Benefits**:
+  - Automatic UI updates via subscriptions
+  - Week navigation state management
+  - Organized data structure by date and meal
+  - Immutable state (returns copies)
+  - Integration with WebSocket for real-time updates
+- **Architecture Compliance**: Now correctly placed in State Layer instead of UI Layer
+- **Backward Compatibility**: Old path `src/ui/weekplan/weekplan-state.ts` re-exports for compatibility
+
 ### store-state.ts ✨ REFACTORED
 
 - **Status**: ✨ **REFACTORED** - Reduced from 662 lines to 181 lines (-73%)

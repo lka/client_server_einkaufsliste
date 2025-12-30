@@ -2,7 +2,7 @@
  * Date utilities for entry input
  */
 
-import { weekplanState } from '../weekplan-state.js';
+import { weekplanState } from '../../../state/weekplan-state.js';
 import { getMonday, formatISODate } from '../weekplan-utils.js';
 import { DAY_NAMES } from '../types.js';
 

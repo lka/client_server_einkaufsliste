@@ -32,9 +32,9 @@
 | src\ui\user-admin\rendering.ts | 110 | 7 | 14 | 20 | 27 |
 | src\ui\webdav-admin\modals.ts | 267 | 7 | 16 | 20 | 27 |
 | src\data\api\types.ts | 135 | 0 | 0 | 26 | 26 |
+| src\state\weekplan-state.ts | 181 | 2 | 22 | 24 | 26 |
 | src\ui\components\datepicker\create-calendar.ts | 162 | 12 | 24 | 14 | 26 |
 | src\ui\weekplan\ingredient-parser\parsers.ts | 83 | 5 | 12 | 21 | 26 |
-| src\ui\weekplan\weekplan-state.ts | 181 | 2 | 22 | 24 | 26 |
 | src\data\api\products-api\crud-operations.ts | 111 | 3 | 16 | 22 | 25 |
 | src\data\api\stores-api\departments.ts | 126 | 4 | 17 | 21 | 25 |
 | src\data\api\stores-api\stores.ts | 119 | 4 | 18 | 21 | 25 |
@@ -210,17 +210,18 @@
 | src\ui\weekplan\template-modal\index.ts | 4 | 0 | 0 | 0 | 0 |
 | src\ui\weekplan\template-modal.ts | 16 | 0 | 0 | 0 | 0 |
 | src\ui\weekplan\types.ts | 39 | 0 | 0 | 0 | 0 |
+| src\ui\weekplan\weekplan-state.ts | 12 | 0 | 0 | 0 | 0 |
 | src\ui\weekplan-main\index.ts | 10 | 0 | 0 | 0 | 0 |
 | src\ui\weekplan.ts | 14 | 0 | 0 | 0 | 0 |
 
 ## Summary
 
-- Total files: 210
-- Total lines: 16880
+- Total files: 211
+- Total lines: 16892
 - Total functions: 819
-- Average complexity: 8.35
-- Average cyclomatic complexity: 8.27
-- Average McCabe complexity: 12.17
+- Average complexity: 8.31
+- Average cyclomatic complexity: 8.23
+- Average McCabe complexity: 12.11
 
 ## Complexity Ratings
 

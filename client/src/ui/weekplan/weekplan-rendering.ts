@@ -9,7 +9,7 @@
 
 import { deleteWeekplanEntry } from '../../data/api.js';
 import { broadcastWeekplanDelete } from '../../data/websocket.js';
-import { weekplanState } from './weekplan-state.js';
+import { weekplanState } from '../../state/weekplan-state.js';
 import { showError, createButton } from '../components/index.js';
 
 

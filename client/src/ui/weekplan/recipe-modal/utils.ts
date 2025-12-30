@@ -3,7 +3,7 @@
  */
 
 import type { WeekplanEntry } from '../types.js';
-import { weekplanState } from '../weekplan-state.js';
+import { weekplanState } from '../../../state/weekplan-state.js';
 
 /**
  * Find an entry by ID in the weekplan state.

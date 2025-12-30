@@ -2,7 +2,7 @@
  * Weekplan navigation functionality
  */
 
-import { weekplanState } from './weekplan-state.js';
+import { weekplanState } from '../../state/weekplan-state.js';
 import { getMonday, getISOWeek, formatShortDate, getWeekDates } from './weekplan-utils.js';
 import type { WeekInfo } from './types.js';
 

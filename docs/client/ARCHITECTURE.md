@@ -113,6 +113,7 @@ Pages Layer → Entry ✗
 - **shopping-list-state.ts** - Shopping list items state
 - **user-state.ts** - Current user state
 - **store-state.ts** ✨ REFACTORED - Stores, departments, products (5 modules)
+- **weekplan-state.ts** ✨ MOVED - Weekplan entries & navigation (relocated from ui/weekplan/)
 - **product-admin-state.ts** ✨ NEW - Product administration with WebSocket
 - **store-admin-state.ts** ✨ NEW - Store administration with WebSocket
 - **template-admin-state.ts** ✨ NEW - Template management with WebSocket

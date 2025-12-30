@@ -4,7 +4,7 @@
 
 import { createWeekplanEntry } from '../../../data/api.js';
 import { broadcastWeekplanAdd } from '../../../data/websocket.js';
-import { weekplanState } from '../weekplan-state.js';
+import { weekplanState } from '../../../state/weekplan-state.js';
 import { addMealItemToDOM } from '../weekplan-rendering.js';
 import { showError } from '../../components/index.js';
 import { calculateDateForDay } from './date-utils.js';
