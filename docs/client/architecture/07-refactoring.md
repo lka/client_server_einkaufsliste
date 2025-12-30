@@ -118,7 +118,23 @@
 - autocomplete/autocomplete.ts (20, main class), autocomplete/rendering.ts (10, DOM rendering)
 - autocomplete/styles.ts (3, CSS injection), autocomplete/types.ts (0, TypeScript interfaces)
 
-### 8. Other Completed Refactorings
+### 8. user-admin.ts Modular Refactoring (Completed)
+
+- **Before**: Single file with 212 lines, McCabe 48
+- **After**: Main re-export 13 lines (McCabe 0) + 4 focused modules (max McCabe 27)
+- **Result**:
+  - Reduced complexity by 44% (McCabe 48 → 27 max)
+  - Clear separation: Initialization, Rendering, Event handlers, Utilities
+  - Maintained full backward compatibility
+  - Average module complexity: ~12.5 McCabe (low-moderate range)
+
+**User Admin Modules** (all McCabe ≤ 27):
+
+- user-admin.ts (0, re-export), user-admin/index.ts (0, barrel file)
+- user-admin/rendering.ts (27, user list rendering), user-admin/event-handlers.ts (17, user actions)
+- user-admin/initialization.ts (4, main init), user-admin/utils.ts (2, formatDate/escapeHtml)
+
+### 9. Other Completed Refactorings
 
 **store-admin.ts**:
 - **Before**: 465 lines
@@ -157,22 +173,23 @@
 
 ## Refactoring Summary
 
-**14 Recent Refactorings**:
-- **Total reduction**: 4,470 → 1,134 lines (-75%)
+**15 Recent Refactorings**:
+- **Total reduction**: 4,682 → 1,399 lines (-70%)
 - **Pattern**: Extract modular responsibilities into subdirectories
 - **Maintained**: Full backward compatibility and type safety
 - **Result**: Improved maintainability, reduced complexity, easier testing
 
 ## Refactoring Opportunities
 
-**Current Status**: ✅ **All files now have McCabe ≤48!** Great achievement through systematic refactoring.
+**Current Status**: ✅ **All files now have McCabe ≤43!** Excellent achievement through systematic refactoring.
 
 Remaining refactoring candidates (by priority, based on current complexity-report.md):
 
-- **user-admin.ts** (McCabe 48, 212 lines): Consider splitting form management from rendering logic
 - **items-api.ts** (McCabe 43, 198 lines): Split into smaller focused modules if it grows
 - **product-admin** modules (already refactored but event-handlers.ts has McCabe 43): Monitor for further splitting if needed
 - **template-admin** modules (already refactored but render-templates.ts has McCabe 41): Monitor for further splitting if needed
+
+**Recent Achievement**: user-admin.ts refactored (McCabe 48 → 27), bringing all files under McCabe 43!
 
 ## Maintaining Code Quality
 

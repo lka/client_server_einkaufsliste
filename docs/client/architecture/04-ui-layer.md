@@ -682,6 +682,62 @@ import { initializeShoppingDatePicker } from './ui/shopping-list-ui/date-picker-
 
 [→ See complete weekplan documentation](06-modules.md#weekplan-modules)
 
+#### user-admin.ts ✨ REFACTORED
+
+- **Status**: ✨ **REFACTORED** - Reduced from McCabe 48 (212 lines) to modular structure (44% reduction)
+- **Lines**: 13 | **McCabe**: 0
+- **Responsibility**: Barrel file that re-exports user administration functionality
+- **Backward Compatibility**: Existing imports continue to work without changes
+- **Modular Architecture** (`src/ui/user-admin/`):
+  - **initialization.ts**: Main UI initialization and user loading (31 lines, McCabe 4)
+  - **rendering.ts**: User list rendering (pending and all users) (110 lines, McCabe 27)
+  - **event-handlers.ts**: Approve, delete, and self-account deletion handlers (74 lines, McCabe 17)
+  - **utils.ts**: Utility functions (formatDate, escapeHtml) (28 lines, McCabe 2)
+  - **index.ts**: Public API barrel file (9 lines, McCabe 0)
+- **Features**:
+  - Admin functionality for managing users
+  - Approve pending users (unapproved registrations)
+  - View all users with status badges (Admin, Approved, Pending, Inactive)
+  - Delete users (admin only, cannot delete own account)
+  - Self-account deletion (non-admin users only)
+  - XSS protection via HTML escaping
+  - German date formatting
+- **Component Integration**:
+  - **Toast Component**: Success/error notifications for all operations
+  - Browser confirm() dialogs for destructive actions
+- **State Integration**:
+  - Uses `userState` for current user and deletion operations
+  - Uses `shoppingListState.clear()` on account deletion
+- **Event Handlers**:
+  - Approve button → `handleApproveUser()` → confirmation → API call → reload
+  - Delete button → `handleDeleteUser()` → confirmation → API call → reload
+  - Delete self-account button → confirmation → `userState.deleteCurrentUser()` → logout → redirect
+- **Rendering Logic**:
+  - **Pending Users List**: Shows unapproved users with "Freischalten" button
+  - **All Users List**: Shows all users sorted by status (pending first, then approved)
+    - Admin badge (👑) for administrators
+    - Status badges: Approved (✓), Pending (⏳), Inactive (❌)
+    - Delete button only for admins and not for own account
+    - Formatted creation date (DD.MM.YYYY HH:MM)
+- **Migration Guide**:
+  ```typescript
+  // Old (still works - backward compatible)
+  import { initUserAdmin } from './ui/user-admin.js';
+
+  // New (preferred - using barrel file)
+  import { initUserAdmin } from './ui/user-admin/index.js';
+
+  // New (specific module imports)
+  import { initUserAdmin } from './ui/user-admin/initialization.js';
+  import { renderPendingUsers, renderAllUsers } from './ui/user-admin/rendering.js';
+  import { handleApproveUser, handleDeleteUser } from './ui/user-admin/event-handlers.js';
+  ```
+- **Benefits**:
+  - **Clear Separation**: Initialization, rendering, event handlers, utilities in separate files
+  - **Reduced Complexity**: From McCabe 48 to 27 max per module (44% reduction)
+  - **Better Maintainability**: Each file < 120 lines, single responsibility
+  - **No Breaking Changes**: Full backward compatibility via re-exports
+
 #### print-utils.ts
 
 - **Responsibility**: Platform-specific print functionality with optimized layout

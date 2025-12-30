@@ -232,6 +232,23 @@ radon mi src -s >> complexity-python.txt
     - Alle bestehenden Imports funktionieren weiterhin
   - **Status**: ✅ Alle Dateien nun McCabe ≤48
 
+- **2025-12-30**: Client-Refactoring `user-admin.ts` - Modularisierung User Management
+  - **Trennung**: Initialization, Rendering, Event Handlers, Utilities in separate Module aufgeteilt
+  - **Komplexität reduziert**: McCabe 48 → 27 (44% Reduktion)
+  - **Neue Struktur**:
+    - `user-admin/initialization.ts`: Main UI init and user loading (31 Zeilen, McCabe 4)
+    - `user-admin/rendering.ts`: User list rendering (110 Zeilen, McCabe 27)
+    - `user-admin/event-handlers.ts`: Approve/delete handlers (74 Zeilen, McCabe 17)
+    - `user-admin/utils.ts`: Utility functions (28 Zeilen, McCabe 2)
+    - `user-admin/index.ts`: Public API (9 Zeilen, McCabe 0)
+    - `user-admin.ts`: Backward Compatibility Re-Export (13 Zeilen, McCabe 0)
+  - **Vorteile**:
+    - Klare Trennung: Initialization, Rendering, Event Handlers, Utilities
+    - Jedes Modul < 120 Zeilen, Single Responsibility
+    - Volle Backward Compatibility über Re-Exports
+    - Alle bestehenden Imports funktionieren weiterhin
+  - **Status**: ✅ **Alle Dateien nun McCabe ≤43!** Neuer Meilenstein erreicht
+
 ## TypeScript/JavaScript (Client)
 
 ### Tool: complexity-report
