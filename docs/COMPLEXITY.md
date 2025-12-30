@@ -268,6 +268,22 @@ radon mi src -s >> complexity-python.txt
     - Alle bestehenden Imports funktionieren weiterhin
   - **Status**: ✅ Alle Dateien weiterhin McCabe ≤43
 
+- **2025-12-30**: Client-Refactoring `items-api.ts` - Modularisierung Items API
+  - **Trennung**: Fetch, Create/Delete, Convert Operations in separate Module aufgeteilt
+  - **Komplexität reduziert**: McCabe 43 → 27 (37% Reduktion)
+  - **Neue Struktur**:
+    - `items-api/create-delete-operations.ts`: Add/Delete items (104 Zeilen, McCabe 27)
+    - `items-api/fetch-operations.ts`: Fetch items (63 Zeilen, McCabe 11)
+    - `items-api/convert-operations.ts`: Convert to product (42 Zeilen, McCabe 5)
+    - `items-api/index.ts`: Public API (6 Zeilen, McCabe 0)
+    - `items-api.ts`: Backward Compatibility Re-Export (19 Zeilen, McCabe 0)
+  - **Vorteile**:
+    - Klare Trennung: Fetch, Create/Delete, Convert
+    - Jedes Modul < 105 Zeilen, Single Responsibility
+    - Volle Backward Compatibility über Re-Exports
+    - Alle bestehenden Imports funktionieren weiterhin
+  - **Status**: ✅ **Alle Dateien nun McCabe ≤41!** Neuer Meilenstein erreicht (höchste Datei reduziert)
+
 ## TypeScript/JavaScript (Client)
 
 ### Tool: complexity-report

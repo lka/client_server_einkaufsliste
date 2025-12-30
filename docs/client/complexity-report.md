@@ -2,7 +2,6 @@
 
 | File | Lines | Functions | Complexity | Cyclomatic | McCabe |
 |------|-------|-----------|------------|------------|--------|
-| src\data\api\items-api.ts | 198 | 6 | 28 | 37 | 43 |
 | src\ui\weekplan.ts | 182 | 13 | 34 | 30 | 43 |
 | src\data\api\products-api.ts | 209 | 6 | 29 | 36 | 42 |
 | src\data\api\templates-api.ts | 169 | 5 | 24 | 37 | 42 |
@@ -30,6 +29,7 @@
 | src\ui\components\dropdown\searchable-dropdown.ts | 116 | 12 | 20 | 17 | 29 |
 | src\data\websocket\connection.ts | 150 | 10 | 21 | 18 | 28 |
 | src\ui\weekplan\modal-shared.ts | 249 | 16 | 24 | 12 | 28 |
+| src\data\api\items-api\create-delete-operations.ts | 104 | 3 | 16 | 24 | 27 |
 | src\state\shopping-list-state.ts | 202 | 5 | 19 | 22 | 27 |
 | src\ui\components\toast.ts | 326 | 10 | 18 | 17 | 27 |
 | src\ui\user-admin\rendering.ts | 110 | 7 | 14 | 20 | 27 |
@@ -96,6 +96,7 @@
 | src\ui\shopping-list\print-helpers.ts | 63 | 5 | 10 | 7 | 12 |
 | src\ui\store-admin\utils.ts | 43 | 1 | 5 | 11 | 12 |
 | src\ui\units-admin\units-admin-actions.ts | 54 | 3 | 6 | 9 | 12 |
+| src\data\api\items-api\fetch-operations.ts | 63 | 2 | 8 | 9 | 11 |
 | src\state\store-state.ts | 140 | 2 | 2 | 9 | 11 |
 | src\ui\shopping-list\filters.ts | 59 | 6 | 9 | 5 | 11 |
 | src\ui\weekplan\recipe-modal\ingredient-renderer.ts | 78 | 5 | 7 | 6 | 11 |
@@ -127,6 +128,7 @@
 | src\ui\user-menu.ts | 47 | 4 | 5 | 2 | 6 |
 | src\ui\weekplan\weekplan-navigation.ts | 60 | 6 | 6 | 0 | 6 |
 | src\ui\weekplan\weekplan-print.ts | 28 | 3 | 5 | 3 | 6 |
+| src\data\api\items-api\convert-operations.ts | 42 | 1 | 4 | 4 | 5 |
 | src\data\websocket\broadcasts.ts | 37 | 5 | 5 | 0 | 5 |
 | src\state\user-state.ts | 98 | 1 | 2 | 4 | 5 |
 | src\ui\components\autocomplete\types.ts | 17 | 0 | 0 | 5 | 5 |
@@ -159,6 +161,8 @@
 | src\ui\template-admin.ts | 19 | 1 | 1 | 0 | 1 |
 | src\ui\weekplan\entry-input\date-utils.ts | 20 | 1 | 1 | 0 | 1 |
 | src\data\api\index.ts | 16 | 0 | 0 | 0 | 0 |
+| src\data\api\items-api\index.ts | 6 | 0 | 0 | 0 | 0 |
+| src\data\api\items-api.ts | 19 | 0 | 0 | 0 | 0 |
 | src\data\api\stores-api\index.ts | 20 | 0 | 0 | 0 | 0 |
 | src\data\api\stores-api.ts | 20 | 0 | 0 | 0 | 0 |
 | src\data\api\webdav-api\index.ts | 19 | 0 | 0 | 0 | 0 |
@@ -191,12 +195,12 @@
 
 ## Summary
 
-- Total files: 186
-- Total lines: 16597
+- Total files: 190
+- Total lines: 16633
 - Total functions: 814
-- Average complexity: 9.40
-- Average cyclomatic complexity: 9.33
-- Average McCabe complexity: 13.71
+- Average complexity: 9.20
+- Average cyclomatic complexity: 9.14
+- Average McCabe complexity: 13.42
 
 ## Complexity Ratings
 

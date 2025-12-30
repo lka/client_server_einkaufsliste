@@ -151,7 +151,23 @@
 - entry-input/input-creation.ts (16, input & autocomplete), entry-input/entry-handler.ts (13, main handler)
 - entry-input/date-utils.ts (1, date calculation)
 
-### 10. Other Completed Refactorings
+### 10. items-api.ts Modular Refactoring (Completed)
+
+- **Before**: Single file with 198 lines, McCabe 43
+- **After**: Main re-export 19 lines (McCabe 0) + 3 focused modules (max McCabe 27)
+- **Result**:
+  - Reduced complexity by 37% (McCabe 43 → 27 max)
+  - Clear separation: Fetch operations, Create/Delete operations, Convert operations
+  - Maintained full backward compatibility
+  - Average module complexity: ~14.3 McCabe (low-moderate range)
+
+**Items API Modules** (all McCabe ≤ 27):
+
+- items-api.ts (0, re-export), items-api/index.ts (0, barrel file)
+- items-api/create-delete-operations.ts (27, add/delete items), items-api/fetch-operations.ts (11, fetch items)
+- items-api/convert-operations.ts (5, convert to product)
+
+### 11. Other Completed Refactorings
 
 **store-admin.ts**:
 - **Before**: 465 lines
@@ -190,23 +206,24 @@
 
 ## Refactoring Summary
 
-**16 Recent Refactorings**:
-- **Total reduction**: 4,894 → 1,705 lines (-65%)
+**17 Recent Refactorings**:
+- **Total reduction**: 5,092 → 1,939 lines (-62%)
 - **Pattern**: Extract modular responsibilities into subdirectories
 - **Maintained**: Full backward compatibility and type safety
 - **Result**: Improved maintainability, reduced complexity, easier testing
 
 ## Refactoring Opportunities
 
-**Current Status**: ✅ **All files now have McCabe ≤43!** Excellent achievement through systematic refactoring.
+**Current Status**: ✅ **All files now have McCabe ≤41!** Outstanding achievement through systematic refactoring.
 
 Remaining refactoring candidates (by priority, based on current complexity-report.md):
 
-- **items-api.ts** (McCabe 43, 198 lines): Split into smaller focused modules if it grows
-- **product-admin** modules (already refactored but event-handlers.ts has McCabe 43): Monitor for further splitting if needed
 - **template-admin** modules (already refactored but render-templates.ts has McCabe 41): Monitor for further splitting if needed
+- **product-admin/event-handlers.ts** (McCabe 40): Well-structured, monitor for further splitting if it grows
 
-**Recent Achievement**: user-admin.ts refactored (McCabe 48 → 27), bringing all files under McCabe 43!
+**Recent Achievements**:
+- items-api.ts refactored (McCabe 43 → 27), bringing the highest complexity file down!
+- All files now McCabe ≤41 (down from ≤48)
 
 ## Maintaining Code Quality
 
