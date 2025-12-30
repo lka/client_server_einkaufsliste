@@ -253,6 +253,34 @@
 - **Migration**: WebSocket logic moved from `ui/units-admin/units-admin-websocket.ts` to State Layer
 - **Backward Compatibility**: Old WebSocket functions kept as no-ops with deprecation notices
 
+### webdav-admin-state.ts ✨ NEW
+
+- **Status**: ✨ **NEW** - State-based architecture for WebDAV settings management with WebSocket integration
+- **Responsibility**: Centralized state management for WebDAV admin with real-time synchronization
+- **Location**: `src/state/webdav-admin-state.ts` (138 lines)
+- **State Properties**:
+  - `settings: WebDAVSettings[]`: All WebDAV settings
+- **Functions**:
+  - `getState()`: Get complete state (read-only copy)
+  - `getSettings()`: Get all settings (read-only copy)
+  - `subscribe(listener)`: Subscribe to state changes (returns unsubscribe function)
+  - `loadSettings()`: Load settings from API and update state
+  - `initializeWebSocket()`: Initialize WebSocket event listeners for real-time updates
+  - `destroy()`: Cleanup WebSocket subscriptions and state
+- **WebSocket Integration**:
+  - `webdav:created`: Reloads settings when new setting is created
+  - `webdav:updated`: Reloads settings when setting is updated
+  - `webdav:deleted`: Reloads settings when setting is deleted
+  - Initialization: Called explicitly via `initializeWebSocket()` after token is confirmed available
+- **Pattern**: Observer pattern with singleton instance (`webdavAdminState`)
+- **Benefits**:
+  - Real-time synchronization across users
+  - Eliminates callback-based reloading pattern
+  - Consistent with other admin modules
+  - Automatic UI updates via subscriptions
+  - Centralized state management
+- **Migration**: Changed from callback-based pattern to state-based reactive pattern
+
 ## Testing
 
 - `shopping-list-state.test.ts`: 35 tests covering state management, subscriptions, and API integration
@@ -267,9 +295,7 @@
 - ✅ Immutable state (returns copies, not references)
 - ✅ Loading state tracking for UX
 - ✅ No direct UI manipulation
-- ✅ WebSocket integration for real-time synchronization (shopping-list, product-admin, store-admin, template-admin, units-admin)
-
-**See also**: [STATE_LAYER.md](../STATE_LAYER.md) for detailed state layer documentation.
+- ✅ WebSocket integration for real-time synchronization (shopping-list, product-admin, store-admin, template-admin, units-admin, webdav-admin)
 
 ---
 

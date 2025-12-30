@@ -56,6 +56,7 @@
 | src\state\store-state\store-operations.ts | 114 | 3 | 6 | 17 | 20 |
 | src\ui\print-utils\print-weekplan.ts | 242 | 13 | 17 | 7 | 20 |
 | src\ui\store-admin\department-handlers.ts | 93 | 6 | 11 | 13 | 19 |
+| src\ui\units-admin\units-admin-actions.ts | 85 | 4 | 10 | 15 | 19 |
 | src\ui\webdav-admin\event-handlers.ts | 89 | 13 | 13 | 6 | 19 |
 | src\state\store-state\product-operations.ts | 123 | 3 | 9 | 15 | 18 |
 | src\ui\store-admin.ts | 91 | 13 | 17 | 5 | 18 |
@@ -84,7 +85,7 @@
 | src\ui\product-admin\state.ts | 88 | 7 | 11 | 6 | 13 |
 | src\ui\shopping-list\store-manager.ts | 107 | 4 | 11 | 9 | 13 |
 | src\ui\store-admin\renderer.ts | 115 | 5 | 7 | 8 | 13 |
-| src\ui\units-admin\edit-unit-modal.ts | 146 | 6 | 8 | 7 | 13 |
+| src\ui\units-admin\edit-unit-modal.ts | 147 | 6 | 8 | 7 | 13 |
 | src\ui\units-admin\handle-drag-and-drop.ts | 39 | 4 | 10 | 9 | 13 |
 | src\ui\weekplan\entry-input\entry-handler.ts | 44 | 3 | 9 | 10 | 13 |
 | src\ui\weekplan\ingredient-parser\ingredient-parser.ts | 62 | 3 | 8 | 10 | 13 |
@@ -95,7 +96,6 @@
 | src\ui\print-utils\print-preview-content-popup.ts | 171 | 4 | 7 | 8 | 12 |
 | src\ui\shopping-list\print-helpers.ts | 63 | 5 | 10 | 7 | 12 |
 | src\ui\store-admin\utils.ts | 43 | 1 | 5 | 11 | 12 |
-| src\ui\units-admin\units-admin-actions.ts | 54 | 3 | 6 | 9 | 12 |
 | src\ui\weekplan-main\event-handlers.ts | 34 | 2 | 6 | 10 | 12 |
 | src\data\api\items-api\fetch-operations.ts | 63 | 2 | 8 | 9 | 11 |
 | src\state\store-state.ts | 140 | 2 | 2 | 9 | 11 |
@@ -106,6 +106,7 @@
 | src\data\api\templates-api\fetch-operations.ts | 60 | 2 | 8 | 8 | 10 |
 | src\state\template-admin-state.ts | 156 | 4 | 10 | 6 | 10 |
 | src\ui\components\autocomplete\rendering.ts | 74 | 8 | 10 | 2 | 10 |
+| src\ui\units-admin\units-admin-render.ts | 96 | 5 | 10 | 5 | 10 |
 | src\ui\weekplan\weekplan-websocket.ts | 47 | 4 | 8 | 6 | 10 |
 | src\data\websocket\event-system.ts | 34 | 5 | 8 | 4 | 9 |
 | src\ui\store-admin\store-handlers.ts | 47 | 3 | 5 | 6 | 9 |
@@ -114,9 +115,9 @@
 | src\ui\weekplan\ingredient-parser\fraction-converter.ts | 33 | 2 | 6 | 7 | 9 |
 | src\ui\weekplan\template-modal\quantity-adjustment.ts | 65 | 5 | 9 | 4 | 9 |
 | src\script-products.ts | 58 | 2 | 8 | 6 | 8 |
+| src\state\units-admin-state.ts | 110 | 5 | 7 | 3 | 8 |
+| src\state\webdav-admin-state.ts | 110 | 5 | 7 | 3 | 8 |
 | src\ui\components\dropdown\types.ts | 31 | 0 | 0 | 8 | 8 |
-| src\ui\units-admin\units-admin-render.ts | 86 | 3 | 8 | 5 | 8 |
-| src\ui\units-admin\units-admin-websocket.ts | 30 | 5 | 8 | 3 | 8 |
 | src\ui\user-menu\auth-handlers.ts | 37 | 3 | 7 | 5 | 8 |
 | src\ui\weekplan\recipe-modal\utils.ts | 30 | 2 | 7 | 6 | 8 |
 | src\ui\weekplan\template-modal\modal-builder.ts | 103 | 1 | 4 | 7 | 8 |
@@ -135,6 +136,7 @@
 | src\script-weekplan.ts | 46 | 1 | 6 | 5 | 6 |
 | src\ui\store-admin\modals.ts | 99 | 5 | 6 | 1 | 6 |
 | src\ui\user-menu.ts | 47 | 4 | 5 | 2 | 6 |
+| src\ui\webdav-admin.ts | 44 | 5 | 5 | 1 | 6 |
 | src\ui\weekplan\weekplan-navigation.ts | 60 | 6 | 6 | 0 | 6 |
 | src\ui\weekplan\weekplan-print.ts | 28 | 3 | 5 | 3 | 6 |
 | src\data\api\items-api\convert-operations.ts | 42 | 1 | 4 | 4 | 5 |
@@ -151,8 +153,8 @@
 | src\script-users.ts | 34 | 1 | 4 | 3 | 4 |
 | src\script-webdav.ts | 34 | 1 | 4 | 3 | 4 |
 | src\ui\components\dropdown\option-renderer.ts | 34 | 2 | 4 | 2 | 4 |
+| src\ui\units-admin\units-admin-websocket.ts | 19 | 4 | 4 | 0 | 4 |
 | src\ui\user-admin\initialization.ts | 31 | 4 | 4 | 0 | 4 |
-| src\ui\webdav-admin.ts | 35 | 3 | 3 | 1 | 4 |
 | src\ui\weekplan\template-modal\added-items.ts | 34 | 4 | 4 | 0 | 4 |
 | src\ui\weekplan\template-modal\utils.ts | 18 | 1 | 4 | 3 | 4 |
 | src\ui\components\autocomplete\styles.ts | 64 | 1 | 3 | 2 | 3 |
@@ -164,7 +166,7 @@
 | src\ui\components\dropdown.ts | 55 | 1 | 2 | 1 | 2 |
 | src\ui\components\index.ts | 120 | 2 | 2 | 0 | 2 |
 | src\ui\shopping-list\print-dialog.ts | 215 | 2 | 2 | 0 | 2 |
-| src\ui\units-admin.ts | 24 | 2 | 2 | 0 | 2 |
+| src\ui\units-admin.ts | 27 | 2 | 2 | 0 | 2 |
 | src\ui\user-admin\utils.ts | 28 | 2 | 2 | 0 | 2 |
 | src\ui\weekplan\index.ts | 63 | 2 | 2 | 0 | 2 |
 | src\ui\weekplan-main\navigation-handlers.ts | 19 | 2 | 2 | 0 | 2 |
@@ -216,12 +218,12 @@
 
 ## Summary
 
-- Total files: 211
-- Total lines: 16892
-- Total functions: 819
+- Total files: 213
+- Total lines: 17155
+- Total functions: 833
 - Average complexity: 8.31
-- Average cyclomatic complexity: 8.23
-- Average McCabe complexity: 12.11
+- Average cyclomatic complexity: 8.19
+- Average McCabe complexity: 12.10
 
 ## Complexity Ratings
 

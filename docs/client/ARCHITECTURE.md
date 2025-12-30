@@ -118,6 +118,7 @@ Pages Layer → Entry ✗
 - **store-admin-state.ts** ✨ NEW - Store administration with WebSocket
 - **template-admin-state.ts** ✨ NEW - Template management with WebSocket
 - **units-admin-state.ts** ✨ NEW - Units administration with WebSocket
+- **webdav-admin-state.ts** ✨ NEW - WebDAV settings administration with WebSocket
 
 **Pattern**: Observer pattern for reactive UI updates
 
@@ -240,9 +241,12 @@ client/src/
 │   ├── shopping-list-state.ts
 │   ├── user-state.ts
 │   ├── store-state/         # 5 modules
-│   ├── product-admin-state.ts
-│   ├── store-admin-state.ts
-│   └── template-admin-state.ts
+│   ├── weekplan-state.ts    # ✨ MOVED from ui/weekplan/
+│   ├── product-admin-state.ts  # ✨ NEW
+│   ├── store-admin-state.ts    # ✨ NEW
+│   ├── template-admin-state.ts # ✨ NEW
+│   ├── units-admin-state.ts    # ✨ NEW
+│   └── webdav-admin-state.ts   # ✨ NEW
 ├── ui/                      # UI Layer
 │   ├── components/          # 9 components
 │   │   ├── button.ts

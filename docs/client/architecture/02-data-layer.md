@@ -110,6 +110,16 @@ import { createDepartment } from './data/api/stores-api/departments.js';
   - `updateProduct(productId, updates)`: Update product (supports name, storeId, departmentId, fresh, manufacturer)
   - `deleteProduct(productId)`: Delete product
 
+#### api/units-api.ts
+
+- **Lines**: 125 | **McCabe**: 20
+- **Responsibility**: Measurement units management
+- **Functions**:
+  - `fetchUnits()`: Get all measurement units
+  - `createUnit(data)`: Create new unit with name and sort_order
+  - `updateUnit(id, data)`: Update unit (partial updates supported)
+  - `deleteUnit(id)`: Delete unit
+
 #### api/users-api.ts
 
 - **Lines**: 114 | **McCabe**: 23

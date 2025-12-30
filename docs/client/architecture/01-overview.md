@@ -54,6 +54,13 @@ The shopping list client is a TypeScript application built with a **four-layer a
 │   │  - filtered[]│  - listeners │  - listeners     │        │
 │   │  - listeners │  - loading   │  - loading       │        │
 │   └──────────────┴──────────────┴──────────────────┘        │
+│   ┌──────────────┬──────────────┐                           │
+│   │  units-admin │  webdav-     │                           │
+│   │  -state      │  admin-state │                           │
+│   │  - units[]   │  - settings[]│                           │
+│   │  - listeners │  - listeners │                           │
+│   │  - loading   │  - loading   │                           │
+│   └──────────────┴──────────────┘                           │
 │         - Centralized state management                      │
 │         - Observer pattern for reactive updates             │
 │         - Single source of truth with CRUD operations       │
@@ -129,9 +136,12 @@ The State Layer provides:
 - `shopping-list-state.ts` - Shopping list items state
 - `user-state.ts` - Current user state
 - `store-state.ts` ✨ REFACTORED - Stores, departments, products
-- `product-admin-state.ts` - Product administration
-- `store-admin-state.ts` - Store administration
-- `template-admin-state.ts` - Template administration
+- `weekplan-state.ts` ✨ MOVED - Weekplan entries & navigation
+- `product-admin-state.ts` ✨ NEW - Product administration
+- `store-admin-state.ts` ✨ NEW - Store administration
+- `template-admin-state.ts` ✨ NEW - Template administration
+- `units-admin-state.ts` ✨ NEW - Units administration
+- `webdav-admin-state.ts` ✨ NEW - WebDAV settings administration
 
 [→ See complete State Layer documentation](03-state-layer.md)
 
