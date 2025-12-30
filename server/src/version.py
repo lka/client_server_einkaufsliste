@@ -9,7 +9,7 @@ import subprocess
 from pathlib import Path
 
 # Version from git tags (updated during build)
-__version__ = "6.2.8"
+__version__ = "6.2.9"
 
 
 def get_version_from_git() -> str:
