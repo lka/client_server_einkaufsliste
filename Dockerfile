@@ -53,6 +53,7 @@ COPY --from=client-builder /app/client/styles.css ./client/styles.css
 
 # Copy page templates
 COPY client/src/pages/*.html ./client/src/pages/
+COPY client/src/ui/components/*.html ./client/src/ui/components/
 
 # Create data directory for SQLite database
 RUN mkdir -p /app/data

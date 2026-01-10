@@ -11,7 +11,8 @@ on:
 
 env:
   REGISTRY: docker.io
-  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/einkaufsliste
+  # Use secret or fallback to 'user' if not set (prevents validation errors)
+  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME || 'user' }}/einkaufsliste
 
 jobs:
   docker:
@@ -65,8 +66,6 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          build-args: |
-            VERSION=${{ steps.meta.outputs.version }}
 
       - name: Docker Hub Description
         uses: peter-evans/dockerhub-description@v4
