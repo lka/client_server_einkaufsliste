@@ -9,15 +9,10 @@ services:
     volumes:
       # Persist database outside container
       - ./data:/app/data
-    environment:
-      # Override these in .env file or in production
-      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
-      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
-      - DATABASE_URL=sqlite:///./data/data.db
-      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-changeme}
-      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@example.com}
-      - UNAPPROVED_USER_EXPIRY_HOURS=${UNAPPROVED_USER_EXPIRY_HOURS:-48}
+    # Load all configuration from .env file
+    # Copy .env.docker.example to .env and adjust values
+    env_file:
+      - .env
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/version')"]

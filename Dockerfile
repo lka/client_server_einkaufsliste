@@ -61,8 +61,8 @@ RUN mkdir -p /app/data
 EXPOSE 8000
 
 # Set environment variables
-ENV PYTHONUNBUFFERED=1 \
-    DATABASE_URL=sqlite:///./data/data.db
+# Only set system-level defaults, user config passed at runtime
+ENV PYTHONUNBUFFERED=1
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \

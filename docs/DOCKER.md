@@ -183,15 +183,44 @@ docker-compose logs --tail=100
 
 ## Umgebungsvariablen
 
+**Wichtig**: Alle Umgebungsvariablen werden zur Laufzeit übergeben, **nicht** im Dockerfile hardcodiert.
+
+**Konfiguration über `.env` Datei (empfohlen):**
+
+```bash
+# .env.docker.example nach .env kopieren
+cp .env.docker.example .env
+
+# Werte anpassen
+nano .env
+```
+
+**Verfügbare Variablen:**
+
 | Variable | Beschreibung | Standard | Erforderlich |
 |----------|--------------|----------|--------------|
-| `SECRET_KEY` | JWT Secret Key | `dev-secret-key-change-in-production` | Ja (Produktion) |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | Token-Gültigkeit (Minuten) | `30` | Nein |
 | `DATABASE_URL` | Datenbank-URL | `sqlite:///./data/data.db` | Nein |
-| `ADMIN_USERNAME` | Admin-Benutzername | `admin` | Ja |
-| `ADMIN_PASSWORD` | Admin-Passwort | - | Ja |
+| `SECRET_KEY` | JWT Secret Key | **Kein Default** | **Ja** |
+| `ADMIN_USERNAME` | Admin-Benutzername | **Kein Default** | **Ja** |
+| `ADMIN_PASSWORD` | Admin-Passwort | **Kein Default** | **Ja** |
 | `ADMIN_EMAIL` | Admin-E-Mail | `admin@example.com` | Nein |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | Token-Gültigkeit (Minuten) | `30` | Nein |
 | `UNAPPROVED_USER_EXPIRY_HOURS` | Stunden bis User-Löschung | `48` | Nein |
+| `MAIN_SHOPPING_DAY` | Haupt-Einkaufstag (0=Mo, 6=So) | `2` (Mittwoch) | Nein |
+| `FRESH_PRODUCTS_DAY` | Frische-Produkte-Tag (0=Mo, 6=So) | `4` (Freitag) | Nein |
+
+**Verwendung:**
+
+```bash
+# Mit docker-compose (nutzt env_file automatisch)
+docker-compose up -d
+
+# Mit docker run und --env-file
+docker run --env-file .env einkaufsliste:latest
+
+# Oder einzelne Variablen via -e
+docker run -e SECRET_KEY=xxx -e ADMIN_USERNAME=admin einkaufsliste:latest
+```
 
 ## Healthcheck
 
