@@ -33,7 +33,7 @@ nano .env
 # 3. Run container with .env file
 docker run -d \
   -p 8000:8000 \
-  -v einkaufsliste-data:/app/data \
+  -v ./data:/app/data \
   --env-file .env \
   --name einkaufsliste \
   einkaufsliste:latest

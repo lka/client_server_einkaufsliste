@@ -37,7 +37,7 @@ COPY server/ ./server/
 
 # Install Python dependencies
 # Use --no-deps for setuptools_scm since we don't have .git in Docker
-RUN pip install --no-cache-dir fastapi uvicorn[standard] sqlmodel python-jose[cryptography] bcrypt python-multipart python-readenv
+RUN pip install --no-cache-dir fastapi uvicorn[standard] sqlmodel python-jose[cryptography] bcrypt python-multipart python-readenv requests
 
 # Copy built client from builder stage
 COPY --from=client-builder /app/client/dist ./client/dist
