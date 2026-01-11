@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - master
-      - main
 
 jobs:
   release:
@@ -37,7 +36,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           default_bump: patch
-          release_branches: master,main
+          release_branches: master
           pre_release_branches: develop,beta
           # Conventional Commit Prefixes:
           # feat: -> minor version bump (new feature)

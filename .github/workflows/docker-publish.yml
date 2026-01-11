@@ -3,10 +3,7 @@ name: Docker Build & Publish
 on:
   push:
     tags:
-      - 'v*.*.*'  # Trigger on semantic version tags (e.g., v1.0.0, v1.2.3)
-    branches:
-      - master
-      - main
+      - 'v*.*.*'  # Trigger only on semantic version tags created by auto-release.yml (e.g., v1.0.0, v1.2.3)
   workflow_dispatch:  # Allow manual triggering
 
 env:
@@ -46,14 +43,12 @@ jobs:
         with:
           images: ${{ env.IMAGE_NAME }}
           tags: |
-            # Tag with version on release tags
+            # Tag with semantic version (e.g., v1.2.3 -> 1.2.3, 1.2, 1)
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
-            # Tag with branch name
-            type=ref,event=branch
-            # Tag with 'latest' on master/main
-            type=raw,value=latest,enable={{is_default_branch}}
+            # Always tag latest for version tags
+            type=raw,value=latest
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
