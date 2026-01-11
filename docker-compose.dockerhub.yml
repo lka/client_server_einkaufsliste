@@ -1,0 +1,46 @@
+# Docker Compose configuration using pre-built image from DockerHub
+# Usage: docker-compose -f docker-compose.dockerhub.yml up -d
+
+services:
+  einkaufsliste:
+    image: lkaberlin/einkaufsliste:latest
+    container_name: einkaufsliste-app
+    ports:
+      - "8000:8000"
+    volumes:
+      # Persist database outside container
+      - ./data:/app/data
+    # Load all configuration from .env file
+    # Copy .env.docker.example to .env and adjust values
+    env_file:
+      - .env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/version')"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    labels:
+      # Enable Watchtower auto-update for this container
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    volumes:
+      # Access to Docker socket to manage containers
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      # Check for updates every 6 hours (21600 seconds)
+      - WATCHTOWER_POLL_INTERVAL=21600
+      # Only update containers with the watchtower label
+      - WATCHTOWER_LABEL_ENABLE=true
+      # Clean up old images after update
+      - WATCHTOWER_CLEANUP=true
+      # Include stopped containers
+      - WATCHTOWER_INCLUDE_STOPPED=true
+      # Enable notifications (optional, requires additional config)
+      # - WATCHTOWER_NOTIFICATIONS=shoutrrr
+      # - WATCHTOWER_NOTIFICATION_URL=
+    restart: unless-stopped

@@ -117,14 +117,42 @@
 ## 🐳 Deployment & Debugging
 
 ### [DOCKER.md](DOCKER.md)
-**Docker Deployment Anleitung**
+**Docker Deployment Guide - Übersicht**
 
-- Docker & Docker Compose Setup
-- Container-Konfiguration
-- Environment Variables
-- Volume-Management
-- Production Deployment
+- Quick Start (DockerHub vs. Lokaler Build)
+- Environment Variablen
+- Health Checks & Monitoring
+- Backup & Restore
+- Security Checklist
 - Troubleshooting
+- Verweise auf detaillierte Dokumentation
+
+### [DOCKER_COMPOSE.md](DOCKER_COMPOSE.md)
+**Docker Compose Setups**
+
+- Production Setup (DockerHub + Watchtower)
+- Development Setup (Lokaler Build)
+- Traefik Setup (HTTPS/SSL)
+- Resource Limits & Logging
+- Best Practices
+
+### [DOCKER_BUILD.md](DOCKER_BUILD.md)
+**Docker Build & Development**
+
+- Multi-Stage Build Prozess
+- Build Commands & Optimization
+- Development Workflow
+- Image-Analyse & Security
+- Build Troubleshooting
+
+### [DOCKER_README.md](DOCKER_README.md)
+**DockerHub Dokumentation (English)**
+
+- Quick Start Examples
+- Environment Variables Reference
+- Production Deployment with Traefik
+- Security Best Practices
+- Watchtower Auto-Updates
 
 ### [WEBSOCKET-DEBUG.md](WEBSOCKET-DEBUG.md)
 **WebSocket Debugging Guide**
@@ -224,8 +252,11 @@
 6. [client/ui/weekplan.md](client/ui/weekplan.md) - Weekplan UI
 
 ### Deployment & Debugging
-1. [DOCKER.md](DOCKER.md) - Docker Deployment
-2. [WEBSOCKET-DEBUG.md](WEBSOCKET-DEBUG.md) - WebSocket Debugging
+1. [DOCKER.md](DOCKER.md) - Docker Deployment (Übersicht)
+2. [DOCKER_COMPOSE.md](DOCKER_COMPOSE.md) - Docker Compose Setups
+3. [DOCKER_BUILD.md](DOCKER_BUILD.md) - Docker Build & Development
+4. [DOCKER_README.md](DOCKER_README.md) - DockerHub Dokumentation (EN)
+5. [WEBSOCKET-DEBUG.md](WEBSOCKET-DEBUG.md) - WebSocket Debugging
 
 ### Projekt-Historie
 1. [RELEASES.md](RELEASES.md) - Versionsgeschichte
@@ -256,7 +287,10 @@ docs/
 ├── VERSIONING.md             # Release-Workflow
 ├── COMMIT_CONVENTION.md      # Conventional Commits Referenz
 │
-├── DOCKER.md                 # Docker Deployment
+├── DOCKER.md                 # Docker Deployment (Übersicht)
+├── DOCKER_COMPOSE.md         # Docker Compose Setups
+├── DOCKER_BUILD.md           # Docker Build & Development
+├── DOCKER_README.md          # DockerHub Dokumentation (EN)
 ├── WEBSOCKET-DEBUG.md        # WebSocket Debugging Guide
 │
 ├── server/                   # Server-spezifische Dokumentationen

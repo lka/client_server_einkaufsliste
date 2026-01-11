@@ -1,172 +1,162 @@
-# Docker Deployment
+# Docker Deployment Guide
 
 > **📚 Alle Dokumentationen:** Siehe [Dokumentations-Index](INDEX.md)
 
-Diese Anleitung beschreibt, wie Sie die Einkaufsliste-Anwendung mit Docker deployen.
+Diese Seite bietet einen Überblick über die verschiedenen Docker-Deployment-Optionen der Einkaufsliste-Anwendung.
 
-## Voraussetzungen
+## 🚀 Quick Start
 
-- Docker 20.10+ installiert
-- Docker Compose V2+ installiert
-- (Optional) Git für Clone des Repositories
-
-## Schnellstart mit Docker Compose (Empfohlen)
-
-### 1. Environment-Variablen konfigurieren
+### Option 1: DockerHub Image (Empfohlen für Production)
 
 ```bash
-# Kopieren Sie die Beispiel-Datei
+# 1. .env Datei erstellen
 cp .env.docker.example .env
+nano .env  # SECRET_KEY und ADMIN_PASSWORD setzen
 
-# Generieren Sie einen sicheren SECRET_KEY
+# 2. Container starten
+docker-compose -f docker-compose.dockerhub.yml up -d
+
+# 3. Browser öffnen
+http://localhost:8000
+```
+
+➡️ **Details:** Siehe [docker-compose.dockerhub.yml](../docker-compose.dockerhub.yml)
+
+### Option 2: Lokaler Build (Für Entwicklung)
+
+```bash
+# 1. .env Datei erstellen
+cp .env.docker.example .env
+nano .env
+
+# 2. Build und Start
+docker-compose up -d --build
+
+# 3. Browser öffnen
+http://localhost:8000
+```
+
+➡️ **Details:** Siehe [docker-compose.yml](../docker-compose.yml)
+
+## 📖 Detaillierte Dokumentation
+
+| Thema | Beschreibung | Link |
+|-------|--------------|------|
+| **Production Deployment** | DockerHub Image mit Watchtower Auto-Updates | [DOCKER_COMPOSE.md](DOCKER_COMPOSE.md) |
+| **Development Build** | Lokaler Build für Entwickler | [DOCKER_BUILD.md](DOCKER_BUILD.md) |
+| **DockerHub README** | Öffentliche Dokumentation auf DockerHub (EN) | [DOCKER_README.md](DOCKER_README.md) |
+
+## 🔧 Environment Variablen
+
+Alle Konfiguration erfolgt über `.env` Datei:
+
+| Variable | Erforderlich | Beschreibung |
+|----------|--------------|--------------|
+| `DATABASE_URL` | Nein | Datenbank-Pfad (Standard: `sqlite:///./data/data.db`) |
+| `SECRET_KEY` | **Ja** | JWT Secret - **NIEMALS Default-Wert verwenden!** |
+| `ADMIN_USERNAME` | **Ja** | Initial Admin Username |
+| `ADMIN_PASSWORD` | **Ja** | Initial Admin Password - **Sicheres Passwort!** |
+| `ADMIN_EMAIL` | Nein | Admin E-Mail Adresse |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | Nein | Token-Gültigkeit (Standard: 30) |
+| `UNAPPROVED_USER_EXPIRY_HOURS` | Nein | Stunden bis User-Löschung (Standard: 48) |
+
+**Sichere Secrets generieren:**
+```bash
+# SECRET_KEY
 python -c "import secrets; print(secrets.token_hex(32))"
 
-# Bearbeiten Sie .env und setzen Sie:
-# - SECRET_KEY (der generierte Wert)
-# - ADMIN_PASSWORD (ein sicheres Passwort)
+# ADMIN_PASSWORD
+python -c "import secrets; print(secrets.token_urlsafe(16))"
 ```
 
-**Wichtig**: Ändern Sie `SECRET_KEY` und `ADMIN_PASSWORD` vor dem produktiven Einsatz!
+## 📦 Volumes
 
-### 2. Container starten
+- `/app/data` - SQLite Datenbank und User-Daten
+  - **Wichtig:** Immer als Volume mounten für Datenpersistenz!
+  - Mount: `-v ./data:/app/data` oder `./data:/app/data` in docker-compose
+
+## 🏥 Health Check
+
+Der Container hat einen integrierten Health Check:
 
 ```bash
-# Build und Start
-docker-compose up -d
-
-# Logs anzeigen
-docker-compose logs -f
-
 # Status prüfen
-docker-compose ps
+docker inspect einkaufsliste-app --format='{{.State.Health.Status}}'
+
+# Manueller Test
+curl http://localhost:8000/api/version
 ```
 
-### 3. Anwendung öffnen
+## 🔒 Sicherheit
 
-Öffnen Sie Ihren Browser und navigieren Sie zu:
-- **http://localhost:8000** - Anwendung
-- **http://localhost:8000/api/version** - Version-Endpoint (Healthcheck)
+### Production Checklist
 
-### 4. Admin-Login
+- ✅ **SECRET_KEY**: Zufälligen Wert generieren (siehe oben)
+- ✅ **ADMIN_PASSWORD**: Starkes Passwort (min. 12 Zeichen)
+- ✅ **.env Datei**: Niemals in Git committen (in `.gitignore`)
+- ✅ **HTTPS**: Reverse Proxy mit SSL verwenden (z.B. Traefik)
+- ✅ **Backups**: Regelmäßige Backups über `/backup` Page
+- ✅ **Updates**: Watchtower für automatische Updates aktivieren
 
-Melden Sie sich mit den in `.env` konfigurierten Admin-Zugangsdaten an:
-- **Benutzername**: Wert von `ADMIN_USERNAME` (Standard: `admin`)
-- **Passwort**: Wert von `ADMIN_PASSWORD`
-
-## Manuelle Docker-Nutzung (ohne Compose)
-
-### Build
+### .env Dateiberechtigungen
 
 ```bash
-# Image bauen
-docker build -t einkaufsliste:latest .
-
-# Mit Build-Args (optional)
-docker build \
-  --build-arg PYTHON_VERSION=3.11 \
-  -t einkaufsliste:latest .
+chmod 600 .env
 ```
 
-### Run
+## 🔄 Updates
+
+### Mit Watchtower (Automatisch)
+
+Watchtower prüft alle 6 Stunden auf neue Images:
 
 ```bash
-# Container starten
-docker run -d \
-  --name einkaufsliste \
-  -p 8000:8000 \
-  -v $(pwd)/data:/app/data \
-  -e SECRET_KEY="your-secret-key" \
-  -e ADMIN_USERNAME="admin" \
-  -e ADMIN_PASSWORD="your-password" \
-  einkaufsliste:latest
-
-# Logs anzeigen
-docker logs -f einkaufsliste
-
-# Container stoppen
-docker stop einkaufsliste
-
-# Container entfernen
-docker rm einkaufsliste
+# In docker-compose.dockerhub.yml bereits konfiguriert
+docker-compose -f docker-compose.dockerhub.yml up -d
 ```
 
-## Multi-Stage Build
-
-Das Dockerfile nutzt einen Multi-Stage Build:
-
-1. **Stage 1 (client-builder)**: Node.js 20 Alpine
-   - Installiert npm dependencies
-   - Kompiliert TypeScript zu JavaScript
-   - Baut den Client
-
-2. **Stage 2 (final)**: Python 3.11 Alpine
-   - Installiert Python dependencies
-   - Kopiert den gebauten Client aus Stage 1
-   - Startet den uvicorn Server
-
-Vorteile:
-- **Kleines Image**: Finales Image enthält nur Python + kompilierten Client (kein Node.js)
-- **Schneller Build**: Nutzt Docker Layer Caching
-- **Sicher**: Keine Build-Tools im finalen Image
-
-## Persistenz & Volumes
-
-### Datenbank-Persistenz
-
-Die SQLite-Datenbank wird in einem Volume gespeichert:
-
-```yaml
-volumes:
-  - ./data:/app/data
-```
-
-Dies stellt sicher, dass Daten bei Container-Neustarts erhalten bleiben.
-
-### Backup der Datenbank
+### Manuell
 
 ```bash
-# Backup erstellen (über die Web-UI empfohlen)
-# Oder manuell die Datei kopieren:
-docker cp einkaufsliste:/app/data/data.db ./backup-$(date +%Y%m%d).db
+# DockerHub Image
+docker pull lkaberlin/einkaufsliste:latest
+docker-compose -f docker-compose.dockerhub.yml up -d
 
-# Restore (Container muss gestoppt sein)
-docker-compose down
-cp backup-20240115.db ./data/data.db
-docker-compose up -d
-```
-
-**Empfohlen**: Nutzen Sie die Backup-Funktion in der Web-UI (`/backup`), da diese strukturunabhängig ist.
-
-## Container-Management
-
-### Starten/Stoppen
-
-```bash
-# Starten
-docker-compose up -d
-
-# Stoppen (Container behalten)
-docker-compose stop
-
-# Stoppen und entfernen
-docker-compose down
-
-# Stoppen, entfernen und Volumes löschen (VORSICHT: Datenverlust!)
-docker-compose down -v
-```
-
-### Updates
-
-```bash
-# Neues Image bauen
-docker-compose build
-
-# Container neu starten mit neuem Image
-docker-compose up -d
-
-# Oder in einem Schritt
+# Lokaler Build
 docker-compose up -d --build
 ```
+
+## 🛠️ Troubleshooting
+
+### Container startet nicht
+
+```bash
+# Logs prüfen
+docker-compose logs -f
+
+# Container-Status
+docker ps -a
+```
+
+### Datenbank-Fehler
+
+```bash
+# Datenbank prüfen
+ls -lh ./data/data.db
+
+# Berechtigungen setzen
+chmod 666 ./data/data.db
+```
+
+### Port bereits belegt
+
+```bash
+# Port in docker-compose.yml ändern
+ports:
+  - "8080:8000"  # statt 8000:8000
+```
+
+## 📊 Monitoring
 
 ### Logs
 
@@ -174,76 +164,20 @@ docker-compose up -d --build
 # Alle Logs
 docker-compose logs
 
-# Live-Logs (follow)
+# Live-Logs
 docker-compose logs -f
 
-# Nur letzte 100 Zeilen
-docker-compose logs --tail=100
+# Nur App
+docker logs einkaufsliste-app
 ```
 
-## Umgebungsvariablen
-
-**Wichtig**: Alle Umgebungsvariablen werden zur Laufzeit übergeben, **nicht** im Dockerfile hardcodiert.
-
-**Konfiguration über `.env` Datei (empfohlen):**
-
-```bash
-# .env.docker.example nach .env kopieren
-cp .env.docker.example .env
-
-# Werte anpassen
-nano .env
-```
-
-**Verfügbare Variablen:**
-
-| Variable | Beschreibung | Standard | Erforderlich |
-|----------|--------------|----------|--------------|
-| `DATABASE_URL` | Datenbank-URL | `sqlite:///./data/data.db` | Nein |
-| `SECRET_KEY` | JWT Secret Key | **Kein Default** | **Ja** |
-| `ADMIN_USERNAME` | Admin-Benutzername | **Kein Default** | **Ja** |
-| `ADMIN_PASSWORD` | Admin-Passwort | **Kein Default** | **Ja** |
-| `ADMIN_EMAIL` | Admin-E-Mail | `admin@example.com` | Nein |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | Token-Gültigkeit (Minuten) | `30` | Nein |
-| `UNAPPROVED_USER_EXPIRY_HOURS` | Stunden bis User-Löschung | `48` | Nein |
-| `MAIN_SHOPPING_DAY` | Haupt-Einkaufstag (0=Mo, 6=So) | `2` (Mittwoch) | Nein |
-| `FRESH_PRODUCTS_DAY` | Frische-Produkte-Tag (0=Mo, 6=So) | `4` (Freitag) | Nein |
-
-**Verwendung:**
-
-```bash
-# Mit docker-compose (nutzt env_file automatisch)
-docker-compose up -d
-
-# Mit docker run und --env-file
-docker run --env-file .env einkaufsliste:latest
-
-# Oder einzelne Variablen via -e
-docker run -e SECRET_KEY=xxx -e ADMIN_USERNAME=admin einkaufsliste:latest
-```
-
-## Healthcheck
-
-Der Container enthält einen Healthcheck:
-
-```yaml
-healthcheck:
-  test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/version')"]
-  interval: 30s
-  timeout: 3s
-  retries: 3
-  start_period: 5s
-```
-
-Status prüfen:
+### Container Status
 
 ```bash
 docker-compose ps
-# oder
-docker inspect einkaufsliste-app --format='{{.State.Health.Status}}'
 ```
 
-## Netzwerk-Zugriff
+## 🌐 Netzwerk
 
 ### Lokaler Zugriff
 
@@ -251,154 +185,50 @@ docker inspect einkaufsliste-app --format='{{.State.Health.Status}}'
 http://localhost:8000
 ```
 
-### Netzwerk-Zugriff (von anderen Geräten)
-
-1. Container lauscht auf `0.0.0.0:8000`
-2. Port-Mapping: `8000:8000` (Host:Container)
-3. Zugriff über Server-IP:
+### Netzwerk-Zugriff (andere Geräte)
 
 ```
 http://<server-ip>:8000
 ```
 
-**Firewall**: Stellen Sie sicher, dass Port 8000 in der Firewall erlaubt ist.
+**Firewall:** Port 8000 muss geöffnet sein.
 
-### Reverse Proxy (nginx/Traefik)
+### Mit Reverse Proxy (Empfohlen)
 
-Für produktive Deployments empfiehlt sich ein Reverse Proxy mit HTTPS:
+Beispiel mit Traefik in [DOCKER_COMPOSE.md](DOCKER_COMPOSE.md#traefik)
 
-```nginx
-# nginx Beispiel
-server {
-    listen 443 ssl;
-    server_name einkaufsliste.example.com;
+## 💾 Backup & Restore
 
-    ssl_certificate /path/to/cert.pem;
-    ssl_certificate_key /path/to/key.pem;
+### Via Web-UI (Empfohlen)
 
-    location / {
-        proxy_pass http://localhost:8000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
+1. Browser: `http://localhost:8000/backup`
+2. "Backup erstellen" klicken
+3. Backup herunterladen
+4. Für Restore: Backup hochladen und wiederherstellen
 
-## Image-Größe
-
-Das fertige Alpine-basierte Image ist optimiert:
+### Manuell
 
 ```bash
-# Image-Größe prüfen
-docker images einkaufsliste:latest
+# Backup
+docker cp einkaufsliste-app:/app/data/data.db ./backup-$(date +%Y%m%d).db
 
-# Erwartete Größe: ~300-400 MB
-# (Python 3.11 Alpine + Dependencies + Client)
-```
-
-## Troubleshooting
-
-### Container startet nicht
-
-```bash
-# Logs prüfen
-docker-compose logs
-
-# Container-Status
-docker-compose ps
-
-# In Container einsteigen
-docker-compose exec einkaufsliste sh
-```
-
-### Datenbank-Fehler
-
-```bash
-# Datenbank-Datei prüfen
-ls -lh ./data/data.db
-
-# Rechte prüfen (sollte beschreibbar sein)
-chmod 666 ./data/data.db
-```
-
-### Port bereits belegt
-
-```bash
-# Port 8000 bereits in Verwendung?
-# Ändere Port-Mapping in docker-compose.yml:
-ports:
-  - "8080:8000"  # Host:Container
-```
-
-### Build-Fehler
-
-```bash
-# Cache löschen und neu bauen
-docker-compose build --no-cache
-
-# Docker System aufräumen
-docker system prune -a
-```
-
-### Healthcheck schlägt fehl
-
-```bash
-# Manuell testen
-docker exec einkaufsliste-app python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/version')"
-
-# Server-Logs prüfen
-docker logs einkaufsliste-app
-```
-
-## Sicherheitshinweise
-
-1. **SECRET_KEY**: Immer einen zufälligen, sicheren Wert verwenden
-2. **ADMIN_PASSWORD**: Starkes Passwort setzen (min. 12 Zeichen)
-3. **.env Datei**: Niemals in Git committen (bereits in `.gitignore`)
-4. **HTTPS**: In Produktion immer HTTPS verwenden (Reverse Proxy)
-5. **Updates**: Regelmäßig Base-Images aktualisieren
-6. **Firewall**: Port 8000 nur für vertrauenswürdige Netzwerke öffnen
-
-## Production Best Practices
-
-1. **Secrets Management**: Nutzen Sie Docker Secrets oder externe Secrets-Manager
-2. **Monitoring**: Integrieren Sie Logging (z.B. mit ELK Stack)
-3. **Backups**: Automatisierte Backups der Datenbank einrichten
-4. **Updates**: Automatische Updates mit Watchtower oder ähnlichen Tools
-5. **Resource Limits**: Setzen Sie Memory/CPU-Limits in docker-compose.yml
-
-```yaml
-services:
-  einkaufsliste:
-    # ...
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-        reservations:
-          cpus: '0.25'
-          memory: 256M
-```
-
-## Zusammenfassung
-
-**Quickstart:**
-```bash
-cp .env.docker.example .env
-# Edit .env with secure values
-docker-compose up -d
-# Open http://localhost:8000
-```
-
-**Stop:**
-```bash
+# Restore
 docker-compose down
+cp backup-20240115.db ./data/data.db
+docker-compose up -d
 ```
 
-**Update:**
-```bash
-docker-compose up -d --build
-```
+## 📚 Weiterführende Dokumentation
+
+- **[DOCKER_COMPOSE.md](DOCKER_COMPOSE.md)** - Production Setups mit docker-compose
+- **[DOCKER_BUILD.md](DOCKER_BUILD.md)** - Build-Prozess und Development
+- **[DOCKER_README.md](DOCKER_README.md)** - DockerHub Dokumentation (EN)
+- **[ARCHITECTURE.md](client/ARCHITECTURE.md)** - Anwendungs-Architektur
+- **[FEATURES.md](FEATURES.md)** - Feature-Übersicht
+
+## 🆘 Support
+
+Bei Problemen:
+1. Prüfe die Logs: `docker-compose logs -f`
+2. Checke [DOCKER_BUILD.md](DOCKER_BUILD.md#troubleshooting) für bekannte Probleme
+3. Erstelle ein Issue auf GitHub mit Logs und Fehlermeldung

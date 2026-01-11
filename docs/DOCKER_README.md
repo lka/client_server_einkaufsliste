@@ -80,13 +80,83 @@ Access the application at: `http://localhost:8000`
 
 ## Docker Compose Example
 
-### Basic Setup with .env file
+### Option 1: Using Pre-built DockerHub Image (Recommended)
+
+Use the official image from DockerHub with automatic updates via Watchtower:
+
+```yaml
+# docker-compose.dockerhub.yml
+services:
+  einkaufsliste:
+    image: lkaberlin/einkaufsliste:latest
+    container_name: einkaufsliste-app
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+    env_file:
+      - .env  # All configuration from .env file
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/version')"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    labels:
+      # Enable Watchtower auto-update for this container
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      # Check for updates every 6 hours
+      - WATCHTOWER_POLL_INTERVAL=21600
+      # Only update containers with the watchtower label
+      - WATCHTOWER_LABEL_ENABLE=true
+      # Clean up old images after update
+      - WATCHTOWER_CLEANUP=true
+      # Include stopped containers
+      - WATCHTOWER_INCLUDE_STOPPED=true
+    restart: unless-stopped
+```
+
+**Setup Steps:**
+```bash
+# 1. Copy template
+cp .env.docker.example .env
+
+# 2. Edit .env file with your values
+nano .env
+
+# 3. Start containers (app + watchtower)
+docker-compose -f docker-compose.dockerhub.yml up -d
+
+# 4. Check logs
+docker-compose -f docker-compose.dockerhub.yml logs -f
+```
+
+**Watchtower Features:**
+- ✅ Automatically checks for new image versions every 6 hours
+- ✅ Zero-downtime updates: starts new container before stopping old one
+- ✅ Cleans up old images to save disk space
+- ✅ Only updates containers with the watchtower label
+- ✅ View update logs: `docker logs -f watchtower`
+
+### Option 2: Local Build
+
+Build the image locally from source:
 
 ```yaml
 # docker-compose.yml
 services:
   einkaufsliste:
-    image: einkaufsliste:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: einkaufsliste-app
     ports:
       - "8000:8000"
@@ -111,8 +181,8 @@ cp .env.docker.example .env
 # 2. Edit .env file with your values
 nano .env
 
-# 3. Start container
-docker-compose up -d
+# 3. Build and start container
+docker-compose up -d --build
 ```
 
 ### Alternative: Inline Environment Variables
