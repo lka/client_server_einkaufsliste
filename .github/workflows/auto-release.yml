@@ -338,12 +338,24 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Docker Hub Description
-        uses: peter-evans/dockerhub-description@v5
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-          repository: ${{ secrets.DOCKERHUB_USERNAME }}/einkaufsliste
-          readme-filepath: ./docs/DOCKER_README.md
-          short-description: "Einkaufsliste - Multi-user shopping list with client-server architecture"
+      - name: Update Docker Hub Description
         continue-on-error: true
+        run: |
+          # Read the README content
+          README_CONTENT=$(cat ./docs/DOCKER_README.md | jq -Rs .)
+          SHORT_DESC="Einkaufsliste - Multi-user shopping list with client-server architecture"
+
+          # Get Docker Hub token
+          TOKEN=$(curl -s -X POST \
+            -H "Content-Type: application/json" \
+            -d "{\"username\":\"${{ secrets.DOCKERHUB_USERNAME }}\",\"password\":\"${{ secrets.DOCKERHUB_TOKEN }}\"}" \
+            https://hub.docker.com/v2/users/login/ | jq -r .token)
+
+          # Update repository description
+          curl -X PATCH \
+            -H "Authorization: JWT ${TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{\"full_description\":${README_CONTENT},\"description\":\"${SHORT_DESC}\"}" \
+            https://hub.docker.com/v2/repositories/${{ secrets.DOCKERHUB_USERNAME }}/einkaufsliste/
+
+          echo "Docker Hub description updated successfully"
