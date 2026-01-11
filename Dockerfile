@@ -67,6 +67,7 @@ EXPOSE 8000
 # Set environment variables
 # Only set system-level defaults, user config passed at runtime
 ENV PYTHONUNBUFFERED=1
+ENV DATABASE_URL=sqlite:///./data/data.db
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
