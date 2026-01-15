@@ -31,6 +31,14 @@ services:
     volumes:
       # Access to Docker socket to manage containers
       - /var/run/docker.sock:/var/run/docker.sock
+      # if docker runs in user namespace,
+      # uncomment the following line and comment the above line
+      # - /run/user/1000/docker.sock:/var/run/docker.sock
+    ports:
+      # Expose Watchtower HTTP API on localhost
+      # for checking updates once use:
+      # curl -v -H "Authorization: Bearer <your_secure_token_here>" http://127.0.0.1:8080/v1/update
+      - "127.0.0.1:8080:8080"
     environment:
       # Check for updates every 6 hours (21600 seconds)
       - WATCHTOWER_POLL_INTERVAL=21600
@@ -40,7 +48,14 @@ services:
       - WATCHTOWER_CLEANUP=true
       # Include stopped containers
       - WATCHTOWER_INCLUDE_STOPPED=true
+      # Set Docker API version if needed
+      - DOCKER_API_VERSION=1.52
       # Enable notifications (optional, requires additional config)
       # - WATCHTOWER_NOTIFICATIONS=shoutrrr
       # - WATCHTOWER_NOTIFICATION_URL=
+      - WATCHTOWER_HTTP_API_UPDATE=true
+      # Enable HTTP API with token authentication
+      - WATCHTOWER_HTTP_API_TOKEN=<your_secure_token_here>
+      # Enable periodic polling of the HTTP API
+      - WATCHTOWER_HTTP_API_PERIODIC_POLLS=true
     restart: unless-stopped
