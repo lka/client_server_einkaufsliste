@@ -59,12 +59,7 @@ export function printPreviewContentPopup(
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <style>
-          /* Optimized for tablet/desktop printing */
-
-          @page {
-            size: A4 landscape;
-            margin: 1cm;
-          }
+          /* Optimized for tablet/desktop printing - aligned with Android styles */
 
           * {
             box-sizing: border-box;
@@ -72,19 +67,11 @@ export function printPreviewContentPopup(
 
           body {
             font-family: Arial, sans-serif;
-            line-height: 1.2;
-            color: #333;
-            margin: 0;
-            padding: 10mm;
+            line-height: 1.4;
+            color: #000;
+            margin: 20px;
+            padding: 0;
             background: white;
-          }
-
-          /* Container holds two A5 pages side by side */
-          .print-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10mm;
-            max-width: 100%;
           }
 
           /* Single page content (4-column layout) */
@@ -110,38 +97,39 @@ export function printPreviewContentPopup(
           }
 
           h2 {
-            margin: 0 0 0.5rem 0;
-            font-size: 1.2rem;
+            margin: 0 0 10px 0;
+            font-size: 18px;
             font-weight: bold;
+            color: #000;
           }
 
           p {
-            margin: 0 0 0.5rem 0;
-            font-size: 0.85rem;
+            margin: 0 0 8px 0;
+            font-size: 14px;
           }
 
           h4.department-title {
-            margin: 0.6rem 0 0.3rem 0;
-            color: #333;
-            font-size: 0.95rem;
+            margin: 15px 0 5px 0;
+            color: #000;
+            font-size: 16px;
             font-weight: bold;
           }
 
           ul {
-            margin: 0 0 0.5rem 0;
-            padding-left: 0;
-            list-style: none;
+            margin: 0 0 10px 0;
+            padding-left: 20px;
+            list-style: disc;
           }
 
           li {
-            margin-bottom: 0.15rem;
-            line-height: 1.25;
-            font-size: 0.85rem;
+            margin-bottom: 4px;
+            line-height: 1.4;
+            font-size: 14px;
           }
 
           /* Department sections */
           .department-section {
-            margin-bottom: 0.4rem;
+            margin-bottom: 10px;
           }
 
           body.hide-departments h4.department-title {
@@ -163,15 +151,10 @@ export function printPreviewContentPopup(
             .print-hint {
               display: none !important;
             }
-            
-            body {
-              padding: 5mm;
-            }
 
-            .print-container {
-              gap: 5mm;
-              width: 100%;
-              max-width: none;
+            body {
+              margin: 0;
+              padding: 10px;
             }
           }
 
@@ -181,7 +164,6 @@ export function printPreviewContentPopup(
               grid-template-columns: 1fr;
               gap: 20px;
             }
-
           }
         </style>
       </head>
