@@ -50,6 +50,13 @@ export function renderSuggestions(
       onItemMousedown(index, e);
     });
 
+    // Touch support for tablets/mobile
+    item.addEventListener('touchend', (e) => {
+      e.preventDefault(); // Prevent ghost click and blur
+      e.stopPropagation();
+      onItemMousedown(index, e as unknown as MouseEvent);
+    });
+
     item.addEventListener('mouseenter', () => {
       onItemMouseenter(index);
     });
