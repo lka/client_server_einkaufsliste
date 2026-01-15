@@ -33,7 +33,7 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Calculate next version
+      - name: Calculate next version (dry run)
         id: version
         uses: mathieudutour/github-tag-action@v6.1
         with:
@@ -47,7 +47,7 @@ jobs:
           # perf: -> patch version bump (performance improvement)
           # BREAKING CHANGE: -> major version bump
           # chore:, docs:, style:, refactor:, test: -> no version bump
-          dry_run: false
+          dry_run: true
           tag_prefix: v
           append_to_pre_release_tag: ''
 
@@ -233,6 +233,12 @@ jobs:
           git add server/src/version.py client/src/version.json client/package.json
           git commit -m "chore: version-info v${{ steps.version.outputs.new_version }}" || echo "No changes to commit"
           git push origin HEAD:${{ github.ref_name }}
+
+      - name: Create version tag
+        if: steps.check.outputs.new_release == 'true'
+        run: |
+          git tag -a "v${{ steps.version.outputs.new_version }}" -m "Release v${{ steps.version.outputs.new_version }}"
+          git push origin "v${{ steps.version.outputs.new_version }}"
 
       - name: Create GitHub Release
         if: steps.check.outputs.new_release == 'true'
