@@ -316,9 +316,13 @@ describe('Authentication Utilities', () => {
   });
 
   describe('refreshToken', () => {
-    it('should return false when no token exists', async () => {
+    beforeEach(() => {
+      jest.spyOn(console, 'warn').mockImplementation(() => {});
+    });
+
+    it('should return expired when no token exists', async () => {
       const result = await refreshToken();
-      expect(result).toBe(false);
+      expect(result).toBe('expired');
     });
 
     it('should refresh token successfully', async () => {
@@ -336,11 +340,11 @@ describe('Authentication Utilities', () => {
         method: 'POST',
         headers: { Authorization: 'Bearer old-token' },
       });
-      expect(result).toBe(true);
+      expect(result).toBe('success');
       expect(getToken()).toBe(newToken);
     });
 
-    it('should clear token and return false on 401', async () => {
+    it('should clear token and return expired on 401', async () => {
       setToken('expired-token');
 
       (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
@@ -350,35 +354,107 @@ describe('Authentication Utilities', () => {
 
       const result = await refreshToken();
 
-      expect(result).toBe(false);
+      expect(result).toBe('expired');
       expect(getToken()).toBeNull();
     });
 
-    it('should return false on other errors', async () => {
+    it('should retry on server errors and return error after all retries fail', async () => {
+      jest.useFakeTimers();
       setToken('valid-token');
 
+      // Mock 4 failed responses (1 initial + 3 retries)
+      for (let i = 0; i < 4; i++) {
+        (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
+          ok: false,
+          status: 500,
+        } as Response);
+      }
+
+      const promise = refreshToken();
+
+      // Advance through all retry delays (1000, 2000, 4000 ms)
+      for (let i = 0; i < 3; i++) {
+        await jest.advanceTimersByTimeAsync(5000);
+      }
+
+      const result = await promise;
+
+      expect(result).toBe('error');
+      expect(getToken()).toBe('valid-token'); // Token not cleared
+      expect(global.fetch).toHaveBeenCalledTimes(4);
+
+      jest.useRealTimers();
+    });
+
+    it('should retry on network errors and return error after all retries fail', async () => {
+      jest.useFakeTimers();
+      setToken('valid-token');
+
+      // Mock 4 network errors (1 initial + 3 retries)
+      for (let i = 0; i < 4; i++) {
+        (global.fetch as jest.MockedFunction<typeof fetch>).mockRejectedValueOnce(
+          new Error('Network error')
+        );
+      }
+
+      const promise = refreshToken();
+
+      // Advance through all retry delays
+      for (let i = 0; i < 3; i++) {
+        await jest.advanceTimersByTimeAsync(5000);
+      }
+
+      const result = await promise;
+
+      expect(result).toBe('error');
+      expect(console.error).toHaveBeenCalled();
+
+      jest.useRealTimers();
+    });
+
+    it('should succeed on retry after initial failure', async () => {
+      jest.useFakeTimers();
+      setToken('valid-token');
+      const newToken = 'retried-token';
+
+      // First attempt fails with 500
       (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: false,
         status: 500,
       } as Response);
 
-      const result = await refreshToken();
+      // Second attempt succeeds
+      (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: newToken, token_type: 'bearer' }),
+      } as Response);
 
-      expect(result).toBe(false);
-      expect(getToken()).toBe('valid-token'); // Token not cleared
+      const promise = refreshToken();
+
+      // Advance past first retry delay (1000ms)
+      await jest.advanceTimersByTimeAsync(1500);
+
+      const result = await promise;
+
+      expect(result).toBe('success');
+      expect(getToken()).toBe(newToken);
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+
+      jest.useRealTimers();
     });
 
-    it('should handle network errors', async () => {
-      setToken('valid-token');
+    it('should not retry on 401 (token expired)', async () => {
+      setToken('expired-token');
 
-      (global.fetch as jest.MockedFunction<typeof fetch>).mockRejectedValueOnce(
-        new Error('Network error')
-      );
+      (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+      } as Response);
 
       const result = await refreshToken();
 
-      expect(result).toBe(false);
-      expect(console.error).toHaveBeenCalledWith('Error refreshing token:', expect.any(Error));
+      expect(result).toBe('expired');
+      expect(global.fetch).toHaveBeenCalledTimes(1); // No retries
     });
 
     it('should only refresh once when called multiple times concurrently', async () => {
@@ -408,9 +484,9 @@ describe('Authentication Utilities', () => {
       ]);
 
       // All should succeed
-      expect(result1).toBe(true);
-      expect(result2).toBe(true);
-      expect(result3).toBe(true);
+      expect(result1).toBe('success');
+      expect(result2).toBe('success');
+      expect(result3).toBe('success');
 
       // But fetch should only be called once
       expect(global.fetch).toHaveBeenCalledTimes(1);
@@ -428,13 +504,13 @@ describe('Authentication Utilities', () => {
       } as Response);
 
       const result1 = await refreshToken();
-      expect(result1).toBe(true);
+      expect(result1).toBe('success');
       expect(global.fetch).toHaveBeenCalledTimes(1);
       expect(getToken()).toBe(newToken);
 
       // Second refresh immediately (within cooldown)
       const result2 = await refreshToken();
-      expect(result2).toBe(true); // Should return true but not make a request
+      expect(result2).toBe('success');
       expect(global.fetch).toHaveBeenCalledTimes(1); // Still only 1 call
     });
 

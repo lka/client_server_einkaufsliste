@@ -72,7 +72,7 @@ Technische Dokumentation für Entwickler der Client/Server Einkaufsliste.
 │   │   │   │   ├── backup-api.ts # Database backup and restore
 │   │   │   │   ├── webdav-api.ts # WebDAV settings and recipe import
 │   │   │   │   └── config-api.ts # Server configuration and version
-│   │   │   ├── auth.ts           # Authentication utilities (with expires_in handling)
+│   │   │   ├── auth.ts           # Authentication utilities (RefreshResult, Retry-Logik, expires_in)
 │   │   │   ├── dom.ts            # DOM utilities
 │   │   │   ├── dom.test.ts       # DOM tests
 │   │   │   ├── websocket.ts      # WebSocket connection manager
@@ -419,8 +419,8 @@ npm run test:watch
 ```
 
 **Test-Struktur:**
-- ✅ **458 Tests insgesamt** (85.46% Coverage)
-- **Data Layer Tests** (80): API, Auth, DOM, WebSocket
+- ✅ **462 Tests insgesamt** (85%+ Coverage)
+- **Data Layer Tests** (84): API, Auth (inkl. Retry-Logik), DOM, WebSocket
 - **UI Component Tests** (320): Button, Modal, Card, Input, Dropdown, DatePicker, etc.
 - **State Layer Tests** (38): Shopping-List State, User State
 - **Pages Layer Tests** (20): Login Controller
@@ -528,7 +528,7 @@ Kümmert sich um externe Datenquellen:
   - **backup-api.ts** - Database backup creation and restore
   - **webdav-api.ts** - WebDAV settings and recipe import operations
   - **config-api.ts** - Server configuration and version info
-- **auth.ts** - Token management, login/logout/register
+- **auth.ts** - Token management, login/logout/register, RefreshResult-Typ mit Retry-Logik (exponentielles Backoff)
 - **websocket.ts** - WebSocket connection manager mit Auto-Reconnect
 - **dom.ts** - DOM manipulation utilities
 - **inactivity-tracker.ts** - Inaktivitäts-Tracking für Auto-Logout

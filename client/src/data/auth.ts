@@ -191,18 +191,31 @@ export async function getCurrentUser(): Promise<User | null> {
   }
 }
 
+/**
+ * Result of a token refresh attempt.
+ * - 'success': Token was refreshed successfully
+ * - 'expired': Token is expired (401), user must re-authenticate
+ * - 'error': Temporary error (network, server), existing token may still be valid
+ */
+export type RefreshResult = 'success' | 'expired' | 'error';
+
 // Token refresh optimization: ensure only one refresh happens at a time
-let refreshPromise: Promise<boolean> | null = null;
+let refreshPromise: Promise<RefreshResult> | null = null;
 let lastRefreshTime: number = 0;
 const REFRESH_COOLDOWN_MS = 5000; // Don't refresh more than once per 5 seconds
+const MAX_REFRESH_RETRIES = 3;
+const INITIAL_RETRY_DELAY_MS = 1000;
 
 /**
  * Refresh the JWT token.
  * This function ensures only one refresh happens at a time, even if called
  * multiple times concurrently. It also implements a cooldown period to prevent
  * excessive refresh requests.
+ *
+ * On temporary errors (network, 500), retries up to 3 times with exponential backoff.
+ * On 401 (token expired), fails immediately without retry.
  */
-export async function refreshToken(): Promise<boolean> {
+export async function refreshToken(): Promise<RefreshResult> {
   const now = Date.now();
 
   // If a refresh is already in progress, wait for it
@@ -212,41 +225,72 @@ export async function refreshToken(): Promise<boolean> {
 
   // If we refreshed recently, skip (within cooldown period)
   if (now - lastRefreshTime < REFRESH_COOLDOWN_MS) {
-    return true;
+    return 'success';
   }
 
   const token = getToken();
   if (!token) {
-    return false;
+    return 'expired';
   }
 
   // Create and store the refresh promise
   refreshPromise = (async () => {
     try {
-      const res = await fetch('/api/auth/refresh', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (!res.ok) {
-        if (res.status === 401) {
-          clearToken();
-        }
-        return false;
-      }
-      const data = await res.json();
-      setToken(data.access_token);
-      lastRefreshTime = Date.now();
-      return true;
-    } catch (error) {
-      console.error('Error refreshing token:', error);
-      return false;
+      return await attemptRefreshWithRetry(token);
     } finally {
-      // Clear the promise after completion
       refreshPromise = null;
     }
   })();
 
   return refreshPromise;
+}
+
+/**
+ * Attempt a single refresh request.
+ * Returns 'success' or 'expired', throws on temporary errors for retry handling.
+ */
+async function attemptRefresh(token: string): Promise<RefreshResult> {
+  const res = await fetch('/api/auth/refresh', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+
+  if (res.ok) {
+    const data = await res.json();
+    setToken(data.access_token);
+    lastRefreshTime = Date.now();
+    return 'success';
+  }
+
+  if (res.status === 401) {
+    clearToken();
+    return 'expired';
+  }
+
+  // Other HTTP errors (500, 503, etc.) are temporary - throw for retry
+  throw new Error(`Refresh failed with status ${res.status}`);
+}
+
+/**
+ * Refresh with retry logic: up to MAX_REFRESH_RETRIES attempts with exponential backoff.
+ * Retries only on temporary errors (network, server). On 401 fails immediately.
+ */
+async function attemptRefreshWithRetry(token: string): Promise<RefreshResult> {
+  for (let attempt = 0; attempt <= MAX_REFRESH_RETRIES; attempt++) {
+    try {
+      return await attemptRefresh(token);
+    } catch (error) {
+      if (attempt < MAX_REFRESH_RETRIES) {
+        const delay = INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt);
+        console.warn(`Token refresh attempt ${attempt + 1} failed, retrying in ${delay}ms...`, error);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      } else {
+        console.error(`Token refresh failed after ${MAX_REFRESH_RETRIES + 1} attempts:`, error);
+        return 'error';
+      }
+    }
+  }
+  return 'error';
 }
 
 /**

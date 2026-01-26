@@ -2,7 +2,13 @@
 
 > **📚 Alle Dokumentationen:** Siehe [Dokumentations-Index](INDEX.md)
 
-- ✅ **JWT-Authentifizierung**: Sichere Benutzerauthentifizierung mit automatischem Token-Refresh und Inaktivitäts-Logout
+- ✅ **JWT-Authentifizierung**: Sichere Benutzerauthentifizierung mit automatischem Token-Refresh, Retry-Logik und Inaktivitäts-Logout
+  - **Robuster Token-Refresh mit Retry-Logik**: Automatischer Token-Refresh mit Fehlertoleranz
+    - **RefreshResult-Typ**: Unterscheidung zwischen `'success'`, `'expired'` und `'error'` für präzise Fehlerbehandlung
+    - **Exponentielles Backoff**: Bei temporären Fehlern (Netzwerk, Server) bis zu 3 Wiederholungsversuche mit wachsendem Delay (1s, 2s, 4s)
+    - **Intelligente Fehlerunterscheidung**: Nur bei abgelaufenem Token (401) → Redirect zur Login-Seite; bei temporären Fehlern → Weiterarbeit mit bestehendem Token
+    - **Cooldown-Mechanismus**: 5 Sekunden Mindestabstand zwischen Refresh-Versuchen
+    - **Deduplizierung**: Parallele API-Aufrufe teilen sich einen einzigen Refresh-Request
   - **Automatisches Inaktivitäts-Logout**: Benutzer werden nach Ablauf der Token-Gültigkeit bei Inaktivität automatisch abgemeldet
     - Aktivitäts-Tracking durch Maus, Tastatur, Scroll und Touch-Events
     - Timer wird bei jeder Benutzeraktivität zurückgesetzt
@@ -27,6 +33,7 @@
     - Bis zu 10 relevante Vorschläge, sortiert nach Ähnlichkeit
     - **Tastaturnavigation**: ↑↓ zum Navigieren, Enter zum Auswählen, Escape zum Schließen
     - **Mausunterstützung**: Klick oder Hover zum Auswählen
+    - **Touch-Unterstützung**: Zuverlässige Auswahl auf Tablets und Mobilgeräten (touchend Event)
     - Automatischer Fokus auf Mengenfeld nach Auswahl für schnellen Workflow
     - Vorschläge können durch Weitertippen ignoriert werden
   - **Automatische Produkt-Zuordnung**: Neue Items werden automatisch mit Produkten im Katalog gematcht (Fuzzy-Matching mit 60% Schwellwert)
@@ -62,6 +69,7 @@
   - **Intelligente Druckfunktion**: Einkaufsliste als DIN A5-Heft drucken
     - Druckt auf DIN A4 Querformat → in der Mitte falten ergibt A5-Heft
     - **Plattform-spezifisches Drucken**: Optimiert für verschiedene Geräte
+      - **Einheitliche px-basierte Druckstile**: Safari und Android verwenden identische CSS-Größenangaben (px) für konsistente Druckergebnisse
       - **Desktop (Windows/Mac)**: Popup-Fenster mit Druckvorschau
       - **iPad/iOS**: Popup-Fenster mit nativer Druckfunktion
       - **Android-Tablets**: Inline-Drucken (ersetzt temporär Seiteninhalt)
@@ -409,7 +417,7 @@
   - **Backup-Integration**: Einheiten werden in Datenbank-Backups gesichert
   - **29 vorkonfigurierte Einheiten**: g, kg, ml, l, EL, TL, Prise, Stück, Bund, Becher, Dose, Päckchen, Tasse, Stiel, Zweig, etc.
   - Navigation über Benutzermenü: "📏 Einheiten verwalten"
-- ✅ **Vollständige Tests**: 577 Tests (103 Server + 474 Client) mit 85%+ Code-Abdeckung
+- ✅ **Vollständige Tests**: 581 Tests (103 Server + 478 Client) mit 85%+ Code-Abdeckung
 - ✅ **TypeScript Client**: Typsicherer Client mit vier-Schichten-Architektur
 - ✅ **FastAPI Server**: Moderne Python API mit SQLModel ORM
 - ✅ **Benutzer-Verwaltung**: Freischaltungs-System für neue Benutzer
