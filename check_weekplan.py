@@ -1,11 +1,23 @@
 """Check weekplan entries."""
+
+import os
 import requests
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
+
+load_dotenv()
+
+username = os.getenv("ADMIN_USERNAME")
+password = os.getenv("ADMIN_PASSWORD")
+
+if not username or not password:
+    print("Error: ADMIN_USERNAME and ADMIN_PASSWORD must be set in .env")
+    exit(1)
 
 # Login
 login_response = requests.post(
     "http://localhost:8000/api/auth/login",
-    json={"username": "lischka", "password": ".Amdahl1320"}
+    json={"username": username, "password": password},
 )
 
 if login_response.status_code == 200:
@@ -24,19 +36,23 @@ if login_response.status_code == 200:
     # Get weekplan entries for this week
     weekplan_response = requests.get(
         f"http://localhost:8000/api/weekplan/entries?week_start={this_monday.isoformat()}",
-        headers=headers
+        headers=headers,
     )
 
     if weekplan_response.status_code == 200:
         entries = weekplan_response.json()
-        print(f"\nWeekplan entries for week starting {this_monday.isoformat()}: {len(entries)} entries")
+        print(
+            f"\nWeekplan entries for week starting {this_monday.isoformat()}: {len(entries)} entries"
+        )
 
         beilage_entries = [e for e in entries if "Beilage" in e.get("text", "")]
         if beilage_entries:
             print("\nEntries containing 'Beilage':")
             for e in beilage_entries:
                 date_obj = datetime.fromisoformat(e["date"])
-                print(f'  - {e["date"]} ({date_obj.strftime("%A")}), {e["meal"]}: "{e["text"]}"')
+                print(
+                    f'  - {e["date"]} ({date_obj.strftime("%A")}), {e["meal"]}: "{e["text"]}"'
+                )
         else:
             print("\nNo entries containing 'Beilage' found")
 
@@ -45,7 +61,9 @@ if login_response.status_code == 200:
             print("\nEntries containing 'Kartoffeln':")
             for e in kartoffeln_entries:
                 date_obj = datetime.fromisoformat(e["date"])
-                print(f'  - {e["date"]} ({date_obj.strftime("%A")}), {e["meal"]}: "{e["text"]}"')
+                print(
+                    f'  - {e["date"]} ({date_obj.strftime("%A")}), {e["meal"]}: "{e["text"]}"'
+                )
     else:
         print(f"Error getting weekplan: {weekplan_response.status_code}")
 else:

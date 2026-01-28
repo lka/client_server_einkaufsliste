@@ -1,10 +1,22 @@
 """Check product fresh flag and shopping list items."""
+
+import os
 import requests
+from dotenv import load_dotenv
+
+load_dotenv()
+
+username = os.getenv("ADMIN_USERNAME")
+password = os.getenv("ADMIN_PASSWORD")
+
+if not username or not password:
+    print("Error: ADMIN_USERNAME and ADMIN_PASSWORD must be set in .env")
+    exit(1)
 
 # Login to get token
 login_response = requests.post(
     "http://localhost:8000/api/auth/login",
-    json={"username": "lischka", "password": ".Amdahl1320"}
+    json={"username": username, "password": password},
 )
 
 if login_response.status_code == 200:
@@ -13,8 +25,7 @@ if login_response.status_code == 200:
 
     # Get all products from store 1 (first store)
     products_response = requests.get(
-        "http://localhost:8000/api/stores/1/products",
-        headers=headers
+        "http://localhost:8000/api/stores/1/products", headers=headers
     )
 
     if products_response.status_code == 200:
@@ -26,17 +37,16 @@ if login_response.status_code == 200:
         print("\nProducts containing 'Kartoffeln':")
         if kartoffeln_products:
             for p in kartoffeln_products:
-                print(f'  - {p["name"]}: fresh={p.get("fresh", False)} (store_id={p.get("store_id")})')
+                print(
+                    f'  - {p["name"]}: fresh={p.get("fresh", False)} (store_id={p.get("store_id")})'
+                )
         else:
             print("  No products found containing 'Kartoffeln'")
     else:
         print(f"Products request failed: {products_response.status_code}")
 
     # Get shopping list items
-    items_response = requests.get(
-        "http://localhost:8000/api/items",
-        headers=headers
-    )
+    items_response = requests.get("http://localhost:8000/api/items", headers=headers)
 
     if items_response.status_code == 200:
         items = items_response.json()
@@ -46,21 +56,24 @@ if login_response.status_code == 200:
         if kartoffeln_items:
             print("Items containing 'Kartoffeln':")
             for item in kartoffeln_items:
-                print(f'  - {item["name"]}: {item.get("menge", "")} (date={item.get("shopping_date", "")}, store={item.get("store_id", "")})')
+                print(
+                    f'  - {item["name"]}: {item.get("menge", "")} (date={item.get("shopping_date", "")}, store={item.get("store_id", "")})'
+                )
         else:
             print("No items containing 'Kartoffeln' found in shopping list")
 
     # Get stores to see sort order
-    stores_response = requests.get(
-        "http://localhost:8000/api/stores",
-        headers=headers
-    )
+    stores_response = requests.get("http://localhost:8000/api/stores", headers=headers)
 
     if stores_response.status_code == 200:
         stores = stores_response.json()
         print("\nStores (sorted by sort_order):")
-        stores_sorted = sorted(stores, key=lambda s: (s.get("sort_order", 999), s.get("id", 999)))
+        stores_sorted = sorted(
+            stores, key=lambda s: (s.get("sort_order", 999), s.get("id", 999))
+        )
         for s in stores_sorted:
-            print(f'  - ID {s["id"]}: {s["name"]} (sort_order={s.get("sort_order", "N/A")})')
+            print(
+                f'  - ID {s["id"]}: {s["name"]} (sort_order={s.get("sort_order", "N/A")})'
+            )
 else:
     print(f"Login failed: {login_response.status_code}")

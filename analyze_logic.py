@@ -1,4 +1,5 @@
 """Analyze the date logic for the weekplan entry."""
+
 from datetime import datetime, timedelta
 
 # Given information:
@@ -13,11 +14,13 @@ weekplan_date = datetime(2025, 11, 29)
 main_shopping_day = 2  # Wednesday
 fresh_products_day = 4  # Friday
 
+
 def _get_next_weekday(from_date: datetime, target_weekday: int) -> datetime:
     days_ahead = target_weekday - from_date.weekday()
     if days_ahead < 0:
         days_ahead += 7
     return from_date + timedelta(days=days_ahead)
+
 
 next_main_shopping = _get_next_weekday(today, main_shopping_day)
 next_fresh_products = _get_next_weekday(today, fresh_products_day)
@@ -29,7 +32,9 @@ if next_fresh_products.date() == today.date():
     next_fresh_products = next_fresh_products + timedelta(days=7)
 
 print(f"Today: {today.strftime('%Y-%m-%d %A')} (weekday={today.weekday()})")
-print(f"Weekplan date: {weekplan_date.strftime('%Y-%m-%d %A')} (weekday={weekplan_date.weekday()})")
+print(
+    f"Weekplan date: {weekplan_date.strftime('%Y-%m-%d %A')} (weekday={weekplan_date.weekday()})"
+)
 print(f"\nNext main shopping (Wednesday): {next_main_shopping.date().isoformat()}")
 print(f"Next fresh products (Friday): {next_fresh_products.date().isoformat()}")
 
@@ -41,7 +46,9 @@ is_fresh = True
 shopping_date = next_main_shopping.date().isoformat()
 
 print(f"\nCondition check:")
-print(f"  weekplan_date > next_fresh_products? {weekplan_date.date()} > {next_fresh_products.date()} = {weekplan_date.date() > next_fresh_products.date()}")
+print(
+    f"  weekplan_date > next_fresh_products? {weekplan_date.date()} > {next_fresh_products.date()} = {weekplan_date.date() > next_fresh_products.date()}"
+)
 print(f"  is_fresh? {is_fresh}")
 
 if weekplan_date.date() > next_fresh_products.date() and is_fresh:

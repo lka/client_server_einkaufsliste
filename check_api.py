@@ -1,10 +1,22 @@
 """Check templates via API."""
+
+import os
 import requests
+from dotenv import load_dotenv
+
+load_dotenv()
+
+username = os.getenv("ADMIN_USERNAME")
+password = os.getenv("ADMIN_PASSWORD")
+
+if not username or not password:
+    print("Error: ADMIN_USERNAME and ADMIN_PASSWORD must be set in .env")
+    exit(1)
 
 # First, login to get a token
 login_response = requests.post(
     "http://localhost:8000/api/auth/login",
-    json={"username": "lischka", "password": ".Amdahl1320"}
+    json={"username": username, "password": password},
 )
 
 if login_response.status_code == 200:
@@ -13,8 +25,7 @@ if login_response.status_code == 200:
 
     # Get all templates
     templates_response = requests.get(
-        "http://localhost:8000/api/templates",
-        headers=headers
+        "http://localhost:8000/api/templates", headers=headers
     )
 
     print("Templates from API:")
@@ -31,21 +42,22 @@ if login_response.status_code == 200:
 
             # Get template details
             detail_response = requests.get(
-                f"http://localhost:8000/api/templates/{template_id}",
-                headers=headers
+                f"http://localhost:8000/api/templates/{template_id}", headers=headers
             )
             if detail_response.status_code == 200:
                 details = detail_response.json()
-                print(f'  Full response: {details}')
-                print(f'  Items:')
+                print(f"  Full response: {details}")
+                print(f"  Items:")
                 items = details.get("template_items", details.get("items", []))
                 if items:
                     for item in items:
-                        print(f'    - {item.get("name", "??")}: {item.get("menge", "??")}')
+                        print(
+                            f'    - {item.get("name", "??")}: {item.get("menge", "??")}'
+                        )
                 else:
-                    print('    (no items found in response)')
+                    print("    (no items found in response)")
             else:
-                print(f'  Detail request failed: {detail_response.status_code}')
+                print(f"  Detail request failed: {detail_response.status_code}")
         else:
             print('\nTemplate "Beilage Kartoffeln" NOT FOUND')
     else:
