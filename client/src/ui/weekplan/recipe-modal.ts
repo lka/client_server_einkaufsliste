@@ -86,6 +86,14 @@ async function displayRecipeModal(recipeName: string, recipeData: any, entryId?:
     size: 'medium'
   });
 
+  // Override .modal-content to use flex layout (scrolling handled by scrollableSection)
+  const modalContent = contentDiv.parentElement;
+  if (modalContent) {
+    modalContent.style.overflow = 'hidden';
+    modalContent.style.display = 'flex';
+    modalContent.style.flexDirection = 'column';
+  }
+
   // Attach save handler
   if (saveButton && entryId) {
     saveButton.addEventListener('click', async () => {

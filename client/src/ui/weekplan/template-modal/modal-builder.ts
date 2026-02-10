@@ -37,7 +37,7 @@ export async function showTemplateDetails(templateName: string, entryId: number)
 
     // Build content with scrollable template items section
     const contentDiv = document.createElement('div');
-    contentDiv.style.cssText = 'display: flex; flex-direction: column; max-height: 500px;';
+    contentDiv.style.cssText = 'display: flex; flex-direction: column; flex: 1; min-height: 0;';
 
     // Scrollable section for template items
     const scrollableSection = createScrollableSection();
@@ -122,6 +122,14 @@ export async function showTemplateDetails(templateName: string, entryId: number)
         content: contentDiv,
         size: 'medium'
       });
+
+      // Override .modal-content to use flex layout (scrolling handled by scrollableSection)
+      const modalContent = contentDiv.parentElement;
+      if (modalContent) {
+        modalContent.style.overflow = 'hidden';
+        modalContent.style.display = 'flex';
+        modalContent.style.flexDirection = 'column';
+      }
 
       // Update modal reference in save button
       const saveButtonDivWithModal = createSaveButton(

@@ -26,7 +26,7 @@ export function buildModalContent(
   entryId?: number
 ): { contentDiv: HTMLDivElement; saveButton?: HTMLButtonElement } {
   const contentDiv = document.createElement('div');
-  contentDiv.style.cssText = 'display: flex; flex-direction: column; max-height: 600px;';
+  contentDiv.style.cssText = 'display: flex; flex-direction: column; flex: 1; min-height: 0;';
 
   const scrollableSection = createScrollableSection();
 

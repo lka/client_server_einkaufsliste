@@ -925,6 +925,8 @@ main{
 }
 .template-items-list{
   margin-bottom:1rem;
+  max-height:40vh;
+  overflow-y:auto;
 }
 .template-item-row{
   display:flex;

@@ -287,9 +287,10 @@ export function createAddedItemsList(
 export function createScrollableSection(): HTMLDivElement {
   const scrollableSection = document.createElement('div');
   scrollableSection.style.cssText = `
-    max-height: 55vh;
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
     padding-right: 0.5rem;
   `;
   return scrollableSection;
@@ -301,6 +302,7 @@ export function createScrollableSection(): HTMLDivElement {
 export function createFixedFormSection(): HTMLDivElement {
   const fixedSection = document.createElement('div');
   fixedSection.style.cssText = `
+    flex-shrink: 0;
     padding-top: 0.2rem;
     border-top: 1px solid #e0e0e0;
     background: white;
