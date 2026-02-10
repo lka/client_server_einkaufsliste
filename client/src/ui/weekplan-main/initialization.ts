@@ -2,12 +2,9 @@
  * Initialization logic for weekplan UI
  */
 
-import type { WeekplanEntry } from '../../data/api.js';
-import { onWeekplanAdded, onWeekplanDeleted } from '../../data/websocket.js';
 import { handleAddMealEntry, handlePrintWeekplan, initializeWeekplanWebSocket } from '../weekplan/index.js';
 import { renderWeek } from './week-renderer.js';
 import { navigateToPreviousWeekLocal, navigateToNextWeekLocal } from './navigation-handlers.js';
-import { handleWeekplanAdded, handleWeekplanDeleted } from './websocket-handlers.js';
 import { setupDetailsEventListener } from './event-handlers.js';
 
 /**
@@ -47,13 +44,4 @@ export function initWeekplan(): void {
 
   // Setup details event listener
   setupDetailsEventListener();
-
-  // Subscribe to WebSocket events
-  onWeekplanAdded((data: WeekplanEntry) => {
-    handleWeekplanAdded(data);
-  });
-
-  onWeekplanDeleted((data: { id: number }) => {
-    handleWeekplanDeleted(data);
-  });
 }
