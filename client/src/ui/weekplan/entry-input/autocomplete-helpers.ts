@@ -12,6 +12,8 @@ type SuggestionItem = {
   name?: string;
 };
 
+export const MAX_SUGGESTIONS = 10;
+
 /**
  * Search for suggestions (templates and recipes)
  */
@@ -19,14 +21,14 @@ export async function searchSuggestions(query: string): Promise<SuggestionItem[]
   // Fetch templates, recipes in parallel
   const [templates, recipeSuggestions] = await Promise.all([
     fetchTemplates().catch(() => []),
-    searchRecipes(query, 5).catch(() => []) // Fallback to empty array on error
+    searchRecipes(query, MAX_SUGGESTIONS).catch(() => []) // Fallback to empty array on error
   ]);
 
   // Filter templates by query
   const lowerQuery = query.toLowerCase();
   const templateSuggestions = templates
     .filter(t => t.name.toLowerCase().includes(lowerQuery))
-    .slice(0, 5);
+    .slice(0, MAX_SUGGESTIONS);
 
   // Combine both suggestion types - templates first, then recipes
   const combined: SuggestionItem[] = [
@@ -47,7 +49,7 @@ export async function searchSuggestions(query: string): Promise<SuggestionItem[]
   const numberedCombined = addNumberingToDuplicates(combined);
 
   // Limit to maxSuggestions
-  return numberedCombined.slice(0, 5);
+  return numberedCombined.slice(0, MAX_SUGGESTIONS);
 }
 
 /**

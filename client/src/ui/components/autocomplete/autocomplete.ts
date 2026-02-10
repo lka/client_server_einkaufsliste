@@ -126,6 +126,25 @@ export class Autocomplete {
         this.updateCurrentSelection();
       }
     );
+
+    this.adjustDropdownPosition();
+  }
+
+  private adjustDropdownPosition(): void {
+    if (!this.suggestionsContainer) return;
+
+    // Reset previous adjustments
+    this.suggestionsContainer.style.left = '';
+    this.suggestionsContainer.style.right = '';
+
+    const rect = this.suggestionsContainer.getBoundingClientRect();
+    const viewportWidth = document.documentElement.clientWidth;
+
+    if (rect.right > viewportWidth) {
+      // Dropdown overflows right edge - align to right side of parent
+      this.suggestionsContainer.style.left = 'auto';
+      this.suggestionsContainer.style.right = '0';
+    }
   }
 
   private updateCurrentSelection(): void {

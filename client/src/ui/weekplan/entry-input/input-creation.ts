@@ -4,7 +4,7 @@
 
 import { Autocomplete, createInput } from '../../components/index.js';
 import { saveEntry } from './entry-save.js';
-import { searchSuggestions, parseSuggestionId } from './autocomplete-helpers.js';
+import { searchSuggestions, parseSuggestionId, MAX_SUGGESTIONS } from './autocomplete-helpers.js';
 
 /**
  * Create an entry input field with autocomplete
@@ -74,7 +74,7 @@ export function createEntryInput(
     },
     debounceMs: 300,
     minChars: 2,
-    maxSuggestions: 5,
+    maxSuggestions: MAX_SUGGESTIONS,
   });
 
   // Add entry on Enter key

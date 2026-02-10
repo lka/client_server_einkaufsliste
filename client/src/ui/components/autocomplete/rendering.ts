@@ -50,9 +50,18 @@ export function renderSuggestions(
       onItemMousedown(index, e);
     });
 
-    // Touch support for tablets/mobile
+    // Touch support for tablets/mobile: distinguish tap from scroll
+    let touchStartY = 0;
+    item.addEventListener('touchstart', (e) => {
+      touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+
     item.addEventListener('touchend', (e) => {
-      e.preventDefault(); // Prevent ghost click and blur
+      const touchEndY = e.changedTouches[0].clientY;
+      const moved = Math.abs(touchEndY - touchStartY);
+      if (moved > 10) return; // Was a scroll, not a tap
+
+      e.preventDefault();
       e.stopPropagation();
       onItemMousedown(index, e as unknown as MouseEvent);
     });
