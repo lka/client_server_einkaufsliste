@@ -5,7 +5,7 @@ import {
   type TemplateItem,
 } from '../../data/api.js';
 
-import { cancelBtn, updateSaveButtonState } from './create-form-buttons.js';
+import { updateSaveButtonState } from './create-form-buttons.js';
 import { showError, showSuccess } from '../components/toast.js';
 import { templateAdminState } from '../../state/template-admin-state.js';
 
@@ -144,7 +144,6 @@ export function resetForm(): void {
   if (itemNameInput) itemNameInput.value = '';
   if (itemMengeInput) itemMengeInput.value = '';
   if (formTitle) formTitle.textContent = 'Neue Vorlage erstellen';
-  if (cancelBtn) cancelBtn.style.display = 'none';
 
   renderTemplateItems();
 }
@@ -175,7 +174,6 @@ export async function handleEditTemplate(templateId: number): Promise<void> {
   if (descriptionInput) descriptionInput.value = template.description || '';
   if (personCountInput) personCountInput.value = String(template.person_count);
   if (formTitle) formTitle.textContent = 'Vorlage bearbeiten';
-  if (cancelBtn) cancelBtn.style.display = 'inline-block';
 
   // Render items
   renderTemplateItems();

@@ -1,5 +1,8 @@
 import {
   fetchTemplates,
+  fetchStores,
+  getProductSuggestions,
+  type ProductSuggestion,
 } from '../../data/api.js';
 
 import {
@@ -11,6 +14,7 @@ import {
     currentItems } from './render-templates.js';
 
 import { showError } from '../components/toast.js';
+import { Autocomplete } from '../components/autocomplete.js';
 
 /**
  * Attach event listeners to template admin UI elements.
@@ -94,6 +98,43 @@ export function attachTemplateAdminListeners(): void {
     if (e.key === 'Enter') {
       handleAddItem();
     }
+  });
+
+  // Initialize autocomplete for item name input
+  if (itemNameInput && itemMengeInput) {
+    initializeItemAutocomplete(itemNameInput, itemMengeInput);
+  }
+}
+
+/**
+ * Initialize autocomplete for product name suggestions in template items.
+ * Uses the first available store for product suggestions.
+ */
+async function initializeItemAutocomplete(
+  inputElement: HTMLInputElement,
+  mengeInputElement: HTMLInputElement
+): Promise<void> {
+  const stores = await fetchStores();
+  if (stores.length === 0) return;
+  const storeId = stores[0].id;
+
+  new Autocomplete({
+    input: inputElement,
+    onSearch: async (query: string) => {
+      const suggestions = await getProductSuggestions(storeId, query, 10);
+      return suggestions.map((s: ProductSuggestion) => ({
+        id: s.name,
+        label: s.name,
+        data: s,
+      }));
+    },
+    onSelect: (suggestion) => {
+      inputElement.value = suggestion.label;
+      mengeInputElement.focus();
+    },
+    debounceMs: 300,
+    minChars: 2,
+    maxSuggestions: 10,
   });
 }
 

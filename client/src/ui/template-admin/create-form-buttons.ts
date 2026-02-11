@@ -8,7 +8,6 @@ import { showError, showSuccess } from '../components/toast.js';
 import { loadTemplates, currentItems, editingTemplateId, resetForm } from './render-templates.js';
 
 let saveBtn: HTMLButtonElement | null = null;
-export let cancelBtn: HTMLButtonElement | null = null;
 
 /**
  * Create form action buttons using the Button component.
@@ -34,8 +33,6 @@ export function createFormButtons(): void {
     onClick: handleCancelEdit,
   });
   cancelBtnElement.id = 'cancelEditBtn';
-  cancelBtnElement.style.display = 'none';
-  cancelBtn = cancelBtnElement;
   formActions.appendChild(cancelBtnElement);
 }
 
