@@ -126,6 +126,13 @@
     - CRUD-Operationen: Erstellen, Bearbeiten, Löschen von Vorlagen
     - Vorlagen-Items werden inline angezeigt: "Artikel (Menge)"
     - "Speichern"-Button nur aktiv wenn mindestens ein Artikel vorhanden ist
+    - **Abbrechen-Button**: Jederzeit sichtbar zum Verwerfen aller Eingaben (Name, Beschreibung, Artikel)
+    - **Produktvorschläge (Autocomplete)**: Autovervollständigung bei der Artikeleingabe in der Vorlagenverwaltung
+      - Gleiche Funktionalität wie in der Einkaufsliste (Produktdatenbank des ersten Geschäfts)
+      - Vorschläge erscheinen ab 2 Zeichen mit 300ms Debouncing
+      - Bis zu 10 Vorschläge, sortiert nach Ähnlichkeit
+      - Tastatur-, Maus- und Touch-Unterstützung
+      - Nach Auswahl springt der Fokus automatisch zum Mengenfeld
     - **Intelligente Filterung**: Echtzeit-Suche für Vorlagen
       - **Filter-Eingabefeld**: Neben der Überschrift "Vorhandene Vorlagen" für schnellen Zugriff
       - **Mehrfach-Suche**: Filtert nach Vorlagen-Namen, Beschreibung UND enthaltenen Artikeln

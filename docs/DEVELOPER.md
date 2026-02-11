@@ -546,7 +546,7 @@ UI-Module und Komponenten:
 - **store-admin.ts** - Store/Department admin UI
 - **product-admin.ts** - Product admin UI
 - **user-admin.ts** - User approval UI
-- **template-admin.ts** - Template CRUD UI
+- **template-admin.ts** - Template CRUD UI with product autocomplete
 - **weekplan.ts** - Weekplan UI (228 lines, refactored)
 - **weekplan/** - Modular weekplan components (13 modules):
   - **index.ts** - Barrel file for all exports
