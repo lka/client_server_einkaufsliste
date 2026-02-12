@@ -139,6 +139,7 @@
       - **Live-Filterung**: Sofortige Aktualisierung beim Tippen (case-insensitive)
       - **Clear-Button**: ✕-Button zum schnellen Löschen des Filters (erscheint nur bei Eingabe)
       - **Tastatur-Optimiert**: Enter-Taste setzt Fokus zurück ins Eingabefeld nach dem Löschen
+    - **Namens-Duplikat-Prüfung**: Sofortige Warnung nach Verlassen des Namensfeldes, wenn der Vorlagen-Name bereits vergeben ist (berücksichtigt Bearbeitungsmodus)
     - **Rekursionsschutz**: Verhindert automatisch, dass Template-Namen als Items verwendet werden
       - Beim Hinzufügen von Items: Warnung, wenn Item-Name einem Template-Namen entspricht
       - Beim Speichern: Validierung gegen eigenen Template-Namen und andere Templates

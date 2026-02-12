@@ -11,7 +11,8 @@ import {
     handleDeleteTemplate,
     handleRemoveItem,
     renderTemplateItems,
-    currentItems } from './render-templates.js';
+    currentItems,
+    editingTemplateId } from './render-templates.js';
 
 import { showError } from '../components/toast.js';
 import { Autocomplete } from '../components/autocomplete.js';
@@ -84,6 +85,10 @@ export function attachTemplateAdminListeners(): void {
     }
   });
 
+  // Check template name uniqueness on blur
+  const templateNameInput = document.getElementById('templateNameInput') as HTMLInputElement;
+  templateNameInput?.addEventListener('blur', () => validateTemplateName(templateNameInput));
+
   // Enter key support for inputs
   const itemNameInput = document.getElementById('itemNameInput') as HTMLInputElement;
   const itemMengeInput = document.getElementById('itemMengeInput') as HTMLInputElement;
@@ -103,6 +108,24 @@ export function attachTemplateAdminListeners(): void {
   // Initialize autocomplete for item name input
   if (itemNameInput && itemMengeInput) {
     initializeItemAutocomplete(itemNameInput, itemMengeInput);
+  }
+}
+
+/**
+ * Validate that the template name is not already taken by another template.
+ */
+async function validateTemplateName(input: HTMLInputElement): Promise<void> {
+  const name = input.value.trim();
+  if (!name) return;
+
+  const templates = await fetchTemplates();
+  const duplicate = templates.find(
+    (t) => t.name.toLowerCase() === name.toLowerCase() &&
+          (editingTemplateId === null || t.id !== editingTemplateId)
+  );
+
+  if (duplicate) {
+    showError(`Eine Vorlage mit dem Namen "${duplicate.name}" existiert bereits.`);
   }
 }
 
