@@ -577,7 +577,7 @@ async def delete_items_before_date(
 
 
 @router.post("/{item_id}/convert-to-product", response_model=ItemWithDepartment)
-def convert_item_to_product(
+async def convert_item_to_product(
     item_id: str,
     request: ConvertItemRequest,
     current_user: str = Depends(get_current_user),
@@ -657,6 +657,29 @@ def convert_item_to_product(
 
         session.commit()
         session.refresh(item)
+
+        # Broadcast updates for all affected items via WebSocket
+        for matching_item in all_matching_items:
+            session.refresh(matching_item)
+            enriched = _enrich_with_department(session, matching_item)
+            await manager.broadcast(
+                {
+                    "type": "item:updated",
+                    "data": {
+                        "id": enriched.id,
+                        "name": enriched.name,
+                        "menge": enriched.menge,
+                        "store_id": enriched.store_id,
+                        "product_id": enriched.product_id,
+                        "shopping_date": enriched.shopping_date,
+                        "user_id": enriched.user_id,
+                        "manufacturer": enriched.manufacturer,
+                        "department_id": enriched.department_id,
+                        "department_name": enriched.department_name,
+                        "department_sort_order": enriched.department_sort_order,
+                    },
+                }
+            )
 
         # Return item with department info
         dept = session.get(Department, request.department_id)
