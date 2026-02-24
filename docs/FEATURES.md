@@ -242,9 +242,9 @@
     - Navigation über Benutzermenü: "🗓️ Wochenplan"
 - ✅ **Real-time Updates mit WebSocket**: Live-Synchronisation der Einkaufsliste zwischen mehreren Clients
   - **Automatische Synchronisation**: Alle Änderungen werden sofort an alle verbundenen Clients übertragen
-    - **Item hinzufügen**: Neue Items erscheinen sofort auf allen Clients
+    - **Item hinzufügen**: Neue Items erscheinen sofort auf allen Clients — inklusive vollständiger Abteilungsinformation (`department_name`, `department_sort_order`), sodass das Item korrekt kategorisiert angezeigt wird
     - **Item löschen**: Gelöschte Items verschwinden sofort überall (auch bei Subtraktion auf 0)
-    - **Item aktualisieren**: Mengen-Änderungen (inkl. Subtraktion) und Abteilungs-Zuordnungen werden live synchronisiert
+    - **Item aktualisieren**: Mengen-Änderungen (inkl. Subtraktion) werden live synchronisiert — inklusive Abteilungsinformation, sodass die Kategorie-Zuordnung erhalten bleibt
     - **Bulk-Löschungen**: Items, die per Datum gelöscht werden, werden live von allen Clients entfernt
     - **Department-Updates**: Abteilungsnamen- und Sortierreihenfolge-Änderungen werden sofort in allen Shopping-Listen aktualisiert
   - **Smart Broadcasting**: Nur andere Clients werden benachrichtigt (nicht der Absender selbst)

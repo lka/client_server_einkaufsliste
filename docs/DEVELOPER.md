@@ -325,7 +325,21 @@ Authorization: Bearer <access_token>
 - `POST /api/restore` - Datenbank wiederherstellen
 
 WebSocket-Endpunkt:
-- `WS /ws/{client_id}` - WebSocket-Verbindung für Live-Updates
+- `WS /ws/{token}` - WebSocket-Verbindung für Live-Updates (JWT-Token als Pfadparameter)
+
+**WebSocket Event-Formate (Server → Client):**
+
+| Event | Daten | Beschreibung |
+|-------|-------|--------------|
+| `item:added` | `{id, name, menge, store_id, product_id, shopping_date, user_id, manufacturer, department_id, department_name, department_sort_order}` | Neues Item — inklusive Abteilungsinformation für korrekte Kategorie-Gruppierung |
+| `item:updated` | `{id, name, menge, store_id, product_id, shopping_date, user_id, manufacturer, department_id, department_name, department_sort_order}` | Geändertes Item (z.B. Menge nach Merge) — inklusive Abteilungsinformation |
+| `item:deleted` | `{id}` | Item gelöscht |
+| `users:active_count` | `{count}` | Anzahl aktiver Nutzer |
+| `user:joined` | `{userId}` | Nutzer verbunden |
+| `user:left` | `{userId}` | Nutzer getrennt |
+| `department:updated` | `{...}` | Abteilung geändert → Client lädt alle Items neu |
+
+**Wichtig:** `item:added` und `item:updated` enthalten stets vollständige Abteilungsinformation. Clients müssen keine separate Lookup-Logik implementieren — das Item kann direkt in die korrekte Kategorie eingeordnet werden.
 
 ---
 

@@ -268,18 +268,24 @@ async def _handle_item_merge(session, existing_item: Item, new_menge: str | None
     session.commit()
     session.refresh(existing_item)
 
+    enriched = _enrich_with_department(session, existing_item)
+
     # Broadcast update
     await manager.broadcast(
         {
             "type": "item:updated",
             "data": {
-                "id": existing_item.id,
-                "name": existing_item.name,
-                "menge": existing_item.menge,
-                "store_id": existing_item.store_id,
-                "product_id": existing_item.product_id,
-                "shopping_date": existing_item.shopping_date,
-                "user_id": existing_item.user_id,
+                "id": enriched.id,
+                "name": enriched.name,
+                "menge": enriched.menge,
+                "store_id": enriched.store_id,
+                "product_id": enriched.product_id,
+                "shopping_date": enriched.shopping_date,
+                "user_id": enriched.user_id,
+                "manufacturer": enriched.manufacturer,
+                "department_id": enriched.department_id,
+                "department_name": enriched.department_name,
+                "department_sort_order": enriched.department_sort_order,
             },
         }
     )
@@ -454,23 +460,28 @@ async def create_item(item: Item, current_user: str = Depends(get_current_user))
         session.commit()
         session.refresh(item)
 
+        enriched = _enrich_with_department(session, item)
+
         await manager.broadcast(
             {
                 "type": "item:added",
                 "data": {
-                    "id": item.id,
-                    "name": item.name,
-                    "menge": item.menge,
-                    "store_id": item.store_id,
-                    "product_id": item.product_id,
-                    "shopping_date": item.shopping_date,
-                    "user_id": item.user_id,
-                    "manufacturer": item.manufacturer,
+                    "id": enriched.id,
+                    "name": enriched.name,
+                    "menge": enriched.menge,
+                    "store_id": enriched.store_id,
+                    "product_id": enriched.product_id,
+                    "shopping_date": enriched.shopping_date,
+                    "user_id": enriched.user_id,
+                    "manufacturer": enriched.manufacturer,
+                    "department_id": enriched.department_id,
+                    "department_name": enriched.department_name,
+                    "department_sort_order": enriched.department_sort_order,
                 },
             }
         )
 
-        return _enrich_with_department(session, item)
+        return enriched
 
 
 @router.delete("/{item_id}", status_code=204)
