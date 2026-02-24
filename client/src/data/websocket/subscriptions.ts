@@ -109,3 +109,8 @@ export function onTemplateUpdated(callback: (template: any) => void): () => void
 export function onTemplateDeleted(callback: (data: { id: number }) => void): () => void {
   return subscribe('template:deleted', callback);
 }
+
+// Weekplan settings event subscriptions
+export function onSingleShoppingDayChanged(callback: (data: { enabled: boolean }) => void): () => void {
+  return subscribe('weekplan:single_shopping_day', callback);
+}

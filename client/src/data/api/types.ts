@@ -83,6 +83,7 @@ export interface WeekplanEntry {
   recipe_id?: number;  // Optional recipe reference
   template_id?: number;  // Optional template reference
   deltas?: WeekplanDeltas;
+  single_shopping_day?: boolean;  // If true, all items go to MAIN_SHOPPING_DAY only
 }
 
 export interface BackupData {

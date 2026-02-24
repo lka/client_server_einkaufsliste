@@ -43,3 +43,10 @@ export function broadcastWeekplanDelete(entryId: number): void {
     timestamp: new Date().toISOString()
   });
 }
+
+export function broadcastSingleShoppingDayChange(enabled: boolean): void {
+  send({
+    type: 'weekplan:single_shopping_day',
+    data: { enabled },
+  });
+}

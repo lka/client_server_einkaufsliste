@@ -43,7 +43,8 @@ export {
   onDepartmentDeleted,
   onTemplateAdded,
   onTemplateUpdated,
-  onTemplateDeleted
+  onTemplateDeleted,
+  onSingleShoppingDayChanged
 } from './websocket/subscriptions.js';
 
 // Re-export broadcast functions
@@ -52,5 +53,6 @@ export {
   broadcastItemDelete,
   broadcastItemUpdate,
   broadcastWeekplanAdd,
-  broadcastWeekplanDelete
+  broadcastWeekplanDelete,
+  broadcastSingleShoppingDayChange
 } from './websocket/broadcasts.js';

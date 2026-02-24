@@ -1348,6 +1348,21 @@ main{
   transform: translateY(0);
 }
 
+.week-navigation .single-shopping-day-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  color: var(--text-muted, #666);
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.week-navigation .single-shopping-day-toggle input[type="checkbox"] {
+  cursor: pointer;
+}
+
 .week-display {
   flex: 1;
   text-align: center;

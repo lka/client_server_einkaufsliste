@@ -8,6 +8,7 @@ import { weekplanState } from '../../../state/weekplan-state.js';
 import { addMealItemToDOM } from '../weekplan-rendering.js';
 import { showError } from '../../components/index.js';
 import { calculateDateForDay } from './date-utils.js';
+import { getSingleShoppingDay } from '../../../state/weekplan-preferences.js';
 
 /**
  * Save a weekplan entry
@@ -37,7 +38,8 @@ export async function saveEntry(
       text: text.trim(),
       entry_type: options?.entryType || 'text',
       recipe_id: options?.recipeId,
-      template_id: options?.templateId
+      template_id: options?.templateId,
+      single_shopping_day: getSingleShoppingDay(),
     });
 
     // Add to state

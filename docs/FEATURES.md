@@ -206,7 +206,7 @@
       - **Automatisches Hinzufügen**: Wenn Wochenplan-Eintrag einem Template-Namen entspricht, werden Template-Items automatisch zur Einkaufsliste hinzugefügt
       - **Intelligente Datumsberechnung**:
         - Standard-Einkaufsdatum: Nächster MAIN_SHOPPING_DAY (konfigurierbar in .env, Standard: Mittwoch)
-        - **Frischeprodukte-Logik**:
+        - **Frischeprodukte-Logik** (deaktivierbar über "Nur ein Einkaufstag"-Toggle, siehe unten):
           - **Frühstück & Mittagessen**: Frischeprodukte werden am FRESH_PRODUCTS_DAY eingekauft (Standard: Freitag), wenn dieser vor dem Essens-Tag liegt
           - **Abendessen**: Frischeprodukte werden am MAIN_SHOPPING_DAY eingekauft, wenn dieser mit dem Essens-Tag übereinstimmt
             - Beispiel: Abendessen am Mittwoch (= Einkaufstag) → Einkauf am Mittwoch, nicht am Freitag
@@ -233,9 +233,15 @@
       - **3 Zeilen**: Eine Zeile pro Mahlzeit (Morgens, Mittags, Abends)
       - **Plattform-spezifisch**: Popup-Fenster (Desktop/iOS) oder Inline (Android)
       - **A4 Querformat**: Optimale Nutzung des Platzes für übersichtliche Darstellung
+    - **"Nur ein Einkaufstag"-Toggle**: Checkbox in der Wochenplan-Navigationsleiste
+      - Deaktiviert die Frischeprodukte-Logik: alle Artikel gehen nur auf den MAIN_SHOPPING_DAY (Mittwoch)
+      - **Cross-Client-Synchronisation**: Zustandsänderung wird sofort an alle verbundenen Clients übertragen
+      - **Spätkommer-Support**: Server hält den Zustand im RAM; neue Clients bekommen den aktuellen Wert beim Verbindungsaufbau
+      - Zustand wird zusätzlich in `localStorage` gespeichert; API-Feld: `single_shopping_day: bool` in `WeekplanEntryCreate`
     - **Real-time Sync**: Änderungen werden über WebSocket live synchronisiert
       - **Weekplan:add** Event für neue Einträge
       - **Weekplan:delete** Event für gelöschte Einträge
+      - **Weekplan:single_shopping_day** Event für Toggle-Synchronisation
       - Automatische Aktualisierung auf allen verbundenen Clients
     - **Persistente Speicherung**: Alle Einträge werden in der Datenbank gespeichert
     - **Backup-Integration**: Wochenplan-Einträge werden im Datenbank-Backup gesichert
@@ -253,6 +259,7 @@
     - Gelöschte Items → `item:delete` Event
     - Aktualisierte Items (Menge, Abteilung) → `item:update` Event
     - Aktualisierte Departments → `department:updated` Event
+    - Einkaufstag-Einstellung → `weekplan:single_shopping_day` Event (inkl. Zustand bei Verbindungsaufbau)
   - **Ein-Klick-Aktivierung**: WebSocket-Toggle-Button im Benutzermenü (⋮ → Einstellungen)
     - **"🔌 WebSocket aktivieren"** - Aktiviert WebSocket-Verbindung sofort (ohne Seiten-Reload)
     - **"🔌 WebSocket deaktivieren"** - Trennt WebSocket-Verbindung sofort

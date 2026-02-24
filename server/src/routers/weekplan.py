@@ -51,6 +51,7 @@ class WeekplanEntryCreate(BaseModel):
     recipe_id: Optional[int] = None
     template_id: Optional[int] = None
     deltas: Optional[WeekplanDeltas] = None
+    single_shopping_day: bool = False  # If True, all items go to MAIN_SHOPPING_DAY only
 
 
 class WeekplanEntryResponse(BaseModel):
@@ -133,7 +134,12 @@ def _adjust_quantity_by_person_count(
 
 
 def _calculate_shopping_date(
-    weekplan_date: str, template_item_name: str, first_store: Store, session, meal: str
+    weekplan_date: str,
+    template_item_name: str,
+    first_store: Store,
+    session,
+    meal: str,
+    single_shopping_day: bool = False,
 ) -> str:
     """Calculate the appropriate shopping date for a template item.
 
@@ -224,11 +230,15 @@ def _calculate_shopping_date(
             is_fresh = True
             break
 
-    # Fresh products logic:
+    # Fresh products logic (skipped when single_shopping_day is True):
     # Use fresh products day when weekplan_datetime >= next_fresh_products
     # EXCEPTION: For dinner on main shopping day, use main shopping day instead
     #            (don't buy fresh products on Friday for Wednesday dinner)
-    if is_fresh and weekplan_datetime.date() >= next_fresh_products.date():
+    if (
+        not single_shopping_day
+        and is_fresh
+        and weekplan_datetime.date() >= next_fresh_products.date()
+    ):
         # Check for the special case: dinner on main shopping day
         # if meal == "dinner" and weekplan_datetime.date() == next_main_shopping.date():
         #     # Dinner on main shopping day → use main shopping day, not fresh day
@@ -246,6 +256,7 @@ def _add_template_items_to_shopping_list(
     weekplan_date: str,
     meal: str,
     deltas: Optional[WeekplanDeltas] = None,
+    single_shopping_day: bool = False,
 ) -> List[Item]:
     """Add template items to shopping list when weekplan entry matches template name.
 
@@ -255,6 +266,7 @@ def _add_template_items_to_shopping_list(
         weekplan_date: Date from weekplan entry (YYYY-MM-DD)
         meal: Meal type ('morning', 'lunch', 'dinner')
         deltas: Optional deltas to apply (removed items, added items)
+        single_shopping_day: If True, all items go to MAIN_SHOPPING_DAY only
 
     Returns:
         List of items that were added or modified
@@ -300,7 +312,12 @@ def _add_template_items_to_shopping_list(
             continue
         # Calculate shopping date using helper function
         shopping_date = _calculate_shopping_date(
-            weekplan_date, template_item.name, first_store, session, meal
+            weekplan_date,
+            template_item.name,
+            first_store,
+            session,
+            meal,
+            single_shopping_day=single_shopping_day,
         )
 
         # Adjust quantity based on person_count if provided
@@ -352,7 +369,12 @@ def _add_template_items_to_shopping_list(
         for delta_item in deltas.added_items:
             # Calculate shopping date
             shopping_date = _calculate_shopping_date(
-                weekplan_date, delta_item.name, first_store, session, meal
+                weekplan_date,
+                delta_item.name,
+                first_store,
+                session,
+                meal,
+                single_shopping_day=single_shopping_day,
             )
 
             # Find existing item using intelligent matching strategy
@@ -654,6 +676,7 @@ def _process_recipe_ingredients(
     person_count: Optional[int],
     original_quantity: Optional[int],
     modified_items: List[Item],
+    single_shopping_day: bool = False,
 ) -> None:
     """Process recipe ingredients and add them to shopping list.
 
@@ -668,6 +691,7 @@ def _process_recipe_ingredients(
         person_count: Optional person count for scaling
         original_quantity: Original recipe quantity
         modified_items: List to append modified items to
+        single_shopping_day: If True, all items go to MAIN_SHOPPING_DAY only
     """
     for line in ingredient_lines:
         quantity_str, name = _parse_ingredient_line(line, pattern)
@@ -686,7 +710,12 @@ def _process_recipe_ingredients(
 
         # Calculate shopping date
         shopping_date = _calculate_shopping_date(
-            weekplan_date, name, first_store, session, meal
+            weekplan_date,
+            name,
+            first_store,
+            session,
+            meal,
+            single_shopping_day=single_shopping_day,
         )
 
         _add_or_merge_ingredient_item(
@@ -701,6 +730,7 @@ def _process_delta_items(
     first_store: Store,
     meal: str,
     modified_items: List[Item],
+    single_shopping_day: bool = False,
 ) -> None:
     """Process delta added items and add them to shopping list.
 
@@ -711,11 +741,17 @@ def _process_delta_items(
         first_store: Store object
         meal: Meal type
         modified_items: List to append modified items to
+        single_shopping_day: If True, all items go to MAIN_SHOPPING_DAY only
     """
     for delta_item in delta_items:
         # Calculate shopping date
         shopping_date = _calculate_shopping_date(
-            weekplan_date, delta_item.name, first_store, session, meal
+            weekplan_date,
+            delta_item.name,
+            first_store,
+            session,
+            meal,
+            single_shopping_day=single_shopping_day,
         )
 
         _add_or_merge_ingredient_item(
@@ -734,6 +770,7 @@ def _add_recipe_items_to_shopping_list(
     weekplan_date: str,
     meal: str,
     deltas: Optional[WeekplanDeltas] = None,
+    single_shopping_day: bool = False,
 ) -> List[Item]:
     """Add recipe ingredients to shopping list.
 
@@ -743,6 +780,7 @@ def _add_recipe_items_to_shopping_list(
         weekplan_date: Date from weekplan entry (YYYY-MM-DD)
         meal: Meal type ('morning', 'lunch', 'dinner')
         deltas: Optional deltas to apply (removed items, added items, person_count)
+        single_shopping_day: If True, all items go to MAIN_SHOPPING_DAY only
 
     Returns:
         List of items that were added or modified
@@ -796,6 +834,7 @@ def _add_recipe_items_to_shopping_list(
         person_count,
         original_quantity,
         modified_items,
+        single_shopping_day=single_shopping_day,
     )
 
     # Commit all ingredient items at once
@@ -810,6 +849,7 @@ def _add_recipe_items_to_shopping_list(
             first_store,
             meal,
             modified_items,
+            single_shopping_day=single_shopping_day,
         )
         # Commit all added items at once
         session.commit()
@@ -1241,22 +1281,42 @@ async def create_weekplan_entry(
         if entry.entry_type == "recipe" and entry.recipe_id:
             # Entry is a recipe
             modified_items = _add_recipe_items_to_shopping_list(
-                session, entry.recipe_id, entry.date, entry.meal, entry.deltas
+                session,
+                entry.recipe_id,
+                entry.date,
+                entry.meal,
+                entry.deltas,
+                single_shopping_day=entry.single_shopping_day,
             )
         elif entry.entry_type == "template":
             # Entry is a template - use text to find template
             modified_items = _add_template_items_to_shopping_list(
-                session, entry.text, entry.date, entry.meal, entry.deltas
+                session,
+                entry.text,
+                entry.date,
+                entry.meal,
+                entry.deltas,
+                single_shopping_day=entry.single_shopping_day,
             )
         elif entry.recipe_id:
             # Fallback for backward compatibility: check if entry has a recipe_id
             modified_items = _add_recipe_items_to_shopping_list(
-                session, entry.recipe_id, entry.date, entry.meal, entry.deltas
+                session,
+                entry.recipe_id,
+                entry.date,
+                entry.meal,
+                entry.deltas,
+                single_shopping_day=entry.single_shopping_day,
             )
         else:
             # Fallback: check if entry text matches a shopping template
             modified_items = _add_template_items_to_shopping_list(
-                session, entry.text, entry.date, entry.meal, entry.deltas
+                session,
+                entry.text,
+                entry.date,
+                entry.meal,
+                entry.deltas,
+                single_shopping_day=entry.single_shopping_day,
             )
 
         # Broadcast shopping list changes to all connected clients

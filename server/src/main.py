@@ -155,6 +155,10 @@ def get_api_version():
     }
 
 
+# In-memory state for single shopping day preference (shared across all clients)
+_single_shopping_day_enabled: bool = False
+
+
 @app.websocket("/ws/{token}")
 async def websocket_endpoint(websocket: WebSocket, token: str):
     """Handle WebSocket endpoint for real-time updates.
@@ -169,6 +173,7 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
         - Ping/pong heartbeat
         - Connection/disconnection events
     """
+    global _single_shopping_day_enabled
     # Authenticate user and get from database
     username = verify_token(token)
     if username is None:
@@ -193,6 +198,14 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
     active_count = manager.get_active_user_count()
     await manager.broadcast(
         {"type": "users:active_count", "data": {"count": active_count}}
+    )
+
+    # Send current single shopping day state to the newly connected client
+    await websocket.send_json(
+        {
+            "type": "weekplan:single_shopping_day",
+            "data": {"enabled": _single_shopping_day_enabled},
+        }
     )
 
     try:
@@ -262,6 +275,20 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                         "type": "weekplan:deleted",
                         "data": data.get("data"),
                         "timestamp": data.get("timestamp"),
+                        "userId": user_id,
+                    },
+                    exclude_user=user_id,
+                )
+
+            elif event_type == "weekplan:single_shopping_day":
+                # Update server-side state and broadcast to other users
+                _single_shopping_day_enabled = data.get("data", {}).get(
+                    "enabled", False
+                )
+                await manager.broadcast(
+                    {
+                        "type": "weekplan:single_shopping_day",
+                        "data": data.get("data"),
                         "userId": user_id,
                     },
                     exclude_user=user_id,

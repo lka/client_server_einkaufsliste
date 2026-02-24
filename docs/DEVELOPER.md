@@ -321,6 +321,7 @@ Authorization: Bearer <access_token>
 - `DELETE /api/items/{id}` - Item löschen
 - `GET /api/templates` - Vorlagen abrufen
 - `GET /api/weekplan/entries` - Wochenplan-Einträge abrufen
+- `POST /api/weekplan/entries` - Wochenplan-Eintrag erstellen (Feld `single_shopping_day: bool = false` steuert Frischeprodukte-Logik)
 - `GET /api/backup` - Datenbank-Backup erstellen
 - `POST /api/restore` - Datenbank wiederherstellen
 
@@ -338,8 +339,11 @@ WebSocket-Endpunkt:
 | `user:joined` | `{userId}` | Nutzer verbunden |
 | `user:left` | `{userId}` | Nutzer getrennt |
 | `department:updated` | `{...}` | Abteilung geändert → Client lädt alle Items neu |
+| `weekplan:single_shopping_day` | `{enabled: bool}` | Einkaufstag-Einstellung geändert; wird auch beim Verbindungsaufbau gesendet |
 
 **Wichtig:** `item:added` und `item:updated` enthalten stets vollständige Abteilungsinformation. Clients müssen keine separate Lookup-Logik implementieren — das Item kann direkt in die korrekte Kategorie eingeordnet werden.
+
+**`weekplan:single_shopping_day`-Besonderheit:** Der Server hält den aktuellen Zustand im RAM und sendet ihn jedem neu verbindenden Client sofort nach dem Verbindungsaufbau — Spätkommer erhalten damit immer den aktuellen Stand.
 
 ---
 
