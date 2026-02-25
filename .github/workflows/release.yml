@@ -23,6 +23,9 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -104,7 +107,7 @@ jobs:
           git push origin HEAD:master || git push origin HEAD:main
 
       - name: Install Python dependencies
-        run: pip install -e .[dev]
+        run: uv pip install --system -e ".[dev]"
 
       - name: Run Python tests
         run: |
@@ -150,9 +153,8 @@ jobs:
 
             ## Installation
             1. Clone or download this release
-            2. Start venv: Use `python -m venv venv && venv/Scripts/activate` (Windows) 
-                           or `python -m venv venv && source venv/bin/activate` (Linux/Mac)
-            3. Install server dependencies: `pip install -e .`
+            2. Create venv: `uv venv venv`
+            3. Install server dependencies: `uv pip install -e .`
             4. Install client dependencies: `cd client && npm install`
             5. Build client: `cd client && npm run build`
             6. Start server: Use `start-server.ps1` (Windows) or run `python -m uvicorn src.main:app` from server directory

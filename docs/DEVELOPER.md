@@ -165,12 +165,16 @@ Technische Dokumentation für Entwickler der Client/Server Einkaufsliste.
 
 - Python 3.13+ (empfohlen) oder Python 3.10+
 - Node.js 16+ für TypeScript/Client-Build
+- [uv](https://docs.astral.sh/uv/) – schneller Python-Paketmanager (ersetzt pip)
 
 ### 1. Virtuelle Umgebung erstellen
 
 ```bash
-python -m venv venv
+uv venv venv
+```
 
+Optional – Aktivierung für direkte CLI-Befehle (`python`, `pytest`, `black`, ...):
+```bash
 # Windows
 venv\Scripts\activate
 
@@ -182,12 +186,12 @@ source venv/bin/activate
 
 **Für Entwickler (empfohlen):**
 ```bash
-pip install -e .[dev]
+uv pip install -e ".[dev]"
 ```
 
 **Oder nur Production-Dependencies:**
 ```bash
-pip install -e .
+uv pip install -e .
 ```
 
 **Production Dependencies:**
@@ -264,11 +268,19 @@ npm run build   # Kompiliert TypeScript zu JavaScript
 
 **Option A: Entwicklungsserver (mit Auto-Reload)**
 ```bash
-# Von Projektroot
-python -m uvicorn server.src.main:app --reload --port 8000
+# Von Projektroot (venv aktiviert)
+uvicorn server.src.main:app --reload --port 8000
+
+# Oder ohne Aktivierung
+venv/Scripts/python -m uvicorn server.src.main:app --reload --port 8000
 ```
 
-**Option B: Produktionsserver**
+**Option B: PowerShell-Skript**
+```powershell
+.\start-server.ps1
+```
+
+**Option C: Produktionsserver**
 ```bash
 python server/src/app.py
 ```
@@ -354,8 +366,12 @@ WebSocket-Endpunkt:
 Automatische Code-Formatierung für Python:
 
 ```bash
-# Gesamtes Projekt formatieren
+# Gesamtes Projekt formatieren (venv aktiviert)
 black .
+
+# Ohne Aktivierung: direkt aus dem venv
+venv/Scripts/black .          # Windows
+venv/bin/black .              # macOS/Linux
 
 # Nur Server-Code
 black server/
@@ -387,7 +403,11 @@ Konfiguration in `pyproject.toml`.
 
 **Alle Tests ausführen:**
 ```bash
+# venv aktiviert
 pytest server/tests/ -v
+
+# Ohne Aktivierung
+venv/Scripts/python -m pytest server/tests/ -v
 ```
 
 **Mit Coverage-Report:**
@@ -452,20 +472,45 @@ npm run test:watch
 
 ### Continuous Integration (CI)
 
-**GitHub Actions Workflow:**
-- Automatische Tests bei Push/PR
-- Python 3.10, 3.11, 3.12, 3.13
-- Node.js 16, 18, 20
-- Coverage-Upload zu Codecov (optional)
+Drei GitHub Actions Workflows unter `.github/workflows/`:
 
-**Workflow-Schritte:**
-1. Checkout code
-2. Setup Python + Node.js
-3. Install dependencies
-4. Run linters (black, flake8)
-5. Run tests (pytest + jest)
-6. Generate coverage reports
-7. Upload coverage (optional)
+| Datei | Trigger | Zweck |
+|-------|---------|-------|
+| `ci.yml` | Push/PR auf `master` | Linter + Tests |
+| `auto-release.yml` | Push auf `master` | Automatisches Versioning & Release |
+| `release.yml` | Tag `v*.*.*` | Release-Build & Docker-Push |
+
+**Abhängigkeiten in CI:**
+
+Alle Workflows verwenden [uv](https://docs.astral.sh/uv/) via der offiziellen Action:
+
+```yaml
+- name: Install uv
+  uses: astral-sh/setup-uv@v4
+
+- name: Install Python dependencies
+  run: uv pip install --system -e ".[dev]"
+```
+
+`--system` installiert direkt in die System-Python des Runners (kein venv nötig in CI).
+
+**ci.yml – Workflow-Schritte:**
+1. Checkout
+2. Setup Python 3.13 + uv + Node.js 20
+3. `uv pip install --system -e ".[dev]"`
+4. `black --check` + `flake8`
+5. `pytest`
+6. `npm ci` + `npm run build` + `npm test`
+
+**auto-release.yml – Workflow-Schritte:**
+1. Checkout (full history)
+2. Setup Python + uv + Node.js
+3. Conventional Commits analysieren → Version berechnen
+4. `version.py` + `version.json` + `package.json` aktualisieren
+5. `uv pip install --system -e ".[dev]"`
+6. `black` + `pytest` + `npm test`
+7. Git-Tag setzen, GitHub Release erstellen
+8. Docker-Image bauen und auf Docker Hub pushen
 
 ---
 
@@ -697,7 +742,7 @@ Weitere Details siehe [client/ARCHITECTURE.md](../client/ARCHITECTURE.md) und [c
 
 **Lösung:**
 ```bash
-pip install python-jose[cryptography]
+uv pip install "python-jose[cryptography]"
 ```
 
 ### "Cannot use import statement outside a module"
@@ -726,7 +771,7 @@ npm run build
 **Lösung:**
 ```bash
 # Python
-pip install -e .
+uv pip install -e ".[dev]"
 pytest server/tests/ -v
 
 # Client

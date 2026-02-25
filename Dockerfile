@@ -19,7 +19,7 @@ RUN npm run build
 # Stage 2: Final Alpine image with Python server
 FROM python:3.11-alpine
 
-# Install system dependencies
+# Install system dependencies (needed for cryptography package on Alpine)
 RUN apk add --no-cache \
     gcc \
     musl-dev \
@@ -28,6 +28,9 @@ RUN apk add --no-cache \
     cargo \
     rust
 
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+
 # Set working directory
 WORKDIR /app
 
@@ -35,9 +38,9 @@ WORKDIR /app
 COPY pyproject.toml README.md ./
 COPY server/ ./server/
 
-# Install Python dependencies
+# Install Python dependencies via uv
 # Use --no-deps for setuptools_scm since we don't have .git in Docker
-RUN pip install --no-cache-dir fastapi uvicorn[standard] sqlmodel python-jose[cryptography] bcrypt python-multipart python-readenv requests
+RUN uv pip install --system --no-cache fastapi "uvicorn[standard]" sqlmodel "python-jose[cryptography]" bcrypt python-multipart python-readenv requests
 
 # Copy built client from builder stage
 COPY --from=client-builder /app/client/dist ./client/dist

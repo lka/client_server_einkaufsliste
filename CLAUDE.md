@@ -95,16 +95,17 @@ cd client; npx tsc --noEmit
 cd client; npm run complexity
 
 # Complexity Report (Server)
-cd server; python run-complexity.py
+cd server; ..\venv\Scripts\python.exe run-complexity.py
 
 # Python Tests (im venv)
-cd server; .\venv\Scripts\Activate.ps1; pytest
+cd server; ..\venv\Scripts\python.exe -m pytest
 ```
 
 **Wichtig für Python/Server:**
-- Immer im Virtual Environment (`venv`) arbeiten
-- Aktivierung: `cd server; .\venv\Scripts\Activate.ps1`
-- Alle pip/pytest Befehle nur im aktivierten venv ausführen
+- Paketverwaltung mit `uv` (ersetzt pip)
+- Setup (einmalig): `uv venv venv` dann `uv pip install -e ".[dev]"`
+- Aktivierung optional: `.\venv\Scripts\Activate.ps1`
+- Neue Pakete hinzufügen: `uv pip install <paket>` (dann `pyproject.toml` manuell anpassen)
 
 ### Refactoring-Pattern
 1. **Extract Method**: Lange Funktionen in Helper aufteilen
