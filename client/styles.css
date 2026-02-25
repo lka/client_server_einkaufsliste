@@ -170,6 +170,29 @@ main{
   font-size:1rem;
   background:white;
 }
+.store-filter .print-btn{
+  padding:0;
+  width:2.4rem;
+  height:2.4rem;
+  background:#28a745;
+  color:white;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  font-size:1.1rem;
+  transition:background .2s,transform .1s;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
+}
+.store-filter .print-btn:hover{
+  background:#218838;
+  transform:translateY(-1px);
+}
+.store-filter .print-btn:active{
+  transform:translateY(0);
+}
 .add{
   display:flex;
   gap:.5rem;
