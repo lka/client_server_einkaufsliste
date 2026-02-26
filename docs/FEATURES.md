@@ -229,6 +229,11 @@
         - WebSocket-Benachrichtigungen für hinzugefügte/geänderte Items
         - Sofortige Aktualisierung auf allen Geräten
     - **Druckfunktion**: Wochenplan als Tabelle in DIN A4 Querformat drucken
+      - **Druckauswahl-Dialog**: Beim Klick auf den Drucken-Button erscheint eine Auswahl:
+        - **Nur diese Woche**: Aktuelle Woche auf einer Seite (bisheriges Verhalten)
+        - **Diese + nächste Woche**: Duplexdruck – Vorderseite aktuelle Woche, Rückseite nächste Woche
+          - Nächste Woche wird automatisch vom Server geladen
+          - Druckhinweis empfiehlt Querformat und Duplex (kurze Seite umwenden)
       - **Optimiertes Layout**: 7 Tage-Spalten (Montag-Sonntag) mit Datum unter jedem Tag
       - **3 Zeilen**: Eine Zeile pro Mahlzeit (Morgens, Mittags, Abends)
       - **Plattform-spezifisch**: Popup-Fenster (Desktop/iOS) oder Inline (Android)

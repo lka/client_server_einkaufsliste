@@ -1,4 +1,4 @@
-export {printWeekplan} from './print-weekplan.js';
+export {printWeekplan, printTwoWeekplans} from './print-weekplan.js';
 export {isAndroid} from './is-android.js';
 export {convertToFourColumns} from './convert-to-four-columns.js';
 export {printPreviewContentInline} from './print-on-android.js';

@@ -1,33 +1,22 @@
 import { showError } from '../components/toast.js';
 import { isAndroid } from './is-android.js';
 
-/**
- * Print weekplan as table in landscape A4 format
- * @param weekNumber - Calendar week number (e.g., 5)
- * @param year - Year (e.g., 2025)
- * @param entries - Map of date -> meal -> entries
- */
-export function printWeekplan(
-  weekNumber: number,
-  year: number,
-  entries: Map<string, Map<string, Array<{ id: number; text: string }>>>
-): void {
-  // Calculate week days
-  const dayNames = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
+type PrintEntries = Map<string, Map<string, Array<{ id: number; text: string }>>>;
 
-  // Get dates for this week (Monday to Sunday)
+/**
+ * Build HTML table for a weekplan
+ */
+function buildWeekTableHTML(entries: PrintEntries): string {
+  const dayNames = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
   const dates = Array.from(entries.keys()).sort();
 
-  // Build table HTML
   let tableHTML = '<table>';
 
-  // Header row with day names and dates
   tableHTML += '<thead><tr>';
   dayNames.forEach((day, dayIndex) => {
     const date = dates[dayIndex];
     let dateStr = '';
     if (date) {
-      // Extract DD.MM. from ISO date (YYYY-MM-DD)
       const parts = date.split('-');
       dateStr = `${parts[2]}.${parts[1]}.`;
     }
@@ -35,7 +24,6 @@ export function printWeekplan(
   });
   tableHTML += '</tr></thead><tbody>';
 
-  // Row for each meal
   ['morning', 'lunch', 'dinner'].forEach(meal => {
     tableHTML += '<tr>';
 
@@ -59,13 +47,53 @@ export function printWeekplan(
   });
 
   tableHTML += '</tbody></table>';
+  return tableHTML;
+}
 
-  // Android: inline printing
+/**
+ * Print weekplan as table in landscape A4 format
+ * @param weekNumber - Calendar week number (e.g., 5)
+ * @param year - Year (e.g., 2025)
+ * @param entries - Map of date -> meal -> entries
+ */
+export function printWeekplan(
+  weekNumber: number,
+  year: number,
+  entries: PrintEntries
+): void {
+  const tableHTML = buildWeekTableHTML(entries);
+
   if (isAndroid()) {
     printWeekplanInline(weekNumber, year, tableHTML);
   } else {
-    // Desktop/iOS: popup printing
     printWeekplanPopup(weekNumber, year, tableHTML);
+  }
+}
+
+/**
+ * Print two weekplans (front/back for duplex printing)
+ * @param week1Number - Current week number
+ * @param year1 - Current week year
+ * @param entries1 - Current week entries
+ * @param week2Number - Next week number
+ * @param year2 - Next week year
+ * @param entries2 - Next week entries
+ */
+export function printTwoWeekplans(
+  week1Number: number,
+  year1: number,
+  entries1: PrintEntries,
+  week2Number: number,
+  year2: number,
+  entries2: PrintEntries
+): void {
+  const table1HTML = buildWeekTableHTML(entries1);
+  const table2HTML = buildWeekTableHTML(entries2);
+
+  if (isAndroid()) {
+    printTwoWeekplansInline(week1Number, year1, table1HTML, week2Number, year2, table2HTML);
+  } else {
+    printTwoWeekplansPopup(week1Number, year1, table1HTML, week2Number, year2, table2HTML);
   }
 }
 
@@ -107,6 +135,104 @@ function printWeekplanInline(
     // Note: On Android, user will need to reload the page after printing
     // to restore the original view
   }, 300);
+}
+
+/**
+ * Print two weekplans inline (for Android, duplex)
+ */
+function printTwoWeekplansInline(
+  week1Number: number,
+  year1: number,
+  table1HTML: string,
+  week2Number: number,
+  year2: number,
+  table2HTML: string
+): void {
+  document.title = `Wochenplan KW ${week1Number} ${year1} + KW ${week2Number} ${year2}`;
+
+  document.body.innerHTML = `
+    <style>
+      ${getWeekplanPrintStyles()}
+    </style>
+    <div class="weekplan-print">
+      <div class="weekplan-header">
+        <h1>Wochenplan KW ${week1Number} ${year1}</h1>
+      </div>
+      ${table1HTML}
+    </div>
+    <div class="page-break"></div>
+    <div class="weekplan-print">
+      <div class="weekplan-header">
+        <h1>Wochenplan KW ${week2Number} ${year2}</h1>
+      </div>
+      ${table2HTML}
+    </div>
+  `;
+
+  setTimeout(() => {
+    window.print();
+  }, 300);
+}
+
+/**
+ * Print two weekplans in popup (Desktop/iOS, duplex)
+ */
+function printTwoWeekplansPopup(
+  week1Number: number,
+  year1: number,
+  table1HTML: string,
+  week2Number: number,
+  year2: number,
+  table2HTML: string
+): void {
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    showError('Popup-Blocker verhindert das Drucken. Bitte erlauben Sie Popups für diese Seite.');
+    return;
+  }
+
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Wochenplan KW ${week1Number} ${year1} + KW ${week2Number} ${year2}</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+          ${getWeekplanPrintStyles()}
+        </style>
+      </head>
+      <body>
+        <div class="print-hint">
+          <strong>📱 Druckhinweis:</strong> Bitte wählen Sie im Druckdialog <strong>Querformat (Landscape)</strong> und <strong>Duplex (beidseitig, kurze Seite umwenden)</strong>!
+        </div>
+        <div class="weekplan-print">
+          <div class="weekplan-header">
+            <h1>Wochenplan KW ${week1Number} ${year1}</h1>
+          </div>
+          ${table1HTML}
+        </div>
+        <div class="page-break"></div>
+        <div class="weekplan-print">
+          <div class="weekplan-header">
+            <h1>Wochenplan KW ${week2Number} ${year2}</h1>
+          </div>
+          ${table2HTML}
+        </div>
+      </body>
+    </html>
+  `);
+
+  printWindow.document.close();
+
+  printWindow.onload = () => {
+    setTimeout(() => {
+      printWindow.print();
+      setTimeout(() => {
+        printWindow.close();
+      }, 100);
+    }, 250);
+  };
 }
 
 /**
@@ -264,6 +390,11 @@ function getWeekplanPrintStyles(): string {
       padding: 2px 0;
     }
 
+    .page-break {
+      page-break-after: always;
+      break-after: page;
+    }
+
     @media print {
       @page {
         size: A4 landscape;
@@ -289,6 +420,11 @@ function getWeekplanPrintStyles(): string {
 
       th, td {
         page-break-inside: avoid;
+      }
+
+      .page-break {
+        page-break-after: always;
+        break-after: page;
       }
     }
   `;

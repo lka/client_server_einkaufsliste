@@ -2,6 +2,13 @@
 
 > **📚 Alle Dokumentationen:** Siehe [Dokumentations-Index](INDEX.md)
 
+- Release 6.7.0: Wochenplan-Duplexdruck
+  - **Druckauswahl-Dialog**: Beim Klick auf den Drucken-Button erscheint eine Auswahl
+    - **Nur diese Woche**: Aktuelle Woche auf einer Seite (bisheriges Verhalten)
+    - **Diese + nächste Woche**: Nächste Woche wird automatisch vom Server geladen und auf der Rückseite gedruckt (Duplexdruck, kurze Seite umwenden)
+  - Druckhinweis im Popup empfiehlt Querformat und Duplex (kurze Seite umwenden)
+  - Plattform-spezifisch: Popup-Fenster (Desktop/iOS) oder Inline (Android)
+
   - Release 6.0.0: Herstellerbezeichnung + Rezept-Klammer-Entfernung + Modal-UX-Verbesserungen
     - **Optionale Herstellerbezeichnung für Produkte**: Produkte können jetzt eine zusätzliche herstellerspezifische Bezeichnung haben
         - Datenbankfeld `manufacturer_designation` (nullable, max 200 Zeichen)
