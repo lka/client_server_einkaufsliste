@@ -16,17 +16,10 @@ COPY client/ ./
 # Build TypeScript client
 RUN npm run build
 
-# Stage 2: Final Alpine image with Python server
-FROM python:3.11-alpine
-
-# Install system dependencies (needed for cryptography package on Alpine)
-RUN apk add --no-cache \
-    gcc \
-    musl-dev \
-    libffi-dev \
-    openssl-dev \
-    cargo \
-    rust
+# Stage 2: Final image with Python server
+# Use slim (Debian) instead of Alpine: pre-built wheels for cryptography/bcrypt
+# avoid Rust compilation under QEMU which causes SIGILL on arm64 cross-builds.
+FROM python:3.11-slim
 
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
