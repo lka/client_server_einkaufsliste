@@ -21,9 +21,27 @@ from ..user_models import User
 from ..db import get_session
 from ..auth import get_current_user
 from ..websocket_manager import manager
-from ..routers.items import _find_item_by_match_strategy
+from ..routers.items import _find_item_by_match_strategy, _enrich_with_department
+from .. import app_state
 
 router = APIRouter(prefix="/api/weekplan", tags=["weekplan"])
+
+
+def _item_to_broadcast_data(session, item) -> dict:
+    """Build item data dict with department info for WebSocket broadcast."""
+    enriched = _enrich_with_department(session, item)
+    return {
+        "id": enriched.id,
+        "name": enriched.name,
+        "menge": enriched.menge,
+        "store_id": enriched.store_id,
+        "product_id": enriched.product_id,
+        "shopping_date": enriched.shopping_date,
+        "user_id": enriched.user_id,
+        "department_id": enriched.department_id,
+        "department_name": enriched.department_name,
+        "department_sort_order": enriched.department_sort_order,
+    }
 
 
 class DeltaItem(BaseModel):
@@ -1324,15 +1342,7 @@ async def create_weekplan_entry(
             await manager.broadcast(
                 {
                     "type": "item:added",
-                    "data": {
-                        "id": item.id,
-                        "name": item.name,
-                        "menge": item.menge,
-                        "store_id": item.store_id,
-                        "product_id": item.product_id,
-                        "shopping_date": item.shopping_date,
-                        "user_id": item.user_id,
-                    },
+                    "data": _item_to_broadcast_data(session, item),
                 }
             )
 
@@ -1409,15 +1419,7 @@ async def delete_weekplan_entry(
             await manager.broadcast(
                 {
                     "type": "item:updated",
-                    "data": {
-                        "id": item.id,
-                        "name": item.name,
-                        "menge": item.menge,
-                        "store_id": item.store_id,
-                        "product_id": item.product_id,
-                        "shopping_date": item.shopping_date,
-                        "user_id": item.user_id,
-                    },
+                    "data": _item_to_broadcast_data(session, item),
                 }
             )
 
@@ -1438,7 +1440,11 @@ async def delete_weekplan_entry(
 
 
 def _handle_merged_items(
-    existing_item: any, menge: str, session: get_session, modified_items: list
+    existing_item: any,
+    menge: str,
+    session: get_session,
+    modified_items: list,
+    deleted_items: list | None = None,
 ):
     """Handle merging of existing item with quantity (helper function).
 
@@ -1447,11 +1453,14 @@ def _handle_merged_items(
         menge: quantity string
         session: Database session
         modified_items: list to append modified items to
+        deleted_items: optional list to append deleted items to
     """
     from ..utils import merge_quantities
 
     merged_menge = merge_quantities(existing_item.menge, menge)
     if merged_menge is None or merged_menge.strip() == "":
+        if deleted_items is not None:
+            deleted_items.append(existing_item)
         session.delete(existing_item)
     else:
         existing_item.menge = merged_menge
@@ -1536,9 +1545,14 @@ def _find_item_to_modify(
             existing_item: Existing Item instance or None
             shopping_date: Calculated shopping date (str)
     """
-    # Calculate shopping date
+    # Calculate shopping date — respect the current single_shopping_day toggle
     shopping_date = _calculate_shopping_date(
-        entry.date, item_name, first_store, session, entry.meal
+        entry.date,
+        item_name,
+        first_store,
+        session,
+        entry.meal,
+        single_shopping_day=app_state.single_shopping_day_enabled,
     )
     # Find item using intelligent matching strategy
     existing_item = _find_item_by_match_strategy(
@@ -1554,6 +1568,7 @@ def _remove_newly_marked_items(
     first_store: Store | None,
     session: get_session,
     modified_items: list,
+    deleted_items: list | None = None,
     person_count: Optional[int] = None,
 ):
     """Remove newly marked items from shopping list (helper function).
@@ -1565,6 +1580,7 @@ def _remove_newly_marked_items(
         first_store (Store | None): Store instance
         session (get_session): function to get DB session
         modified_items (list): list to append modified items to
+        deleted_items (list | None): list to append deleted items to
         person_count (Optional[int]): person count for quantity adjustment
     """
     # Remove newly marked items from shopping list
@@ -1591,7 +1607,11 @@ def _remove_newly_marked_items(
             if negative_menge:
                 # Merge with negative quantity
                 _handle_merged_items(
-                    existing_item, negative_menge, session, modified_items
+                    existing_item,
+                    negative_menge,
+                    session,
+                    modified_items,
+                    deleted_items,
                 )
                 session.commit()
 
@@ -1603,6 +1623,7 @@ def _add_back_unmarked_items(
     first_store: Store | None,
     session: get_session,
     modified_items: list,
+    deleted_items: list | None = None,
     person_count: Optional[int] = None,
 ):
     """Add back items that were unmarked (no longer removed).
@@ -1642,7 +1663,9 @@ def _add_back_unmarked_items(
 
         if existing_item:
             # Merge quantities
-            _handle_merged_items(existing_item, item_menge, session, modified_items)
+            _handle_merged_items(
+                existing_item, item_menge, session, modified_items, deleted_items
+            )
         else:
             # Create new item
             new_item = Item(
@@ -1672,6 +1695,7 @@ def _remove_items_from_added(
     first_store: Store | None,
     session: get_session,
     modified_items: list,
+    deleted_items: list | None = None,
 ):
     """Remove items that were deleted from added_items.
 
@@ -1697,7 +1721,11 @@ def _remove_items_from_added(
             if negative_menge:
                 # Merge with negative quantity
                 _handle_merged_items(
-                    existing_item, negative_menge, session, modified_items
+                    existing_item,
+                    negative_menge,
+                    session,
+                    modified_items,
+                    deleted_items,
                 )
 
                 session.commit()
@@ -1713,6 +1741,7 @@ def _handle_recipe_person_count_change(
     new_removed: set,
     session,
     modified_items: list,
+    deleted_items: list | None = None,
 ):
     """Handle person_count changes for recipes."""
     from ..routers.items import _find_matching_product
@@ -1733,7 +1762,12 @@ def _handle_recipe_person_count_change(
             continue
 
         shopping_date = _calculate_shopping_date(
-            entry.date, name, first_store, session, entry.meal
+            entry.date,
+            name,
+            first_store,
+            session,
+            entry.meal,
+            single_shopping_day=app_state.single_shopping_day_enabled,
         )
 
         # Calculate old quantity
@@ -1750,9 +1784,8 @@ def _handle_recipe_person_count_change(
         )
 
         if existing_item and old_menge:
-            deleted_items = []
             _subtract_item_quantity(
-                existing_item, old_menge, session, modified_items, deleted_items
+                existing_item, old_menge, session, modified_items, deleted_items or []
             )
 
     # Add items with new person_count
@@ -1764,7 +1797,12 @@ def _handle_recipe_person_count_change(
                 continue
 
             shopping_date = _calculate_shopping_date(
-                entry.date, name, first_store, session, entry.meal
+                entry.date,
+                name,
+                first_store,
+                session,
+                entry.meal,
+                single_shopping_day=app_state.single_shopping_day_enabled,
             )
 
             new_menge = (
@@ -1809,6 +1847,7 @@ def _remove_newly_marked_recipe_items(
     first_store: Store,
     session,
     modified_items: list,
+    deleted_items: list | None = None,
     person_count: Optional[int] = None,
 ):
     """Remove newly marked recipe items from shopping list."""
@@ -1825,7 +1864,12 @@ def _remove_newly_marked_recipe_items(
             continue
 
         shopping_date = _calculate_shopping_date(
-            entry.date, name, first_store, session, entry.meal
+            entry.date,
+            name,
+            first_store,
+            session,
+            entry.meal,
+            single_shopping_day=app_state.single_shopping_day_enabled,
         )
 
         # Default to "1" if no quantity is specified
@@ -1844,7 +1888,11 @@ def _remove_newly_marked_recipe_items(
             negative_menge = _create_negative_quantity(item_menge)
             if negative_menge:
                 _handle_merged_items(
-                    existing_item, negative_menge, session, modified_items
+                    existing_item,
+                    negative_menge,
+                    session,
+                    modified_items,
+                    deleted_items,
                 )
 
 
@@ -1881,6 +1929,7 @@ def _handle_added_items_changes(
     first_store: Store,
     session,
     modified_items: list,
+    deleted_items: list | None = None,
 ) -> None:
     """Handle changes in added_items between old and new deltas.
 
@@ -1891,6 +1940,7 @@ def _handle_added_items_changes(
         first_store: Store object
         session: Database session
         modified_items: List to append modified items to
+        deleted_items: List to append deleted items to
     """
     old_added_list = old_deltas.added_items if old_deltas else []
     old_added_items = {item.name: item for item in old_added_list}
@@ -1910,6 +1960,7 @@ def _handle_added_items_changes(
         first_store,
         session,
         modified_items,
+        deleted_items,
     )
 
     # Add newly added items
@@ -1929,6 +1980,7 @@ def _update_recipe_deltas(
     new_deltas: WeekplanDeltas,
     session,
     modified_items: list,
+    deleted_items: list | None = None,
 ) -> None:
     """Update recipe deltas and adjust shopping list accordingly.
 
@@ -1938,6 +1990,7 @@ def _update_recipe_deltas(
         new_deltas: New deltas
         session: Database session
         modified_items: List to append modified items to
+        deleted_items: List to append deleted items to
     """
     # Get recipe from database
     recipe = session.get(Recipe, entry.recipe_id)
@@ -1990,6 +2043,7 @@ def _update_recipe_deltas(
             new_removed,
             session,
             modified_items,
+            deleted_items,
         )
 
     # Remove newly marked items from shopping list
@@ -2000,6 +2054,7 @@ def _update_recipe_deltas(
         first_store,
         session,
         modified_items,
+        deleted_items,
         new_person_count,
     )
 
@@ -2011,6 +2066,7 @@ def _update_recipe_deltas(
         first_store,
         session,
         modified_items,
+        deleted_items,
         new_person_count,
     )
 
@@ -2022,6 +2078,7 @@ def _update_recipe_deltas(
         first_store,
         session,
         modified_items,
+        deleted_items,
     )
 
 
@@ -2031,6 +2088,7 @@ def _update_template_deltas(
     new_deltas: WeekplanDeltas,
     session,
     modified_items: list,
+    deleted_items: list | None = None,
 ) -> None:
     """Update template deltas and adjust shopping list accordingly.
 
@@ -2040,6 +2098,7 @@ def _update_template_deltas(
         new_deltas: New deltas
         session: Database session
         modified_items: List to append modified items to
+        deleted_items: List to append deleted items to
     """
     # Check if entry text matches a template
     template = session.exec(
@@ -2080,6 +2139,7 @@ def _update_template_deltas(
             new_removed,
             session,
             modified_items,
+            deleted_items,
         )
 
     # Remove newly marked items from shopping list
@@ -2090,6 +2150,7 @@ def _update_template_deltas(
         first_store,
         session,
         modified_items,
+        deleted_items,
         new_person_count,
     )
 
@@ -2101,6 +2162,7 @@ def _update_template_deltas(
         first_store,
         session,
         modified_items,
+        deleted_items,
         new_person_count,
     )
 
@@ -2112,6 +2174,7 @@ def _update_template_deltas(
         first_store,
         session,
         modified_items,
+        deleted_items,
     )
 
 
@@ -2122,6 +2185,7 @@ def _add_back_unmarked_recipe_items(
     first_store: Store,
     session,
     modified_items: list,
+    deleted_items: list | None = None,
     person_count: Optional[int] = None,
 ):
     """Add back recipe items that were unmarked."""
@@ -2152,7 +2216,9 @@ def _add_back_unmarked_recipe_items(
         )
 
         if existing_item and item_menge:
-            _handle_merged_items(existing_item, item_menge, session, modified_items)
+            _handle_merged_items(
+                existing_item, item_menge, session, modified_items, deleted_items
+            )
         elif item_menge:
             new_item = Item(
                 id=str(uuid.uuid4()),
@@ -2179,6 +2245,7 @@ def _handle_person_count_change(
     new_removed: set,
     session: get_session,
     modified_items: list,
+    deleted_items: list | None = None,
 ):
     """Handle person_count changes by removing old quantities and adding new ones.
 
@@ -2203,7 +2270,12 @@ def _handle_person_count_change(
             continue  # Skip items that were already removed
 
         shopping_date = _calculate_shopping_date(
-            entry.date, template_item.name, first_store, session, entry.meal
+            entry.date,
+            template_item.name,
+            first_store,
+            session,
+            entry.meal,
+            single_shopping_day=app_state.single_shopping_day_enabled,
         )
 
         # If old_person_count is None, use original template quantity
@@ -2219,9 +2291,8 @@ def _handle_person_count_change(
         )
 
         if existing_item and old_menge:
-            deleted_items = []
             _subtract_item_quantity(
-                existing_item, old_menge, session, modified_items, deleted_items
+                existing_item, old_menge, session, modified_items, deleted_items or []
             )
 
     # Add items with new person_count
@@ -2231,7 +2302,12 @@ def _handle_person_count_change(
                 continue  # Skip items that are marked as removed
 
             shopping_date = _calculate_shopping_date(
-                entry.date, template_item.name, first_store, session, entry.meal
+                entry.date,
+                template_item.name,
+                first_store,
+                session,
+                entry.meal,
+                single_shopping_day=app_state.single_shopping_day_enabled,
             )
 
             new_menge = _adjust_quantity_by_person_count(
@@ -2355,12 +2431,17 @@ async def update_weekplan_entry_deltas(
             old_deltas = WeekplanDeltas(**json.loads(entry.deltas))
 
         modified_items = []
+        deleted_items = []
 
         # Handle recipes or templates
         if entry.recipe_id:
-            _update_recipe_deltas(entry, old_deltas, deltas, session, modified_items)
+            _update_recipe_deltas(
+                entry, old_deltas, deltas, session, modified_items, deleted_items
+            )
         else:
-            _update_template_deltas(entry, old_deltas, deltas, session, modified_items)
+            _update_template_deltas(
+                entry, old_deltas, deltas, session, modified_items, deleted_items
+            )
 
         # Update deltas
         entry.deltas = json.dumps(deltas.model_dump())
@@ -2373,15 +2454,15 @@ async def update_weekplan_entry_deltas(
             await manager.broadcast(
                 {
                     "type": "item:updated",
-                    "data": {
-                        "id": item.id,
-                        "name": item.name,
-                        "menge": item.menge,
-                        "store_id": item.store_id,
-                        "product_id": item.product_id,
-                        "shopping_date": item.shopping_date,
-                        "user_id": item.user_id,
-                    },
+                    "data": _item_to_broadcast_data(session, item),
+                }
+            )
+
+        for item in deleted_items:
+            await manager.broadcast(
+                {
+                    "type": "item:deleted",
+                    "data": {"id": item.id},
                 }
             )
 

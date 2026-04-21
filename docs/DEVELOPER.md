@@ -425,12 +425,12 @@ pytest server/tests/test_weekplan.py -v
 ```
 
 **Test-Struktur:**
-- ✅ **78 Tests insgesamt** (85%+ Code-Coverage)
+- ✅ **117 Tests insgesamt** (85%+ Code-Coverage)
 - **Authentifizierung** (10 Tests): Registrierung, Login, Token-Validierung, Refresh
 - **Shopping-List CRUD** (21 Tests): Item-Operationen, Fuzzy-Matching, Mengenlogik
 - **Store-Management** (31 Tests): Stores, Departments, Products, Sorting
 - **User-Management** (10 Tests): Genehmigung, Account-Löschung
-- **Wochenplan & Template-Integration** (6 Tests): CRUD, automatische Einkaufslisten-Generierung
+- **Wochenplan & Template-Integration** (45 Tests): CRUD, automatische Einkaufslisten-Generierung, Personenzahl-Skalierung, Delta-Management, Single-Shopping-Day
 
 **Test-Features:**
 - Isolierte Test-Datenbank (in-memory SQLite)
@@ -536,7 +536,8 @@ Alle Workflows verwenden [uv](https://docs.astral.sh/uv/) via der offiziellen Ac
 ### Server-Architektur
 
 #### **Kern-Module** (`src/`)
-- **main.py** - FastAPI app initialization, CORS, routers, lifecycle events
+- **main.py** - FastAPI app initialization, CORS, routers, lifecycle events, WebSocket handler
+- **app_state.py** - Gemeinsamer In-Memory-Zustand (z.B. `single_shopping_day_enabled`); verhindert zirkuläre Imports zwischen main.py und Routern
 - **models.py** - SQLModel data models (Item, Store, Department, Product, Template, WeekplanEntry)
 - **auth.py** - JWT utilities (token creation, verification, password hashing)
 - **db.py** - Database initialization, session management

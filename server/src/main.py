@@ -36,6 +36,7 @@ from .websocket_manager import manager
 from .auth import verify_token
 from .user_models import User
 from sqlmodel import select
+from . import app_state
 
 
 readenv.loads  # Load .env file
@@ -155,8 +156,7 @@ def get_api_version():
     }
 
 
-# In-memory state for single shopping day preference (shared across all clients)
-_single_shopping_day_enabled: bool = False
+# single_shopping_day state is now in app_state.py (shared with routers)
 
 
 @app.websocket("/ws/{token}")
@@ -173,7 +173,6 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
         - Ping/pong heartbeat
         - Connection/disconnection events
     """
-    global _single_shopping_day_enabled
     # Authenticate user and get from database
     username = verify_token(token)
     if username is None:
@@ -204,7 +203,7 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
     await websocket.send_json(
         {
             "type": "weekplan:single_shopping_day",
-            "data": {"enabled": _single_shopping_day_enabled},
+            "data": {"enabled": app_state.single_shopping_day_enabled},
         }
     )
 
@@ -282,7 +281,7 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
 
             elif event_type == "weekplan:single_shopping_day":
                 # Update server-side state and broadcast to other users
-                _single_shopping_day_enabled = data.get("data", {}).get(
+                app_state.single_shopping_day_enabled = data.get("data", {}).get(
                     "enabled", False
                 )
                 await manager.broadcast(

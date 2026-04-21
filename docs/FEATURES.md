@@ -226,7 +226,8 @@
         - Items mit Menge ≤ 0 werden automatisch gelöscht
       - **Exakter Match erforderlich**: Nur bei exakter Übereinstimmung des Wochenplan-Texts mit Template-Namen
       - **Real-time Shopping-List Updates**: Änderungen an der Einkaufsliste durch Wochenplan-Einträge werden live an alle verbundenen Clients übertragen
-        - WebSocket-Benachrichtigungen für hinzugefügte/geänderte Items
+        - WebSocket-Benachrichtigungen für hinzugefügte/geänderte/gelöschte Items — inklusive vollständiger Abteilungsinformation (`department_id`, `department_name`, `department_sort_order`)
+        - Empfangende Clients zeigen neue Items sofort in der korrekten Abteilung an (kein Seiten-Reload nötig)
         - Sofortige Aktualisierung auf allen Geräten
     - **Druckfunktion**: Wochenplan als Tabelle in DIN A4 Querformat drucken
       - **Druckauswahl-Dialog**: Beim Klick auf den Drucken-Button erscheint eine Auswahl:
@@ -240,6 +241,7 @@
       - **A4 Querformat**: Optimale Nutzung des Platzes für übersichtliche Darstellung
     - **"Nur ein Einkaufstag"-Toggle**: Checkbox in der Wochenplan-Navigationsleiste
       - Deaktiviert die Frischeprodukte-Logik: alle Artikel gehen nur auf den MAIN_SHOPPING_DAY (Mittwoch)
+      - **Konsistente Anwendung**: Der Toggle gilt für alle Einkaufsdatum-Berechnungen — beim Hinzufügen, Entfernen und Ändern von Wochenplan-Einträgen sowie bei Personenzahl-Änderungen und Delta-Updates
       - **Cross-Client-Synchronisation**: Zustandsänderung wird sofort an alle verbundenen Clients übertragen
       - **Spätkommer-Support**: Server hält den Zustand im RAM; neue Clients bekommen den aktuellen Wert beim Verbindungsaufbau
       - Zustand wird zusätzlich in `localStorage` gespeichert; API-Feld: `single_shopping_day: bool` in `WeekplanEntryCreate`
@@ -338,7 +340,7 @@
     - **Einkaufstag-Berechnung**: Automatische Zuweisung zum passenden Einkaufsdatum
       - Berücksichtigt MAIN_SHOPPING_DAY und FRESH_PRODUCTS_DAY
       - Frischeprodukte-Logik für optimale Frische
-    - **WebSocket-Synchronisation**: Änderungen werden live an alle Clients übertragen
+    - **WebSocket-Synchronisation**: Änderungen werden live an alle Clients übertragen — inklusive vollständiger Abteilungsinformation, sodass Items sofort in der korrekten Kategorie erscheinen
   - **Rezept-Deltamanagement**: Flexible Anpassung von Rezeptzutaten
     - **Checkbox-System**: Einzelne Zutaten als "nicht benötigt" markieren
     - **Visuelles Feedback**: Markierte Items werden rot durchgestrichen
