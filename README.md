@@ -279,3 +279,4 @@ Dieses Projekt ist Open Source. Siehe LICENSE-Datei für Details.
 **Externe Ressourcen:**
 - [FastAPI Dokumentation](https://fastapi.tiangolo.com/)
 - [TypeScript Handbook](https://www.typescriptlang.org/docs/)
+- [Docker Container auf Dockerhub](https://hub.docker.com/r/lkaberlin/einkaufsliste)
