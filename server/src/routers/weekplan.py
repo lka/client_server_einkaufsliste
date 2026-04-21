@@ -922,6 +922,7 @@ def _process_recipe_ingredients_removal(
     original_quantity: Optional[int],
     modified_items: List[Item],
     deleted_items: List[Item],
+    single_shopping_day: bool = False,
 ) -> None:
     """Process recipe ingredients and remove them from shopping list.
 
@@ -937,6 +938,7 @@ def _process_recipe_ingredients_removal(
         original_quantity: Original recipe quantity
         modified_items: List to append modified items to
         deleted_items: List to append deleted items to
+        single_shopping_day: If True, all items go to MAIN_SHOPPING_DAY only
     """
     for line in ingredient_lines:
         quantity_str, name = _parse_ingredient_line(line, pattern)
@@ -947,7 +949,7 @@ def _process_recipe_ingredients_removal(
 
         # Calculate shopping date using helper function
         shopping_date = _calculate_shopping_date(
-            weekplan_date, name, first_store, session, meal
+            weekplan_date, name, first_store, session, meal, single_shopping_day
         )
 
         # Adjust quantity based on person_count if provided
@@ -977,6 +979,7 @@ def _process_delta_items_removal(
     meal: str,
     modified_items: List[Item],
     deleted_items: List[Item],
+    single_shopping_day: bool = False,
 ) -> None:
     """Process delta items and remove them from shopping list.
 
@@ -988,11 +991,17 @@ def _process_delta_items_removal(
         meal: Meal type
         modified_items: List to append modified items to
         deleted_items: List to append deleted items to
+        single_shopping_day: If True, all items go to MAIN_SHOPPING_DAY only
     """
     for delta_item in delta_items:
         # Calculate shopping date
         shopping_date = _calculate_shopping_date(
-            weekplan_date, delta_item.name, first_store, session, meal
+            weekplan_date,
+            delta_item.name,
+            first_store,
+            session,
+            meal,
+            single_shopping_day,
         )
 
         _subtract_ingredient_item(
@@ -1012,6 +1021,7 @@ def _remove_recipe_items_from_shopping_list(
     weekplan_date: str,
     meal: str,
     deltas: Optional[WeekplanDeltas] = None,
+    single_shopping_day: bool = False,
 ) -> tuple[List[Item], List[Item]]:
     """Remove recipe items from shopping list when weekplan entry is deleted.
 
@@ -1024,6 +1034,7 @@ def _remove_recipe_items_from_shopping_list(
         weekplan_date: Date from weekplan entry (YYYY-MM-DD)
         meal: Meal type ('morning', 'lunch', 'dinner')
         deltas: Optional deltas to apply (removed items, added items)
+        single_shopping_day: If True, all items go to MAIN_SHOPPING_DAY only
 
     Returns:
         Tuple of (modified_items, deleted_items)
@@ -1079,6 +1090,7 @@ def _remove_recipe_items_from_shopping_list(
         original_quantity,
         modified_items,
         deleted_items,
+        single_shopping_day,
     )
 
     # Remove items from deltas.added_items
@@ -1091,6 +1103,7 @@ def _remove_recipe_items_from_shopping_list(
             meal,
             modified_items,
             deleted_items,
+            single_shopping_day,
         )
 
     return modified_items, deleted_items
@@ -1102,6 +1115,7 @@ def _remove_template_items_from_shopping_list(
     weekplan_date: str,
     meal: str,
     deltas: Optional[WeekplanDeltas] = None,
+    single_shopping_day: bool = False,
 ) -> tuple[List[Item], List[Item]]:
     """Remove template items from shopping list when weekplan entry is deleted.
 
@@ -1114,6 +1128,7 @@ def _remove_template_items_from_shopping_list(
         weekplan_date: Date from weekplan entry (YYYY-MM-DD)
         meal: Meal type ('morning', 'lunch', 'dinner')
         deltas: Optional deltas to apply (removed items, added items)
+        single_shopping_day: If True, all items go to MAIN_SHOPPING_DAY only
 
     Returns:
         Tuple of (modified_items, deleted_items)
@@ -1156,7 +1171,12 @@ def _remove_template_items_from_shopping_list(
             continue
         # Calculate shopping date using helper function (same logic as add)
         shopping_date = _calculate_shopping_date(
-            weekplan_date, template_item.name, first_store, session, meal
+            weekplan_date,
+            template_item.name,
+            first_store,
+            session,
+            meal,
+            single_shopping_day,
         )
 
         # Adjust quantity based on person_count if provided
@@ -1186,7 +1206,12 @@ def _remove_template_items_from_shopping_list(
         for delta_item in deltas.added_items:
             # Calculate shopping date
             shopping_date = _calculate_shopping_date(
-                weekplan_date, delta_item.name, first_store, session, meal
+                weekplan_date,
+                delta_item.name,
+                first_store,
+                session,
+                meal,
+                single_shopping_day,
             )
 
             # Find existing item using intelligent matching strategy
@@ -1396,25 +1421,46 @@ async def delete_weekplan_entry(
 
         # Remove items from shopping list based on entry type
         # Do this BEFORE deleting the entry so we still have access to entry data
+        single_shopping_day = app_state.single_shopping_day_enabled
         if entry.entry_type == "recipe" and entry.recipe_id:
             # Entry is a recipe - remove recipe ingredients
             modified_items, deleted_items = _remove_recipe_items_from_shopping_list(
-                session, entry.recipe_id, entry.date, entry.meal, entry_deltas
+                session,
+                entry.recipe_id,
+                entry.date,
+                entry.meal,
+                entry_deltas,
+                single_shopping_day,
             )
         elif entry.entry_type == "template":
             # Entry is a template - remove template items
             modified_items, deleted_items = _remove_template_items_from_shopping_list(
-                session, entry.text, entry.date, entry.meal, entry_deltas
+                session,
+                entry.text,
+                entry.date,
+                entry.meal,
+                entry_deltas,
+                single_shopping_day,
             )
         elif entry.recipe_id:
             # Fallback for backward compatibility: entry has a recipe_id
             modified_items, deleted_items = _remove_recipe_items_from_shopping_list(
-                session, entry.recipe_id, entry.date, entry.meal, entry_deltas
+                session,
+                entry.recipe_id,
+                entry.date,
+                entry.meal,
+                entry_deltas,
+                single_shopping_day,
             )
         else:
             # Fallback: entry text might match a template
             modified_items, deleted_items = _remove_template_items_from_shopping_list(
-                session, entry.text, entry.date, entry.meal, entry_deltas
+                session,
+                entry.text,
+                entry.date,
+                entry.meal,
+                entry_deltas,
+                single_shopping_day,
             )
 
         # Broadcast shopping list changes to all connected clients
