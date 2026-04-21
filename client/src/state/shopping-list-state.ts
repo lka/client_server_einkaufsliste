@@ -6,6 +6,7 @@
 
 import { Item, fetchItems as apiFetchItems, addItem as apiAddItem, deleteItem as apiDeleteItem } from '../data/api.js';
 import * as websocket from '../data/websocket.js';
+import { onWeekplanDeltasUpdated } from '../data/websocket/subscriptions.js';
 
 type StateChangeListener = (items: Item[]) => void;
 
@@ -71,12 +72,15 @@ class ShoppingListState {
 
     this.wsUnsubscribers.push(
       websocket.onItemUpdated((item: Item) => {
-        // Update item modified by other user
         const existingIndex = this.items.findIndex(i => i.id === item.id);
         if (existingIndex !== -1) {
           this.items[existingIndex] = item;
-          this.notifyListeners();
+        } else {
+          // Server also sends item:updated for newly created items (e.g., new ingredient
+          // added via person count change in weekly plan)
+          this.items.push(item);
         }
+        this.notifyListeners();
       })
     );
 
@@ -84,6 +88,14 @@ class ShoppingListState {
       websocket.onDepartmentUpdated(() => {
         // Department was updated (name or sort_order changed)
         // Reload all items to get updated department information
+        this.loadItems();
+      })
+    );
+
+    this.wsUnsubscribers.push(
+      onWeekplanDeltasUpdated(() => {
+        // Weekplan deltas changed (e.g. person count) — shopping list quantities
+        // may have changed. Reload to guarantee full synchronisation.
         this.loadItems();
       })
     );

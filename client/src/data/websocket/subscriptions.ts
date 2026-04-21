@@ -63,6 +63,10 @@ export function onWeekplanDeleted(callback: (data: { id: number }) => void): () 
   return subscribe('weekplan:deleted', callback);
 }
 
+export function onWeekplanDeltasUpdated(callback: (data: any) => void): () => void {
+  return subscribe('weekplan:deltas_updated', callback);
+}
+
 // Product event subscriptions
 export function onProductAdded(callback: (product: any) => void): () => void {
   return subscribe('product:added', callback);

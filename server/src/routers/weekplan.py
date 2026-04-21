@@ -2,6 +2,7 @@
 
 import os
 import json
+import logging
 from typing import List, Optional
 from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, Depends
@@ -23,6 +24,8 @@ from ..auth import get_current_user
 from ..websocket_manager import manager
 from ..routers.items import _find_item_by_match_strategy, _enrich_with_department
 from .. import app_state
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/weekplan", tags=["weekplan"])
 
