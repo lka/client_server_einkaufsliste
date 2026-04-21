@@ -18,6 +18,9 @@ class WeekplanStateManager {
   // Current week offset (0 = current week, -1 = previous, +1 = next)
   private weekOffset: number = 0;
 
+  // Single shopping day setting (synced from server via WebSocket)
+  private singleShoppingDay: boolean = false;
+
   // Listeners for state changes
   private listeners: Set<StateChangeListener> = new Set();
 
@@ -189,6 +192,14 @@ class WeekplanStateManager {
     this.notifyListeners();
   }
 
+  getSingleShoppingDay(): boolean {
+    return this.singleShoppingDay;
+  }
+
+  setSingleShoppingDay(value: boolean): void {
+    this.singleShoppingDay = value;
+  }
+
   /**
    * Subscribe to state changes
    * @returns Unsubscribe function
@@ -216,6 +227,7 @@ class WeekplanStateManager {
     this.entriesStore.clear();
     this.listeners.clear();
     this.weekOffset = 0;
+    this.singleShoppingDay = false;
   }
 }
 

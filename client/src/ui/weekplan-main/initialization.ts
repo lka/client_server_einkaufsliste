@@ -6,7 +6,7 @@ import { handleAddMealEntry, handlePrintWeekplan, initializeWeekplanWebSocket } 
 import { renderWeek } from './week-renderer.js';
 import { navigateToPreviousWeekLocal, navigateToNextWeekLocal } from './navigation-handlers.js';
 import { setupDetailsEventListener } from './event-handlers.js';
-import { getSingleShoppingDay, setSingleShoppingDay } from '../../state/weekplan-preferences.js';
+import { weekplanState } from '../../state/weekplan-state.js';
 import { broadcastSingleShoppingDayChange, onSingleShoppingDayChanged } from '../../data/websocket.js';
 
 /**
@@ -39,17 +39,17 @@ export function initWeekplan(): void {
   // Initialize single shopping day toggle
   const singleDayToggle = document.getElementById('singleShoppingDayToggle') as HTMLInputElement | null;
   if (singleDayToggle) {
-    singleDayToggle.checked = getSingleShoppingDay();
+    singleDayToggle.checked = weekplanState.getSingleShoppingDay();
     singleDayToggle.addEventListener('change', () => {
       const enabled = singleDayToggle.checked;
-      setSingleShoppingDay(enabled);
+      weekplanState.setSingleShoppingDay(enabled);
       broadcastSingleShoppingDayChange(enabled);
     });
   }
 
-  // Sync toggle state when another client changes it
+  // Sync toggle state when server sends initial value or another client changes it
   onSingleShoppingDayChanged((data) => {
-    setSingleShoppingDay(data.enabled);
+    weekplanState.setSingleShoppingDay(data.enabled);
     if (singleDayToggle) {
       singleDayToggle.checked = data.enabled;
     }
