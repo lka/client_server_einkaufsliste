@@ -29,17 +29,15 @@ Einkaufslisten-Verwaltung mit Client-Server-Architektur:
 4. **Network Layer** (`src/network/`): HTTP-Client, WebSocket
 
 **Wichtige Regeln:**
-- ✅ **Verwende bestehende Komponenten**: `client/src/ui/components/` (buttons, inputs, modals)
-- ✅ **State Management**: Immer über State Layer, nie direkter DOM-State
-- ✅ **API-Aufrufe**: Nur über Data Layer (`src/data/api.ts`)
-- ✅ **WebSocket**: Nur über `src/data/websocket.ts`
-- ❌ **Keine UI-Frameworks**: Vanilla JS/TypeScript, kein React/Vue/Angular
-- ❌ **Keine direkten API-Aufrufe aus UI**: Immer über Data Layer
+- ✅ Bestehende Komponenten nutzen: `client/src/ui/components/` (buttons, inputs, modals)
+- ✅ State Management immer über State Layer, nie direkter DOM-State
+- ✅ API-Aufrufe nur über Data Layer (`src/data/api.ts`)
+- ✅ WebSocket nur über `src/data/websocket.ts`
+- ❌ Keine UI-Frameworks (Vanilla JS/TypeScript, kein React/Vue/Angular)
+- ❌ Keine direkten API-Aufrufe aus UI-Komponenten
+- ❌ **`client/package.json` version nicht ändern**
 
-**Modularisierung:**
-- Dateien über 200 Zeilen oder McCabe > 50 in Unterverzeichnis aufteilen
-- Pattern: `module-name/` mit `index.ts` als Public API
-- Backward Compatibility durch Re-Exports im alten Pfad
+**Modularisierung:** Dateien > 200 Zeilen oder McCabe > 50 → Unterverzeichnis mit `index.ts` als Public API, Backward Compatibility durch Re-Exports.
 
 ### Server (Python)
 
@@ -49,29 +47,15 @@ Einkaufslisten-Verwaltung mit Client-Server-Architektur:
 - `server/src/dependencies.py`: Dependency Injection (DB-Sessions, Auth)
 
 **Wichtige Regeln:**
-- ✅ **DRY**: Wiederverwendung von Helper-Funktionen
-- ✅ **Fuzzy Matching**: Verwende `_find_item_by_match_strategy()` aus `items.py`
-- ✅ **Type Safety**: Pydantic/SQLModel für Validierung
-- ❌ **Keine zirkulären Imports**: Helper-Funktionen in separate Module
+- ✅ Fuzzy Matching: `_find_item_by_match_strategy()` aus `items.py` nutzen (Exact Match bei Produktliste, sonst Fuzzy 80%)
+- ✅ Type Safety: Pydantic/SQLModel für Validierung
+- ❌ Keine zirkulären Imports
+- ❌ **`server/src/version.py` nicht ändern**
 
 ## 🎨 UI/UX Richtlinien
 
-### Komponenten-Nutzung
-```typescript
-// ✅ RICHTIG: Verwende bestehende Komponenten
-import { createButton } from '../components/button.js';
-import { createInput } from '../components/input.js';
-import { showModal } from '../components/modal.js';
-
-// ❌ FALSCH: Eigene Button-Implementierung
-const button = document.createElement('button');
-```
-
 ### Print-Layout (Einkaufsliste)
-- Format: DIN A4 quer
-- Layout: 4 Spalten
-- Rand: 1 cm außen
-- Spalten-Abstand: 1 cm
+- Format: DIN A4 quer, 4 Spalten, Rand 1 cm außen, Spalten-Abstand 1 cm
 - Duplex: Wenden über kurze Seite
 
 ### Standard-Patterns
@@ -83,8 +67,7 @@ const button = document.createElement('button');
 
 ### Komplexitätsziele
 - **McCabe-Komplexität**: Ziel ≤ 50 pro Datei, ideal < 30
-- **Zyklomatische Komplexität**: Ziel < 40
-- **Dateigröße**: ≤ 200 Zeilen (bei mehr: modularisieren)
+- **Dateigröße**: ≤ 200 Zeilen
 
 ### Bei Änderungen
 ```powershell
@@ -101,25 +84,16 @@ cd server; ..\venv\Scripts\python.exe run-complexity.py
 cd server; ..\venv\Scripts\python.exe -m pytest
 ```
 
-**Wichtig für Python/Server:**
+**Python/Server:**
 - Paketverwaltung mit `uv` (ersetzt pip)
 - Setup (einmalig): `uv venv venv` dann `uv pip install -e ".[dev]"`
-- Aktivierung optional: `.\venv\Scripts\Activate.ps1`
-- Neue Pakete hinzufügen: `uv pip install <paket>` (dann `pyproject.toml` manuell anpassen)
-
-### Refactoring-Pattern
-1. **Extract Method**: Lange Funktionen in Helper aufteilen
-2. **Extract Module**: Ähnliche Funktionen in eigenes Modul
-3. **DRY**: Code-Duplikation eliminieren
-4. **Single Responsibility**: Eine Aufgabe pro Funktion
+- Neue Pakete: `uv pip install <paket>` (dann `pyproject.toml` manuell anpassen)
 
 ## 🔄 Git & Versioning
 
 ### Commit Messages
 Conventional Commits Format ([docs/COMMIT_CONVENTION.md](docs/COMMIT_CONVENTION.md)):
 ```
-<type>(<scope>): <description>
-
 feat: Neue Features
 fix: Bugfixes
 refactor: Code-Refactoring
@@ -127,106 +101,12 @@ docs: Dokumentation
 chore: Build, Dependencies
 ```
 
-**Commit-Footer immer anhängen:**
-```
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
-```
-
-### Versioning
-Semantic Versioning ([docs/VERSIONING.md](docs/VERSIONING.md)):
-- **MAJOR**: Breaking Changes
-- **MINOR**: Neue Features (backward compatible)
-- **PATCH**: Bugfixes
-
-## 🔍 Bevor du Code schreibst
-
-**Checklist:**
-1. ✅ Relevante Dokumentation gelesen?
-2. ✅ Bestehende ähnliche Implementierungen gesucht?
-3. ✅ Architektur-Layer korrekt?
-4. ✅ Bestehende Komponenten/Helper-Funktionen genutzt?
-5. ✅ Tests nach Änderungen ausgeführt?
-
-## 🚫 Häufige Fehler vermeiden
-
-### Client
-- ❌ Neue UI-Komponenten erstellen statt bestehende zu nutzen
-- ❌ Direkter API-Aufruf aus UI-Komponenten
-- ❌ State in DOM statt State Layer
-- ❌ Frameworks oder Libraries hinzufügen
-
-### Server
-- ❌ Duplikate von Matching-Logik (nutze `_find_item_by_match_strategy()`)
-- ❌ SQL-Queries direkt statt SQLModel
-- ❌ Fehlende Type Hints
-- ❌ Keine Fehlerbehandlung bei API-Endpunkten
-
-### Allgemein
-- ❌ Über-Engineering (YAGNI - You Aren't Gonna Need It)
-- ❌ Code-Duplikation statt Wiederverwendung
-- ❌ Fehlende Dokumentation bei komplexen Änderungen
-- ❌ Breaking Changes ohne Major Version Bump
-
-## 💡 Best Practices
-
-### Refactoring
-- **Modularisierung**: Wenn Datei > 200 Zeilen → Unterverzeichnis
-- **Helper-Funktionen**: Wiederkehrende Logik auslagern
-- **Backward Compatibility**: Bei Refactoring alte Exporte beibehalten
-
-### Features
-- **Intelligent Item Matching**: Exact Match bei Produktliste, Fuzzy sonst (80%)
-- **WebSocket**: Echtzeit-Updates für kollaborative Features
-- **State Management**: Observer Pattern für reaktive UI-Updates
-
-### Testing
-- **Server**: pytest mit 100+ Tests, Coverage-Ziel > 80%
-- **Client**: Manuelle Tests nach UI-Änderungen
-- **Integration**: Beide Seiten nach API-Änderungen testen
+Commits führt der User durch. Semantic Versioning ([docs/VERSIONING.md](docs/VERSIONING.md)): MAJOR = Breaking Changes, MINOR = neue Features, PATCH = Bugfixes.
 
 ## 📝 Dokumentation Updates
 
-**Nach Refactoring/Features:**
-1. **ARCHITECTURE.md**: Bei strukturellen Änderungen
-2. **FEATURES.md**: Bei neuen Features
-3. **COMPLEXITY.md**: Nach Complexity-Reduktion
-4. **README.md**: Bei User-relevanten Änderungen
-
-## 🎓 Projekt-spezifisches Wissen
-
-### Intelligentes Item-Matching
-```python
-# In items.py: _find_item_by_match_strategy()
-# Exact Match wenn in Produktliste, sonst Fuzzy (80%)
-# Verhindert: "Kürbiskerne" + "Kürbiskernöl" Vermischung
-# Erlaubt: "Möhre" + "Möhren" Zusammenführung
-```
-
-### Client State Management
-```typescript
-// Zentral in src/state/*.ts
-// Observer Pattern für reaktive Updates
-// Nie direkter DOM-State
-```
-
-### WebSocket Integration
-```typescript
-// src/data/websocket.ts
-// Event-basiert: onItemAdded, onWeekplanChanged, etc.
-// Automatische UI-Updates via State Layer
-```
-
-## 🤝 Workflow
-
-1. **Verstehen**: Dokumentation lesen, bestehenden Code analysieren
-2. **Planen**: Architektur-konform, bestehende Patterns nutzen
-3. **Implementieren**: Klein, fokussiert, testbar
-4. **Testen**: TypeScript kompilieren, Tests laufen lassen
-5. **Dokumentieren**: Relevante Docs aktualisieren
-6. **Committen**: Commits führt der User durch, ansonsten Conventional Commits mit Footer
+Nach Refactoring/Features: **ARCHITECTURE.md** (strukturelle Änderungen), **FEATURES.md** (neue Features), **COMPLEXITY.md** (Complexity-Reduktion), **README.md** (User-relevante Änderungen).
 
 ---
 
-**Wichtig**: Diese Anweisungen haben **höchste Priorität** und überschreiben generische Best Practices wenn sie im Konflikt stehen.
+**Wichtig**: Diese Anweisungen haben **höchste Priorität** und überschreiben generische Best Practices.
