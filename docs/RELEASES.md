@@ -2,6 +2,28 @@
 
 > **📚 Alle Dokumentationen:** Siehe [Dokumentations-Index](INDEX.md)
 
+- Release 6.9.0: SingleDay – Fresh-Items in Haupt-Einkaufstag zusammenführen
+  - Items mit `fresh`-Status werden beim Aktivieren von `singleDay` automatisch in den Haupt-Einkaufstag übernommen
+
+- Release 6.8.0: Auto-Add beim Speichern in Rezept- und Template-Modal
+  - Ausstehende (pending) Items werden beim Speichern automatisch zur Einkaufsliste hinzugefügt
+
+- Release 6.7.6: Bugfix – Fresh-Items bei singleDay korrekt entfernen
+  - Items mit `fresh`-Status werden aus der Einkaufsliste entfernt, wenn `singleDay` aktiv ist
+
+- Release 6.7.5: Bugfix – Einkaufsliste nach Wochenplan-Update neu laden
+  - Einkaufsliste wird nach einem Wochenplan-Broadcast korrekt aktualisiert
+
+- Release 6.7.4: Bugfix – Docker Build repariert
+
+- Release 6.7.3: Bugfix – Items in Einkaufsliste hinzufügen/löschen (#88)
+  - Vollständiges Hinzufügen und Löschen von Items in der Einkaufsliste wiederhergestellt
+
+- Release 6.7.2: Bugfix – State-Verwaltung Server/Client (#89)
+  - State wird im Server gehalten, aus localStorage entfernt
+
+- Release 6.7.1: Docker Container Link in externe Ressourcen aufgenommen
+
 - Release 6.7.0: Wochenplan-Duplexdruck
   - **Druckauswahl-Dialog**: Beim Klick auf den Drucken-Button erscheint eine Auswahl
     - **Nur diese Woche**: Aktuelle Woche auf einer Seite (bisheriges Verhalten)
@@ -9,7 +31,7 @@
   - Druckhinweis im Popup empfiehlt Querformat und Duplex (kurze Seite umwenden)
   - Plattform-spezifisch: Popup-Fenster (Desktop/iOS) oder Inline (Android)
 
-  - Release 6.0.0: Herstellerbezeichnung + Rezept-Klammer-Entfernung + Modal-UX-Verbesserungen
+- Release 6.0.0: Herstellerbezeichnung + Rezept-Klammer-Entfernung + Modal-UX-Verbesserungen
     - **Optionale Herstellerbezeichnung für Produkte**: Produkte können jetzt eine zusätzliche herstellerspezifische Bezeichnung haben
         - Datenbankfeld `manufacturer_designation` (nullable, max 200 Zeichen)
         - Database-Migration mit Backward-Compatibility
