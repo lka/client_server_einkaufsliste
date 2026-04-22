@@ -14,6 +14,7 @@ export function setupAddedItems(
 ): {
   renderAddedItems: () => void;
   addItemForm: HTMLElement;
+  tryAddPending: () => void;
 } {
   const renderAddedItems = () => {
     const newList = createAddedItemsList(addedItems, (name) => {
@@ -24,7 +25,7 @@ export function setupAddedItems(
     addedItemsContainer.appendChild(newList);
   };
 
-  const addItemForm = createAddItemForm(
+  const { form: addItemForm, tryAddPending } = createAddItemForm(
     (name, menge) => {
       addedItems.set(name, { name, menge });
       renderAddedItems();
@@ -33,6 +34,7 @@ export function setupAddedItems(
 
   return {
     renderAddedItems,
-    addItemForm
+    addItemForm,
+    tryAddPending
   };
 }

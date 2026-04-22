@@ -71,7 +71,7 @@ async function displayRecipeModal(recipeName: string, recipeData: any, entryId?:
   }
 
   // Build modal content
-  const { contentDiv, saveButton } = buildModalContent(
+  const { contentDiv, saveButton, tryAddPending } = buildModalContent(
     recipeData,
     parsedIngredients,
     state,
@@ -97,6 +97,7 @@ async function displayRecipeModal(recipeName: string, recipeData: any, entryId?:
   // Attach save handler
   if (saveButton && entryId) {
     saveButton.addEventListener('click', async () => {
+      tryAddPending();
       await handleSaveDeltas(entryId, state, originalQuantity, currentEntry, saveButton, () => {
         modal.close();
       });

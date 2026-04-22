@@ -19,7 +19,8 @@ export function createSaveButton(
   removedItems: Set<string>,
   addedItems: Map<string, DeltaItem>,
   getAdjustedPersonCount: () => number | null,
-  modal: Modal
+  modal: Modal,
+  tryAddPending: () => void = () => {}
 ): HTMLElement {
   const saveButtonDiv = document.createElement('div');
   saveButtonDiv.style.cssText = 'margin-top: 0.75rem; display: flex; justify-content: flex-end;';
@@ -57,6 +58,7 @@ export function createSaveButton(
       saveButton.disabled = true;
       saveButton.textContent = 'Speichere...';
 
+      tryAddPending();
       collectCheckboxStates();
 
       const adjustedPersonCount = getAdjustedPersonCount();

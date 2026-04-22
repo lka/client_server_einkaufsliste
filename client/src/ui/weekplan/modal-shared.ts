@@ -89,7 +89,7 @@ export function createQuantityAdjustmentSection(
  */
 export function createAddItemForm(
   onAddItem: (name: string, menge?: string) => void
-): HTMLDivElement {
+): { form: HTMLDivElement; tryAddPending: () => void } {
   const addForm = document.createElement('div');
   addForm.style.cssText = 'display: flex; gap: 0.5rem; align-items: stretch;';
 
@@ -156,6 +156,16 @@ export function createAddItemForm(
     nameInputGroup.input.focus();
   };
 
+  const tryAddPending = () => {
+    const name = nameInputGroup.input.value.trim();
+    const menge = mengeInputGroup.input.value.trim();
+    if (name && menge) {
+      onAddItem(name, menge);
+      nameInputGroup.input.value = '';
+      mengeInputGroup.input.value = '';
+    }
+  };
+
   // Create add button using component library
   const addBtn = createButton({
     label: '+',
@@ -196,7 +206,7 @@ export function createAddItemForm(
   addForm.appendChild(mengeInputGroup.container);
   addForm.appendChild(addBtn);
 
-  return addForm;
+  return { form: addForm, tryAddPending };
 }
 
 /**

@@ -24,7 +24,7 @@ export function buildModalContent(
   state: RecipeModalState,
   originalQuantity: number,
   entryId?: number
-): { contentDiv: HTMLDivElement; saveButton?: HTMLButtonElement } {
+): { contentDiv: HTMLDivElement; saveButton?: HTMLButtonElement; tryAddPending: () => void } {
   const contentDiv = document.createElement('div');
   contentDiv.style.cssText = 'display: flex; flex-direction: column; flex: 1; min-height: 0;';
 
@@ -96,7 +96,7 @@ export function buildModalContent(
   // Fixed section for adding new items
   const addItemSection = createFixedFormSection();
 
-  const addForm = createAddItemForm(
+  const { form: addForm, tryAddPending } = createAddItemForm(
     (name, menge) => {
       state.addedItems.set(name, { name, menge });
       renderAddedItems();
@@ -134,5 +134,5 @@ export function buildModalContent(
 
   contentDiv.appendChild(addItemSection);
 
-  return { contentDiv, saveButton };
+  return { contentDiv, saveButton, tryAddPending };
 }

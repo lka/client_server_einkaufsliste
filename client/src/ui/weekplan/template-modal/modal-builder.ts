@@ -90,7 +90,7 @@ export async function showTemplateDetails(templateName: string, entryId: number)
       const addedItemsContainer = document.createElement('div');
       addedItemsContainer.style.cssText = 'margin-top: 1rem;';
 
-      const { renderAddedItems, addItemForm } = setupAddedItems(addedItems, addedItemsContainer);
+      const { renderAddedItems, addItemForm, tryAddPending } = setupAddedItems(addedItems, addedItemsContainer);
 
       renderAddedItems();
       scrollableSection.appendChild(addedItemsContainer);
@@ -110,7 +110,8 @@ export async function showTemplateDetails(templateName: string, entryId: number)
         removedItems,
         addedItems,
         getAdjustedPersonCount,
-        null as any // Will be set after modal creation
+        null as any, // Will be set after modal creation
+        tryAddPending
       );
 
       addItemSection.appendChild(saveButtonDiv);
@@ -140,7 +141,8 @@ export async function showTemplateDetails(templateName: string, entryId: number)
         removedItems,
         addedItems,
         getAdjustedPersonCount,
-        modal
+        modal,
+        tryAddPending
       );
 
       // Replace the placeholder save button

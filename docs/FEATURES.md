@@ -200,6 +200,7 @@
           - Item wieder aktivieren → Item wird zur Einkaufsliste hinzugefügt (Menge addiert)
           - Beim Löschen des Eintrags werden nur tatsächlich hinzugefügte Items entfernt
         - **WebSocket-Broadcasting**: Alle Einkaufslisten-Änderungen werden live an verbundene Clients gesendet
+      - **Auto-Übernahme beim Speichern**: Wenn Artikel- und Mengefeld beim Klick auf "Änderungen speichern" befüllt sind, wird der Eintrag automatisch übernommen — ohne vorheriges "+" drücken
       - **Scrollbares Modal-Layout**: Template-Items und hinzugefügte Artikel scrollen, Eingabefelder bleiben fixiert
       - **Keyboard Support**: Modal kann mit Escape-Taste oder Backdrop-Klick geschlossen werden
     - **Template-Integration**: Automatische Einkaufslisten-Generierung aus Wochenplan
@@ -351,6 +352,7 @@
       - **Duplikate erlaubt**: Zutaten können mehrfach mit verschiedenen Mengen hinzugefügt werden
       - **Hellgrüne Hinterlegung**: Visuell hervorgehobene Darstellung hinzugefügter Artikel
       - **Kompakte Ansicht**: Optimierte UI ohne redundante Überschriften
+      - **Auto-Übernahme beim Speichern**: Wenn Artikel- und Mengefeld beim Klick auf "Änderungen speichern" befüllt sind, wird der Eintrag automatisch übernommen — ohne vorheriges "+" drücken
   - **Recipe-Modell**: Strukturierte Speicherung in SQLite-Datenbank
     - `external_id`: Eindeutige ID vom WebDAV-Server (z.B. "recipe_123")
     - `name`: Rezeptname (indiziert für schnelle Suche)
