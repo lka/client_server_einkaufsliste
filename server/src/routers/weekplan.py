@@ -2536,3 +2536,81 @@ async def update_weekplan_entry_deltas(
             text=entry.text,
             deltas=deltas,
         )
+
+
+async def merge_fresh_day_items_to_main_day():
+    """Merge all items scheduled for the fresh products day into the main shopping day.
+
+    Called when single_shopping_day is enabled. For each item on the fresh products
+    day: if a matching item already exists on the main shopping day, quantities are
+    merged and the fresh-day item is deleted; otherwise the item is moved to the main
+    shopping day.
+    """
+    from ..utils import merge_quantities
+
+    main_shopping_day = int(os.getenv("MAIN_SHOPPING_DAY", "2"))
+    fresh_products_day_num = int(os.getenv("FRESH_PRODUCTS_DAY", "4"))
+
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    next_main_date = _get_next_weekday(today, main_shopping_day).date().isoformat()
+    next_fresh_date = (
+        _get_next_weekday(today, fresh_products_day_num).date().isoformat()
+    )
+
+    if next_main_date == next_fresh_date:
+        return
+
+    with get_session() as session:
+        fresh_items = session.exec(
+            select(Item).where(Item.shopping_date == next_fresh_date)
+        ).all()
+
+        if not fresh_items:
+            return
+
+        # Collect all operations before applying to avoid session-flush side effects
+        operations = [
+            (
+                fresh_item,
+                _find_item_by_match_strategy(
+                    session, fresh_item.name, next_main_date, fresh_item.store_id
+                ),
+            )
+            for fresh_item in fresh_items
+        ]
+
+        modified_items = []
+        deleted_item_ids = []
+
+        for fresh_item, existing_item in operations:
+            if existing_item:
+                merged_menge = merge_quantities(existing_item.menge, fresh_item.menge)
+                if merged_menge and merged_menge.strip():
+                    existing_item.menge = merged_menge
+                    session.add(existing_item)
+                    modified_items.append(existing_item)
+                deleted_item_ids.append(fresh_item.id)
+                session.delete(fresh_item)
+            else:
+                fresh_item.shopping_date = next_main_date
+                session.add(fresh_item)
+                modified_items.append(fresh_item)
+
+        session.commit()
+
+        for item in modified_items:
+            session.refresh(item)
+            await manager.broadcast(
+                {
+                    "type": "item:updated",
+                    "data": _item_to_broadcast_data(session, item),
+                }
+            )
+
+        for item_id in deleted_item_ids:
+            await manager.broadcast(
+                {
+                    "type": "item:deleted",
+                    "data": {"id": item_id},
+                }
+            )

@@ -281,9 +281,8 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
 
             elif event_type == "weekplan:single_shopping_day":
                 # Update server-side state and broadcast to other users
-                app_state.single_shopping_day_enabled = data.get("data", {}).get(
-                    "enabled", False
-                )
+                enabled = data.get("data", {}).get("enabled", False)
+                app_state.single_shopping_day_enabled = enabled
                 await manager.broadcast(
                     {
                         "type": "weekplan:single_shopping_day",
@@ -292,6 +291,10 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                     },
                     exclude_user=user_id,
                 )
+                if enabled:
+                    from .routers.weekplan import merge_fresh_day_items_to_main_day
+
+                    await merge_fresh_day_items_to_main_day()
 
     except WebSocketDisconnect:
         manager.disconnect(websocket, user_id)

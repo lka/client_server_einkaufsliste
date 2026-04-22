@@ -243,6 +243,10 @@
     - **"Nur ein Einkaufstag"-Toggle**: Checkbox in der Wochenplan-Navigationsleiste
       - Deaktiviert die Frischeprodukte-Logik: alle Artikel gehen nur auf den MAIN_SHOPPING_DAY (Mittwoch)
       - **Konsistente Anwendung**: Der Toggle gilt für alle Einkaufsdatum-Berechnungen — beim Hinzufügen, Entfernen und Ändern von Wochenplan-Einträgen sowie bei Personenzahl-Änderungen und Delta-Updates
+      - **Automatische Konsolidierung bestehender Items**: Beim Aktivieren des Toggles werden Items, die bereits für den Frische-Einkaufstag geplant sind, automatisch in den Haupteinkaufstag übernommen
+        - Existiert bereits ein gleichnamiges Item am Haupteinkaufstag → Mengen werden zusammengeführt (summiert), das Frische-Tag-Item wird gelöscht
+        - Existiert kein entsprechendes Item am Haupteinkaufstag → Item wird auf den Haupteinkaufstag umgeschrieben
+        - Alle Änderungen werden per WebSocket live an alle verbundenen Clients übertragen
       - **Cross-Client-Synchronisation**: Zustandsänderung wird sofort an alle verbundenen Clients übertragen
       - **Spätkommer-Support**: Server hält den Zustand im RAM; neue Clients bekommen den aktuellen Wert beim Verbindungsaufbau
       - Zustand wird zusätzlich in `localStorage` gespeichert; API-Feld: `single_shopping_day: bool` in `WeekplanEntryCreate`
