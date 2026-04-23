@@ -2,6 +2,10 @@
 
 > **📚 Alle Dokumentationen:** Siehe [Dokumentations-Index](INDEX.md)
 
+- Release 6.10.0: SingleDay – Frische-Items beim Deaktivieren zurück auf den Frische-Einkaufstag verteilen
+  - Beim Deaktivieren des "Nur ein Einkaufstag"-Toggles werden Frischeprodukte automatisch vom Haupt-Einkaufstag zurück auf den Frische-Einkaufstag verschoben
+  - Wochenplan-Einträge ab dem Frische-Einkaufstag (Abendessen) werden gescannt; Zutaten mit `fresh`-Status werden identifiziert und umgebucht
+
 - Release 6.9.0: SingleDay – Fresh-Items in Haupt-Einkaufstag zusammenführen
   - Items mit `fresh`-Status werden beim Aktivieren von `singleDay` automatisch in den Haupt-Einkaufstag übernommen
 

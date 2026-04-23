@@ -243,9 +243,16 @@
     - **"Nur ein Einkaufstag"-Toggle**: Checkbox in der Wochenplan-Navigationsleiste
       - Deaktiviert die Frischeprodukte-Logik: alle Artikel gehen nur auf den MAIN_SHOPPING_DAY (Mittwoch)
       - **Konsistente Anwendung**: Der Toggle gilt für alle Einkaufsdatum-Berechnungen — beim Hinzufügen, Entfernen und Ändern von Wochenplan-Einträgen sowie bei Personenzahl-Änderungen und Delta-Updates
-      - **Automatische Konsolidierung bestehender Items**: Beim Aktivieren des Toggles werden Items, die bereits für den Frische-Einkaufstag geplant sind, automatisch in den Haupteinkaufstag übernommen
+      - **Automatische Konsolidierung beim Aktivieren**: Beim Aktivieren des Toggles werden Items, die bereits für den Frische-Einkaufstag geplant sind, automatisch in den Haupteinkaufstag übernommen
         - Existiert bereits ein gleichnamiges Item am Haupteinkaufstag → Mengen werden zusammengeführt (summiert), das Frische-Tag-Item wird gelöscht
         - Existiert kein entsprechendes Item am Haupteinkaufstag → Item wird auf den Haupteinkaufstag umgeschrieben
+        - Alle Änderungen werden per WebSocket live an alle verbundenen Clients übertragen
+      - **Automatische Rückverteilung beim Deaktivieren**: Beim Deaktivieren des Toggles werden Frischeprodukte aus dem Haupteinkaufstag zurück auf den Frische-Einkaufstag verschoben
+        - Scannt alle Wochenplan-Einträge ab dem Frische-Einkaufstag (Abendessen) bis zum zeitlichen Ende der Einträge
+        - Zutaten und Delta-Items werden auf Frische-Eigenschaft geprüft (exakter Name-Match im Produktkatalog)
+        - Nur Items, die aktuell am Haupteinkaufstag in der Einkaufsliste vorhanden sind, werden verschoben
+        - Gleiche Zutat aus mehreren Einträgen → Mengen werden vor der Verschiebung akkumuliert, jedes Item nur einmal verarbeitet
+        - Menge wird vom Haupteinkaufstag abgezogen und am Frische-Einkaufstag hinzugefügt oder addiert
         - Alle Änderungen werden per WebSocket live an alle verbundenen Clients übertragen
       - **Cross-Client-Synchronisation**: Zustandsänderung wird sofort an alle verbundenen Clients übertragen
       - **Spätkommer-Support**: Server hält den Zustand im RAM; neue Clients bekommen den aktuellen Wert beim Verbindungsaufbau

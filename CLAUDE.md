@@ -15,6 +15,7 @@ Einkaufslisten-Verwaltung mit Client-Server-Architektur:
 - **Architektur**: [docs/client/ARCHITECTURE.md](docs/client/ARCHITECTURE.md) - Client 4-Schichten-Architektur
 - **Server**: [docs/DEVELOPER.md](docs/DEVELOPER.md) - Server-API und Datenbankschema
 - **Features**: [docs/FEATURES.md](docs/FEATURES.md) - Alle Features und deren Funktionsweise
+- **Releases**: [docs/RELEASES.md](docs/RELEASES.md) - Überblick über die Versionen und deren Ziel
 - **Code-Qualität**: [docs/COMPLEXITY.md](docs/COMPLEXITY.md) - Komplexitätsziele und Refactoring-Historie
 - **Vollständiger Index**: [docs/INDEX.md](docs/INDEX.md)
 

@@ -2614,3 +2614,188 @@ async def merge_fresh_day_items_to_main_day():
                     "data": {"id": item_id},
                 }
             )
+
+
+async def split_main_day_fresh_items_to_fresh_day():
+    """Split fresh product items back from the main shopping day to the fresh products day.
+
+    Called when single_shopping_day is disabled. Scans all qualifying weekplan entries
+    (entries after next_fresh_date, or dinner on next_fresh_date) and collects
+    ingredients that are fresh products currently on the main shopping day.
+    Each such ingredient's quantity is subtracted from the main day and
+    added to (or merged with) the fresh products day.
+    """
+    from ..utils import merge_quantities
+
+    main_shopping_day_num = int(os.getenv("MAIN_SHOPPING_DAY", "2"))
+    fresh_products_day_num = int(os.getenv("FRESH_PRODUCTS_DAY", "4"))
+
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    next_main_date = _get_next_weekday(today, main_shopping_day_num).date()
+    next_fresh_date = _get_next_weekday(today, fresh_products_day_num).date()
+
+    if next_main_date == next_fresh_date:
+        return
+
+    with get_session() as session:
+        first_store = session.exec(
+            select(Store).order_by(Store.sort_order, Store.id)
+        ).first()
+        if not first_store:
+            return
+
+        next_fresh_date_str = next_fresh_date.isoformat()
+        next_main_date_str = next_main_date.isoformat()
+
+        entries = session.exec(
+            select(WeekplanEntry).where(WeekplanEntry.date >= next_fresh_date_str)
+        ).all()
+
+        # Qualifying: entries after the fresh day, or dinner on the fresh day itself
+        qualifying_entries = [
+            e
+            for e in entries
+            if e.date > next_fresh_date_str
+            or (e.date == next_fresh_date_str and e.meal == "dinner")
+        ]
+
+        if not qualifying_entries:
+            return
+
+        pattern = _create_ingredient_pattern(session)
+
+        # Accumulate quantities of fresh items that exist on the main shopping day
+        items_to_move: dict[str, str] = {}
+
+        for entry in qualifying_entries:
+            entry_deltas = None
+            if entry.deltas:
+                entry_deltas = WeekplanDeltas(**json.loads(entry.deltas))
+
+            items_for_entry: list[tuple[str, str | None]] = []
+
+            if (entry.entry_type == "recipe" and entry.recipe_id) or (
+                entry.recipe_id and entry.entry_type != "template"
+            ):
+                recipe = session.get(Recipe, entry.recipe_id)
+                if recipe:
+                    _, original_quantity, ingredient_lines = _parse_recipe_data(recipe)
+                    person_count = entry_deltas.person_count if entry_deltas else None
+                    removed_set = (
+                        _create_removed_items_set(
+                            list(entry_deltas.removed_items), pattern
+                        )
+                        if entry_deltas and entry_deltas.removed_items
+                        else set()
+                    )
+                    for line in ingredient_lines:
+                        qty_str, name = _parse_ingredient_line(line, pattern)
+                        if name in removed_set:
+                            continue
+                        menge = qty_str if qty_str else "1"
+                        if person_count and qty_str:
+                            menge = _adjust_quantity_by_person_count(
+                                qty_str, person_count, original_quantity
+                            )
+                        items_for_entry.append((name, menge))
+            else:
+                template = session.exec(
+                    select(ShoppingTemplate).where(ShoppingTemplate.name == entry.text)
+                ).first()
+                if template:
+                    person_count = entry_deltas.person_count if entry_deltas else None
+                    removed_set = (
+                        set(entry_deltas.removed_items)
+                        if entry_deltas and entry_deltas.removed_items
+                        else set()
+                    )
+                    for ti in template.template_items:
+                        if ti.name in removed_set:
+                            continue
+                        menge = ti.menge
+                        if person_count:
+                            menge = _adjust_quantity_by_person_count(
+                                menge, person_count, template.person_count
+                            )
+                        items_for_entry.append((ti.name, menge))
+
+            if entry_deltas and entry_deltas.added_items:
+                for delta_item in entry_deltas.added_items:
+                    items_for_entry.append((delta_item.name, delta_item.menge))
+
+            for name, menge in items_for_entry:
+                if not menge:
+                    continue
+
+                # Fresh product check: exact name match in store catalog
+                is_fresh = (
+                    session.exec(
+                        select(Product).where(
+                            Product.store_id == first_store.id,
+                            Product.name == name,
+                            Product.fresh == True,  # noqa: E712
+                        )
+                    ).first()
+                    is not None
+                )
+                if not is_fresh:
+                    continue
+
+                # Only process items currently on the main shopping day
+                if not _find_item_by_match_strategy(
+                    session, name, next_main_date_str, first_store.id
+                ):
+                    continue
+
+                # Accumulate menge across multiple entries
+                if name in items_to_move:
+                    merged = merge_quantities(items_to_move[name], menge)
+                    if merged:
+                        items_to_move[name] = merged
+                else:
+                    items_to_move[name] = menge
+
+        if not items_to_move:
+            return
+
+        modified_items: list[Item] = []
+        deleted_items: list[Item] = []
+
+        for name, menge in items_to_move.items():
+            if not menge:
+                continue
+
+            # Re-fetch: may have changed in a previous iteration
+            main_item = _find_item_by_match_strategy(
+                session, name, next_main_date_str, first_store.id
+            )
+            if not main_item:
+                continue
+
+            # Subtract from main shopping day (commits internally)
+            _subtract_item_quantity(
+                main_item, menge, session, modified_items, deleted_items
+            )
+
+            # Add/merge to fresh products day
+            _add_or_merge_ingredient_item(
+                session, name, menge, next_fresh_date_str, first_store, modified_items
+            )
+            session.commit()
+
+        for item in modified_items:
+            session.refresh(item)
+            await manager.broadcast(
+                {
+                    "type": "item:updated",
+                    "data": _item_to_broadcast_data(session, item),
+                }
+            )
+
+        for item in deleted_items:
+            await manager.broadcast(
+                {
+                    "type": "item:deleted",
+                    "data": {"id": item.id},
+                }
+            )

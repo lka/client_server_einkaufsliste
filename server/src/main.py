@@ -295,6 +295,12 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                     from .routers.weekplan import merge_fresh_day_items_to_main_day
 
                     await merge_fresh_day_items_to_main_day()
+                else:
+                    from .routers.weekplan import (
+                        split_main_day_fresh_items_to_fresh_day,
+                    )
+
+                    await split_main_day_fresh_items_to_fresh_day()
 
     except WebSocketDisconnect:
         manager.disconnect(websocket, user_id)
