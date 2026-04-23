@@ -75,12 +75,13 @@ radon mi src -s >> complexity-python.txt
 **Modul-spezifische Komplexität:**
 - `routers/weekplan.py`: B (5.96) - Verbessert von 7.0 (enthält komplexe Business-Logik)
 
-**Kritische Funktionen (D-Rating):** ✅ Alle eliminiert!
+**Kritische Funktionen (D/F-Rating):** ✅ Alle eliminiert!
 - ~~`merge_quantities()` in `utils.py` - D (21)~~ → **B (10)** - 52% Reduzierung
 - ~~`create_item()` in `routers/items.py` - D (21)~~ → **B (8)** - 62% Reduzierung
 - ~~`update_weekplan_entry_deltas()` in `routers/weekplan.py` - D (24)~~ → **B (6)** - 75% Reduzierung
 - ~~`_add_recipe_items_to_shopping_list()` in `routers/weekplan.py` - D (21)~~ → **B (9)** - 57% Reduzierung
 - ~~`_remove_recipe_items_from_shopping_list()` in `routers/weekplan.py` - D (21)~~ → **B (9)** - 57% Reduzierung
+- ~~`split_main_day_fresh_items_to_fresh_day()` in `routers/weekplan.py` - F (>30)~~ → **B (~8)** - Extract Method Pattern
 
 **Hohe Komplexität (C-Rating):** ✅ Hauptfunktionen refactored!
 - ~~`restore_backup()` in `routers/backup.py` - C (18)~~ → **A (4)** - 78% Reduzierung
@@ -140,12 +141,35 @@ radon mi src -s >> complexity-python.txt
 - `_handle_added_items_changes()` - A (4) - Added_items Änderungen behandeln
 - `_update_recipe_deltas()` - B (8) - Rezept-Deltas aktualisieren
 - `_update_template_deltas()` - B (6) - Template-Deltas aktualisieren
+- `_collect_recipe_items_for_entry()` - B (~7) - Rezept-Items für Fresh-Split sammeln
+- `_collect_template_items_for_entry()` - B (~6) - Template-Items für Fresh-Split sammeln
+- `_collect_entry_items_for_fresh_split()` - B (~5) - Alle Entry-Items für Fresh-Split sammeln
+- `_accumulate_fresh_items()` - B (~6) - Frische Items filtern und akkumulieren
+- `_apply_fresh_items_move()` - B (~5) - Items von Main-Day zu Fresh-Day verschieben
 
 **Maintainability Index:**
 - Alle Module haben Rating A (>50)
 - Durchschnitt verbessert durch Refaktorierung
+- `routers/weekplan/` Package: Alle 11 Module Rating A (31–100) — war C (0.00) als monolithische Datei
 
 **Refactoring-Historie:**
+- **2026-04-23**: `routers/weekplan.py` (2838 Zeilen, MI=0.00) → `routers/weekplan/` Package (11 Module, alle MI Rating A)
+  - **MI verbessert**: C (0.00) → A (31–100) für alle Module — 100% Verbesserung
+  - **Neue Struktur**:
+    - `weekplan/__init__.py`: Public API (~12 Zeilen, MI 100)
+    - `weekplan/_models.py`: Pydantic-Modelle (~45 Zeilen, MI 100)
+    - `weekplan/_utils.py`: Date/Quantity/Ingredient-Utilities (~200 Zeilen, MI 45)
+    - `weekplan/_item_ops.py`: Item-Operationen Add/Subtract/Find (~120 Zeilen, MI 54)
+    - `weekplan/_shopping_list_add.py`: Shopping-List Add-Operationen (~240 Zeilen, MI 33)
+    - `weekplan/_shopping_list_remove.py`: Shopping-List Remove-Operationen (~220 Zeilen, MI 37)
+    - `weekplan/_delta_item_ops.py`: Delta Item-Operationen (~190 Zeilen, MI 40)
+    - `weekplan/_delta_recipe_ops.py`: Delta Rezept-Operationen (~270 Zeilen, MI 32)
+    - `weekplan/_delta_template_ops.py`: Delta Template-Operationen (~195 Zeilen, MI 50)
+    - `weekplan/_fresh_day.py`: Fresh-Day Merge/Split (~250 Zeilen, MI 34)
+    - `weekplan/_routes.py`: FastAPI Route-Handler (~270 Zeilen, MI 32)
+  - **Backward Compatibility**: `__init__.py` re-exportiert `router`, `merge_fresh_day_items_to_main_day`, `split_main_day_fresh_items_to_fresh_day`
+  - Alle 117 Tests bestehen nach Refaktorierung
+
 - **2025-01-24**: Erfolgreiche Refaktorierung aller kritischen Funktionen mit Extract Method Pattern
   - Alle 72 Tests bestehen nach Refaktorierung
   - Durchschnittliche Komplexität von A (3.49) auf A (3.21) verbessert
