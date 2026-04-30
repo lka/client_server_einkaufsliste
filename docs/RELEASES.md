@@ -2,6 +2,11 @@
 
 > **📚 Alle Dokumentationen:** Siehe [Dokumentations-Index](INDEX.md)
 
+- Release 6.10.1: Bugfix – Rezept-Personenanzahl-Skalierung (#90)
+  - Rezeptzutaten wurden beim Anpassen der Personenanzahl vervielfacht statt verdoppelt
+  - Ursache: `quantity`-Feld nicht gefunden → Fallback 1; Nextcloud Cookbook speichert Portionen in `recipeYield`
+  - Fix: Server und Client lesen jetzt `quantity` → `recipeYield` → `servings` → `recipeServings`; Strings wie `"4 Portionen"` werden korrekt auf die Zahl reduziert
+
 - Release 6.10.0: SingleDay – Frische-Items beim Deaktivieren zurück auf den Frische-Einkaufstag verteilen
   - Beim Deaktivieren des "Nur ein Einkaufstag"-Toggles werden Frischeprodukte automatisch vom Haupt-Einkaufstag zurück auf den Frische-Einkaufstag verschoben
   - Wochenplan-Einträge ab dem Frische-Einkaufstag (Abendessen) werden gescannt; Zutaten mit `fresh`-Status werden identifiziert und umgebucht

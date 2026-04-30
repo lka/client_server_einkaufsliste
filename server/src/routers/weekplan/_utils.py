@@ -152,9 +152,16 @@ def _parse_recipe_data(recipe: Recipe) -> tuple[str, int, list[str]]:
     recipe_data = json.loads(recipe.data)
     ingredients_text = recipe_data.get("ingredients", "")
 
-    quantity = recipe_data.get("quantity", 1)
+    raw_quantity = (
+        recipe_data.get("quantity")
+        or recipe_data.get("recipeYield")
+        or recipe_data.get("servings")
+        or recipe_data.get("recipeServings")
+        or 1
+    )
     try:
-        original_quantity = int(quantity) if quantity else 1
+        match = re.match(r"(\d+)", str(raw_quantity))
+        original_quantity = int(match.group(1)) if match else 1
     except (ValueError, TypeError):
         original_quantity = 1
 

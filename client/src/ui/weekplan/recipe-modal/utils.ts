@@ -21,10 +21,12 @@ export function findEntryById(entryId: number): WeekplanEntry | undefined {
 
 /**
  * Parse original quantity from recipe data.
+ * Checks multiple common field names used by different recipe apps.
  */
 export function parseOriginalQuantity(recipeData: any): number {
-  if (recipeData.quantity) {
-    const parsed = parseInt(String(recipeData.quantity));
+  const raw = recipeData.quantity ?? recipeData.recipeYield ?? recipeData.servings ?? recipeData.recipeServings;
+  if (raw) {
+    const parsed = parseInt(String(raw));
     if (!isNaN(parsed) && parsed > 0) {
       return parsed;
     }

@@ -342,10 +342,11 @@
       - **Mehrfache Klammern**: "Kartoffeln (festkochend) (geschält)" → "Kartoffeln"
       - **Konsistenz**: Funktioniert beim Hinzufügen UND Entfernen von Rezepten
       - **Anwendungsfälle**: Entfernt optionale Hinweise wie "(Type 405)", "(z.B. Olivenöl)", "(nach Geschmack)"
-    - **Personenanzahl-Skalierung**: Mengen werden automatisch angepasst (Fallback: 1 Person)
+    - **Personenanzahl-Skalierung**: Mengen werden automatisch angepasst
       - `neue_menge = original_menge × (gewünschte_personen / rezept_personen)`
       - Beispiel: Rezept für 4 Personen (500g) → 2 Personen = 250g
       - Bruchzahlen-Beispiel: "1½ kg" für 4 Personen → "¾ kg" für 2 Personen
+      - **Portionenanzahl-Erkennung** (fix #90): Liest `quantity`, `recipeYield`, `servings`, `recipeServings` aus Rezeptdaten; parst auch Strings wie `"4 Portionen"` korrekt
     - **Intelligente Mengenaddition**: Zutaten werden mit bestehenden Items zusammengeführt
       - Gleiche Einheit → Mengen werden summiert (auch Bruchzahlen)
       - Verschiedene Einheiten → Als semikolon-getrennte Liste
