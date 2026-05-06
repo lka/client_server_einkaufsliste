@@ -25,7 +25,7 @@ from ._shopping_list_remove import (
 from ._delta_recipe_ops import _update_recipe_deltas
 from ._delta_template_ops import _update_template_deltas
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("uvicorn.error")
 
 router = APIRouter(prefix="/api/weekplan", tags=["weekplan"])
 
@@ -261,6 +261,11 @@ async def update_weekplan_entry_deltas(
         old_deltas = None
         if entry.deltas:
             old_deltas = WeekplanDeltas(**json.loads(entry.deltas))
+
+        logger.info(
+            f"Updating deltas for entry {entry_id}. Old deltas: {old_deltas},\
+ New deltas: {deltas}"
+        )
 
         modified_items = []
         deleted_items = []
