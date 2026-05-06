@@ -64,6 +64,15 @@ Einkaufslisten-Verwaltung mit Client-Server-Architektur:
 - **Fehlerbehandlung**: Modals für User-Feedback, Console für Debug
 - **Loading States**: Während API-Aufrufen anzeigen
 
+## 💻 Betriebssystem & Shell
+
+**Windows 11 — immer PowerShell verwenden:**
+- ❌ Kein `Bash`-Tool für Shell-Befehle
+- ✅ Ausschließlich `PowerShell`-Tool verwenden
+- Pfadtrenner: `\` (Backslash), keine POSIX-Pfade
+- Umgebungsvariablen: `$env:VAR`, nicht `$VAR` oder `export VAR=`
+- Python-Pfade: `..\venv\Scripts\python.exe` (relativ) oder absolut mit `\`
+
 ## 📊 Code-Qualität
 
 ### Komplexitätsziele
