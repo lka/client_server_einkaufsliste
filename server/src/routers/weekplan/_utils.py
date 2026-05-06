@@ -3,9 +3,12 @@
 import os
 import json
 import re
-from typing import List, Optional
+from typing import TYPE_CHECKING, Callable, List, Optional
 from datetime import datetime, timedelta
 from sqlmodel import select
+
+if TYPE_CHECKING:
+    from ._models import WeekplanDeltas
 
 from ...models import Store, Product, Recipe, Unit
 from ..items import _enrich_with_department
@@ -228,3 +231,37 @@ def _create_removed_items_set(removed_items: List[str], pattern) -> set:
     return {
         _parse_ingredient_line(item_name, pattern)[1] for item_name in removed_items
     }
+
+
+def _calculate_delta_changes(
+    old_deltas: Optional["WeekplanDeltas"],
+    new_deltas: "WeekplanDeltas",
+    set_factory: Optional[Callable[[list], set]] = None,
+) -> tuple[set, set, set, set, bool]:
+    """Calculate set differences and person count change between old and new deltas.
+
+    Args:
+        set_factory: Optional callable(items) -> set. Defaults to set().
+                     Use for normalized lookups (e.g. recipe ingredient matching).
+
+    Returns:
+        (old_removed, new_removed, newly_removed, newly_added_back,
+         person_count_changed)
+    """
+    make_set: Callable[[list], set] = set_factory or set
+    old_items = (old_deltas.removed_items or []) if old_deltas else []
+    new_items = new_deltas.removed_items or []
+    old_removed = make_set(old_items)
+    new_removed = make_set(new_items)
+    newly_removed = new_removed - old_removed
+    newly_added_back = old_removed - new_removed
+    old_person_count = old_deltas.person_count if old_deltas else None
+    new_person_count = new_deltas.person_count
+    person_count_changed = old_person_count != new_person_count
+    return (
+        old_removed,
+        new_removed,
+        newly_removed,
+        newly_added_back,
+        person_count_changed,
+    )

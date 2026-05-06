@@ -11,6 +11,7 @@ from ._models import WeekplanDeltas
 from ._utils import (
     _adjust_quantity_by_person_count,
     _calculate_shopping_date,
+    _calculate_delta_changes,
     _parse_recipe_data,
     _create_ingredient_pattern,
     _parse_ingredient_line,
@@ -240,25 +241,20 @@ def _update_recipe_deltas(
         return
 
     pattern = _create_ingredient_pattern(session)
-
-    old_removed = (
-        _create_removed_items_set(old_deltas.removed_items, pattern)
-        if old_deltas and old_deltas.removed_items
-        else set()
+    (
+        old_removed,
+        new_removed,
+        newly_removed,
+        newly_added_back,
+        person_count_changed,
+    ) = _calculate_delta_changes(
+        old_deltas,
+        new_deltas,
+        lambda items: _create_removed_items_set(items, pattern),
     )
-
-    new_removed = (
-        _create_removed_items_set(new_deltas.removed_items, pattern)
-        if new_deltas.removed_items
-        else set()
-    )
-
-    newly_removed = new_removed - old_removed
-    newly_added_back = old_removed - new_removed
 
     old_person_count = old_deltas.person_count if old_deltas else None
     new_person_count = new_deltas.person_count
-    person_count_changed = old_person_count != new_person_count
 
     first_store = session.exec(
         select(Store).order_by(Store.sort_order, Store.id)

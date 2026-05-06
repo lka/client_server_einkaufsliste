@@ -130,14 +130,14 @@ radon mi src -s >> complexity-python.txt
 - `_add_products_to_matches()` - A (4) - Produkte zu Matches hinzufügen
 - `_add_template_items_to_matches()` - B (7) - Template-Items zu Matches hinzufügen
 
-**routers/weekplan.py:**
+**routers/weekplan.py** (jetzt `routers/weekplan/` Package):
 - `_add_or_merge_ingredient_item()` - A (5) - Item hinzufügen oder mergen
 - `_process_recipe_ingredients()` - B (6) - Rezeptzutaten verarbeiten (hinzufügen)
 - `_process_delta_items()` - A (2) - Delta-Items verarbeiten (hinzufügen)
 - `_subtract_ingredient_item()` - A (3) - Menge von Item subtrahieren
 - `_process_recipe_ingredients_removal()` - B (6) - Rezeptzutaten verarbeiten (entfernen)
 - `_process_delta_items_removal()` - A (2) - Delta-Items verarbeiten (entfernen)
-- `_calculate_delta_changes()` - A (3) - Delta-Änderungen berechnen
+- `_calculate_delta_changes()` - A (3) - Delta-Änderungen berechnen → seit 2026-05-06 in `_utils.py` (generalisiert mit `set_factory`)
 - `_handle_added_items_changes()` - A (4) - Added_items Änderungen behandeln
 - `_update_recipe_deltas()` - B (8) - Rezept-Deltas aktualisieren
 - `_update_template_deltas()` - B (6) - Template-Deltas aktualisieren
@@ -153,6 +153,15 @@ radon mi src -s >> complexity-python.txt
 - `routers/weekplan/` Package: Alle 11 Module Rating A (31–100) — war C (0.00) als monolithische Datei
 
 **Refactoring-Historie:**
+- **2026-05-06**: Konsolidierung `_calculate_delta_changes()` — von `_delta_template_ops.py` nach `_utils.py` verschoben
+  - **Problem**: Template- und Recipe-Delta-Funktionen hatten identische Orchestrierungslogik, aber Recipe inline Delta-Berechnung (12 Zeilen) statt Wiederverwendung
+  - **Lösung**: `_calculate_delta_changes()` nach `_utils.py` verschoben, generalisiert mit optionalem `set_factory`-Parameter für pattern-normalisierte Sets (Recipe) vs. direkte Sets (Template)
+  - **Ergebnis**:
+    - `_delta_template_ops.py`: Lokale Definition entfernt (-20 Zeilen), doppelte Set-Berechnung eliminiert
+    - `_delta_recipe_ops.py`: 12 inline Zeilen durch einen Funktionsaufruf ersetzt
+    - `_utils.py`: Neue gemeinsame Funktion (~15 Zeilen)
+  - **Alle 126 Tests bestehen** nach Refaktorierung
+
 - **2026-04-23**: `routers/weekplan.py` (2838 Zeilen, MI=0.00) → `routers/weekplan/` Package (11 Module, alle MI Rating A)
   - **MI verbessert**: C (0.00) → A (31–100) für alle Module — 100% Verbesserung
   - **Neue Struktur**:

@@ -10,35 +10,17 @@ from ..items import _find_item_by_match_strategy, _find_matching_product
 from ...utils import merge_quantities
 from ... import app_state
 from ._models import WeekplanDeltas
-from ._utils import _adjust_quantity_by_person_count, _calculate_shopping_date
+from ._utils import (
+    _adjust_quantity_by_person_count,
+    _calculate_shopping_date,
+    _calculate_delta_changes,
+)
 from ._item_ops import _subtract_item_quantity
 from ._delta_item_ops import (
     _remove_newly_marked_items,
     _add_back_unmarked_items,
     _handle_added_items_changes,
 )
-
-
-def _calculate_delta_changes(
-    old_deltas: Optional[WeekplanDeltas],
-    new_deltas: WeekplanDeltas,
-) -> tuple[set, set, bool]:
-    """Calculate changes between old and new deltas.
-
-    Returns:
-        Tuple of (newly_removed, newly_added_back, person_count_changed)
-    """
-    old_removed = set(old_deltas.removed_items) if old_deltas else set()
-    new_removed = set(new_deltas.removed_items)
-
-    newly_removed = new_removed - old_removed
-    newly_added_back = old_removed - new_removed
-
-    old_person_count = old_deltas.person_count if old_deltas else None
-    new_person_count = new_deltas.person_count
-    person_count_changed = old_person_count != new_person_count
-
-    return newly_removed, newly_added_back, person_count_changed
 
 
 def _handle_person_count_change(
@@ -145,15 +127,16 @@ def _update_template_deltas(
     if not template:
         return
 
-    newly_removed, newly_added_back, person_count_changed = _calculate_delta_changes(
-        old_deltas, new_deltas
-    )
+    (
+        old_removed,
+        new_removed,
+        newly_removed,
+        newly_added_back,
+        person_count_changed,
+    ) = _calculate_delta_changes(old_deltas, new_deltas)
 
     old_person_count = old_deltas.person_count if old_deltas else None
     new_person_count = new_deltas.person_count
-
-    old_removed = set(old_deltas.removed_items) if old_deltas else set()
-    new_removed = set(new_deltas.removed_items)
 
     first_store = session.exec(
         select(Store).order_by(Store.sort_order, Store.id)
