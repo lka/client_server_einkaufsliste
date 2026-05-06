@@ -812,6 +812,530 @@ def test_recipe_similar_ingredient_names_not_merged():
     assert response.status_code == 200
 
 
+# === Person-Count-Mengenanpassung Tests ===
+
+
+def _create_person_count_template(session, name: str) -> int:
+    """Create a template with person_count=2 and two items with known quantities."""
+    existing = session.exec(
+        select(ShoppingTemplate).where(ShoppingTemplate.name == name)
+    ).first()
+    if existing:
+        return existing.id
+    template = ShoppingTemplate(name=name, person_count=2)
+    session.add(template)
+    session.flush()
+    session.add(TemplateItem(template_id=template.id, name="Butter", menge="200 g"))
+    session.add(TemplateItem(template_id=template.id, name="Milch", menge="400 ml"))
+    session.commit()
+    return template.id
+
+
+def _delete_person_count_template(session, name: str) -> None:
+    """Remove a test template and its items from the database."""
+    tmpl = session.exec(
+        select(ShoppingTemplate).where(ShoppingTemplate.name == name)
+    ).first()
+    if tmpl:
+        for ti in session.exec(
+            select(TemplateItem).where(TemplateItem.template_id == tmpl.id)
+        ).all():
+            session.delete(ti)
+        session.delete(tmpl)
+        session.commit()
+
+
+def test_template_menge_adjusts_when_person_count_multiplied_by_3():
+    """Test that template item quantities triple when person_count changes from 2 to 6."""
+    from datetime import datetime, timedelta
+
+    token = get_auth_token()
+    headers = {"Authorization": f"Bearer {token}"}
+    engine = get_engine()
+    template_name = "PersonCountX3Vorlage"
+
+    with Session(engine) as session:
+        for item in session.exec(select(Item)).all():
+            session.delete(item)
+        session.commit()
+        _create_person_count_template(session, template_name)
+
+    future_date = (datetime.now() + timedelta(days=2)).date().isoformat()
+
+    # Create entry with base person_count=2 (factor 2/2 = 1)
+    response = client.post(
+        "/api/weekplan/entries",
+        headers=headers,
+        json={
+            "date": future_date,
+            "meal": "dinner",
+            "text": template_name,
+            "entry_type": "template",
+            "deltas": {"removed_items": [], "added_items": [], "person_count": 2},
+        },
+    )
+    assert response.status_code == 200
+    entry_id = response.json()["id"]
+
+    with Session(engine) as session:
+        item_dict = {i.name: i.menge for i in session.exec(select(Item)).all()}
+    assert (
+        item_dict.get("Butter") == "200 g"
+    ), f"erwartet '200 g', erhalten: {item_dict.get('Butter')}"
+    assert (
+        item_dict.get("Milch") == "400 ml"
+    ), f"erwartet '400 ml', erhalten: {item_dict.get('Milch')}"
+
+    # PATCH person_count: 2 → 6  (Faktor × 3)
+    response = client.patch(
+        f"/api/weekplan/entries/{entry_id}/deltas",
+        headers=headers,
+        json={"removed_items": [], "added_items": [], "person_count": 6},
+    )
+    assert response.status_code == 200
+
+    with Session(engine) as session:
+        item_dict = {i.name: i.menge for i in session.exec(select(Item)).all()}
+    assert (
+        item_dict.get("Butter") == "600 g"
+    ), f"erwartet '600 g', erhalten: {item_dict.get('Butter')}"
+    assert (
+        item_dict.get("Milch") == "1200 ml"
+    ), f"erwartet '1200 ml', erhalten: {item_dict.get('Milch')}"
+
+    # Aufräumen
+    client.delete(f"/api/weekplan/entries/{entry_id}", headers=headers)
+    with Session(engine) as session:
+        _delete_person_count_template(session, template_name)
+
+
+def test_template_menge_adjusts_when_person_count_divided_by_2():
+    """Test that template item quantities halve when person_count changes from 2 to 1."""
+    from datetime import datetime, timedelta
+
+    token = get_auth_token()
+    headers = {"Authorization": f"Bearer {token}"}
+    engine = get_engine()
+    template_name = "PersonCountDiv2Vorlage"
+
+    with Session(engine) as session:
+        for item in session.exec(select(Item)).all():
+            session.delete(item)
+        session.commit()
+        _create_person_count_template(session, template_name)
+
+    future_date = (datetime.now() + timedelta(days=2)).date().isoformat()
+
+    # Create entry with base person_count=2 (factor 2/2 = 1)
+    response = client.post(
+        "/api/weekplan/entries",
+        headers=headers,
+        json={
+            "date": future_date,
+            "meal": "dinner",
+            "text": template_name,
+            "entry_type": "template",
+            "deltas": {"removed_items": [], "added_items": [], "person_count": 2},
+        },
+    )
+    assert response.status_code == 200
+    entry_id = response.json()["id"]
+
+    with Session(engine) as session:
+        item_dict = {i.name: i.menge for i in session.exec(select(Item)).all()}
+    assert (
+        item_dict.get("Butter") == "200 g"
+    ), f"erwartet '200 g', erhalten: {item_dict.get('Butter')}"
+    assert (
+        item_dict.get("Milch") == "400 ml"
+    ), f"erwartet '400 ml', erhalten: {item_dict.get('Milch')}"
+
+    # PATCH person_count: 2 → 1  (Faktor ÷ 2)
+    response = client.patch(
+        f"/api/weekplan/entries/{entry_id}/deltas",
+        headers=headers,
+        json={"removed_items": [], "added_items": [], "person_count": 1},
+    )
+    assert response.status_code == 200
+
+    with Session(engine) as session:
+        item_dict = {i.name: i.menge for i in session.exec(select(Item)).all()}
+    assert (
+        item_dict.get("Butter") == "100 g"
+    ), f"erwartet '100 g', erhalten: {item_dict.get('Butter')}"
+    assert (
+        item_dict.get("Milch") == "200 ml"
+    ), f"erwartet '200 ml', erhalten: {item_dict.get('Milch')}"
+
+    # Aufräumen
+    client.delete(f"/api/weekplan/entries/{entry_id}", headers=headers)
+    with Session(engine) as session:
+        _delete_person_count_template(session, template_name)
+
+
+def test_recipe_menge_adjusts_when_person_count_multiplied_by_3():
+    """Test that recipe item quantities triple when person_count changes from 2 to 6."""
+    from datetime import datetime, timedelta
+    from server.src.models import Recipe
+    import json
+
+    token = get_auth_token()
+    headers = {"Authorization": f"Bearer {token}"}
+    engine = get_engine()
+
+    with Session(engine) as session:
+        for item in session.exec(select(Item)).all():
+            session.delete(item)
+        session.commit()
+
+    with Session(engine) as session:
+        recipe = Recipe(
+            external_id="test_recipe_person_count_x3",
+            name="PersonCount X3 Rezept",
+            data=json.dumps(
+                {
+                    "name": "PersonCount X3 Rezept",
+                    "ingredients": "200 g Butter\n400 ml Milch",
+                    "quantity": 2,
+                }
+            ),
+        )
+        session.add(recipe)
+        session.commit()
+        session.refresh(recipe)
+        recipe_id = recipe.id
+
+    future_date = (datetime.now() + timedelta(days=2)).date().isoformat()
+
+    # Create entry with base person_count=2 (factor 2/2 = 1)
+    response = client.post(
+        "/api/weekplan/entries",
+        headers=headers,
+        json={
+            "date": future_date,
+            "meal": "dinner",
+            "text": "PersonCount X3 Rezept",
+            "entry_type": "recipe",
+            "recipe_id": recipe_id,
+            "deltas": {"removed_items": [], "added_items": [], "person_count": 2},
+        },
+    )
+    assert response.status_code == 200
+    entry_id = response.json()["id"]
+
+    with Session(engine) as session:
+        item_dict = {i.name: i.menge for i in session.exec(select(Item)).all()}
+    assert (
+        item_dict.get("Butter") == "200 g"
+    ), f"erwartet '200 g', erhalten: {item_dict.get('Butter')}"
+    assert (
+        item_dict.get("Milch") == "400 ml"
+    ), f"erwartet '400 ml', erhalten: {item_dict.get('Milch')}"
+
+    # PATCH person_count: 2 → 6  (Faktor × 3)
+    response = client.patch(
+        f"/api/weekplan/entries/{entry_id}/deltas",
+        headers=headers,
+        json={"removed_items": [], "added_items": [], "person_count": 6},
+    )
+    assert response.status_code == 200
+
+    with Session(engine) as session:
+        item_dict = {i.name: i.menge for i in session.exec(select(Item)).all()}
+    assert (
+        item_dict.get("Butter") == "600 g"
+    ), f"erwartet '600 g', erhalten: {item_dict.get('Butter')}"
+    assert (
+        item_dict.get("Milch") == "1200 ml"
+    ), f"erwartet '1200 ml', erhalten: {item_dict.get('Milch')}"
+
+    # Aufräumen
+    client.delete(f"/api/weekplan/entries/{entry_id}", headers=headers)
+    with Session(engine) as session:
+        recipe = session.get(Recipe, recipe_id)
+        if recipe:
+            session.delete(recipe)
+            session.commit()
+
+
+def test_recipe_menge_adjusts_when_person_count_divided_by_2():
+    """Test that recipe item quantities halve when person_count changes from 2 to 1."""
+    from datetime import datetime, timedelta
+    from server.src.models import Recipe
+    import json
+
+    token = get_auth_token()
+    headers = {"Authorization": f"Bearer {token}"}
+    engine = get_engine()
+
+    with Session(engine) as session:
+        for item in session.exec(select(Item)).all():
+            session.delete(item)
+        session.commit()
+
+    with Session(engine) as session:
+        recipe = Recipe(
+            external_id="test_recipe_person_count_div2",
+            name="PersonCount Div2 Rezept",
+            data=json.dumps(
+                {
+                    "name": "PersonCount Div2 Rezept",
+                    "ingredients": "200 g Butter\n400 ml Milch",
+                    "quantity": 2,
+                }
+            ),
+        )
+        session.add(recipe)
+        session.commit()
+        session.refresh(recipe)
+        recipe_id = recipe.id
+
+    future_date = (datetime.now() + timedelta(days=2)).date().isoformat()
+
+    # Create entry with base person_count=2 (factor 2/2 = 1)
+    response = client.post(
+        "/api/weekplan/entries",
+        headers=headers,
+        json={
+            "date": future_date,
+            "meal": "dinner",
+            "text": "PersonCount Div2 Rezept",
+            "entry_type": "recipe",
+            "recipe_id": recipe_id,
+            "deltas": {"removed_items": [], "added_items": [], "person_count": 2},
+        },
+    )
+    assert response.status_code == 200
+    entry_id = response.json()["id"]
+
+    with Session(engine) as session:
+        item_dict = {i.name: i.menge for i in session.exec(select(Item)).all()}
+    assert (
+        item_dict.get("Butter") == "200 g"
+    ), f"erwartet '200 g', erhalten: {item_dict.get('Butter')}"
+    assert (
+        item_dict.get("Milch") == "400 ml"
+    ), f"erwartet '400 ml', erhalten: {item_dict.get('Milch')}"
+
+    # PATCH person_count: 2 → 1  (Faktor ÷ 2)
+    response = client.patch(
+        f"/api/weekplan/entries/{entry_id}/deltas",
+        headers=headers,
+        json={"removed_items": [], "added_items": [], "person_count": 1},
+    )
+    assert response.status_code == 200
+
+    with Session(engine) as session:
+        item_dict = {i.name: i.menge for i in session.exec(select(Item)).all()}
+    assert (
+        item_dict.get("Butter") == "100 g"
+    ), f"erwartet '100 g', erhalten: {item_dict.get('Butter')}"
+    assert (
+        item_dict.get("Milch") == "200 ml"
+    ), f"erwartet '200 ml', erhalten: {item_dict.get('Milch')}"
+
+    # Aufräumen
+    client.delete(f"/api/weekplan/entries/{entry_id}", headers=headers)
+    with Session(engine) as session:
+        recipe = session.get(Recipe, recipe_id)
+        if recipe:
+            session.delete(recipe)
+            session.commit()
+
+
+def test_template_menge_adjusts_when_person_count_increased_then_halved():
+    """Test template quantities after two consecutive person_count changes: +4 then ÷2.
+
+    Start: person_count=2 → Butter 200 g, Milch 400 ml (Faktor 1)
+    Step 1: person_count=6 (+4) → Butter 600 g, Milch 1200 ml (Faktor 3)
+    Step 2: person_count=3 (÷2) → Butter 300 g, Milch 600 ml (Faktor 1.5)
+    """
+    from datetime import datetime, timedelta
+
+    token = get_auth_token()
+    headers = {"Authorization": f"Bearer {token}"}
+    engine = get_engine()
+    template_name = "PersonCountIncrHalvedVorlage"
+
+    with Session(engine) as session:
+        for item in session.exec(select(Item)).all():
+            session.delete(item)
+        session.commit()
+        _create_person_count_template(session, template_name)
+
+    future_date = (datetime.now() + timedelta(days=2)).date().isoformat()
+
+    # Create entry with base person_count=2 (Faktor 2/2 = 1)
+    response = client.post(
+        "/api/weekplan/entries",
+        headers=headers,
+        json={
+            "date": future_date,
+            "meal": "dinner",
+            "text": template_name,
+            "entry_type": "template",
+            "deltas": {"removed_items": [], "added_items": [], "person_count": 2},
+        },
+    )
+    assert response.status_code == 200
+    entry_id = response.json()["id"]
+
+    with Session(engine) as session:
+        item_dict = {i.name: i.menge for i in session.exec(select(Item)).all()}
+    assert (
+        item_dict.get("Butter") == "200 g"
+    ), f"erwartet '200 g', erhalten: {item_dict.get('Butter')}"
+    assert (
+        item_dict.get("Milch") == "400 ml"
+    ), f"erwartet '400 ml', erhalten: {item_dict.get('Milch')}"
+
+    # Schritt 1: person_count 2 → 6 (+4 Personen, Faktor × 3)
+    response = client.patch(
+        f"/api/weekplan/entries/{entry_id}/deltas",
+        headers=headers,
+        json={"removed_items": [], "added_items": [], "person_count": 6},
+    )
+    assert response.status_code == 200
+
+    with Session(engine) as session:
+        item_dict = {i.name: i.menge for i in session.exec(select(Item)).all()}
+    assert (
+        item_dict.get("Butter") == "600 g"
+    ), f"erwartet '600 g', erhalten: {item_dict.get('Butter')}"
+    assert (
+        item_dict.get("Milch") == "1200 ml"
+    ), f"erwartet '1200 ml', erhalten: {item_dict.get('Milch')}"
+
+    # Schritt 2: person_count 6 → 3 (halbiert, Faktor 3/2 = 1.5 gegen Basis)
+    response = client.patch(
+        f"/api/weekplan/entries/{entry_id}/deltas",
+        headers=headers,
+        json={"removed_items": [], "added_items": [], "person_count": 3},
+    )
+    assert response.status_code == 200
+
+    with Session(engine) as session:
+        item_dict = {i.name: i.menge for i in session.exec(select(Item)).all()}
+    assert (
+        item_dict.get("Butter") == "300 g"
+    ), f"erwartet '300 g', erhalten: {item_dict.get('Butter')}"
+    assert (
+        item_dict.get("Milch") == "600 ml"
+    ), f"erwartet '600 ml', erhalten: {item_dict.get('Milch')}"
+
+    # Aufräumen
+    client.delete(f"/api/weekplan/entries/{entry_id}", headers=headers)
+    with Session(engine) as session:
+        _delete_person_count_template(session, template_name)
+
+
+def test_recipe_menge_adjusts_when_person_count_increased_then_halved():
+    """Test recipe quantities after two consecutive person_count changes: +4 then ÷2.
+
+    Start: person_count=2 → Butter 200 g, Milch 400 ml (Faktor 1)
+    Step 1: person_count=6 (+4) → Butter 600 g, Milch 1200 ml (Faktor 3)
+    Step 2: person_count=3 (÷2) → Butter 300 g, Milch 600 ml (Faktor 1.5)
+    """
+    from datetime import datetime, timedelta
+    from server.src.models import Recipe
+    import json
+
+    token = get_auth_token()
+    headers = {"Authorization": f"Bearer {token}"}
+    engine = get_engine()
+
+    with Session(engine) as session:
+        for item in session.exec(select(Item)).all():
+            session.delete(item)
+        session.commit()
+
+    with Session(engine) as session:
+        recipe = Recipe(
+            external_id="test_recipe_person_count_incr_halved",
+            name="PersonCount IncrHalved Rezept",
+            data=json.dumps(
+                {
+                    "name": "PersonCount IncrHalved Rezept",
+                    "ingredients": "200 g Butter\n400 ml Milch",
+                    "quantity": 2,
+                }
+            ),
+        )
+        session.add(recipe)
+        session.commit()
+        session.refresh(recipe)
+        recipe_id = recipe.id
+
+    future_date = (datetime.now() + timedelta(days=2)).date().isoformat()
+
+    # Create entry with base person_count=2 (Faktor 2/2 = 1)
+    response = client.post(
+        "/api/weekplan/entries",
+        headers=headers,
+        json={
+            "date": future_date,
+            "meal": "dinner",
+            "text": "PersonCount IncrHalved Rezept",
+            "entry_type": "recipe",
+            "recipe_id": recipe_id,
+            "deltas": {"removed_items": [], "added_items": [], "person_count": 2},
+        },
+    )
+    assert response.status_code == 200
+    entry_id = response.json()["id"]
+
+    with Session(engine) as session:
+        item_dict = {i.name: i.menge for i in session.exec(select(Item)).all()}
+    assert (
+        item_dict.get("Butter") == "200 g"
+    ), f"erwartet '200 g', erhalten: {item_dict.get('Butter')}"
+    assert (
+        item_dict.get("Milch") == "400 ml"
+    ), f"erwartet '400 ml', erhalten: {item_dict.get('Milch')}"
+
+    # Schritt 1: person_count 2 → 6 (+4 Personen, Faktor × 3)
+    response = client.patch(
+        f"/api/weekplan/entries/{entry_id}/deltas",
+        headers=headers,
+        json={"removed_items": [], "added_items": [], "person_count": 6},
+    )
+    assert response.status_code == 200
+
+    with Session(engine) as session:
+        item_dict = {i.name: i.menge for i in session.exec(select(Item)).all()}
+    assert (
+        item_dict.get("Butter") == "600 g"
+    ), f"erwartet '600 g', erhalten: {item_dict.get('Butter')}"
+    assert (
+        item_dict.get("Milch") == "1200 ml"
+    ), f"erwartet '1200 ml', erhalten: {item_dict.get('Milch')}"
+
+    # Schritt 2: person_count 6 → 3 (halbiert, Faktor 3/2 = 1.5 gegen Basis)
+    response = client.patch(
+        f"/api/weekplan/entries/{entry_id}/deltas",
+        headers=headers,
+        json={"removed_items": [], "added_items": [], "person_count": 3},
+    )
+    assert response.status_code == 200
+
+    with Session(engine) as session:
+        item_dict = {i.name: i.menge for i in session.exec(select(Item)).all()}
+    assert (
+        item_dict.get("Butter") == "300 g"
+    ), f"erwartet '300 g', erhalten: {item_dict.get('Butter')}"
+    assert (
+        item_dict.get("Milch") == "600 ml"
+    ), f"erwartet '600 ml', erhalten: {item_dict.get('Milch')}"
+
+    # Aufräumen
+    client.delete(f"/api/weekplan/entries/{entry_id}", headers=headers)
+    with Session(engine) as session:
+        recipe = session.get(Recipe, recipe_id)
+        if recipe:
+            session.delete(recipe)
+            session.commit()
+
+
 def test_recipe_text_based_fractions():
     """Test recipe ingredients with text-based fractions (1/2, 2 1/2)."""
     import json

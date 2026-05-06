@@ -739,3 +739,68 @@ def test_create_product_updates_existing_items():
     # Clean up
     client.delete(f"/api/items/{item_id}", headers=headers)
     client.delete(f"/api/products/{product_id}", headers=headers)
+
+
+def test_item_menge_consistent_after_multiple_department_changes():
+    """Test that item menge stays unchanged after repeated
+    department changes on its product."""
+    token = get_auth_token()
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Need at least 2 departments
+    r = client.get("/api/stores", headers=headers)
+    store_id = r.json()[0]["id"]
+
+    r = client.get(f"/api/stores/{store_id}/departments", headers=headers)
+    departments = r.json()
+    assert len(departments) >= 2, "Test requires at least 2 departments"
+    dept1_id = departments[0]["id"]
+    dept2_id = departments[1]["id"]
+
+    unique_name = "MengeKonsistenzTest789"
+    expected_menge = "750 ml; 200 g"
+
+    # Create item first (no product yet)
+    r = client.post(
+        "/api/items",
+        json={"name": unique_name, "store_id": store_id, "menge": expected_menge},
+        headers=headers,
+    )
+    assert r.status_code == 201
+    item_id = r.json()["id"]
+
+    # Create product with same name → item gets linked automatically
+    r = client.post(
+        "/api/products",
+        json={"name": unique_name, "store_id": store_id, "department_id": dept1_id},
+        headers=headers,
+    )
+    assert r.status_code == 201
+    product_id = r.json()["id"]
+
+    # Verify link and initial menge
+    items = client.get("/api/items", headers=headers).json()
+    item = next(i for i in items if i["id"] == item_id)
+    assert item["product_id"] == product_id
+    assert item["menge"] == expected_menge
+
+    # Change department multiple times and verify menge is not modified
+    for cycle, new_dept_id in enumerate([dept2_id, dept1_id, dept2_id, dept1_id]):
+        r = client.put(
+            f"/api/products/{product_id}",
+            json={"department_id": new_dept_id},
+            headers=headers,
+        )
+        assert r.status_code == 200
+
+        items = client.get("/api/items", headers=headers).json()
+        item = next(i for i in items if i["id"] == item_id)
+        assert item["menge"] == expected_menge, (
+            f"menge changed in cycle {cycle} \
+after switching to department {new_dept_id}: "
+            f"expected '{expected_menge}', got '{item['menge']}'"
+        )
+
+    # Clean up
+    client.delete(f"/api/items/{item_id}", headers=headers)
+    client.delete(f"/api/products/{product_id}", headers=headers)
