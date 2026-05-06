@@ -846,7 +846,7 @@ def _delete_person_count_template(session, name: str) -> None:
 
 
 def test_template_menge_adjusts_when_person_count_multiplied_by_3():
-    """Test that template item quantities triple when person_count changes from 2 to 6."""
+    """Template item quantities triple when person_count changes from 2 to 6."""
     from datetime import datetime, timedelta
 
     token = get_auth_token()
@@ -910,7 +910,7 @@ def test_template_menge_adjusts_when_person_count_multiplied_by_3():
 
 
 def test_template_menge_adjusts_when_person_count_divided_by_2():
-    """Test that template item quantities halve when person_count changes from 2 to 1."""
+    """Template item quantities halve when person_count changes from 2 to 1."""
     from datetime import datetime, timedelta
 
     token = get_auth_token()
