@@ -7,7 +7,8 @@ def run_migration(db_path: str = "./data.db") -> None:
     conn = sqlite3.connect(db_path)
     try:
         conn.execute(
-            "ALTER TABLE webdavsettings ADD COLUMN verify_ssl BOOLEAN NOT NULL DEFAULT 1"
+            "ALTER TABLE webdavsettings ADD COLUMN"
+            " verify_ssl BOOLEAN NOT NULL DEFAULT 1"
         )
         conn.commit()
         print("Migration 004: added verify_ssl to webdavsettings")
