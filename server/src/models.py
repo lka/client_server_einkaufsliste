@@ -205,6 +205,7 @@ class WebDAVSettings(SQLModel, table=True):
     password: str
     filename: str
     enabled: bool = Field(default=True)
+    verify_ssl: bool = Field(default=True)
 
 
 class Recipe(SQLModel, table=True):

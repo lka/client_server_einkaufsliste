@@ -129,6 +129,7 @@ export interface WebDAVSettings {
   password: string;
   filename: string;
   enabled?: boolean;
+  verify_ssl?: boolean;
 }
 
 export interface ProductSuggestion {

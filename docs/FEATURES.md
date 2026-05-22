@@ -301,6 +301,12 @@
   - **Multi-User Support**: Mehrere Benutzer können gleichzeitig die gleiche Liste bearbeiten
   - **Vollständig getestet**: 12 Tests mit Mock-WebSocket für umfassende Abdeckung
 - ✅ **Rezept-Integration**: Vollständige Rezeptverwaltung mit WebDAV-Import und Wochenplan-Integration
+  - **WebDAV-Konfiguration**: Flexibles Verbindungsmanagement für lokale und Cloud-Server
+    - **SSL-Zertifikat-Prüfung konfigurierbar**: `verify_ssl`-Option pro Konfiguration (Standard: aktiv)
+      - Deaktivierbar für lokale Server mit selbst signierten Zertifikaten
+      - Checkbox "SSL-Zertifikat überprüfen" im Neu-Anlegen-Formular und im Bearbeitungs-Modal
+      - Status-Anzeige in der Konfigurations-Liste (🔒 / ⚠️)
+    - **Bestehende Einstellungen**: HTTPS-URL + SSL-Prüfung deaktiviert für self-signed Certs
   - **Rezept-Import mit Echtzeit-Fortschritt**: Importiere Rezepte direkt von deinem WebDAV-Server
     - Unterstützt Nextcloud Cookbook Format (JSON-ZIP)
     - Massenimport: Verarbeitet tausende Rezepte in einem Durchgang

@@ -42,6 +42,19 @@ export function renderWebDAVForm(onSaved: () => Promise<void>): void {
     required: true,
   });
 
+  const verifySslCheckbox = document.createElement('input');
+  verifySslCheckbox.type = 'checkbox';
+  verifySslCheckbox.id = 'verifySsl';
+  verifySslCheckbox.checked = true;
+  const verifySslLabel = document.createElement('label');
+  verifySslLabel.htmlFor = 'verifySsl';
+  verifySslLabel.textContent = ' SSL-Zertifikat überprüfen';
+  verifySslLabel.style.marginLeft = '6px';
+  const verifySslContainer = document.createElement('div');
+  verifySslContainer.style.marginBottom = '12px';
+  verifySslContainer.appendChild(verifySslCheckbox);
+  verifySslContainer.appendChild(verifySslLabel);
+
   const saveButton = createButton({
     label: 'Speichern',
     variant: 'primary',
@@ -53,6 +66,7 @@ export function renderWebDAVForm(onSaved: () => Promise<void>): void {
           username: usernameInputGroup.input.value,
           password: passwordInputGroup.input.value,
           filename: filenameInputGroup.input.value,
+          verify_ssl: verifySslCheckbox.checked,
         },
         () => renderWebDAVForm(onSaved),
         onSaved
@@ -65,6 +79,7 @@ export function renderWebDAVForm(onSaved: () => Promise<void>): void {
   formContainer.appendChild(usernameInputGroup.container);
   formContainer.appendChild(passwordInputGroup.container);
   formContainer.appendChild(filenameInputGroup.container);
+  formContainer.appendChild(verifySslContainer);
   formContainer.appendChild(saveButton);
 }
 

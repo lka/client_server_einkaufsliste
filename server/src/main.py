@@ -63,6 +63,10 @@ async def lifespan(app: FastAPI):
     engine = get_engine()
     create_db_and_tables(engine)
 
+    from .migration_runner import run_migrations
+
+    run_migrations()
+
     # Seed database with initial data if empty
     from .seed_data import seed_database
 

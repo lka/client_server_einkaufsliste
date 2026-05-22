@@ -87,6 +87,7 @@ class WebDAVSettingsCreate(BaseModel):
     username: str
     password: str
     filename: str
+    verify_ssl: bool = True
 
 
 class WebDAVSettingsUpdate(BaseModel):
@@ -97,6 +98,7 @@ class WebDAVSettingsUpdate(BaseModel):
     password: Optional[str] = None
     filename: Optional[str] = None
     enabled: Optional[bool] = None
+    verify_ssl: Optional[bool] = None
 
 
 # Unit management schemas

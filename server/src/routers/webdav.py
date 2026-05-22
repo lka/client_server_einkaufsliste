@@ -76,6 +76,7 @@ def create_webdav_settings(
             username=settings_data.username,
             password=settings_data.password,
             filename=settings_data.filename,
+            verify_ssl=settings_data.verify_ssl,
         )
         session.add(settings)
         session.commit()
@@ -118,6 +119,8 @@ def update_webdav_settings(
             settings.filename = settings_data.filename
         if settings_data.enabled is not None:
             settings.enabled = settings_data.enabled
+        if settings_data.verify_ssl is not None:
+            settings.verify_ssl = settings_data.verify_ssl
 
         session.add(settings)
         session.commit()
@@ -297,6 +300,7 @@ def import_recipes_from_webdav(
                     webdav_url,
                     auth=HTTPBasicAuth(settings.username, settings.password),
                     timeout=30,
+                    verify=settings.verify_ssl,
                 )
 
                 if response.status_code == 401:

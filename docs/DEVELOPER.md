@@ -32,6 +32,7 @@ Technische Dokumentation für Entwickler der Client/Server Einkaufsliste.
 │   │   ├── admin_setup.py    # Admin user setup utilities
 │   │   ├── user_cleanup.py   # User cleanup utilities
 │   │   ├── db.py             # Database utilities
+│   │   ├── migration_runner.py  # Auto-migration runner (runs on startup)
 │   │   ├── seed_data.py      # Database seed data (stores, departments, products)
 │   │   ├── schemas.py        # Request/Response models (Pydantic schemas)
 │   │   ├── utils.py          # Helper functions (quantity parsing, fuzzy matching)
@@ -289,6 +290,7 @@ Der Server läuft auf `http://localhost:8000`
 
 **Server-Features beim Start:**
 - Automatische Datenbank-Initialisierung (data.db)
+- **Automatische Datenbank-Migrationen**: `migration_runner.py` führt ausstehende Migrationen aus `server/migrations/` aus
 - Admin-User wird erstellt (Username: `admin`, Passwort aus `.env`)
 - Seed-Daten werden geladen (Stores, Departments, Products)
 - Alte Daten werden bereinigt (nicht genehmigte User, alte Items)
@@ -541,6 +543,7 @@ Alle Workflows verwenden [uv](https://docs.astral.sh/uv/) via der offiziellen Ac
 - **models.py** - SQLModel data models (Item, Store, Department, Product, Template, WeekplanEntry)
 - **auth.py** - JWT utilities (token creation, verification, password hashing)
 - **db.py** - Database initialization, session management
+- **migration_runner.py** - Automatischer Migrations-Runner: entdeckt und führt `server/migrations/NNN_*.py` beim Start aus; verfolgt angewendete Migrationen in `schema_migrations`-Tabelle
 - **utils.py** - Helper functions (quantity parsing, fuzzy matching, date calculation)
 - **websocket_manager.py** - WebSocket connection management, broadcasting
 
@@ -684,19 +687,26 @@ Weitere Details siehe [client/ARCHITECTURE.md](../client/ARCHITECTURE.md) und [c
 #### Datenbank
 
 **SQLite:**
-- Datei: `data.db` (im Projektroot)
-- Auto-created beim ersten Start
-- Migrations: Keine (SQLModel erstellt Tabellen automatisch)
+- Datei: `data.db` (im `server/`-Verzeichnis)
+- Auto-created beim ersten Start via `SQLModel.metadata.create_all`
+- **Migrationen**: `server/migrations/NNN_*.py` werden automatisch beim Start ausgeführt (via `migration_runner.py`)
+  - Tracking in `schema_migrations`-Tabelle (version, name, applied_at)
+  - Neue Migration anlegen: Datei `NNN_beschreibung.py` mit Funktion `run_migration(db_path: str)` erstellen
+  - Bootstrap: Migrationen 001–003 (vor Einführung des Runners) werden beim ersten Start ohne Ausführung als angewendet markiert
 
 **Schema:**
 - `users` - Benutzer (username, hashed_password, is_approved)
 - `stores` - Geschäfte (name, sort_order)
 - `departments` - Abteilungen (name, store_id, sort_order)
-- `products` - Produkte (name, store_id, department_id, fresh)
-- `items` - Shopping-List-Items (name, menge, store_id, product_id, department_id, shopping_date)
-- `shoppingtemplates` - Vorlagen (name, description)
+- `products` - Produkte (name, store_id, department_id, fresh, manufacturer)
+- `items` - Shopping-List-Items (name, menge, store_id, product_id, department_id, shopping_date, manufacturer)
+- `shoppingtemplates` - Vorlagen (name, description, person_count)
 - `templateitems` - Vorlagen-Items (template_id, name, menge)
-- `weekplanentries` - Wochenplan (date, meal, text)
+- `weekplanentries` - Wochenplan (date, meal, text, entry_type, recipe_id, template_id, deltas, single_shopping_day)
+- `webdavsettings` - WebDAV-Konfigurationen (url, username, password, filename, enabled, verify_ssl)
+- `recipe` - Importierte Rezepte (external_id, name, category, tags, data, imported_at)
+- `unit` - Maßeinheiten (name, sort_order)
+- `schema_migrations` - Migrations-Tracking (version, name, applied_at)
 
 **Beziehungen:**
 - Store → Departments (1:n)

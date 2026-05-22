@@ -2,6 +2,17 @@
 
 > **📚 Alle Dokumentationen:** Siehe [Dokumentations-Index](INDEX.md)
 
+- Release 6.11.0: WebDAV SSL-Konfiguration + Automatische Datenbank-Migrationen
+  - **WebDAV `verify_ssl`-Option**: SSL-Zertifikat-Prüfung pro Konfiguration deaktivierbar (für lokale Server mit self-signed Zertifikaten)
+    - Neues Feld `verify_ssl` in DB-Modell, Schemas, TypeScript-Interface und `requests.get()`-Aufruf
+    - Checkbox "SSL-Zertifikat überprüfen" im Neu-Anlegen-Formular und Bearbeitungs-Modal
+    - Status-Anzeige in der Konfigurations-Liste (🔒 SSL-Prüfung aktiv / ⚠️ SSL-Prüfung deaktiviert)
+  - **Automatischer Migrations-Runner**: `server/src/migration_runner.py` führt beim Serverstart ausstehende Migrationen automatisch aus
+    - Tracking angewendeter Migrationen in `schema_migrations`-Tabelle
+    - Bootstrap-Mechanismus: Migrationen 001–003 werden beim ersten Start ohne Ausführung markiert
+    - Neue Migrationen als `NNN_beschreibung.py` mit `run_migration(db_path)` anlegen
+  - **Migration 004**: Fügt `verify_ssl`-Spalte zur `webdavsettings`-Tabelle hinzu (mit Duplicate-Column-Schutz)
+
 - Release 6.10.1: Bugfix – Rezept-Personenanzahl-Skalierung (#90)
   - Rezeptzutaten wurden beim Anpassen der Personenanzahl vervielfacht statt verdoppelt
   - Ursache: `quantity`-Feld nicht gefunden → Fallback 1; Nextcloud Cookbook speichert Portionen in `recipeYield`

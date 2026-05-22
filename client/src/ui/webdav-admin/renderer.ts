@@ -20,6 +20,9 @@ function renderWebDAVItem(setting: WebDAVSettings): string {
           <span class="webdav-status ${setting.enabled ? 'enabled' : 'disabled'}">
             ${setting.enabled ? '✓ Aktiv' : '✗ Inaktiv'}
           </span>
+          <span title="SSL-Zertifikat überprüfen">
+            ${setting.verify_ssl !== false ? '🔒 SSL-Prüfung aktiv' : '⚠️ SSL-Prüfung deaktiviert'}
+          </span>
         </div>
       </div>
       <div class="webdav-controls">

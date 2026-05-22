@@ -116,10 +116,24 @@ export async function showEditModal(
       value: setting.filename,
     });
 
+    const verifySslCheckbox = document.createElement('input');
+    verifySslCheckbox.type = 'checkbox';
+    verifySslCheckbox.id = 'editVerifySsl';
+    verifySslCheckbox.checked = !!setting.verify_ssl;
+    const verifySslLabel = document.createElement('label');
+    verifySslLabel.htmlFor = 'editVerifySsl';
+    verifySslLabel.textContent = ' SSL-Zertifikat überprüfen';
+    verifySslLabel.style.marginLeft = '6px';
+    const verifySslContainer = document.createElement('div');
+    verifySslContainer.style.marginBottom = '12px';
+    verifySslContainer.appendChild(verifySslCheckbox);
+    verifySslContainer.appendChild(verifySslLabel);
+
     modalContent.appendChild(urlInputGroup.container);
     modalContent.appendChild(usernameInputGroup.container);
     modalContent.appendChild(passwordInputGroup.container);
     modalContent.appendChild(filenameInputGroup.container);
+    modalContent.appendChild(verifySslContainer);
 
     const modal = new Modal({
       title: 'WebDAV-Konfiguration bearbeiten',
@@ -147,6 +161,7 @@ export async function showEditModal(
           url: urlInputGroup.input.value,
           username: usernameInputGroup.input.value,
           filename: filenameInputGroup.input.value,
+          verify_ssl: verifySslCheckbox.checked,
         };
 
         if (passwordInputGroup.input.value) {
