@@ -440,6 +440,11 @@
   - **Visuelles Design**: Aktueller Tag ist deutlich hervorgehoben (rot hinterlegt)
   - **Flexibel**: Datum kann geändert oder gelöscht werden
   - **Intelligentes Merging**: Items werden nur bei gleichem Datum zusammengeführt
+- ✅ **Verschieben zwischen Haupt- und Frische-Einkaufstag**: ⇄-Button vor dem Papierkorb an jedem Artikel
+  - **Toggle-Verhalten**: Steht ein Artikel auf dem Frische-Einkaufstag (`FRESH_PRODUCTS_DAY`), wird er auf den Haupteinkaufstag (`MAIN_SHOPPING_DAY`) verschoben — andernfalls (Haupttag oder beliebiges anderes Datum) auf den Frische-Tag
+  - **Automatisches Merging**: Existiert am Zieldatum bereits ein gleichnamiger Artikel, werden die Mengen zusammengeführt und der verschobene Artikel entfernt
+  - **WebSocket-Synchronisation**: Verschieben wird live an alle verbundenen Clients übertragen
+  - **Server-Endpoint**: `PATCH /api/items/{item_id}` mit Body `{ shopping_date }`
 - ✅ **Reaktive UI**: Automatische UI-Updates durch State-Management mit Observer Pattern
 - ✅ **Component Library**: Wiederverwendbare UI-Komponenten mit konsistentem Design (9 Komponenten)
   - **Button**: Konfigurierbare Buttons (primary, secondary, danger) mit verschiedenen Größen

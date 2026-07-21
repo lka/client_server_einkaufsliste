@@ -3,9 +3,10 @@
  * Handles adding items with template support.
  */
 
-import { fetchTemplates } from '../../data/api.js';
+import { fetchTemplates, getConfig } from '../../data/api.js';
 import { showError, showSuccess } from '../components/toast.js';
 import { shoppingListState } from '../../state/shopping-list-state.js';
+import { calculateNextShoppingDay, dateToISOString } from './filters.js';
 
 export interface AddItemOptions {
   name: string;
@@ -101,4 +102,30 @@ async function addTemplateItems(
  */
 export async function deleteItem(itemId: string): Promise<boolean> {
   return await shoppingListState.deleteItem(itemId);
+}
+
+/**
+ * Move an item between the main shopping day and the fresh products day.
+ * Items currently on the fresh products day are moved to the main shopping
+ * day; all other items (including those on unrelated dates) are moved to
+ * the fresh products day.
+ */
+export async function moveItem(itemId: string): Promise<boolean> {
+  const item = shoppingListState.getItems().find(i => i.id === itemId);
+  if (!item) {
+    console.error('Cannot move item: not found in state', itemId);
+    return false;
+  }
+
+  const config = await getConfig();
+  // Convert from Python convention (0=Monday) to JavaScript convention (0=Sunday)
+  const mainShoppingDay = ((config?.main_shopping_day ?? 2) + 1) % 7;
+  const freshProductsDay = ((config?.fresh_products_day ?? 4) + 1) % 7;
+
+  const nextMainDate = dateToISOString(calculateNextShoppingDay(mainShoppingDay));
+  const nextFreshDate = dateToISOString(calculateNextShoppingDay(freshProductsDay));
+
+  const targetDate = item.shopping_date === nextFreshDate ? nextMainDate : nextFreshDate;
+
+  return await shoppingListState.moveItem(itemId, targetDate);
 }

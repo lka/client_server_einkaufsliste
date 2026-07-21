@@ -56,11 +56,12 @@ describe('DOM Utilities', () => {
       // Items are sorted alphabetically within department
       const firstItem = itemsList?.children[0];
       expect(firstItem?.querySelector('span')?.textContent).toBe('Bread');
-      // Items in "Sonstiges" have both edit and delete buttons
+      // Items in "Sonstiges" have edit, move and delete buttons
       const buttons = firstItem?.querySelectorAll('button');
-      expect(buttons?.length).toBe(2);
+      expect(buttons?.length).toBe(3);
       expect(buttons?.[0]?.textContent).toBe('✏️'); // Edit button
-      expect(buttons?.[1]?.textContent).toBe('🗑️'); // Delete button
+      expect(buttons?.[1]?.textContent).toBe('⇄'); // Move button
+      expect(buttons?.[2]?.textContent).toBe('🗑️'); // Delete button
     });
 
     it('should render items with menge', () => {
@@ -215,31 +216,38 @@ describe('DOM Utilities', () => {
       const span = li.querySelector('span');
       expect(span?.textContent).toBe('Test Item');
 
-      const button = li.querySelector('button');
-      expect(button?.className).toBe('removeBtn');
-      expect(button?.textContent).toBe('🗑️');
-      expect(button?.dataset.itemId).toBe('123');
+      const buttons = li.querySelectorAll('button');
+      expect(buttons[0]?.className).toBe('moveBtn');
+      expect(buttons[0]?.textContent).toBe('⇄');
+      expect(buttons[0]?.dataset.itemId).toBe('123');
+      expect(buttons[1]?.className).toBe('removeBtn');
+      expect(buttons[1]?.textContent).toBe('🗑️');
+      expect(buttons[1]?.dataset.itemId).toBe('123');
     });
 
-    it('should create button with data-item-id for event delegation', () => {
+    it('should create buttons with data-item-id for event delegation', () => {
       const item: Item = { id: '456', name: 'Test Item' };
       const li = createItemElement(item);
-      const button = li.querySelector('button') as HTMLButtonElement;
+      const buttons = li.querySelectorAll('button');
 
-      // Button should have data attribute for event delegation
-      expect(button.dataset.itemId).toBe('456');
-      // Button should have the correct class for event delegation
-      expect(button.classList.contains('removeBtn')).toBe(true);
+      // Buttons should have data attribute for event delegation
+      expect((buttons[0] as HTMLButtonElement).dataset.itemId).toBe('456');
+      expect((buttons[1] as HTMLButtonElement).dataset.itemId).toBe('456');
+      // Buttons should have the correct class for event delegation
+      expect(buttons[0].classList.contains('moveBtn')).toBe(true);
+      expect(buttons[1].classList.contains('removeBtn')).toBe(true);
     });
 
-    it('should not attach individual click handlers to button', () => {
+    it('should not attach individual click handlers to buttons', () => {
       const item: Item = { id: '789', name: 'Test Item' };
       const li = createItemElement(item);
-      const button = li.querySelector('button') as HTMLButtonElement;
+      const buttons = li.querySelectorAll('button');
 
-      // Clicking the button should not cause any errors
+      // Clicking the buttons should not cause any errors
       // Event handling is done via delegation on the parent container
-      expect(() => button.click()).not.toThrow();
+      buttons.forEach(button => {
+        expect(() => (button as HTMLButtonElement).click()).not.toThrow();
+      });
     });
   });
 

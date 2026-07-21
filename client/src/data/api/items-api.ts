@@ -16,5 +16,6 @@ export {
   addItem,
   deleteItem,
   deleteItemsBeforeDate,
-  convertItemToProduct
+  convertItemToProduct,
+  updateItemShoppingDate
 } from './items-api/index.js';

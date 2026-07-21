@@ -24,7 +24,11 @@ from ..models import Item, Product, Department
 from ..user_models import User
 from ..db import get_session
 from ..auth import get_current_user
-from ..schemas import ItemWithDepartment, ConvertItemRequest
+from ..schemas import (
+    ItemWithDepartment,
+    ConvertItemRequest,
+    UpdateItemShoppingDateRequest,
+)
 from ..utils import find_similar_item, merge_quantities, normalize_name
 
 router = APIRouter(prefix="/api/items", tags=["items"])
@@ -574,6 +578,91 @@ async def delete_items_before_date(
             )
 
         return {"deleted_count": count}
+
+
+async def _broadcast_item_updated(enriched: ItemWithDepartment) -> None:
+    """Broadcast an item:updated event via WebSocket."""
+    await manager.broadcast(
+        {
+            "type": "item:updated",
+            "data": {
+                "id": enriched.id,
+                "name": enriched.name,
+                "menge": enriched.menge,
+                "store_id": enriched.store_id,
+                "product_id": enriched.product_id,
+                "shopping_date": enriched.shopping_date,
+                "user_id": enriched.user_id,
+                "manufacturer": enriched.manufacturer,
+                "department_id": enriched.department_id,
+                "department_name": enriched.department_name,
+                "department_sort_order": enriched.department_sort_order,
+            },
+        }
+    )
+
+
+@router.patch("/{item_id}", response_model=ItemWithDepartment)
+async def move_item(
+    item_id: str,
+    request: UpdateItemShoppingDateRequest,
+    current_user: str = Depends(get_current_user),
+):
+    """Move an item to a different shopping date.
+
+    Used to move items between the main shopping day and the fresh products
+    day (and back). If an item with the same or similar name already exists
+    on the target date, quantities are merged into that item and this item
+    is deleted. Otherwise the item's shopping_date is updated in place.
+
+    Args:
+        item_id: Item ID to move
+        request: Contains the target shopping_date
+        current_user: Current authenticated username from JWT
+
+    Returns:
+        The resulting item (merged target item or the moved item) with
+        department information.
+    """
+    with get_session() as session:
+        user = session.exec(select(User).where(User.username == current_user)).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        item = session.get(Item, item_id)
+        if not item:
+            raise HTTPException(status_code=404, detail="Item not found")
+
+        new_date = request.shopping_date
+        if item.shopping_date == new_date:
+            return _enrich_with_department(session, item)
+
+        existing_item = _find_item_by_match_strategy(
+            session, item.name, new_date, item.store_id
+        )
+
+        if existing_item:
+            merged_item_id = item.id
+            existing_item.menge = merge_quantities(existing_item.menge, item.menge)
+            session.delete(item)
+            session.add(existing_item)
+            session.commit()
+            session.refresh(existing_item)
+
+            await manager.broadcast(
+                {"type": "item:deleted", "data": {"id": merged_item_id}}
+            )
+            enriched = _enrich_with_department(session, existing_item)
+        else:
+            item.shopping_date = new_date
+            session.add(item)
+            session.commit()
+            session.refresh(item)
+            enriched = _enrich_with_department(session, item)
+
+        await _broadcast_item_updated(enriched)
+
+        return enriched
 
 
 @router.post("/{item_id}/convert-to-product", response_model=ItemWithDepartment)

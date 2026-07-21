@@ -130,6 +130,15 @@ export function createItemElement(item: Item, isInSonstiges: boolean = false): H
     li.appendChild(editBtn);
   }
 
+  const moveBtn = document.createElement('button');
+  moveBtn.className = 'moveBtn';
+  moveBtn.textContent = '⇄';
+  moveBtn.setAttribute('aria-label', 'Zwischen Haupt- und Frische-Einkaufsliste verschieben');
+  moveBtn.setAttribute('title', 'Zwischen Haupt- und Frische-Einkaufsliste verschieben');
+  moveBtn.dataset.itemId = item.id;
+  // No individual click handler - relies on event delegation from parent
+  li.appendChild(moveBtn);
+
   const deleteBtn = document.createElement('button');
   deleteBtn.className = 'removeBtn';
   deleteBtn.textContent = '🗑️';

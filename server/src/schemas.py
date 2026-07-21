@@ -63,6 +63,12 @@ class ConvertItemRequest(BaseModel):
     department_id: int
 
 
+class UpdateItemShoppingDateRequest(BaseModel):
+    """Schema for moving an item to a different shopping date."""
+
+    shopping_date: str
+
+
 class ItemWithDepartment(BaseModel):
     """Item response model with department information."""
 

@@ -9,6 +9,7 @@ import {
   dateToISOString,
   addItemOrTemplate,
   deleteItem,
+  moveItem,
 } from '../shopping-list/index.js';
 import { getShoppingDatePicker } from './date-picker-manager.js';
 import type { StoreManager } from '../shopping-list/index.js';
@@ -97,6 +98,27 @@ export function setupItemListHandlers(
         const success = await deleteItem(itemId);
         if (!success) {
           // Re-enable button if deletion failed
+          target.removeAttribute('disabled');
+        }
+        // UI updates automatically via state subscription on success
+      }
+    }
+
+    // Check if the clicked element is the move button
+    if (target.classList.contains('moveBtn')) {
+      const itemId = target.dataset.itemId;
+      if (itemId) {
+        // Prevent multiple rapid clicks
+        if (target.hasAttribute('disabled')) {
+          return;
+        }
+
+        // Disable button during move
+        target.setAttribute('disabled', 'true');
+
+        const success = await moveItem(itemId);
+        if (!success) {
+          // Re-enable button if move failed
           target.removeAttribute('disabled');
         }
         // UI updates automatically via state subscription on success

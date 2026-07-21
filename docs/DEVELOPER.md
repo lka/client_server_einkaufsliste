@@ -332,6 +332,7 @@ Authorization: Bearer <access_token>
 - `GET /me` - Aktueller Benutzer
 - `GET /api/items` - Einkaufsliste abrufen
 - `POST /api/items` - Item hinzufügen
+- `PATCH /api/items/{id}` - Item auf anderes Einkaufsdatum verschieben (Body: `{ shopping_date }`), merged mit vorhandenem Item am Zieldatum
 - `DELETE /api/items/{id}` - Item löschen
 - `GET /api/templates` - Vorlagen abrufen
 - `GET /api/weekplan/entries` - Wochenplan-Einträge abrufen

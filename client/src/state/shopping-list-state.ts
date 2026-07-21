@@ -4,7 +4,13 @@
  * Integrates with WebSocket for real-time collaborative updates.
  */
 
-import { Item, fetchItems as apiFetchItems, addItem as apiAddItem, deleteItem as apiDeleteItem } from '../data/api.js';
+import {
+  Item,
+  fetchItems as apiFetchItems,
+  addItem as apiAddItem,
+  deleteItem as apiDeleteItem,
+  updateItemShoppingDate as apiUpdateItemShoppingDate,
+} from '../data/api.js';
 import * as websocket from '../data/websocket.js';
 import { onWeekplanDeltasUpdated } from '../data/websocket/subscriptions.js';
 
@@ -226,6 +232,47 @@ class ShoppingListState {
       return false;
     } catch (error) {
       console.error('Error deleting item in state:', error);
+      return false;
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  /**
+   * Move an item to a different shopping date via API and update state.
+   * If the server merged the item into an existing one on the target date,
+   * the original item is removed and the merged item takes its place.
+   */
+  async moveItem(id: string, targetShoppingDate: string): Promise<boolean> {
+    this.loading = true;
+    try {
+      const movedItem = await apiUpdateItemShoppingDate(id, targetShoppingDate);
+      if (!movedItem) {
+        return false;
+      }
+
+      const wasMerged = movedItem.id !== id;
+
+      this.items = this.items.filter(item => item.id !== id);
+      const existingIndex = this.items.findIndex(item => item.id === movedItem.id);
+      if (existingIndex !== -1) {
+        this.items[existingIndex] = movedItem;
+      } else {
+        this.items.push(movedItem);
+      }
+      this.notifyListeners();
+
+      // Broadcast to other users via WebSocket
+      if (websocket.isConnected()) {
+        if (wasMerged) {
+          websocket.broadcastItemDelete(id);
+        }
+        websocket.broadcastItemUpdate(movedItem);
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error moving item in state:', error);
       return false;
     } finally {
       this.loading = false;

@@ -64,11 +64,12 @@ Nach dem Login können Sie die Einkaufsliste verwenden:
 3. **Automatisches Matching**: Das System findet automatisch das passende Produkt im Katalog
 4. **Abteilungs-Gruppierung**: Produkte werden automatisch nach Abteilungen gruppiert angezeigt
 5. **Items entfernen**: Klicken Sie auf das Papierkorb-Icon (🗑️) neben dem Produkt
-6. **Produktkatalog erweitern**: Produkte in "Sonstiges" können dem Produkte-Katalog hinzugefügt werden
+6. **Items verschieben**: Klicken Sie auf das ⇄-Icon neben dem Produkt, um es zwischen Haupt- und Frische-Einkaufstag zu verschieben
+7. **Produktkatalog erweitern**: Produkte in "Sonstiges" können dem Produkte-Katalog hinzugefügt werden
    - Klicken Sie auf das Bearbeiten-Icon (✏️) neben einem Produkt in "Sonstiges"
    - Wählen Sie eine Abteilung aus dem Dialog
    - Das Produkt wird automatisch dem Katalog hinzugefügt
-7. **Falsche Zuordnung**: Produkte, die falsch zugeordnet werden, können im Produkte-Katalog korrigiert werden.
+8. **Falsche Zuordnung**: Produkte, die falsch zugeordnet werden, können im Produkte-Katalog korrigiert werden.
 
 ### Rezepte verwenden
 
