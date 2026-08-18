@@ -35,7 +35,6 @@ export function createDeltasForSave(
   return {
     removed_items: Array.from(state.removedItems),
     added_items: Array.from(state.addedItems.values()),
-    //person_count: state.adjustedQuantity !== originalQuantity ? state.adjustedQuantity : undefined
-    person_count: state.adjustedQuantity !== originalQuantity ? state.adjustedQuantity : originalQuantity
+    person_count: state.adjustedQuantity !== originalQuantity ? state.adjustedQuantity : undefined
   };
 }
