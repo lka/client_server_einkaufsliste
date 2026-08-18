@@ -276,9 +276,6 @@ def seed_units(session: Session):
         "Stiele",
         "Zweig",
         "Zweige",
-        "rote",
-        "grüne",
-        "gelbe",
     ]
 
     for idx, unit_name in enumerate(units):

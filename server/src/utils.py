@@ -236,6 +236,13 @@ def find_similar_item(
     for existing_item in all_items:
         normalized_existing = normalize_name(existing_item.name)
 
+        # First letter must match (case-insensitive) to avoid merging
+        # different variants like "rote Paprika" / "gelbe Paprika"
+        if not normalized_input or not normalized_existing:
+            continue
+        if normalized_input[0] != normalized_existing[0]:
+            continue
+
         # Calculate similarity ratio
         ratio = SequenceMatcher(None, normalized_input, normalized_existing).ratio()
 
