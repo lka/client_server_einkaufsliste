@@ -126,6 +126,27 @@ class CharsetMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(CharsetMiddleware)
 
+
+# Middleware to prevent browsers from serving stale client files after a deploy
+class NoCacheStaticMiddleware(BaseHTTPMiddleware):
+    """Force clients to revalidate static files (HTML/JS/CSS) on every request.
+
+    Browsers - iOS Safari in particular - can keep serving a cached copy of
+    client/ across deployments even after a manual reload, since StaticFiles
+    responses carry no explicit Cache-Control header. "no-cache" still allows
+    caching, but forces a conditional revalidation (ETag/Last-Modified) with
+    the server on every load, so a new deploy is always picked up.
+    """
+
+    async def dispatch(self, request: Request, call_next):
+        response: Response = await call_next(request)
+        if not request.url.path.startswith("/api/"):
+            response.headers["Cache-Control"] = "no-cache"
+        return response
+
+
+app.add_middleware(NoCacheStaticMiddleware)
+
 # Calculate client directory relative to this module and normalize the path.
 BASE_DIR = os.path.dirname(__file__)
 CLIENT_DIR = os.path.normpath(os.path.join(BASE_DIR, "..", "..", "client"))
