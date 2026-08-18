@@ -1,6 +1,9 @@
 # Multi-stage build for Client/Server Einkaufsliste
 # Stage 1: Build Client (TypeScript compilation)
-FROM node:20-alpine AS client-builder
+# Use slim (Debian) instead of Alpine: same reason as the Python stage below -
+# node:20-alpine (musl) triggers "qemu: uncaught target signal 4 (Illegal
+# instruction)" during npm ci on arm64 cross-builds via QEMU emulation.
+FROM node:20-bookworm-slim AS client-builder
 
 WORKDIR /app/client
 
