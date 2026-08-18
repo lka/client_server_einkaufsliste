@@ -16,12 +16,29 @@ export function setupQuantityAdjustment(
   adjustedPersonCount: number | null,
   adjustedQuantities: Map<string, string>,
   removedItems: Set<string>,
-  scrollableSection: HTMLElement
+  scrollableSection: HTMLElement,
+  getSelectedItemName: () => string | null,
+  onSelect: (name: string, menge: string) => void
 ): {
   adjustSection: HTMLElement;
   getAdjustedPersonCount: () => number | null;
+  rerenderList: () => void;
 } {
   let currentAdjustedPersonCount = adjustedPersonCount;
+
+  const rerenderList = () => {
+    const oldList = scrollableSection.querySelector('ul');
+    if (oldList) {
+      const newList = renderTemplateItems(
+        template,
+        removedItems,
+        adjustedQuantities,
+        getSelectedItemName(),
+        onSelect
+      );
+      scrollableSection.replaceChild(newList, oldList);
+    }
+  };
 
   const adjustSection = createQuantityAdjustmentSection(
     originalPersonCount,
@@ -40,18 +57,14 @@ export function setupQuantityAdjustment(
         }
       });
 
-      // Re-render the list
-      const oldList = scrollableSection.querySelector('ul');
-      if (oldList) {
-        const newList = renderTemplateItems(template, removedItems, adjustedQuantities);
-        scrollableSection.replaceChild(newList, oldList);
-      }
+      rerenderList();
     }
   );
 
   return {
     adjustSection,
-    getAdjustedPersonCount: () => currentAdjustedPersonCount
+    getAdjustedPersonCount: () => currentAdjustedPersonCount,
+    rerenderList
   };
 }
 

@@ -9,4 +9,5 @@ export interface RecipeModalState {
   addedItems: Map<string, DeltaItem>;
   adjustedQuantities: Map<string, string>;
   adjustedQuantity: number;
+  selectedIngredient: string | null;
 }

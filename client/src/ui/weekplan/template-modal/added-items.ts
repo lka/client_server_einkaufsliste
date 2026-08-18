@@ -10,11 +10,14 @@ import { createAddedItemsList, createAddItemForm } from '../modal-shared.js';
  */
 export function setupAddedItems(
   addedItems: Map<string, DeltaItem>,
-  addedItemsContainer: HTMLElement
+  addedItemsContainer: HTMLElement,
+  getSelectedItemName: () => string | null,
+  onCommitSelection: (originalName: string) => void
 ): {
   renderAddedItems: () => void;
   addItemForm: HTMLElement;
   tryAddPending: () => void;
+  selectForEdit: (name: string, menge: string) => void;
 } {
   const renderAddedItems = () => {
     const newList = createAddedItemsList(addedItems, (name) => {
@@ -25,8 +28,12 @@ export function setupAddedItems(
     addedItemsContainer.appendChild(newList);
   };
 
-  const { form: addItemForm, tryAddPending } = createAddItemForm(
+  const { form: addItemForm, tryAddPending, selectForEdit } = createAddItemForm(
     (name, menge) => {
+      const selectedItemName = getSelectedItemName();
+      if (selectedItemName) {
+        onCommitSelection(selectedItemName);
+      }
       addedItems.set(name, { name, menge });
       renderAddedItems();
     }
@@ -35,6 +42,7 @@ export function setupAddedItems(
   return {
     renderAddedItems,
     addItemForm,
-    tryAddPending
+    tryAddPending,
+    selectForEdit
   };
 }

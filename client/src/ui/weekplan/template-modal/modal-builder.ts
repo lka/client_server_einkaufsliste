@@ -68,18 +68,35 @@ export async function showTemplateDetails(templateName: string, entryId: number)
       emptyMsg.style.cssText = 'color: #999;';
       scrollableSection.appendChild(emptyMsg);
     } else {
+      // Track which item is currently loaded into the add-item form for editing
+      let selectedItemName: string | null = null;
+      // Forward references: filled in once the pieces they point to are built below.
+      let formSelectForEdit: (name: string, menge: string) => void = () => {};
+      let rerenderItemsList: () => void = () => {};
+
+      const onSelectItem = (name: string, menge: string) => {
+        selectedItemName = name;
+        formSelectForEdit(name, menge);
+        rerenderItemsList();
+      };
+
       // Quantity adjustment section
-      const { adjustSection, getAdjustedPersonCount } = setupQuantityAdjustment(
+      const { adjustSection, getAdjustedPersonCount, rerenderList } = setupQuantityAdjustment(
         template,
         originalPersonCount,
         adjustedPersonCount,
         adjustedQuantities,
         removedItems,
-        scrollableSection
+        scrollableSection,
+        () => selectedItemName,
+        onSelectItem
       );
+      rerenderItemsList = rerenderList;
 
       scrollableSection.appendChild(adjustSection);
-      scrollableSection.appendChild(renderTemplateItems(template, removedItems, adjustedQuantities));
+      scrollableSection.appendChild(
+        renderTemplateItems(template, removedItems, adjustedQuantities, selectedItemName, onSelectItem)
+      );
 
       // Track added items
       const addedItems = new Map<string, DeltaItem>(
@@ -90,7 +107,19 @@ export async function showTemplateDetails(templateName: string, entryId: number)
       const addedItemsContainer = document.createElement('div');
       addedItemsContainer.style.cssText = 'margin-top: 1rem;';
 
-      const { renderAddedItems, addItemForm, tryAddPending } = setupAddedItems(addedItems, addedItemsContainer);
+      const onCommitSelection = (originalName: string) => {
+        removedItems.add(originalName);
+        selectedItemName = null;
+        rerenderItemsList();
+      };
+
+      const { renderAddedItems, addItemForm, tryAddPending, selectForEdit } = setupAddedItems(
+        addedItems,
+        addedItemsContainer,
+        () => selectedItemName,
+        onCommitSelection
+      );
+      formSelectForEdit = selectForEdit;
 
       renderAddedItems();
       scrollableSection.appendChild(addedItemsContainer);

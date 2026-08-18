@@ -10,7 +10,9 @@ import type { Template } from '../../../data/api/types.js';
 export function renderTemplateItems(
   template: Template,
   removedItems: Set<string>,
-  adjustedQuantities: Map<string, string>
+  adjustedQuantities: Map<string, string>,
+  selectedItemName: string | null,
+  onSelect: (name: string, menge: string) => void
 ): HTMLUListElement {
   const itemsList = document.createElement('ul');
   itemsList.style.cssText = 'list-style: none; padding: 0; margin: 0;';
@@ -18,18 +20,25 @@ export function renderTemplateItems(
   template.items.forEach((item, index) => {
     const li = document.createElement('li');
     const isRemoved = removedItems.has(item.name);
+    const isSelected = selectedItemName === item.name;
+    // Use adjusted quantity if available, otherwise use original
+    const displayMenge = adjustedQuantities.get(item.name) || item.menge || '';
 
     li.style.cssText = `
       padding: 0.25rem 0.5rem;
-      background: ${isRemoved ? '#ffe6e6' : '#f8f9fa'};
+      background: ${isRemoved ? '#ffe6e6' : (isSelected ? '#eef5fc' : '#f8f9fa')};
+      outline: ${isSelected ? '2px solid #4a90e2' : 'none'};
       border-radius: 3px;
       margin-bottom: 0.25rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
       font-size: 0.9rem;
+      cursor: pointer;
       transition: background-color 0.2s;
     `;
+
+    li.addEventListener('click', () => onSelect(item.name, displayMenge));
 
     // Left side: checkbox + name
     const leftDiv = document.createElement('div');
@@ -42,6 +51,7 @@ export function renderTemplateItems(
     checkbox.name = `templateItem_${index}`;
     checkbox.checked = isRemoved;
     checkbox.style.cssText = 'cursor: pointer; width: 16px; height: 16px;';
+    checkbox.addEventListener('click', (e) => e.stopPropagation());
     checkbox.addEventListener('change', () => {
       if (checkbox.checked) {
         removedItems.add(item.name);
@@ -50,7 +60,7 @@ export function renderTemplateItems(
         nameSpan.style.opacity = '0.6';
       } else {
         removedItems.delete(item.name);
-        li.style.backgroundColor = '#f8f9fa';
+        li.style.backgroundColor = isSelected ? '#eef5fc' : '#f8f9fa';
         nameSpan.style.textDecoration = 'none';
         nameSpan.style.opacity = '1';
       }
@@ -67,10 +77,8 @@ export function renderTemplateItems(
     leftDiv.appendChild(nameSpan);
     li.appendChild(leftDiv);
 
-    if (item.menge) {
+    if (displayMenge) {
       const mengeSpan = document.createElement('span');
-      // Use adjusted quantity if available, otherwise use original
-      const displayMenge = adjustedQuantities.get(item.name) || item.menge;
       mengeSpan.textContent = displayMenge;
       mengeSpan.style.cssText = 'color: #666; font-size: 0.85rem; margin-left: 0.5rem;';
       li.appendChild(mengeSpan);

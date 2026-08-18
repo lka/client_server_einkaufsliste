@@ -10,25 +10,32 @@ import type { RecipeModalState } from './types.js';
  */
 export function renderIngredientsList(
   parsedIngredients: ParsedIngredient[],
-  state: RecipeModalState
+  state: RecipeModalState,
+  onSelect: (name: string, menge: string) => void
 ): HTMLUListElement {
   const ingredientsList = document.createElement('ul');
   ingredientsList.style.cssText = 'list-style: none; padding: 0; margin: 0;';
 
   parsedIngredients.forEach((ingredient, index) => {
     const isRemoved = state.removedItems.has(ingredient.name);
+    const isSelected = state.selectedIngredient === ingredient.name;
+    const displayQuantity = state.adjustedQuantities.get(ingredient.originalLine) || ingredient.quantity || '';
 
     const li = document.createElement('li');
     li.style.cssText = `
       padding: 0.25rem 0.5rem;
-      background: ${isRemoved ? '#ffe6e6' : '#f8f9fa'};
+      background: ${isRemoved ? '#ffe6e6' : (isSelected ? '#eef5fc' : '#f8f9fa')};
+      outline: ${isSelected ? '2px solid #4a90e2' : 'none'};
       border-radius: 3px;
       margin-bottom: 0.25rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
       font-size: 0.9rem;
+      cursor: pointer;
     `;
+
+    li.addEventListener('click', () => onSelect(ingredient.name, displayQuantity));
 
     const leftDiv = document.createElement('div');
     leftDiv.style.cssText = 'display: flex; align-items: center; gap: 0.5rem;';
@@ -40,6 +47,7 @@ export function renderIngredientsList(
     checkbox.name = `recipeIngredient_${index}`;
     checkbox.checked = isRemoved;
     checkbox.style.cssText = 'cursor: pointer; width: 16px; height: 16px;';
+    checkbox.addEventListener('click', (e) => e.stopPropagation());
 
     const nameSpan = document.createElement('span');
     nameSpan.textContent = ingredient.name;
@@ -56,7 +64,7 @@ export function renderIngredientsList(
         nameSpan.style.opacity = '0.6';
       } else {
         state.removedItems.delete(ingredient.name);
-        li.style.backgroundColor = '#f8f9fa';
+        li.style.backgroundColor = isSelected ? '#eef5fc' : '#f8f9fa';
         nameSpan.style.textDecoration = 'none';
         nameSpan.style.opacity = '1';
       }
@@ -66,9 +74,8 @@ export function renderIngredientsList(
     leftDiv.appendChild(nameSpan);
     li.appendChild(leftDiv);
 
-    if (ingredient.quantity) {
+    if (displayQuantity) {
       const quantitySpan = document.createElement('span');
-      const displayQuantity = state.adjustedQuantities.get(ingredient.originalLine) || ingredient.quantity;
       quantitySpan.textContent = displayQuantity;
       quantitySpan.style.cssText = 'color: #666; font-size: 0.85rem; margin-left: 0.5rem;';
       li.appendChild(quantitySpan);

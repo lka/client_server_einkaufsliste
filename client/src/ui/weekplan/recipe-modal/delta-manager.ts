@@ -20,7 +20,8 @@ export function initializeStateFromDeltas(
     adjustedQuantities: new Map<string, string>(),
     adjustedQuantity: (currentDeltas.person_count !== undefined && currentDeltas.person_count > 0)
       ? currentDeltas.person_count
-      : originalQuantity
+      : originalQuantity,
+    selectedIngredient: null
   };
 }
 

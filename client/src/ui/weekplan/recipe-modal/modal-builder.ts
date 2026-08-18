@@ -40,9 +40,30 @@ export function buildModalContent(
 
   let ingredientsListElement: HTMLUListElement | null = null;
 
+  // Forward reference: the add-item form (built further below) exposes
+  // selectForEdit, but ingredient selection is wired up before the form exists.
+  let formSelectForEdit: (name: string, menge: string) => void = () => {};
+
+  const rerenderIngredients = () => {
+    if (!ingredientsListElement) {
+      return;
+    }
+    const oldList = ingredientsListElement;
+    ingredientsListElement = renderIngredientsList(parsedIngredients, state, onSelectIngredient);
+    if (oldList.parentNode) {
+      oldList.parentNode.replaceChild(ingredientsListElement, oldList);
+    }
+  };
+
+  const onSelectIngredient = (name: string, menge: string) => {
+    state.selectedIngredient = name;
+    formSelectForEdit(name, menge);
+    rerenderIngredients();
+  };
+
   // Ingredients section with quantity adjustment
   if (recipeData.ingredients) {
-    ingredientsListElement = renderIngredientsList(parsedIngredients, state);
+    ingredientsListElement = renderIngredientsList(parsedIngredients, state, onSelectIngredient);
 
     // Quantity adjustment section
     const adjustSection = createQuantityAdjustmentSection(
@@ -61,14 +82,7 @@ export function buildModalContent(
           }
         });
 
-        // Re-render the ingredients list
-        if (ingredientsListElement) {
-          const oldList = ingredientsListElement;
-          ingredientsListElement = renderIngredientsList(parsedIngredients, state);
-          if (oldList.parentNode) {
-            oldList.parentNode.replaceChild(ingredientsListElement, oldList);
-          }
-        }
+        rerenderIngredients();
       }
     );
 
@@ -96,12 +110,18 @@ export function buildModalContent(
   // Fixed section for adding new items
   const addItemSection = createFixedFormSection();
 
-  const { form: addForm, tryAddPending } = createAddItemForm(
+  const { form: addForm, tryAddPending, selectForEdit } = createAddItemForm(
     (name, menge) => {
+      if (state.selectedIngredient) {
+        state.removedItems.add(state.selectedIngredient);
+        state.selectedIngredient = null;
+        rerenderIngredients();
+      }
       state.addedItems.set(name, { name, menge });
       renderAddedItems();
     }
   );
+  formSelectForEdit = selectForEdit;
 
   addItemSection.appendChild(addForm);
 
