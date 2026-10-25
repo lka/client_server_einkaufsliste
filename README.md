@@ -256,6 +256,12 @@ Inhalte:
 
 Dieses Projekt ist Open Source. Siehe LICENSE-Datei für Details.
 
+## Unterstützen
+
+Wenn das Projekt gefällt, freue ich mich über eine Spende:
+
+[![Spenden via PayPal](https://img.shields.io/badge/Spenden-PayPal-blue?logo=paypal)](https://paypal.me/Lka030)
+
 ## 📚 Dokumentation
 
 **📖 [Vollständiger Dokumentations-Index](docs/INDEX.md)** - Übersicht aller verfügbaren Dokumentationen
